@@ -93,7 +93,7 @@ export async function carryForward(
   const asOf = new Date(Date.UTC(fiscalYear, 11, 31, 23, 59, 59));
   const bilanz = await computeBilanz(tenantId, fiscalYear, asOf);
 
-  // Audit-B: Toleranz konsistent zur Bilanz-Berechnung (TenantSettings).
+  // Toleranz konsistent zur Bilanz-Berechnung (TenantSettings).
   const settings = await getTenantSettings(tenantId);
   const balanced = Math.abs(bilanz.differenz) <= settings.bilanzToleranceEur;
   if (!balanced && !allowUnbalanced) {
@@ -134,7 +134,7 @@ export async function carryForward(
   };
   const carryRows: CarryRow[] = [];
 
-  // Audit-B: synthetisches Annual-Result-Konto aus TenantSettings.
+  // synthetisches Annual-Result-Konto aus TenantSettings.
   const synthAnnualResultAccount = settings.datevAccountAnnualResult;
 
   for (const group of [...bilanz.aktiva, ...bilanz.passiva]) {
@@ -143,7 +143,7 @@ export async function carryForward(
       // Synthetisches "Jahresüberschuss" / "Jahresfehlbetrag" wird NICHT
       // vorgetragen — der User muss das Ergebnis manuell auf ein echtes
       // Eigenkapital-Konto buchen.
-      // Audit-B: Konto kommt aus TenantSettings.datevAccountAnnualResult
+      // Konto kommt aus TenantSettings.datevAccountAnnualResult
       // (Default "9999" — Tenants sollten ein echtes EK-Konto setzen).
       if (line.accountNumber === synthAnnualResultAccount) continue;
 

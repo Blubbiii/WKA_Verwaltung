@@ -38,7 +38,7 @@ export async function generateSuSa(
   periodStart: Date,
   periodEnd: Date
 ): Promise<SuSaResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("susa", tenantId, cacheKey, () =>
     generateSuSaUncached(tenantId, periodStart, periodEnd),
@@ -50,7 +50,7 @@ async function generateSuSaUncached(
   periodStart: Date,
   periodEnd: Date
 ): Promise<SuSaResult> {
-  // H-5: Saldenvortrag aus OpeningBalance des Wirtschaftsjahres laden.
+  // Saldenvortrag aus OpeningBalance des Wirtschaftsjahres laden.
   const fiscalYear = periodStart.getUTCFullYear();
 
   // P-1 Sprint 2: 2 SQL-groupBy statt JS-Aggregation aller Lines mit Join.
@@ -116,7 +116,7 @@ async function generateSuSaUncached(
     return aggregation.get(acc)!;
   }
 
-  // H-5: 1. Saldenvortrag aus OpeningBalance (Vortrag des laufenden FY).
+  // 1. Saldenvortrag aus OpeningBalance (Vortrag des laufenden FY).
   for (const ob of openings) {
     const acc = accountById.get(ob.ledgerAccountId);
     if (!acc) continue;

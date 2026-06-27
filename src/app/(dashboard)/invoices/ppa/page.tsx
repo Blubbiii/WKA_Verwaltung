@@ -172,7 +172,7 @@ export default function PPAPage() {
   const [deletePpa, setDeletePpa] = useState<PPA | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // H-9: AbortController um stale Requests bei Filter-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {

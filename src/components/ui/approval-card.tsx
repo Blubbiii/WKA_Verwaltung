@@ -140,6 +140,21 @@ export function ApprovalCard({
     ? formatDistanceToNow(expiresAt, { addSuffix: true, locale: dateLocale })
     : null;
 
+  // Urgency-Indikator: < 24h bis Ablauf → pulsierender roter Dot + Restzeit.
+  // Bereits abgelaufen → "Abgelaufen" mit destructive-Tone.
+  const hoursUntilExpiry = expiresAt
+    ? (new Date(expiresAt).getTime() - Date.now()) / 3_600_000
+    : null;
+  const showUrgency = hoursUntilExpiry !== null && hoursUntilExpiry < 24;
+  const isExpired = hoursUntilExpiry !== null && hoursUntilExpiry < 0;
+  const urgencyLabel = isExpired
+    ? "Abgelaufen"
+    : hoursUntilExpiry !== null && hoursUntilExpiry < 1
+      ? "< 1h"
+      : hoursUntilExpiry !== null
+        ? `< ${Math.ceil(hoursUntilExpiry)}h`
+        : "";
+
   return (
     <article
       className={cn(
@@ -149,6 +164,18 @@ export function ApprovalCard({
         className,
       )}
     >
+      {showUrgency && (
+        <span
+          className="absolute top-3 right-3 inline-flex items-center gap-1.5 text-xs font-medium text-destructive"
+          aria-label="Läuft bald ab"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping motion-reduce:animate-none rounded-full bg-destructive opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+          </span>
+          {urgencyLabel}
+        </span>
+      )}
       {/* Header: Avatar + Name + Timing */}
       <header className="flex items-start gap-3 p-4 pb-3">
         <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">

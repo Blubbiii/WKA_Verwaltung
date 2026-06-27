@@ -120,7 +120,7 @@ export default function BudgetContent() {
     loadBudgets();
   }, [t]);
 
-  // H-9: AbortController um stale Requests bei Budget/Range-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Budget/Range-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchComparison = useCallback(async () => {

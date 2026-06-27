@@ -64,7 +64,7 @@ export async function POST(
       });
     }
 
-    // H-2: Settlement-Status und ApprovalRequest in 1 TX — sonst Risiko
+    // Settlement-Status und ApprovalRequest in 1 TX — sonst Risiko
     // dass Status auf PENDING_REVIEW wechselt, aber ApprovalRequest fehlt
     // (oder umgekehrt) → Approve-Endpoint findet keinen passenden Request.
     const amount =

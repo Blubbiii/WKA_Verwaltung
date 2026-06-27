@@ -100,7 +100,7 @@ export default function LiquiditaetContent() {
     loadBudgets();
   }, []);
 
-  // H-9: AbortController um stale Requests bei Parameter-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Parameter-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchForecast = useCallback(async () => {

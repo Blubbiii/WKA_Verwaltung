@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // H-3-Fix: Timezone-Bug — `new Date("YYYY-MM-DD")` parst als UTC-Mitternacht,
+    // Timezone-Bug — `new Date("YYYY-MM-DD")` parst als UTC-Mitternacht,
     // `setUTCHours(0,0,0,0)` ist dann zwar No-Op, liegt aber in Berlin um 01:00/02:00
     // (Sommer-/Winterzeit) → Einträge des Vortags würden fälschlich mit-gesperrt.
     // Wir konstruieren stattdessen lokale Berliner Mitternacht (Container läuft mit

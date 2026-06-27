@@ -206,7 +206,7 @@ export default function ScadaAnomaliesPage() {
 
   // ---- Data Fetching ----
 
-  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchAnomalies = useCallback(async () => {

@@ -61,7 +61,7 @@ function NotificationsPageInner() {
 
   const limit = 20;
 
-  // H-9: AbortController um stale Fetches bei schneller Seiten-Navigation zu cancelln.
+  // AbortController um stale Fetches bei schneller Seiten-Navigation zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const setTab = (value: string) => {

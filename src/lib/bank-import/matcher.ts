@@ -44,7 +44,7 @@ export async function matchTransactions(
   transactions: ParsedTransaction[],
   tenantId: string
 ): Promise<MatchResult[]> {
-  // Audit-B: Bank-Match-Toleranz aus Tenant-Setting (Default 0,02 €).
+  // Bank-Match-Toleranz aus Tenant-Setting (Default 0,02 €).
   const settings = await getTenantSettings(tenantId);
   const toleranceEur = settings.bankMatchToleranceEur;
 
@@ -168,7 +168,7 @@ function findByAmountAndDate(
 
     // P18 (D10): toleranter Match — exakter Cent ODER Rundungs-Toleranz ODER
     // valider Skonto-Abzug innerhalb der Frist.
-    // Audit-B: Toleranz aus TenantSettings statt hardcoded 0,02 €.
+    // Toleranz aus TenantSettings statt hardcoded 0,02 €.
     const skontoResult = evaluateSkontoMatch({
       txAmount,
       txDate: tx.date,

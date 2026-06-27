@@ -204,7 +204,7 @@ export default function ParkWeatherPage({
     [parkId]
   );
 
-  // H-9: AbortController um stale Requests bei Period-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Period-Wechsel zu cancelln.
   const historicalAbortRef = useRef<AbortController | null>(null);
 
   // Fetch historical data

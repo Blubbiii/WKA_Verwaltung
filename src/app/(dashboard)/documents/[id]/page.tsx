@@ -156,7 +156,7 @@ export default function DocumentDetailPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectNotes, setRejectNotes] = useState("");
 
-  // H-9: AbortController um stale Requests bei id-Wechsel zu cancelln.
+  // AbortController um stale Requests bei id-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchDocument = useCallback(async () => {

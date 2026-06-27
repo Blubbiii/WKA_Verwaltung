@@ -86,7 +86,7 @@ export default function ZmContent() {
 
   const [selectedQuarter, setSelectedQuarter] = useState(quarterOptions[0]?.value || "");
 
-  // H-9: AbortController um stale Requests bei Quarter-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Quarter-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {

@@ -252,7 +252,7 @@ export default function VendorsPage() {
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
     useBatchSelection({ items: vendors });
 
-  // H-9: AbortController um stale Requests bei rascher Suche zu cancelln.
+  // AbortController um stale Requests bei rascher Suche zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {

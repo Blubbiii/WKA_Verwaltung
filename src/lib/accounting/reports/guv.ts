@@ -173,7 +173,7 @@ export async function generateGuv(
   periodStart: Date,
   periodEnd: Date
 ): Promise<GuvResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("guv", tenantId, cacheKey, () =>
     generateGuvUncached(tenantId, periodStart, periodEnd),

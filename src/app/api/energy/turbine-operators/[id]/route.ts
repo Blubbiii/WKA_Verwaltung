@@ -247,7 +247,7 @@ export async function PATCH(
       },
     });
 
-    // Audit-Log (deferred: runs after response is sent)
+    // runs after response is sent)
     const oldValuesSnapshot = oldValues;
     const newValuesSnapshot = {
       ownershipPercentage: Number(operator.ownershipPercentage),

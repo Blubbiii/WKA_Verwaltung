@@ -96,7 +96,7 @@ export default function ApprovalsPage() {
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // H-9: AbortController gegen Race-Conditions
+  // AbortController gegen Race-Conditions
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {

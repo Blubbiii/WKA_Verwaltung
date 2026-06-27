@@ -138,7 +138,7 @@ export default function TopologyPage() {
   // FETCH TOPOLOGY
   // --------------------------------------------------------------------------
 
-  // H-9: AbortController gegen Race-Conditions bei Park-Wechsel.
+  // AbortController gegen Race-Conditions bei Park-Wechsel.
   const topologyAbortRef = useRef<AbortController | null>(null);
 
   const fetchTopology = useCallback(async () => {

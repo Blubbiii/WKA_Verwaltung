@@ -148,7 +148,7 @@ export async function generateEuer(
   periodStart: Date,
   periodEnd: Date
 ): Promise<EuerResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("euer", tenantId, cacheKey, () =>
     generateEuerUncached(tenantId, periodStart, periodEnd),

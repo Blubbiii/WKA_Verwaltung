@@ -212,7 +212,7 @@ export default function SettlementDetailPage({
   // ---------------------------------------------------------------------------
   // Data loading
   // ---------------------------------------------------------------------------
-  // H-9: AbortController um stale Settlement-Requests bei id-Wechsel zu cancelln.
+  // AbortController um stale Settlement-Requests bei id-Wechsel zu cancelln.
   const settlementAbortRef = useRef<AbortController | null>(null);
 
   const loadSettlement = useCallback(async () => {

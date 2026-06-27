@@ -192,7 +192,7 @@ export default function BillingsPage() {
   >(null);
 
   // Fetch billings
-  // H-9: AbortController um stale Requests bei Filter-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchBillings = useCallback(async () => {

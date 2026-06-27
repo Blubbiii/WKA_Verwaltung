@@ -436,7 +436,7 @@ export async function calculateSettlement(
     const lease = activeLeasePlot.lease;
     const lessor = lease.lessor;
 
-    // R-4 — Pachtgeber-Wechsel mid-period:
+    // Pachtgeber-Wechsel mid-period:
     // Aktuell verwendet der Calculator den AKTIVEN Lease für die ganze
     // Period. Wenn Lease.startDate oder Lease.endDate INNERHALB der
     // Period liegt, ist das Ergebnis nicht zeitanteilig — der neue
@@ -668,6 +668,10 @@ export async function calculateMonthlyAdvance(
   // 2. Park-Konfiguration (mit per-turbine Overrides)
   const parkMinRent = park.minimumRentPerTurbine ? Number(park.minimumRentPerTurbine) : 0;
   const parkWeaShare = park.weaSharePercentage ? Number(park.weaSharePercentage) : 10;
+  // Branchenpraxis Windkraft: wenn der Park keinen expliziten Pool-Anteil
+  // konfiguriert hat, gelten 90% als typischer Default für Mehr-Anlagen-Pools
+  // (10% Reserve für Netz-/Trafo-/Wartungs-Beteiligungen). Tenants mit anderen
+  // Verteilmodellen MÜSSEN park.poolSharePercentage explizit setzen.
   const parkPoolShare = park.poolSharePercentage ? Number(park.poolSharePercentage) : 90;
   const turbineCount = park.turbines.length;
 

@@ -143,7 +143,7 @@ export async function createInvoiceFromBilling(
   }
 
   // 6. Create the invoice in the provider tenant
-  // Audit-K-1 (2026-06-26): paymentTermDays kommt jetzt aus den TenantSettings
+  // paymentTermDays kommt jetzt aus den TenantSettings
   // des stakeholder-Tenants (Default 30, nicht 14 wie der bisherige Hartz-Fallback).
   // Der bisherige `?? 14` schlug zu, sobald das raw-JSON-Feld nicht direkt im
   // tenant.settings root lag — was bei der neuen Settings-Struktur (settings.tenantSettings)

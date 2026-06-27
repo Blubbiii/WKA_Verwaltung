@@ -234,7 +234,7 @@ export async function runDepreciation(
     logger.warn({ warnings }, "Depreciation run completed with warnings");
   }
 
-  // K-1-Fix: Wenn AfA-Buchungen erzeugt wurden (createPostings=true und mind.
+  // Wenn AfA-Buchungen erzeugt wurden (createPostings=true und mind.
   // ein Asset mit Konten), Reports-Cache invalidieren — Bilanz/GuV/Anlagenspiegel
   // ändern sich. Fire-and-forget.
   if (postingsCreated > 0) {

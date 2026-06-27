@@ -126,7 +126,7 @@ export default function CrmContactDetailPage({
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
-  // H-9: AbortController um stale Requests bei id-Wechsel zu cancelln.
+  // AbortController um stale Requests bei id-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {

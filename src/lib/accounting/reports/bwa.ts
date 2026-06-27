@@ -94,7 +94,7 @@ export async function generateBwa(
   periodStart: Date,
   periodEnd: Date
 ): Promise<BwaResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("bwa", tenantId, cacheKey, () =>
     generateBwaUncached(tenantId, periodStart, periodEnd),

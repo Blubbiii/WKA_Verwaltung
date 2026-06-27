@@ -341,7 +341,7 @@ function AuditLogsContent() {
     router,
   ]);
 
-  // H-9: AbortController um stale Requests bei rascher Filter-/Page-Änderung zu cancelln.
+  // AbortController um stale Requests bei rascher Filter-/Page-Änderung zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   // Fetch audit logs

@@ -73,7 +73,7 @@ export default function SepaContent() {
     [t]
   );
 
-  // H-9: AbortController gegen Race-Conditions bei Tab-Wechsel.
+  // AbortController gegen Race-Conditions bei Tab-Wechsel.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -136,7 +136,32 @@ export default function SepaContent() {
     <Card>
       <CardContent className="pt-6">
         {loading ? (
-          <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("colBatchNumber")}</TableHead>
+                  <TableHead>{t("colExecution")}</TableHead>
+                  <TableHead>{t("colStatus")}</TableHead>
+                  <TableHead className="text-right">{t("colAmount")}</TableHead>
+                  <TableHead className="text-right">{t("colPayments")}</TableHead>
+                  <TableHead>{t("colCreatedBy")}</TableHead>
+                  <TableHead className="text-right">{t("colAction")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : batches.length === 0 ? (
           <div className="text-center text-muted-foreground py-12">
             {t("emptyState")}

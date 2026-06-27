@@ -61,7 +61,7 @@ export async function computeAnlagenspiegel(
   tenantId: string,
   fiscalYear: number,
 ): Promise<AnlagenspiegelResult> {
-  // H-4: Redis-Cache. Anlagespiegel basiert auf POSTED-Daten → safe to cache.
+  // Redis-Cache. Anlagespiegel basiert auf POSTED-Daten → safe to cache.
   const cacheKey = `${fiscalYear}`;
   return getCachedReport("anlagenspiegel", tenantId, cacheKey, () =>
     computeAnlagenspiegelUncached(tenantId, fiscalYear),

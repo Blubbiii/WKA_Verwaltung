@@ -154,7 +154,7 @@ export default function BillingRuleDetailPage({
   } | null>(null);
 
   // Fetch Rule Details
-  // H-9: AbortController um stale Requests bei Rule-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Rule-Wechsel zu cancelln.
   const ruleAbortRef = useRef<AbortController | null>(null);
 
   const fetchRule = useCallback(async () => {

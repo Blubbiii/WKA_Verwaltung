@@ -12,6 +12,14 @@
  * erfolgt manuell über das Bundesbank-Portal oder via Z4-XML.
  */
 
+/**
+ * §67 AWV (Außenwirtschaftsverordnung) — Meldepflichtgrenze für SEPA-Zahlungen
+ * an ausländische Empfänger oder Zahlungen über deutsche Grenzen hinweg.
+ *
+ * FIXED BY LAW: dieser Wert ist gesetzlich fix und darf NICHT pro Tenant
+ * konfigurierbar gemacht werden. Bei Änderung der AWV: Wert hier anpassen
+ * (verlangt Code-Deploy, kein Settings-Toggle).
+ */
 export const AWV_THRESHOLD_EUR = 12500;
 
 export interface AwvCheckInput {

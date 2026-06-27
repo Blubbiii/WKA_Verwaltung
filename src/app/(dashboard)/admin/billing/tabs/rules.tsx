@@ -140,7 +140,7 @@ export default function BillingRulesTab() {
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [ruleToDeactivate, setRuleToDeactivate] = useState<string | null>(null);
 
-  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   // Fetch Rules

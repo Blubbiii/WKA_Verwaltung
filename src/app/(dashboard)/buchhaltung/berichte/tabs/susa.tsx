@@ -85,7 +85,7 @@ export default function SuSaContent() {
     [t]
   );
 
-  // H-9: AbortController um stale Requests bei Date-Range-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Date-Range-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {

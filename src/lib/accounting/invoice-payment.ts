@@ -123,7 +123,7 @@ export async function recordPayment(
   const amountDec = new Decimal(params.amount);
   const newPaidDec = paidBefore.plus(amountDec).toDecimalPlaces(2);
 
-  // Audit-B: Toleranz aus TenantSettings (Default 0,02 €).
+  // Toleranz aus TenantSettings (Default 0,02 €).
   const settings = await getTenantSettings(params.tenantId);
   const toleranceDec = new Decimal(settings.bankMatchToleranceEur);
 

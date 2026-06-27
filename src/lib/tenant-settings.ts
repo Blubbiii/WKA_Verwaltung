@@ -79,24 +79,24 @@ export interface TenantSettings {
   reverseApprovalThresholdEur: number | null;     // Storno (Generalumkehr)
   settlementApprovalThresholdEur: number | null;  // Settlement-Finalize
   sepaApprovalThresholdEur: number | null;        // SEPA-Zahllauf
-  // Audit-B: Cent-Toleranz für Bank-Match (Rundungs-Toleranz beim
+  // Cent-Toleranz für Bank-Match (Rundungs-Toleranz beim
   // automatischen Matchen). Wird AUCH für die Voll-bezahlt-Übergangs-Toleranz
   // genutzt — wer 0,10 € im Match akzeptiert, akzeptiert auch isFullyPaid bei
   // -0,10 € Differenz.
   bankMatchToleranceEur: number;
-  // Audit-B: Toleranz für Bilanz-Identitäts-Check (Aktiva = Passiva).
+  // Toleranz für Bilanz-Identitäts-Check (Aktiva = Passiva).
   // Bei großen Tenants mit vielen Buchungen können Cent-Rundungs-Summen
   // schnell ein paar Cent erreichen.
   bilanzToleranceEur: number;
-  // Audit-B: Konto auf das das Jahresergebnis beim year-end-close vorgetragen
+  // Konto auf das das Jahresergebnis beim year-end-close vorgetragen
   // wird. Default "9999" = synthetisches Konto (Vortrag NICHT auto).
   // Tenants sollten ein echtes EK-Konto setzen (SKR04 z.B. "2010" oder
   // "2120" Gewinnvortrag).
   datevAccountAnnualResult: string;
-  // Audit-C: Kontenrahmen-Version. Steuert das Range-Mapping in der
+  // Kontenrahmen-Version. Steuert das Range-Mapping in der
   // Bilanz (skr04-mapping vs skr03-mapping).
   chartOfAccountsVersion: "SKR03" | "SKR04";
-  // K-5: ABAC Default-Verhalten für FundAccess.
+  // ABAC Default-Verhalten für FundAccess.
   //  - "allow" (Default): User ohne FundAccess-Einträge sehen ALLE Funds
   //    (Backward-Kompatibilität, bestehende Tenants).
   //  - "deny": User ohne FundAccess sehen KEINE Funds (Whitelist-only,
@@ -168,12 +168,12 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   reverseApprovalThresholdEur: 0,  // jeder Storno braucht 4-Augen (Default null würde "immer" bedeuten — 0 = immer)
   settlementApprovalThresholdEur: 0,  // jedes Settlement-Finalize
   sepaApprovalThresholdEur: 10000,  // SEPA-Läufe über 10.000 €
-  // Audit-B Defaults.
+  // Bank-Match + Bilanz-Toleranz Defaults.
   bankMatchToleranceEur: 0.02,
   bilanzToleranceEur: 0.01,
   datevAccountAnnualResult: "9999",
   chartOfAccountsVersion: "SKR04",
-  // K-5: Default "allow" → bestehende Tenants verhalten sich unverändert.
+  // Default "allow" → bestehende Tenants verhalten sich unverändert.
   abacFundAccessDefault: "allow",
 };
 

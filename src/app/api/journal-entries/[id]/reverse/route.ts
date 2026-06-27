@@ -41,7 +41,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // K-4-Fix: Storno braucht dedizierte Permission (HGB-Verantwortungstrennung).
+    // Storno braucht dedizierte Permission (HGB-Verantwortungstrennung).
     const check = await requirePermission("accounting:reverse");
     if (!check.authorized) return check.error;
 
@@ -84,7 +84,7 @@ export async function POST(
     if (!original || original.tenantId !== check.tenantId) {
       return apiError("NOT_FOUND", 404, { message: "Buchung nicht gefunden" });
     }
-    // K-3-Fix: Absolutbetrag einer Buchungsseite verwenden.
+    // Absolutbetrag einer Buchungsseite verwenden.
     // Eine ausgeglichene Buchung hat Soll-Summe = Haben-Summe, also reicht
     // eine Seite. ABER: Reverse-Lines können debitAmount=null haben (nur Credit
     // gesetzt) — ohne abs() + Fallback wäre sumDebit=0 und der 4-Augen-Check

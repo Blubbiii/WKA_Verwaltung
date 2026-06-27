@@ -16,7 +16,7 @@ interface ActivityItem {
   detail: string;
   time: string;
   type?: "financial" | "warning" | "system";
-  // QW-5: optional link to the entity's detail page (set by API when known)
+  // optional link to the entity's detail page (set by API when known)
   href?: string | null;
 }
 
@@ -188,7 +188,7 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
           </>
         );
 
-        // QW-5: render as Link when API supplied an entity href, fall back to
+        // render as Link when API supplied an entity href, fall back to
         // a plain text row otherwise (e.g. User entities).
         if (activity.href) {
           return (

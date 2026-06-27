@@ -116,7 +116,7 @@ export default function LeasePaymentsPage() {
   // Available years (current year +/- 2)
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
-  // H-9: AbortController um stale Requests bei rascher Filter-Änderung zu cancelln.
+  // AbortController um stale Requests bei rascher Filter-Änderung zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchPayments = useCallback(async () => {

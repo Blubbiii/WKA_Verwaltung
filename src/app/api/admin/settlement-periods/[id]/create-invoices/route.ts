@@ -1195,6 +1195,10 @@ function buildCalculationSummary(
     weaShareAmount,
     weaSharePerUnit: leaseCalc.weaCount > 0 ? weaShareAmount / leaseCalc.weaCount : 0,
     weaCount: leaseCalc.weaCount,
+    // Branchenpraxis Windkraft: wenn der Park keinen expliziten Pool-Anteil
+    // konfiguriert hat, gelten 90% als typischer Default für Mehr-Anlagen-Pools
+    // (10% Reserve für Netz-/Trafo-/Wartungs-Beteiligungen). Tenants mit anderen
+    // Verteilmodellen MÜSSEN park.poolSharePercentage explizit setzen.
     poolSharePercentage: calcResult.poolSharePercentage ?? 90,
     poolShareAmount,
     poolSharePerHa: totalPoolHa > 0 ? poolShareAmount / totalPoolHa : 0,

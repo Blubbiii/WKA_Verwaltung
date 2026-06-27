@@ -115,7 +115,7 @@ export default function KontenrahmenPage() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  // H-9: AbortController um stale Requests bei Filter-/Search-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-/Search-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchAccounts = useCallback(async () => {

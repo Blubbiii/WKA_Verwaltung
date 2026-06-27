@@ -447,7 +447,7 @@ export const PERMISSIONS = {
   ACCOUNTING_CREATE: "accounting:create",
   ACCOUNTING_UPDATE: "accounting:update",
   ACCOUNTING_DELETE: "accounting:delete",
-  // K-4: Dedizierte Permissions für POSTING + STORNO (HGB-Verantwortungstrennung).
+  // Dedizierte Permissions für POSTING + STORNO (HGB-Verantwortungstrennung).
   // POSTED-Buchungen sind unveränderlich (§146 AO). Storno = Generalumkehr,
   // gehört NICHT zu :update — eigene Berechtigung.
   ACCOUNTING_POST: "accounting:post",

@@ -438,7 +438,7 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
     };
   }
 
-  // H-8-Fix: Race-condition-freier Existence-Check + Create in einer TX.
+  // Race-condition-freier Existence-Check + Create in einer TX.
   // Hintergrund: Das Prisma-Schema hat @@unique([tenantId, parkId, year, month, periodType]),
   // aber Postgres behandelt NULL in UNIQUE-Constraints als verschieden — d.h. bei
   // month=null (Jahresabrechnung) greift der Constraint NICHT. Ohne partial unique index
@@ -1166,7 +1166,7 @@ async function processBulkInvoice(
         continue;
       }
 
-      // H-7-Fix: Idempotenz — wenn für (parkId, period, shareholder) bereits eine
+      // Idempotenz — wenn für (parkId, period, shareholder) bereits eine
       // Bulk-Rechnung existiert (gleicher internalReference-Marker), überspringen.
       // Verhindert Doppel-Erstellung bei Retry oder erneuter Job-Ausführung.
       const idempotencyMarker = `BULK:${data.parkId}:${data.period}:${sh.id}`;
@@ -1227,7 +1227,7 @@ async function processBulkInvoice(
           recipientName,
           recipientAddress,
           paymentReference: `${invoiceNumber}-${sh.shareholderNumber || sh.id.slice(0, 8)}`,
-          // H-7-Fix: Idempotenz-Marker für Wiederausführung des Bulk-Jobs.
+          // Idempotenz-Marker für Wiederausführung des Bulk-Jobs.
           internalReference: idempotencyMarker,
           netAmount,
           taxRate,

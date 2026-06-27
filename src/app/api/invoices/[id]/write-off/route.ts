@@ -104,7 +104,7 @@ export async function POST(
       "Value adjustment posted",
     );
 
-    // K-1-Fix: Bei DIRECT_WRITEOFF wurde optional eine §17-USt-Korrekturbuchung
+    // Bei DIRECT_WRITEOFF wurde optional eine §17-USt-Korrekturbuchung
     // (POSTED JournalEntry) erzeugt; zudem ändert die Wertberichtigung selbst
     // (auch EWB/PWB folgend per JournalEntry-Manager) die Saldi. Reports-Cache
     // invalidieren — fire-and-forget.

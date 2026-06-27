@@ -79,7 +79,7 @@ export default function FundAccessPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // H-9: AbortController um stale Requests bei User-Wechsel zu cancelln.
+  // AbortController um stale Requests bei User-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const loadAccess = useCallback(async (userId: string) => {

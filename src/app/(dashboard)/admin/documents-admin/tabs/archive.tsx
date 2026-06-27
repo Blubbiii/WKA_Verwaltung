@@ -192,7 +192,7 @@ function ArchiveContent() {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
-  // H-9: AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Filter-/Page-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchDocuments = useCallback(async () => {

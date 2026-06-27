@@ -260,7 +260,7 @@ export async function createAutoPosting(
       "Auto-posting created for invoice"
     );
 
-    // K-1-Fix: Reports-Cache invalidieren — neue POSTED-Buchung ändert Saldi
+    // Reports-Cache invalidieren — neue POSTED-Buchung ändert Saldi
     // (Bilanz/GuV/BWA/SuSa/UStVA). Fire-and-forget, damit Caller nicht blockt.
     invalidateReportsCache(invoice.tenantId).catch((err) => {
       logger.warn(
@@ -365,7 +365,7 @@ export async function reverseAutoPosting(
       "Auto-posting reversal created"
     );
 
-    // K-1-Fix: Reports-Cache invalidieren — Storno ändert Saldi genauso wie
+    // Reports-Cache invalidieren — Storno ändert Saldi genauso wie
     // die Original-Buchung. Fire-and-forget, damit Caller nicht blockt.
     invalidateReportsCache(original.tenantId).catch((err) => {
       logger.warn(

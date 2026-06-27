@@ -58,7 +58,7 @@ export default function CashflowPage() {
   const [loading, setLoading] = useState(true);
   const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear());
 
-  // H-9: AbortController um stale Requests bei FiscalYear-Wechsel zu cancelln.
+  // AbortController um stale Requests bei FiscalYear-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {

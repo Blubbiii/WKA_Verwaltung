@@ -106,7 +106,7 @@ export async function generateLiquidityForecast(
 ): Promise<LiquidityForecastResult> {
   const periods = buildPeriods(startDate, endDate, granularity);
 
-  // Audit-A: Zahlungsziel-Fallback aus TenantSettings statt hardcoded 30 Tage.
+  // Zahlungsziel-Fallback aus TenantSettings statt hardcoded 30 Tage.
   const settings = await getTenantSettings(tenantId);
   const paymentTermMs = settings.paymentTermDays * MS_PER_DAY;
 

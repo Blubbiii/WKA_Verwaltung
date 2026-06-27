@@ -149,7 +149,7 @@ async function computeBilanzUncached(
     getTenantSettings(tenantId),
   ]);
 
-  // Audit-C: Kontenrahmen-spezifische Mapper aus TenantSettings auflösen.
+  // Kontenrahmen-spezifische Mapper aus TenantSettings auflösen.
   const chartVersion = settings.chartOfAccountsVersion as ChartOfAccountsVersion;
   const accountMapper = getAccountMapper(chartVersion);
 
@@ -203,7 +203,7 @@ async function computeBilanzUncached(
   }
 
   // Schritt 3: Jahresergebnis berechnen (Erlöse - Aufwand).
-  // Audit-C: Kontenrahmen-spezifische PNL-Erkennung.
+  // Kontenrahmen-spezifische PNL-Erkennung.
   let revenueTotal = 0;
   let expenseTotal = 0;
   for (const entry of saldi.values()) {
@@ -284,7 +284,7 @@ async function computeBilanzUncached(
   let summePassiva = round2(passiva.reduce((s, g) => s + g.total, 0));
 
   // Schritt 6: Jahresergebnis ins Eigenkapital einrechnen.
-  // Audit-B: synthetisches Konto kommt aus TenantSettings.
+  // synthetisches Konto kommt aus TenantSettings.
   if (jahresergebnis !== 0) {
     let equityGroup = passiva.find((g) => g.section === BalanceSheetSection.EQUITY);
     if (!equityGroup) {
@@ -311,7 +311,7 @@ async function computeBilanzUncached(
 
   const differenz = round2(summeAktiva - summePassiva);
 
-  // Audit-B: Toleranz aus TenantSettings (Default 0,01 €).
+  // Toleranz aus TenantSettings (Default 0,01 €).
   const bilanzTolerance = settings.bilanzToleranceEur;
   if (Math.abs(differenz) > bilanzTolerance) {
     warnings.push(

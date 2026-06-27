@@ -126,7 +126,7 @@ export default function UstvaContent() {
   const [steuernummer, setSteuernummer] = useState("");
   const [berichtigt, setBerichtigt] = useState(false);
 
-  // H-9: AbortController um stale Requests bei Date-Range-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Date-Range-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {

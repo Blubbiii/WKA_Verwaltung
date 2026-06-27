@@ -134,7 +134,7 @@ export async function generateUstva(
   periodStart: Date,
   periodEnd: Date,
 ): Promise<UstvaResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("ustva", tenantId, cacheKey, () =>
     generateUstvaUncached(tenantId, periodStart, periodEnd),

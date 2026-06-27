@@ -407,10 +407,23 @@ export default function ContractsPage() {
                       contract.noticeDeadline
                     );
 
+                    // Visual deadline-warning border-left:
+                    // - expired & still ACTIVE → destructive
+                    // - expires in next 30 days → warning
+                    const daysUntilExpiry = contract.endDate
+                      ? differenceInDays(new Date(contract.endDate), new Date())
+                      : null;
+                    const borderClass =
+                      daysUntilExpiry !== null && daysUntilExpiry <= 0 && contract.status === "ACTIVE"
+                        ? "border-l-[3px] border-l-destructive"
+                        : daysUntilExpiry !== null && daysUntilExpiry > 0 && daysUntilExpiry <= CONTRACT_WARNING_DAYS
+                          ? "border-l-[3px] border-l-warning"
+                          : "";
+
                     return (
                       <TableRow
                         key={contract.id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className={cn("cursor-pointer hover:bg-muted/50", borderClass)}
                         onClick={() => router.push(`/contracts/${contract.id}`)}
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/contracts/${contract.id}`); } }}

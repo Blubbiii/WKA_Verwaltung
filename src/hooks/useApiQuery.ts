@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 
 // Generic fetcher function
-// H-9 Perf: Pass React Query's AbortSignal so stale requests are cancelled
+// Pass React Query's AbortSignal so stale requests are cancelled
 // when the user rapidly changes filters/pagination. React Query injects
 // `signal` into the queryFn context automatically.
 async function apiFetcher<T>(url: string, signal?: AbortSignal): Promise<T> {

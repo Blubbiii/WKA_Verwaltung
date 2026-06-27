@@ -43,7 +43,7 @@ import { toast } from "sonner";
 
 export default function SettingsPage() {
   const t = useTranslations("portal.settings");
-  // QW-2: Notification settings persisted via /api/user/settings
+  // Notification settings persisted via /api/user/settings
   const [notifications, setNotifications] = useState({
     newVote: true,
     newDistribution: true,

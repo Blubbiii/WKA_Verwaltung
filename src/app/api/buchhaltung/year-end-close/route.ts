@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    // K-1: Reports-Cache invalidieren — Saldenvortrag ändert Bilanz/SuSa Folgejahr.
+    // Reports-Cache invalidieren — Saldenvortrag ändert Bilanz/SuSa Folgejahr.
     invalidateReportsCache(check.tenantId!).catch((err) => {
       logger.warn({ err }, "[Reports-Cache] Invalidation nach Year-End-Close fehlgeschlagen");
     });

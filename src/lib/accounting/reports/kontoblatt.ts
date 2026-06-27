@@ -59,7 +59,7 @@ export async function generateKontoblatt(
   periodStart: Date,
   periodEnd: Date,
 ): Promise<KontoblattResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${accountNumber}:${periodStart.toISOString()}:${periodEnd.toISOString()}`;
   return getCachedReport("kontoblatt", tenantId, cacheKey, () =>
     generateKontoblattUncached(tenantId, accountNumber, periodStart, periodEnd),

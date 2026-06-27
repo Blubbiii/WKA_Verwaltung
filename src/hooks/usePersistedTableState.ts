@@ -71,7 +71,7 @@ export function usePersistedTableState<T extends StateRecord>(
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialized = useRef(false);
-  // H-10 Fix: searchParams in Ref halten, damit `update`-Callback nicht bei jedem
+  // searchParams in Ref halten, damit `update`-Callback nicht bei jedem
   // router.replace() neu erzeugt wird (sonst Endlos-Loop in Children mit [update]-deps).
   const searchParamsRef = useRef(searchParams);
   useEffect(() => {
@@ -126,7 +126,7 @@ export function usePersistedTableState<T extends StateRecord>(
         const next = { ...prev, ...patch };
         writeToStorage(tableKey, next);
         // URL sync (kurze Form: nur Werte != Default schreiben)
-        // H-10 Fix: aus window.location.search lesen (frisch) statt aus stale searchParams-dep.
+        // aus window.location.search lesen (frisch) statt aus stale searchParams-dep.
         const currentSearch =
           typeof window !== "undefined" ? window.location.search : searchParamsRef.current.toString();
         const params = new URLSearchParams(currentSearch);

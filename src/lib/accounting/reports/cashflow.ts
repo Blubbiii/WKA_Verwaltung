@@ -142,7 +142,7 @@ export async function generateCashflow(
   tenantId: string,
   fiscalYear: number,
 ): Promise<CashflowResult> {
-  // H-4: Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
+  // Redis-Cache. POSTED-Journale unveränderlich → safe to cache.
   const cacheKey = `${fiscalYear}`;
   return getCachedReport("cashflow", tenantId, cacheKey, () =>
     generateCashflowUncached(tenantId, fiscalYear),
@@ -160,7 +160,7 @@ async function generateCashflowUncached(
 
   const warnings: string[] = [];
 
-  // K-4: Prüfe ob Vorjahresdaten existieren. Wenn nicht: Cashflow nur informativ.
+  // Prüfe ob Vorjahresdaten existieren. Wenn nicht: Cashflow nur informativ.
   const [prevYearOpenings, prevYearPosted] = await Promise.all([
     prisma.openingBalance.count({
       where: { tenantId, fiscalYear: fiscalYear - 1 },
@@ -186,7 +186,7 @@ async function generateCashflowUncached(
     distributions,
   ] = await Promise.all([
     computeBilanz(tenantId, fiscalYear, yearEnd),
-    // K-4: Vorjahres-Bilanz nur wenn Daten vorhanden, sonst Stub-Werte (0).
+    // Vorjahres-Bilanz nur wenn Daten vorhanden, sonst Stub-Werte (0).
     prevYearHasData
       ? computeBilanz(tenantId, fiscalYear - 1, prevYearEnd)
       : Promise.resolve(null),
@@ -207,7 +207,7 @@ async function generateCashflowUncached(
       },
       _sum: { acquisitionCost: true },
     }),
-    // H-8: Abgänge = Buchwert (AHK − cumAfa), nicht reine AHK.
+    // Abgänge = Buchwert (AHK − cumAfa), nicht reine AHK.
     // Lade alle im Jahr abgegangenen Assets mit ihrer AHK.
     prisma.fixedAsset.findMany({
       where: {
@@ -216,7 +216,7 @@ async function generateCashflowUncached(
       },
       select: { id: true, acquisitionCost: true },
     }),
-    // H-8: Kumulierte AfA bis disposalDate pro abgegangenem Asset.
+    // Kumulierte AfA bis disposalDate pro abgegangenem Asset.
     prisma.fixedAssetDepreciation.groupBy({
       by: ["assetId"],
       where: {
@@ -239,7 +239,7 @@ async function generateCashflowUncached(
     }),
   ]);
 
-  // K-4: Warnung wenn Vorjahresdaten fehlen.
+  // Warnung wenn Vorjahresdaten fehlen.
   if (!prevYearHasData) {
     warnings.push(
       "Vorjahresdaten unvollständig — Cashflow nur informativ. Eröffnungsbilanz und Vorjahres-Buchungen prüfen.",
@@ -250,7 +250,7 @@ async function generateCashflowUncached(
   const afaAmount = toNum(afaSum._sum.amount);
   const investAmount = toNum(investments._sum.acquisitionCost);
 
-  // H-8: disposalAmount = Σ Buchwerte (AHK − cumAfa), nicht reine AHK.
+  // disposalAmount = Σ Buchwerte (AHK − cumAfa), nicht reine AHK.
   const disposalAfaByAsset = new Map<string, number>();
   for (const row of disposalAfaSum) {
     disposalAfaByAsset.set(row.assetId, toNum(row._sum.amount));
@@ -270,7 +270,7 @@ async function generateCashflowUncached(
 
   const distributionAmount = toNum(distributions._sum.totalAmount);
 
-  // K-4: Wenn keine Vorjahresdaten, alle Start-Werte = 0 (Bilanz-Diff nicht aussagekräftig).
+  // Wenn keine Vorjahresdaten, alle Start-Werte = 0 (Bilanz-Diff nicht aussagekräftig).
   const cashStart = bilanzPrev ? getCashFromBilanz(bilanzPrev.aktiva) : 0;
   const cashEndBilanz = getCashFromBilanz(bilanzCurrent.aktiva);
 
@@ -302,7 +302,7 @@ async function generateCashflowUncached(
   );
 
   // CFI: Investitionen sind Auszahlungen (negativ), Abgänge Einzahlungen (positiv)
-  // H-8: disposalAmount = Buchwert (AHK − cumAfa), ohne Veräußerungsgewinn/-verlust.
+  // disposalAmount = Buchwert (AHK − cumAfa), ohne Veräußerungsgewinn/-verlust.
   const cfi = round2(-investAmount + disposalAmount);
 
   // CFF: Ausschüttungen sind Auszahlungen (negativ)
@@ -311,7 +311,7 @@ async function generateCashflowUncached(
 
   const netChange = round2(cfo + cfi + cff);
   const cashEndComputed = round2(cashStart + netChange);
-  // K-4: Ohne Vorjahresdaten ist validationDifference nicht aussagekräftig → null.
+  // Ohne Vorjahresdaten ist validationDifference nicht aussagekräftig → null.
   const validationDifference = prevYearHasData
     ? round2(cashEndBilanz - cashEndComputed)
     : null;

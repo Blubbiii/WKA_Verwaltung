@@ -96,7 +96,7 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
 function UploadDialog({ open, onClose, onUploaded }: { open: boolean; onClose: () => void; onUploaded: () => void }) {
   const t = useTranslations("inbox.uploadDialog");
 
-  // QW-1: Manuelle DropZone durch zentrale FileUploadDropzone-Komponente
+  // Manuelle DropZone durch zentrale FileUploadDropzone-Komponente
   // ersetzt — gleiche UX, weniger Code, konsistent mit anderen Upload-Stellen.
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -151,7 +151,7 @@ export default function InboxPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
 
-  // H-9: AbortController ref damit der vorherige Fetch beim schnellen
+  // AbortController ref damit der vorherige Fetch beim schnellen
   // Filter-Wechsel abgebrochen wird (Race-Condition-Schutz).
   const abortRef = useRef<AbortController | null>(null);
 

@@ -511,7 +511,7 @@ export default function JournalEntriesPage() {
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
     useBatchSelection({ items: entries });
 
-  // H-9: AbortController gegen Race-Conditions bei schnellem Filter-Wechsel.
+  // AbortController gegen Race-Conditions bei schnellem Filter-Wechsel.
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {

@@ -50,7 +50,17 @@ interface EditableCellProps {
   showSaveToast?: boolean;
   /** Tooltip shown when the cell is disabled — explains why it's not editable. */
   tooltipDisabled?: string;
+  /**
+   * If set, only one cell within the same scope can be in edit-mode at a time.
+   * When this cell starts editing, any previously-active cell in the same scope
+   * is cancelled first. Prevents race conditions where rapid clicks could cause
+   * overlapping saves (e.g. CRM contacts table with multiple editable columns).
+   */
+  singleEditScope?: string;
 }
+
+// Module-level singleton: scope → cancel-fn of the currently-editing cell
+const activeEditByScope = new Map<string, () => void>();
 
 /**
  * Inline-editable table cell. Click to edit, Enter to save, Escape to cancel.
@@ -69,6 +79,7 @@ export function EditableCell({
   onUndo,
   showSaveToast = false,
   tooltipDisabled,
+  singleEditScope,
 }: EditableCellProps) {
   const t = useTranslations("common.editableCell");
   const [editing, setEditing] = useState(false);
@@ -83,6 +94,9 @@ export function EditableCell({
   });
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Stable ref to the latest cancel-fn so we can register it in the scope-singleton
+  // and reliably compare identity at cleanup-time.
+  const cancelFnRef = useRef<() => void>(() => {});
 
   // Reset the optimistic override once the incoming prop matches it (parent re-fetched).
   useEffect(() => {
@@ -116,8 +130,26 @@ export function EditableCell({
       ? toDateString(effectiveValue)
       : (effectiveValue ?? "").toString();
 
+  const cancel = useCallback(() => {
+    setEditing(false);
+    setError(null);
+  }, []);
+
+  // Keep ref in sync so the scope-singleton always holds the latest cancel-fn.
+  useEffect(() => {
+    cancelFnRef.current = cancel;
+  }, [cancel]);
+
   const startEditing = useCallback(() => {
     if (disabled || saving) return;
+    // Scope-lock: cancel any other cell currently editing in the same scope.
+    if (singleEditScope) {
+      const prevCancel = activeEditByScope.get(singleEditScope);
+      if (prevCancel && prevCancel !== cancelFnRef.current) {
+        prevCancel();
+      }
+      activeEditByScope.set(singleEditScope, cancelFnRef.current);
+    }
     const initial =
       type === "date"
         ? toDateString(effectiveValue)
@@ -130,12 +162,23 @@ export function EditableCell({
       if (type === "textarea") textareaRef.current?.focus();
       else inputRef.current?.focus();
     }, 0);
-  }, [disabled, saving, effectiveValue, type, toDateString]);
+  }, [disabled, saving, effectiveValue, type, toDateString, singleEditScope]);
 
-  const cancel = useCallback(() => {
-    setEditing(false);
-    setError(null);
-  }, []);
+  // Release the scope-lock when this cell unmounts or leaves edit-mode,
+  // but only if WE still own it (another cell may have taken over).
+  useEffect(() => {
+    if (!singleEditScope) return;
+    if (!editing) {
+      if (activeEditByScope.get(singleEditScope) === cancelFnRef.current) {
+        activeEditByScope.delete(singleEditScope);
+      }
+    }
+    return () => {
+      if (singleEditScope && activeEditByScope.get(singleEditScope) === cancelFnRef.current) {
+        activeEditByScope.delete(singleEditScope);
+      }
+    };
+  }, [editing, singleEditScope]);
 
   const runSave = useCallback(
     async (rawValue: string) => {

@@ -109,7 +109,7 @@ export default function SidebarLinksPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  // Audit-K-2 (2026-06-26): load via useCallback + cleanup-Flag im useEffect.
+  // load via useCallback + cleanup-Flag im useEffect.
   // Vorher: `useEffect(() => { load(); }, [])` mit non-memoized load() — bei
   // jedem Render wurde load neu erzeugt und State-Updates nach Unmount waren
   // möglich. Pattern angeglichen an Roles-Page (R-10).

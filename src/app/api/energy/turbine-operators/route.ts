@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Audit-Log für Betreiberwechsel (deferred: runs after response is sent)
+    // runs after response is sent)
     if (result.previousOperator) {
       const newOperatorId = result.newOperator.id;
       const prevFundName = result.previousOperator.fundName;

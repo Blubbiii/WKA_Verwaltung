@@ -123,7 +123,7 @@ export default function AccessReportPage() {
     }
   }, [t]);
 
-  // H-9: AbortController um stale Requests bei Role-Wechsel zu cancelln.
+  // AbortController um stale Requests bei Role-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
   // Fetch report data

@@ -664,6 +664,7 @@ export default function CrmContactsPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <EditableCell
+                        singleEditScope="crm-contacts-table"
                         value={c.email}
                         placeholder="—"
                         onSave={async (val) => {
@@ -686,6 +687,7 @@ export default function CrmContactsPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <EditableCell
+                        singleEditScope="crm-contacts-table"
                         value={c.phone ?? c.mobile}
                         placeholder="—"
                         onSave={async (val) => {
@@ -708,6 +710,7 @@ export default function CrmContactsPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <EditableCell
+                        singleEditScope="crm-contacts-table"
                         value={c.notes}
                         placeholder="—"
                         onSave={async (val) => {

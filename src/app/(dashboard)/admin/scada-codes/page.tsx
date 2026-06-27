@@ -134,7 +134,7 @@ export default function ScadaCodesPage() {
     loadGroups();
   }, [loadGroups]);
 
-  // H-9: AbortController um stale Detail-Requests bei rascher Search-/Type-Änderung zu cancelln.
+  // AbortController um stale Detail-Requests bei rascher Search-/Type-Änderung zu cancelln.
   const detailAbortRef = useRef<AbortController | null>(null);
 
   // --- Load detail ---

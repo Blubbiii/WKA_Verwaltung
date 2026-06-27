@@ -44,6 +44,16 @@ export class DegressiveNotAllowedError extends Error {
 }
 
 /**
+ * GWG-Schwellen (Geringwertige Wirtschaftsgüter) — §6 Abs. 2 + 2a EStG.
+ *
+ * FIXED BY LAW: alle Werte gesetzlich fix bzw. zeitgebunden (DEGRESSIVE_CUTOFF).
+ * Nicht pro Tenant konfigurierbar. Bei EStG-Änderung: Werte hier anpassen.
+ *
+ *   800 €   = Sofortabschreibungsgrenze
+ *   250 €   = Untergrenze für Pool-Abschreibung (Sammelposten)
+ *   1000 €  = Obergrenze Pool
+ *   5 Jahre = Pool-Abschreibungsdauer (linear)
+ *
  * Default-Werte (Rechtsstand 01.06.2026). Werden überschrieben durch
  * SystemSetting-Werte sobald Super-Admin sie ändert.
  *

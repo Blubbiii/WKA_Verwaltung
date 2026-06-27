@@ -35,7 +35,15 @@ export class VorsteuerCapabilityError extends Error {
   }
 }
 
-/** @deprecated Rechtsstand 01.06.2026 — siehe SystemSetting KLEINBETRAG_THRESHOLD_EUR. */
+/**
+ * §33 UStDV — Kleinbetragsrechnungen unter 250 € (brutto) brauchen weniger
+ * Pflichtangaben (kein Steuersatz-Split, keine Steuer-ID-Pflicht).
+ *
+ * FIXED BY LAW: bei UStDV-Änderung hier anpassen. SystemSetting-Override
+ * existiert für Compliance-Spezialfälle, aber Default folgt der Verordnung.
+ *
+ * @deprecated Rechtsstand 01.06.2026 — siehe SystemSetting KLEINBETRAG_THRESHOLD_EUR.
+ */
 const DEFAULT_KLEINBETRAG_THRESHOLD_EUR = 250;
 export const DEFAULT_USTG_CONFIG: UstgSystemConfig = {
   kleinbetragThresholdEur: DEFAULT_KLEINBETRAG_THRESHOLD_EUR,
