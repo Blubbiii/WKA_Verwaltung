@@ -1,0 +1,54 @@
+# =============================================================================
+# WindparkManager - Permissions Drift Check
+# Detects mismatches between code permissions and seeded DB permissions
+# =============================================================================
+#
+# Laeuft bei jedem Pull Request auf main.
+# Nutzt scripts/check-permissions-drift.ts:
+#   - exit 0 = keine Drift, PR ist gruen
+#   - exit 1 = Drift erkannt, PR wird rot (mit Diff-Output)
+#
+# Lokale Ausfuehrung: `npm run check-permissions`
+# =============================================================================
+
+name: Permissions Drift
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: permissions-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check-permissions:
+    name: Check Permissions Drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Prisma Client wird vom Drift-Script importiert
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Drift-Check: vergleicht Code-Permissions mit Seed-Permissions.
+      # exit code != 0 laesst den Job (und damit den PR-Check) rot werden.
+      - name: Run Permissions Drift Check
+        run: npx tsx scripts/check-permissions-drift.ts
