@@ -95,7 +95,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Systemkonten koennen nicht geloescht werden" });
     }
 
-    // H-4-Fix: GoBD-konformer Lösch-Schutz — Konto darf nicht gelöscht werden,
+    // GoBD-konformer Lösch-Schutz — Konto darf nicht gelöscht werden,
     // wenn bereits Buchungszeilen darauf existieren (Audit-Trail-Erhalt).
     const usageCount = await prisma.journalEntryLine.count({
       where: {

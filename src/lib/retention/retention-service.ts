@@ -28,8 +28,8 @@ const logger = jobLogger.child({ component: "retention" });
 const YEARS_TO_MS = (years: number) => years * 365.25 * MS_PER_DAY;
 
 /**
- * Retention-Schwellen pro Model (DEFAULT — Audit-A: pro Tenant überschreibbar
- * via TenantSettings.gobdRetentionYearsInvoice / .gobdRetentionYearsContract).
+ * Retention-Schwellen pro Model (DEFAULT — pro Tenant überschreibbar via
+ * TenantSettings.gobdRetentionYearsInvoice / .gobdRetentionYearsContract).
  *
  * Records deren `deletedAt` älter als diese Frist ist, werden hart gelöscht.
  *
@@ -59,7 +59,7 @@ export type RetentionModel = InvoiceRetentionModel | ContractRetentionModel;
 export type RetentionPolicy = Record<RetentionModel, number>;
 
 /**
- * Audit-A: Lädt die effektive Retention-Policy für einen Tenant.
+ * Lädt die effektive Retention-Policy für einen Tenant.
  *
  * Die Defaults aus RETENTION_POLICY_DEFAULT werden mit den TenantSettings
  * überschrieben:

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     let confirmed = 0;
     const errors: string[] = [];
 
-    // K-2-Fix: Pro Bestätigung recordPayment() in eigener Transaktion mit Row-Lock.
+    // Pro Bestätigung recordPayment() in eigener Transaktion mit Row-Lock.
     // Schließt UI-State, paidAmount, InvoicePayment-Audit zusammen.
     for (const conf of confirmations) {
       const invoice = invoiceMap.get(conf.invoiceId);

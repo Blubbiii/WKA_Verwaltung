@@ -62,7 +62,7 @@ export interface RecordPaymentResult {
  * Erzeugt eine InvoicePayment-Row und aktualisiert die Invoice atomar.
  * Caller MUSS in einer Transaktion laufen.
  *
- * K-1-Fix:
+ * Invarianten:
  *  - SELECT ... FOR UPDATE sperrt die Invoice-Row bis Ende der TX → keine
  *    Race-Condition zwischen parallelen recordPayment-Calls.
  *  - Decimal-Arithmetik durchgehend (kein Number() für Beträge).

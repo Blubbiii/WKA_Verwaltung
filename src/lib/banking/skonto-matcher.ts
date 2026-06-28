@@ -15,7 +15,7 @@
  * Die Skonto-Frist ist invoice.skontoDeadline (gesetzt vom Skonto-Modul beim Versand).
  */
 
-/** @deprecated Audit-B: pro Tenant via tenantSettings.bankMatchToleranceEur. */
+/** @deprecated pro Tenant via tenantSettings.bankMatchToleranceEur. */
 export const DEFAULT_ROUNDING_TOLERANCE_EUR = 0.02;
 
 export interface SkontoMatchInput {

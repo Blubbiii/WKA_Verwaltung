@@ -13,7 +13,7 @@ import {
 // TYPES & DEFAULTS
 // =============================================================================
 //
-// Audit-6A (A-4): Defaults werden aus `src/lib/tenant-settings.ts` re-exportiert.
+// Defaults werden aus `src/lib/tenant-settings.ts` re-exportiert.
 // Vorher waren sie hier dupliziert — bei Schema-Erweiterungen (z.B. neue
 // Approval-Thresholds aus Sprint 3) wurde nur eine Stelle gepflegt und die
 // Admin-UI lief auf einem veralteten Defaults-Set.
@@ -94,17 +94,17 @@ export interface TenantSettings {
   useTaxSplit: boolean;
   // P13: 4-Augen-Freigabe-Schwelle in EUR (null = immer 4-Augen)
   fourEyesThresholdEur: number | null;
-  // Audit-B: Cent-Toleranz für Bank-Match + Voll-bezahlt
+  // Cent-Toleranz für Bank-Match + Voll-bezahlt
   bankMatchToleranceEur: number;
-  // Audit-B: Toleranz für Bilanz-Identitäts-Check (A=P)
+  // Toleranz für Bilanz-Identitäts-Check (A=P)
   bilanzToleranceEur: number;
-  // Audit-B: Konto auf das das Jahresergebnis vorgetragen wird
+  // Konto auf das das Jahresergebnis vorgetragen wird
   datevAccountAnnualResult: string;
-  // Audit-C: Kontenrahmen-Version (steuert Range-Mapping)
+  // Kontenrahmen-Version (steuert Range-Mapping)
   chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
-// Audit-6A (A-4): Defaults werden aus dem kanonischen Settings-Modul übernommen.
+// Defaults werden aus dem kanonischen Settings-Modul übernommen.
 // `CANONICAL_DEFAULTS` enthält ein Superset; das `as` projiziert auf das hier
 // gepflegte (Admin-UI-bezogene) Subset. Schema-Bewegungen (neue Felder oben
 // im Interface) sind damit unmittelbar in den Defaults sichtbar.

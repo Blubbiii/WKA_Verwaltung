@@ -739,8 +739,12 @@ export default function RolesPage() {
                 </div>
               </CardContent>
 
-              {/* Sticky Footer mit Save/Reset und Delete-Action */}
-              <div className="border-t bg-card/95 backdrop-blur-sm p-3 flex items-center justify-between gap-2">
+              {/* Sticky Footer mit Save/Reset und Delete-Action.
+               * Auf lg+ "klebt" der Footer am Card-Unterrand dank
+               * lg:max-h + flex-col. Auf kleineren Viewports wäre er sonst am
+               * Ende der gesamten Page-Höhe (lange Scroll-Strecke), deshalb
+               * sticky bottom-0 mit z-Index. */}
+              <div className="border-t bg-card/95 backdrop-blur-sm p-3 flex items-center justify-between gap-2 sticky bottom-0 z-10 lg:static">
                 <div className="flex items-center gap-2">
                   {!selectedRoleFull.isSystem && (
                     <Button

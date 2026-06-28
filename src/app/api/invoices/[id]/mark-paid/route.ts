@@ -128,7 +128,7 @@ export async function POST(
       invoice.skontoAmount !== null &&
       Number(invoice.skontoAmount) > 0;
 
-    // K-2-Fix: recordPayment() statt direkt status=PAID setzen.
+    // recordPayment() statt direkt status=PAID setzen.
     // Garantiert konsistente paidAmount + InvoicePayment-Audit-Trail.
     // Bei Skonto: gezahlter Betrag = grossAmount - skontoAmount.
     const grossDec = new Decimal(invoice.grossAmount);
@@ -203,7 +203,7 @@ export async function POST(
         { invoiceId: id, ustAdjustmentId, tenantId: check.tenantId },
         "§17 UStG Skonto-Korrektur gebucht",
       );
-      // K-1-Fix: §17-Korrekturbuchung ist POSTED → Reports-Cache invalidieren.
+      // §17-Korrekturbuchung ist POSTED → Reports-Cache invalidieren.
       invalidateReportsCache(check.tenantId!).catch((err) => {
         logger.warn(
           { err, invoiceId: id },

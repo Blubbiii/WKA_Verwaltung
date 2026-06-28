@@ -56,7 +56,7 @@ export async function POST(
       });
     }
 
-    // R-8 Fix: NUR DRAFT senden, nicht SENT erneut.
+    // NUR DRAFT senden, nicht SENT erneut.
     // Vorher: status IN ["DRAFT","SENT"] — bei Retry wurden bereits
     // versendete Mails ein zweites Mal verschickt. Jetzt: nur DRAFT,
     // damit ein Retry nur die wirklich noch ausstehenden bearbeitet.

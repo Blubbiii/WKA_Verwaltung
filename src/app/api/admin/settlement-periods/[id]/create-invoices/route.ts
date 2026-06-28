@@ -438,7 +438,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Service date range depends on interval
   const { start: serviceStartDate, end: serviceEndDate } = getIntervalServiceDates(interval, period.year, period.month);
 
-  // K-3-Fix: KEINE Batch-Allocation mehr. Pro Iteration wird die Nummer
+  // KEINE Batch-Allocation mehr. Pro Iteration wird die Nummer
   // INNERHALB der per-Invoice-Transaktion gezogen. Crash → Nummer wird
   // automatisch zurückgerollt → keine Lücken in der Sequenz (§14 UStG).
 
@@ -485,7 +485,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     }> = [];
 
     let position = 0;
-    // K-3-Fix: Decimal-Akkus statt Float (Cent-Drift bei vielen PlotAreas).
+    // Decimal-Akkus statt Float (Cent-Drift bei vielen PlotAreas).
     let totalNetDec = new Decimal(0);
     let totalTaxDec = new Decimal(0);
     let totalGrossDec = new Decimal(0);
@@ -493,7 +493,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     for (const plotArea of leaseCalc.plotAreas) {
       const periodAmountDec = new Decimal(plotArea.calculatedAmount).dividedBy(divisor).toDecimalPlaces(2);
       const periodAmount = periodAmountDec.toNumber();
-      // H-10-Fix: Schwelle von 0.01 auf 0.001 abgesenkt. Bei MONTHLY-Abrechnung
+      // Schwelle von 0.01 auf 0.001 abgesenkt. Bei MONTHLY-Abrechnung
       // (divisor=12) entstehen Cent-Beträge nahe 0.01 € pro Position; bei vielen
       // PlotAreas führt das alte `< 0.01 continue` zu Cent-Drift gegen die
       // Jahressumme. Wir akkumulieren jetzt auch Cent-Beträge mit, und skippen
@@ -546,7 +546,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
     };
 
     const invoice = await prisma.$transaction(async (tx) => {
-      // K-3-Fix: Rechnungsnummer IN dieser TX ziehen — Crash → Rollback
+      // Rechnungsnummer IN dieser TX ziehen — Crash → Rollback
       // der Nummer-Sequenz → keine Lücke (§14 UStG lückenlose Nummerierung).
       const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
         tx,
@@ -1053,7 +1053,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     return apiError("BAD_REQUEST", undefined, { message: "Keine offenen Betraege nach Verrechnung der Vorschüsse" });
   }
 
-  // K-3-Fix: KEINE Batch-Allocation. Nummer wird pro Iteration IN-TX gezogen.
+  // KEINE Batch-Allocation. Nummer wird pro Iteration IN-TX gezogen.
 
   const createdInvoices = [];
 
@@ -1070,7 +1070,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     ].filter(Boolean);
     const recipientAddress = addressParts.join(", ") || leaseCalc.lessorAddress || "";
 
-    // K-3-Fix: Decimal-Total statt Float — verwende Math.abs auf Decimal.
+    // Decimal-Total statt Float — verwende Math.abs auf Decimal.
     // (totalNet/totalTax/totalGross sind hier noch numbers aus dem prepared-Array,
     // wir konvertieren beim Schreiben — keine Vorzeichen-Drift bei abs()).
     const totalNetAbsDec = new Decimal(totalNet).abs().toDecimalPlaces(2);
@@ -1078,7 +1078,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     const totalGrossAbsDec = new Decimal(totalGross).abs().toDecimalPlaces(2);
 
     const invoice = await prisma.$transaction(async (tx) => {
-      // K-3-Fix: Rechnungsnummer IN dieser TX ziehen.
+      // Rechnungsnummer IN dieser TX ziehen.
       const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
         tx,
         tenantId,

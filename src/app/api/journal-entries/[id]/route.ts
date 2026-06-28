@@ -128,7 +128,7 @@ export async function PUT(
       throw err;
     }
 
-    // H-2-Fix: Soll=Haben-Validierung auch bei DRAFT-Update (Decimal, Toleranz 0.005).
+    // Soll=Haben-Validierung auch bei DRAFT-Update (Decimal, Toleranz 0.005).
     if (lines !== undefined) {
       let totalDebitDec = new Decimal(0);
       let totalCreditDec = new Decimal(0);
@@ -162,7 +162,7 @@ export async function PUT(
         });
       }
 
-      // H-2-Fix: tenantId in where (TOCTOU-Schutz, consistent zur DELETE-Variante).
+      // tenantId in where (TOCTOU-Schutz, consistent zur DELETE-Variante).
       return tx.journalEntry.update({
         where: { id, tenantId: check.tenantId! },
         data: {

@@ -98,7 +98,7 @@ export async function PATCH(
         });
       } catch (err) {
         if (err instanceof FourEyesViolationError) {
-          // H-7: Status UND ApprovalRequest in 1 TX. Batch wandert nach
+          // Status UND ApprovalRequest in 1 TX. Batch wandert nach
           // PENDING_APPROVAL → UI/Reports zeigen den blockierten Zustand,
           // statt fälschlich noch DRAFT zu zeigen.
           const { approvalRequest } = await prisma.$transaction(async (tx) => {
@@ -139,7 +139,7 @@ export async function PATCH(
       }
     }
 
-    // H-7: Wenn der User den Batch storniert während ein PENDING-Approval
+    // Wenn der User den Batch storniert während ein PENDING-Approval
     // existiert → Approval ebenfalls invalidieren (sonst Geister-Approvals).
     // Wir nutzen REJECTED (kein CANCELLED-Status im ApprovalStatus-Enum).
     const updated = await prisma.$transaction(async (tx) => {

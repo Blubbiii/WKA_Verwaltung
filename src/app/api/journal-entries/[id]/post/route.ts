@@ -20,7 +20,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // K-4-Fix: Posting (DRAFT → POSTED) braucht dedizierte Permission.
+    // Posting (DRAFT → POSTED) braucht dedizierte Permission.
     const check = await requirePermission("accounting:post");
     if (!check.authorized) return check.error;
 
@@ -43,7 +43,7 @@ export async function POST(
       return apiError("BAD_REQUEST", 400, { message: "Mindestens 2 Buchungszeilen erforderlich" });
     }
 
-    // H-1-Fix: Decimal-Arithmetik statt Number() (Float-Rundungsfehler bei
+    // Decimal-Arithmetik statt Number() (Float-Rundungsfehler bei
     // vielen Buchungszeilen kann sonst zu falscher Soll=Haben-Validierung führen).
     let totalDebitDec = new Decimal(0);
     let totalCreditDec = new Decimal(0);

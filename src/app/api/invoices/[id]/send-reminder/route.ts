@@ -91,7 +91,7 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: `Mahnungen können nur für versendete Rechnungen erstellt werden (Status: ${invoice.status})` });
     }
 
-    // H-6-Fix: Guard verhindert auch identische Mahnstufe (Idempotenz —
+    // Guard verhindert auch identische Mahnstufe (Idempotenz —
     // verhindert doppelten Versand derselben Mahnung).
     if (invoice.reminderLevel && reminderLevel <= invoice.reminderLevel) {
       const message =

@@ -32,7 +32,7 @@ export async function POST(
     // Atomic: create invoice + update quote
     const { number: invoiceNumber } = await getNextInvoiceNumber(check.tenantId!, "INVOICE");
 
-    // Audit-A: dueDate aus TenantSettings.paymentTermDays statt hardcoded 30 Tage.
+    // dueDate aus TenantSettings.paymentTermDays statt hardcoded 30 Tage.
     const settings = await getTenantSettings(check.tenantId!);
     const invoiceDate = new Date();
     const dueDate = calculateDueDate(invoiceDate, settings.paymentTermDays);
