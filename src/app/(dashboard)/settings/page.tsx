@@ -53,6 +53,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationPreferences } from "@/components/settings/notification-preferences";
+import { DailyDigestToggle } from "@/components/settings/DailyDigestToggle";
 import { TenantFeaturesSettings } from "@/components/settings/TenantFeaturesSettings";
 import { PaperlessConfigForm } from "@/components/admin/system-config/paperless-config-form";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -1218,8 +1219,10 @@ export default function SettingsPage() {
         </TabsContent>
 
         {/* Notifications Tab - uses existing NotificationPreferences component */}
-        <TabsContent value="notifications">
+        <TabsContent value="notifications" className="space-y-4">
           <NotificationPreferences />
+          {/* Idee E: täglicher Digest-Toggle als eigene Card */}
+          <DailyDigestToggle />
         </TabsContent>
 
         {/* Appearance Tab */}

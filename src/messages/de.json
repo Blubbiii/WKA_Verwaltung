@@ -9759,6 +9759,15 @@
       "moveUpAria": "Block nach oben verschieben",
       "moveDown": "Nach unten",
       "moveDownAria": "Block nach unten verschieben"
+    },
+    "dailyDigest": {
+      "title": "Tägliche Übersicht",
+      "description": "Erhalte morgens um 8 Uhr eine E-Mail mit den wichtigsten Vorgängen aus deinem Bereich seit gestern.",
+      "toggleLabel": "Tägliche E-Mail-Übersicht aktivieren",
+      "lastSent": "Letzte Übersicht: {date}",
+      "toastEnabled": "Tägliche Übersicht aktiviert — du bekommst morgen die erste E-Mail.",
+      "toastDisabled": "Tägliche Übersicht deaktiviert.",
+      "toastFailed": "Speichern fehlgeschlagen — bitte erneut versuchen."
     }
   },
   "approvals": {
@@ -9864,5 +9873,12 @@
       "down": "Störung",
       "lastChecked": "Geprüft {time}"
     }
+  },
+  "permissionGate": {
+    "missingPermission": "Du brauchst die Berechtigung `{permission}` für diese Aktion."
+  },
+  "presence": {
+    "oneOther": "{name} sieht sich das gerade auch an",
+    "multipleOthers": "{count} weitere User sehen sich das gerade an"
   }
 }

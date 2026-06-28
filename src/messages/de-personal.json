@@ -9759,6 +9759,15 @@
       "moveUpAria": "Block nach oben verschieben",
       "moveDown": "Nach unten",
       "moveDownAria": "Block nach unten verschieben"
+    },
+    "dailyDigest": {
+      "title": "Deine tägliche Übersicht",
+      "description": "Bekomm morgens um 8 eine Mail mit den wichtigsten Vorgängen seit gestern.",
+      "toggleLabel": "Tägliche E-Mail-Übersicht an",
+      "lastSent": "Letzte Übersicht: {date}",
+      "toastEnabled": "Aktiv — morgen kommt die erste Mail.",
+      "toastDisabled": "Hab ich aus.",
+      "toastFailed": "Speichern hat nicht geklappt."
     }
   },
   "approvals": {
@@ -9864,5 +9873,12 @@
       "down": "Da läuft was schief",
       "lastChecked": "Geprüft {time}"
     }
+  },
+  "permissionGate": {
+    "missingPermission": "Dir fehlt `{permission}` für diese Aktion."
+  },
+  "presence": {
+    "oneOther": "{name} schaut sich das gerade auch an",
+    "multipleOthers": "{count} andere User schauen sich das auch an"
   }
 }

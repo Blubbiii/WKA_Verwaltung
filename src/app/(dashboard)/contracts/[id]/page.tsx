@@ -40,6 +40,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { LastEditStrip } from "@/components/ui/last-edit-strip";
+import { PresenceIndicator } from "@/components/ui/presence-indicator";
+import { useEntityPresence } from "@/hooks/useEntityPresence";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
@@ -112,6 +114,11 @@ export default function ContractDetailPage() {
   const [contract, setContract] = useState<ContractDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("details");
+
+  // Idee D: Presence-Tracking. params.id ist stabil — der Hook ist no-op
+  // wenn id leer ist (siehe useEntityPresence guard).
+  const contractIdString = typeof params.id === "string" ? params.id : "";
+  const presenceOthers = useEntityPresence("Contract", contractIdString);
 
   useEffect(() => {
     async function fetchContract() {
@@ -193,6 +200,7 @@ export default function ContractDetailPage() {
 
   return (
     <div className="space-y-6">
+      <PresenceIndicator others={presenceOthers} />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">

@@ -140,6 +140,7 @@ model Tenant {
   cashBookDailyCloses       CashBookDailyClose[]
   approvalRequests          ApprovalRequest[]
   savedFilters              UserSavedFilter[]
+  entityPresence            EntityPresence[]
 
   @@map("tenants")
 }
@@ -210,6 +211,10 @@ model User {
   status                                                                  EntityStatus                @default(ACTIVE)
   settings                                                                Json                        @default("{}")
   emailPreferences                                                        Json                        @default("{\"votes\": true, \"system\": true, \"invoices\": true, \"contracts\": true, \"documents\": true}")
+  /// Idee E: tägliche E-Mail-Übersicht der wichtigsten Vorgänge.
+  dailyDigestEnabled                                                      Boolean                     @default(false)
+  /// Wann wurde der letzte Digest erfolgreich versendet — verhindert Doppel-Sends.
+  dailyDigestLastSentAt                                                   DateTime?
   createdAt                                                               DateTime                    @default(now())
   updatedAt                                                               DateTime                    @updatedAt
   tenantId                                                                String
@@ -279,6 +284,7 @@ model User {
   bankUpdatesRequested                                                    PendingBankUpdate[]        @relation("BankUpdateRequestedBy")
   bankUpdatesDecided                                                      PendingBankUpdate[]        @relation("BankUpdateDecidedBy")
   savedFilters                                                            UserSavedFilter[]
+  entityPresence                                                          EntityPresence[]
 
   @@index([tenantId])
   @@index([email])
@@ -5189,4 +5195,25 @@ model UserSavedFilter {
   @@index([userId, surface])
   @@index([tenantId])
   @@map("user_saved_filters")
+}
+
+/// Idee D: Multi-User-Edit-Presence — wer schaut sich gerade welche Entity an?
+/// Records mit lastSeenAt älter als 2 min gelten als "offline" (Stale-Cleanup
+/// happens lazy bei jeder GET-Request via WHERE lastSeenAt > now()-2min).
+/// Heartbeat alle 30s vom Client.
+model EntityPresence {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "Invoice", "Contract", "Lease", "JournalEntry" …
+  entityType  String
+  entityId    String
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([userId, entityType, entityId])
+  @@index([entityType, entityId, lastSeenAt])
+  @@index([tenantId])
+  @@map("entity_presence")
 }

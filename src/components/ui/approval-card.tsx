@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { PermissionGate } from "@/components/ui/permission-gate";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Collapsible,
@@ -361,31 +362,44 @@ export function ApprovalCard({
         )}
         {!isOwnRequest && (
           <>
+            {/* Idee C: PermissionGate erklärt warum Button disabled ist, falls
+             * der User die approvals:decide-Permission nicht hat — sonst sieht
+             * er nur einen grauen Button ohne Kontext. */}
             {onReject && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onReject}
-                disabled={isPending}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <X className="h-3.5 w-3.5 mr-1.5" aria-hidden />
-                Ablehnen
-              </Button>
+              <PermissionGate permission="approvals:decide">
+                {({ disabled, tooltipDisabled }) => (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={onReject}
+                    disabled={isPending || disabled}
+                    title={tooltipDisabled}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <X className="h-3.5 w-3.5 mr-1.5" aria-hidden />
+                    Ablehnen
+                  </Button>
+                )}
+              </PermissionGate>
             )}
             {onApprove && (
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={onApprove}
-                disabled={isPending}
-                className="bg-success hover:bg-success/90 text-success-foreground"
-              >
-                <Check className="h-3.5 w-3.5 mr-1.5" aria-hidden />
-                Freigeben
-              </Button>
+              <PermissionGate permission="approvals:decide">
+                {({ disabled, tooltipDisabled }) => (
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={onApprove}
+                    disabled={isPending || disabled}
+                    title={tooltipDisabled}
+                    className="bg-success hover:bg-success/90 text-success-foreground"
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1.5" aria-hidden />
+                    Freigeben
+                  </Button>
+                )}
+              </PermissionGate>
             )}
           </>
         )}

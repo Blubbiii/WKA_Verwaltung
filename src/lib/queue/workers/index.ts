@@ -121,6 +121,15 @@ import type {
   RetentionCronJobResult,
 } from "../queues/retention-cron.queue";
 
+import {
+  startDailyDigestWorker,
+  stopDailyDigestWorker,
+} from "./daily-digest.worker";
+import type {
+  DailyDigestJobData,
+  DailyDigestJobResult,
+} from "../queues/daily-digest.queue";
+
 // =============================================================================
 // Types
 // =============================================================================

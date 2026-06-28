@@ -9759,6 +9759,15 @@
       "moveUpAria": "Move block up",
       "moveDown": "Move down",
       "moveDownAria": "Move block down"
+    },
+    "dailyDigest": {
+      "title": "Daily Digest",
+      "description": "Get a morning email at 8 AM with the most important activity in your scope since yesterday.",
+      "toggleLabel": "Enable daily email digest",
+      "lastSent": "Last digest sent: {date}",
+      "toastEnabled": "Daily digest enabled — you'll get the first email tomorrow.",
+      "toastDisabled": "Daily digest disabled.",
+      "toastFailed": "Save failed — please try again."
     }
   },
   "approvals": {
@@ -9864,5 +9873,12 @@
       "down": "Down",
       "lastChecked": "Checked {time}"
     }
+  },
+  "permissionGate": {
+    "missingPermission": "You need the `{permission}` permission for this action."
+  },
+  "presence": {
+    "oneOther": "{name} is also viewing this",
+    "multipleOthers": "{count} other users are also viewing this"
   }
 }

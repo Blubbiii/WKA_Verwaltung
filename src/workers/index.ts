@@ -259,6 +259,27 @@ async function main(): Promise<void> {
     });
   }
 
+  // Daily-Digest Cron registrieren (täglich 08:00 — Idee E)
+  try {
+    const { scheduleDailyDigest } = await import(
+      "@/lib/queue/queues/daily-digest.queue"
+    );
+    const { startDailyDigestWorker } = await import(
+      "@/lib/queue/workers/daily-digest.worker"
+    );
+    startDailyDigestWorker();
+    await scheduleDailyDigest();
+    const dryRun = process.env.DIGEST_DRY_RUN !== "false";
+    log(
+      "info",
+      `Daily-Digest cron scheduled (daily 08:00, mode: ${dryRun ? "DRY-RUN" : "LIVE"})`,
+    );
+  } catch (err) {
+    log("warn", "Failed to schedule daily-digest cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // Health-Check starten
   startHealthCheck();
 

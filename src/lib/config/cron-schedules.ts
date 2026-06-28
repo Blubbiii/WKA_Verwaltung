@@ -12,4 +12,6 @@ export const CRON_SCHEDULES = {
   REPORT: envCron("CRON_REPORT", "0 6 * * *"),
   /** Täglich 8:00 Uhr — Mahn-Reminders */
   REMINDER: envCron("CRON_REMINDER", "0 8 * * *"),
+  /** Täglich 8:00 Uhr — Daily-Digest-Mail (Idee E) */
+  DAILY_DIGEST: envCron("CRON_DAILY_DIGEST", "0 8 * * *"),
 };
