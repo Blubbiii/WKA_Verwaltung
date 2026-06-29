@@ -4,6 +4,77 @@ All notable changes to WindparkManager.
 
 ## [Unreleased]
 
+### Added — Juni 2026 UX-Wellen + R-1 bis R-11
+
+Phase 19: vollständige Umsetzung des `docs/REDESIGN-KONZEPT-2026-06.md` (R-1 bis R-11),
+zusätzlich 5 Audit-Ideen (A–E) aus dem Audit 2026-06-26.
+
+**REDESIGN-KONZEPT R-11 SEPA-Wizard** (Commit `4b8effe`)
+- 4-Step-Wizard mit eigener URL pro Step (`/buchhaltung/sepa/new/step-{1..4}`)
+- State persistiert in localStorage über Refresh + Step-Wechsel (`useSepaWizardState`)
+- StepIndicator-Component mit Done-Steps klickbar zurück
+- Step 1: Multi-Select-Liste SENT-Rechnungen mit Suche + Summary-Footer
+- Step 2: Bank-Konto als Radio-Cards + Date-Picker (default heute+2 Werktage)
+- Step 3: 2-Spalten-Summary + Rechnungs-Liste vor Submit
+- Step 4: Auto-Submit (Single-Fire-Guard via useRef + module-level Ref), AWV-Warnings,
+  XML-Download, 4-Augen-Hinweis mit Link zu /admin/approvals
+- Button "Neuen SEPA-Lauf erstellen" in der Bestehen-Liste
+- i18n (~35 Keys) in DE/EN/DE-Personal
+
+**Audit-Ideen A + B** (Commit `ace90f2`)
+- Zentrale Status-Label-Lib (`src/lib/status-labels.ts`) mit 6 Enum-Mappings
+  (Invoice, IncomingInvoice, Contract, Approval, Turbine, Vote)
+- StatusBadge-Component (Icon + Farbe + i18n) — Showcase in Inbox
+- System-Health-Indicator (Dot im Header, polled `/api/health` alle 60s,
+  document.hidden-aware, ping-Animation nur on "down")
+
+**Audit-Ideen C + D + E** (Commit `5da9e3e`)
+- Permission-Why-Tooltip: `usePermissionGate` + `<PermissionGate>` Wrapper —
+  disabled-Buttons zeigen "Du brauchst `xxx:yyy` für diese Aktion".
+  Showcase: Approval-Card Reject/Approve.
+- Multi-User-Presence (MVP via Polling): neues `EntityPresence`-Model,
+  3 API-Routes (POST heartbeat / GET others / DELETE leave), 30s-Polling,
+  Banner "Lisa M. sieht sich das gerade auch an" auf Contract-Detail-Page.
+- Daily-Digest-E-Mail: opt-in per User (`dailyDigestEnabled` / `dailyDigestLastSentAt`),
+  BullMQ-Cron 08:00, Worker mit Idempotenz-Check (skip wenn heute schon gesendet),
+  Settings-Toggle, **Dry-Run-Default** (`DIGEST_DRY_RUN=false` für Live aktivieren).
+
+**Glasmorphismus-Foundation + Layout-Polish** (Commits `ace90f2`, `c68797b`)
+- Phase 18 (Glasmorphismus-Theme) abgeschlossen: `.ui-glass` Toggle in Settings,
+  Body-Gradient (Light + Dark), `.card-surface` Utility, Print-Override,
+  `prefers-reduced-transparency`-Override, nested-Cards kein Doppel-Blur.
+- Layout-Polish: Dialog, AlertDialog, Popover, DropdownMenu (+SubContent)
+  alle mit `card-surface`. Tooltip, Select, DatePicker-Calendar bewusst opak.
+- Per-Instance Opt-out via `data-ui-surface="opaque"` für Form-dichte Dialogs.
+
+**Audit-Marker-Cleanup + Permissions-Fix** (Commit `789328c`)
+- 16 Files mit Block-Audit-Markern aus früheren Wellen bereinigt (32 Marker raus,
+  alle WHY-Kommentare bleiben).
+- Permissions 2-Pane Sticky-Footer-Fix: `sticky bottom-0 lg:static` für mobile
+  Viewports (Save-Button vorher unsichtbar wenn Permission-Matrix gescrollt).
+
+**CI/CD-Workflows wiederhergestellt** (Commit `dc7043a`)
+- `.github/workflows/ci.yml`, `deploy.yml`, `permissions-drift.yml` waren in
+  Welle 7a (Commit `43fca3d`) versehentlich mitgelöscht worden, ohne dass
+  die Actions-Page aufzeigte. Aus `43fca3d~1` restored, unverändert.
+
+**Lint-Cleanup** (Commit `9abdcb0`)
+- 8 → 0 Warnings: 4× apiError-Konvention für echte Error-Returns,
+  2× bewusste Opt-outs für "Failure ist 200" Test-Routen (file-level disable
+  mit Begründung), 5× unused Imports entfernt, 1× img-Avatar mit per-line
+  disable + Begründung (36px-Avatar, Next/Image-Overhead nicht sinnvoll).
+
+### Removed — Juni 2026
+
+- `docs/IMPLEMENTATION_STRATEGY.md` (Stand 26.02.2026) — die Strategie war auf
+  7 Features ausgerichtet (K1 Ausschüttungsmodul, A1 Leistungskurven-Analyse,
+  A2 Komponenten/Wartung, K3 Redispatch 2.0, A4 Echtzeit-Status-Map,
+  U1 Mobile Inspektion, I2 SEPA-XML Sammel-Lastschriften) die strategisch
+  nicht mehr geplant sind. Die in der Datei dokumentierten **fertigen** Features
+  (K2 Serienbriefe, U2 Benachrichtigungs-Center, Paperless, Onboarding,
+  Park-Wizard, Per-Turbine Pacht-Overrides, Cookie-Settings, Scrollbar-Theming,
+  Dashboard-Footer) sind in `docs/ROADMAP.md` (Phase 14) als FERTIG dokumentiert.
+
 ### Added — April 2026 Audit-Refactor
 
 - **Structured API errors** (`src/lib/api-errors.ts`) — `apiError(code, status, opts)` helper with 25 stable error codes (NOT_FOUND, FORBIDDEN, VALIDATION_FAILED, etc.). Response format now `{ code, error, details? }` for client-side i18n.

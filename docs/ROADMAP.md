@@ -56,16 +56,19 @@ i18n KOMPLETT-UMSTELLUNG                    AUDIT-REFACTOR + LINT-CLEANUP
 • `t` in useCallback/useEffect deps         • Lint: 72 → 0 Warnings, TypeScript: 0 Errors
 • Build verifiziert ✓ ~38s                  • Internal helpers (api-utils, withPermission) migriert
 
-Phase 18
+Phase 18                                    Phase 19
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
-GLASMORPHISMUS-THEME (Personio-Style)
-🚧 IN ARBEIT (April 2026)
+GLASMORPHISMUS-THEME (Personio-Style)       UX-WELLEN + REDESIGN R-1 BIS R-11
+✅ FERTIG (Juni 2026)                       ✅ FERTIG (Juni 2026)
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
-• Warm Dark Background mit Gradient
-• Card-Component zentral auf Glas umgestellt (~200+ Cards betroffen)
-• Backdrop-Blur via CSS-Variables (--glass-bg, --glass-border, --glass-blur)
-• Sidebar/Header/Dialog/Popover Polish
-• Light/Dark Mode Tuning
+• .ui-glass Toggle in Settings              • Audit-Idee A: zentrale Status-Label-Lib
+• Body-Gradient (Light + Dark)              • Audit-Idee B: System-Health-Indikator im Header
+• .card-surface auf Card/Header/Sidebar     • Audit-Idee C: Permission-Why-Tooltip
+• Dialog/Popover/Dropdown auf Glas          • Audit-Idee D: Multi-User-Presence-Hinweis
+• Print-Override + Reduced-Transparency    • Audit-Idee E: Daily-Digest-E-Mail (opt-in)
+• Performance-Schutz (nested kein Blur)    • R-11 SEPA-Wizard (4 Steps, URL pro Step)
+                                            • Layout-Polish (Dialog/Popover/Dropdown)
+                                            • CI/CD-Workflows restored
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -794,33 +797,58 @@ Feature-Flags für Upselling.
 
 ---
 
-### 🚧 Phase 18: Glasmorphismus-Theme (Personio-Style) — IN ARBEIT
+### ✅ Phase 18: Glasmorphismus-Theme (Personio-Style) — FERTIG (Juni 2026)
 
-Inspiration: Personio-App (warmer dunkler Hintergrund mit Verlauf, halbtransparente Cards mit
-Backdrop-Blur, "schwebende" Optik).
+Toggle via UiStyleProvider zwischen "classic" und "glass" Mode (persistiert in localStorage,
+Settings → Appearance). Glass-Mode liefert eine konsistente schwebende Optik über Cards,
+Header, Sidebar, Dialogs, Popovers und Dropdowns.
 
-- [ ] **Foundation** (~30 min) — Body-Gradient, CSS-Variables `--glass-bg/border/blur`, `.glass-card` Utility
-- [ ] **Card-Component zentral** (~30 min) — `<Card>` umstellen, betrifft 200+ Cards automatisch
-- [ ] **Layout-Polish** (~1h) — Sidebar, Header, Dialog, Popover, Dropdown auf Glas
-- [ ] **Tuning** (~1h) — Visual Review, Light-Mode anpassen, Performance-Check (`backdrop-blur` ist GPU-intensiv)
+- ✅ **Foundation** — `.ui-glass` Toggle-Class, Body-Gradient für Light + Dark,
+  CSS-Tokens `--glass-card-bg/border/shadow/blur` in `globals.css`
+- ✅ **Card-Component zentral** — `<Card>` mit `.card-surface` → ~200+ Cards
+  automatisch glaserig, ohne dass eine einzige Page angefasst werden musste
+- ✅ **Layout-Polish** — Header, Sidebar, Dialog, AlertDialog, Popover, DropdownMenu
+  alle mit `.card-surface`. Tooltip, Select und DatePicker-Calendar bewusst opak
+  (Lesbarkeit > Konsistenz).
+- ✅ **Schutzmechanismen** — Print-Override (Rechnungen drucken opak weiß),
+  `prefers-reduced-transparency`-Override, nested-Cards kein Doppel-Blur (FPS),
+  per-Instance Opt-out via `data-ui-surface="opaque"`.
 
-**Worauf achten:** Maps/GIS dürfen nicht mit Glas überlagert werden. Form-Inputs brauchen klaren
-Background. Light Mode bleibt subtiler (Glas funktioniert in Dark Mode am besten).
+### ✅ Phase 19: UX-Wellen + REDESIGN R-1 bis R-11 — FERTIG (Juni 2026)
 
-### Weitere offene Features (Backlog)
+Umsetzung aus `docs/REDESIGN-KONZEPT-2026-06.md` (R-1 bis R-11) plus 5 zusätzlichen
+UX-Ideen aus dem Audit, alle in mehreren Wellen abgeschlossen:
 
-- [ ] K1: Ausschuettungsmodul (Gewinnverteilung an Gesellschafter)
-- [ ] A1: Leistungskurven-Analyse (Soll vs. Ist SCADA-Daten)
-- [ ] A2: Komponentenverwaltung + Wartung (Turbinenteile + Historie)
-- [ ] K3: Redispatch 2.0 (Abregelungen + Entschaedigungen)
-- [ ] A4: Echtzeit-Status-Dashboard (Live-Karte mit Turbinen-Markern)
-- [ ] U1: Mobile Inspektion (Vor-Ort-Checklisten per Smartphone)
-- [ ] I2: SEPA-XML Export (Sammel-Lastschriften an Gesellschafter)
+**Audit-Ideen (A–E) aus 2026-06-26:**
+- ✅ **A** Zentrale Status-Label-Lib + StatusBadge (Icon + Farbe + i18n, alle Status-Badges
+  in der App konsistent über 6 Enum-Mappings)
+- ✅ **B** System-Health-Indicator (Dot im Header, polled `/api/health`, document.hidden-aware)
+- ✅ **C** Permission-Why-Tooltip (`usePermissionGate` + `<PermissionGate>` Wrapper —
+  disabled-Buttons zeigen "Du brauchst `xxx:yyy` für diese Aktion")
+- ✅ **D** Multi-User-Presence-Banner (`EntityPresence`-Model, Heartbeat-Polling, dezenter
+  Warn-Banner auf Detail-Pages)
+- ✅ **E** Daily-Digest-E-Mail (opt-in pro User, BullMQ-Cron 08:00, Dry-Run-Default,
+  Settings-Toggle)
+
+**REDESIGN-KONZEPT-Items:**
+- ✅ R-1 bis R-10 (siehe `docs/REDESIGN-KONZEPT-2026-06.md` für Details)
+- ✅ **R-11 SEPA-Wizard** — 4-Step-Wizard mit URL pro Step
+  (`/buchhaltung/sepa/new/step-{1..4}`), localStorage-State, native Back-Navigation,
+  AWV-Warnings-Integration, XML-Download im Success-View
+
+**Infrastruktur-Korrekturen:**
+- ✅ GitHub-Actions-Workflows (CI/CD/Permissions-Drift) wiederhergestellt — waren in
+  Welle 7a versehentlich mitgelöscht worden.
+- ✅ 16 Files mit Block-Audit-Markern aus früheren Wellen bereinigt (32 Marker raus,
+  WHY-Kommentare bleiben).
+- ✅ Permissions 2-Pane Sticky-Footer-Fix für kleine Viewports (`sticky bottom-0 lg:static`).
+- ✅ Lint-Cleanup auf 0 Errors / 0 Warnings.
 
 ### Zurueckgestellt
 
 - [ ] Staging-Umgebung (separate DB, Preview Deployments)
 - [ ] Production Deployment (M42)
+- [ ] Glasmorphismus Visual-Tuning (Light-Mode-Feinschliff + Performance-Review im Browser)
 
 ### Keine bekannten Bugs
 
