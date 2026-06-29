@@ -492,13 +492,9 @@ export async function POST(request: NextRequest) {
         messageId: result.messageId,
       });
     } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || "E-Mail konnte nicht gesendet werden",
-        },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, {
+        message: result.error || "E-Mail konnte nicht gesendet werden",
+      });
     }
   } catch (error) {
     logger.error({ err: error }, "Error sending test email");

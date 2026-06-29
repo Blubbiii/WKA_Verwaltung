@@ -2,7 +2,15 @@
  * System Configuration Test API
  *
  * POST - Test a specific configuration (SMTP, Weather API, etc.)
+ *
+ * Diese Route gibt für ALLE Test-Ergebnisse (Success UND Failure) Status 200
+ * zurück mit `{success, error?, details?}` im Body. Das ist Absicht: das
+ * Frontend rendert immer denselben "Test-Result-Modal" — Failure ist hier
+ * ein *erfolgreiches* API-Ergebnis (der Test wurde ausgeführt), kein
+ * Server-Fehler. Deshalb darf hier `error:` im Response stehen.
  */
+
+/* eslint-disable no-restricted-syntax -- Test-Routen: Failure ist 200, siehe Header. */
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";

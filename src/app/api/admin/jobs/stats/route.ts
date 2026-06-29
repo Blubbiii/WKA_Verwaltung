@@ -36,24 +36,16 @@ export async function GET(_request: NextRequest) {
     const healthy = await isRedisHealthy();
 
     if (!healthy) {
-      return NextResponse.json(
-        {
-          error: 'Redis-Verbindung nicht verfügbar',
+      return apiError("INTERNAL_ERROR", 503, {
+        message: "Redis-Verbindung nicht verfügbar",
+        details: {
           healthy: false,
           queues: [],
-          totals: {
-            waiting: 0,
-            active: 0,
-            completed: 0,
-            failed: 0,
-            delayed: 0,
-            total: 0,
-          },
+          totals: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0, total: 0 },
           queueCount: 0,
           timestamp: new Date().toISOString(),
         },
-        { status: 503 }
-      );
+      });
     }
 
     // Get aggregated stats from all queues
@@ -75,24 +67,16 @@ export async function GET(_request: NextRequest) {
         error.message.includes('ECONNREFUSED') ||
         error.message.includes('Redis')
       ) {
-        return NextResponse.json(
-          {
-            error: 'Redis-Verbindung fehlgeschlagen',
+        return apiError("INTERNAL_ERROR", 503, {
+          message: "Redis-Verbindung fehlgeschlagen",
+          details: {
             healthy: false,
             queues: [],
-            totals: {
-              waiting: 0,
-              active: 0,
-              completed: 0,
-              failed: 0,
-              delayed: 0,
-              total: 0,
-            },
+            totals: { waiting: 0, active: 0, completed: 0, failed: 0, delayed: 0, total: 0 },
             queueCount: 0,
             timestamp: new Date().toISOString(),
           },
-          { status: 503 }
-        );
+        });
       }
 
       return apiError("INTERNAL_ERROR", undefined, { message: error.message });

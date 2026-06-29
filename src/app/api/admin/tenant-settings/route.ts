@@ -4,10 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
-import {
-  DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS,
-  type TenantSettings as CanonicalTenantSettings,
-} from "@/lib/tenant-settings";
+import { DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS } from "@/lib/tenant-settings";
 
 // =============================================================================
 // TYPES & DEFAULTS

@@ -111,11 +111,10 @@ export async function POST(
     const errorMessage =
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
-    return NextResponse.json(
-      {
-        success: false,
+    return apiError("INTERNAL_ERROR", 500, {
+      message: errorMessage,
+      details: {
         status: "failed",
-        error: errorMessage,
         summary: {
           invoicesCreated: 0,
           totalAmount: 0,
@@ -126,7 +125,6 @@ export async function POST(
         },
         invoices: [],
       },
-      { status: 500 }
-    );
+    });
   }
 }

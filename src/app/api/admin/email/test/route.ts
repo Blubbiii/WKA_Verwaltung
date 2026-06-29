@@ -43,14 +43,9 @@ export async function POST(request: Request) {
     const isValid = await verifyEmailProvider(check.tenantId!);
 
     if (!isValid) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte überprüfen Sie die Konfiguration.",
-        },
-        { status: 400 }
-      );
+      return apiError("BAD_REQUEST", 400, {
+        message: "E-Mail-Provider-Verbindung fehlgeschlagen. Bitte überprüfen Sie die Konfiguration.",
+      });
     }
 
     // Send the test email
@@ -64,14 +59,10 @@ export async function POST(request: Request) {
         provider: result.provider,
       });
     } else {
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.error || "E-Mail konnte nicht gesendet werden",
-          provider: result.provider,
-        },
-        { status: 500 }
-      );
+      return apiError("INTERNAL_ERROR", 500, {
+        message: result.error || "E-Mail konnte nicht gesendet werden",
+        details: { provider: result.provider },
+      });
     }
   } catch (error) {
     logger.error({ err: error }, "[Admin Email Test API] Error");
@@ -98,12 +89,9 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, "[Admin Email Test API] Verify error");
-    return NextResponse.json(
-      {
-        connected: false,
-        error: "Fehler beim Überprüfen der E-Mail-Konfiguration",
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, {
+      message: "Fehler beim Überprüfen der E-Mail-Konfiguration",
+      details: { connected: false },
+    });
   }
 }

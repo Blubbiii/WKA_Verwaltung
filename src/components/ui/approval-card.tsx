@@ -180,7 +180,10 @@ export function ApprovalCard({
       {/* Header: Avatar + Name + Timing */}
       <header className="flex items-start gap-3 p-4 pb-3">
         <Avatar className="h-9 w-9 shrink-0 ring-1 ring-border/60">
-          {requesterAvatar && <img src={requesterAvatar} alt="" />}
+          {requesterAvatar && (
+            // eslint-disable-next-line @next/next/no-img-element -- 36px avatar, Image-component-overhead nicht sinnvoll
+            <img src={requesterAvatar} alt="" />
+          )}
           <AvatarFallback className="text-xs font-medium">
             {getInitials(requesterName)}
           </AvatarFallback>

@@ -46,6 +46,8 @@ export async function GET(
       progress,
       attemptsMade: job.attemptsMade,
       result: result ?? null,
+      // Job-Status-Property, kein API-Error
+      // eslint-disable-next-line no-restricted-syntax
       error: failedReason ?? null,
       timestamp: job.timestamp,
       finishedOn: job.finishedOn ?? null,

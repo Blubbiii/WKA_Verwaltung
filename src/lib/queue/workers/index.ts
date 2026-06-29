@@ -121,14 +121,8 @@ import type {
   RetentionCronJobResult,
 } from "../queues/retention-cron.queue";
 
-import {
-  startDailyDigestWorker,
-  stopDailyDigestWorker,
-} from "./daily-digest.worker";
-import type {
-  DailyDigestJobData,
-  DailyDigestJobResult,
-} from "../queues/daily-digest.queue";
+// Daily-Digest-Worker wird direkt in src/workers/index.ts gestartet
+// (eigener Pattern statt Registry-basiertem Wrapper hier).
 
 // =============================================================================
 // Types

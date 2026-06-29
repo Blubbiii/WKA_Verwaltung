@@ -14,6 +14,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { processAutoRenewals } from "@/lib/contracts/auto-renewal";
 import { apiLogger as logger } from "@/lib/logger";
+import { apiError } from "@/lib/api-errors";
 
 export async function POST() {
   try {
@@ -42,16 +43,9 @@ export async function POST() {
     const errorMessage =
       error instanceof Error ? error.message : "Unbekannter Fehler";
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Fehler bei der automatischen Vertragsverlängerung.",
-        error: errorMessage,
-        processed: 0,
-        renewalsCreated: 0,
-        errors: [],
-      },
-      { status: 500 }
-    );
+    return apiError("INTERNAL_ERROR", 500, {
+      message: errorMessage || "Fehler bei der automatischen Vertragsverlängerung.",
+      details: { processed: 0, renewalsCreated: 0, errors: [] },
+    });
   }
 }

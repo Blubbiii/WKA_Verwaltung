@@ -143,13 +143,9 @@ export async function POST(request: NextRequest) {
         const result = await createBackup(type);
 
         if (!result.success) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: result.error || "Backup-Erstellung fehlgeschlagen",
-            },
-            { status: 500 }
-          );
+          return apiError("INTERNAL_ERROR", 500, {
+            message: result.error || "Backup-Erstellung fehlgeschlagen",
+          });
         }
 
         logger.info(

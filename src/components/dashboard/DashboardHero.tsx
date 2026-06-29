@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import {
   Wind,
   FileText,
-  Mail,
   ShieldCheck,
   Calendar,
   ArrowUpRight,
