@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Download, AlertTriangle } from "lucide-react";
+import { Download, AlertTriangle, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -133,6 +134,14 @@ export default function SepaContent() {
 
   return (
     <>
+    <div className="flex justify-end mb-4">
+      <Button asChild>
+        <Link href="/buchhaltung/sepa/new">
+          <Plus className="h-4 w-4 mr-2" />
+          {t("createNewButton")}
+        </Link>
+      </Button>
+    </div>
     <Card>
       <CardContent className="pt-6">
         {loading ? (
