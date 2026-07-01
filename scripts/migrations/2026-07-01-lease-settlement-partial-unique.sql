@@ -18,6 +18,11 @@
 -- Idempotent — kann mehrfach ausgeführt werden.
 -- ============================================================================
 
+-- WICHTIG: Prisma mapped nur den Tabellen-Namen auf snake_case
+-- (@@map("lease_settlement_periods")). Die Spalten-Namen bleiben camelCase
+-- ("tenantId", "parkId", "periodType") und brauchen in raw SQL die
+-- Anführungszeichen, sonst wandelt Postgres sie automatisch in Kleinbuchstaben.
+
 CREATE UNIQUE INDEX IF NOT EXISTS lease_settlement_periods_annual_unique
-ON lease_settlement_periods (tenant_id, park_id, year, period_type)
+ON lease_settlement_periods ("tenantId", "parkId", year, "periodType")
 WHERE month IS NULL;
