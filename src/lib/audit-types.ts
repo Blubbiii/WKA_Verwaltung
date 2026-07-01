@@ -3,6 +3,8 @@ export type AuditAction =
   | "CREATE"
   | "UPDATE"
   | "DELETE"
+  | "POST"
+  | "REVERSE"
   | "VIEW"
   | "EXPORT"
   | "DOCUMENT_DOWNLOAD"
@@ -88,6 +90,8 @@ export function getActionDisplayName(action: AuditAction): string {
     CREATE: "Erstellt",
     UPDATE: "Bearbeitet",
     DELETE: "Gelöscht",
+    POST: "Festgeschrieben",
+    REVERSE: "Storniert",
     VIEW: "Angesehen",
     EXPORT: "Exportiert",
     DOCUMENT_DOWNLOAD: "Heruntergeladen",

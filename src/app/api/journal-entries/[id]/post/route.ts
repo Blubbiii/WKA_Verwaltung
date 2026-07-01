@@ -9,6 +9,7 @@ import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-loc
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
 import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
+import { createAuditLog } from "@/lib/audit";
 
 // ============================================================================
 // POST /api/journal-entries/[id]/post
@@ -119,6 +120,29 @@ export async function POST(
       where: { id },
       data: { status: "POSTED" },
       include: { lines: { orderBy: { lineNumber: "asc" } } },
+    });
+
+    // GoBD §146 AO: Belegfestschreibung (DRAFT → POSTED) muss revisionssicher
+    // dokumentiert sein — Zeitstempel + User + alte/neue Werte.
+    // Fire-and-forget wie invalidateReportsCache: das Posting selbst ist erfolgreich,
+    // Audit-Log-Failure darf nicht rollback — aber wir loggen laut wenn's schiefgeht.
+    createAuditLog({
+      action: "POST",
+      entityType: "JournalEntry",
+      entityId: id,
+      oldValues: { status: "DRAFT" },
+      newValues: {
+        status: "POSTED",
+        totalDebit,
+        totalCredit,
+        entryDate: entry.entryDate.toISOString(),
+      },
+      description: `Buchung ${entry.description} festgeschrieben (${totalDebit.toFixed(2)} €)`,
+    }).catch((err) => {
+      logger.error(
+        { err, entryId: id, tenantId: check.tenantId },
+        "[Audit] createAuditLog failed after POST — GoBD trail incomplete",
+      );
     });
 
     // P-3: Reports-Cache invalidieren — neue POSTED-Buchung ändert Saldi.

@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx } from "@/lib/invoices/numberGenerator";
 
 // POST /api/inbox/[id]/generate-invoices
 // Creates outgoing invoices for each split that doesn't have one yet
@@ -43,6 +43,11 @@ export async function POST(
     const tenantId = check.tenantId!;
     const createdInvoices: { splitId: string; invoiceId: string; invoiceNumber: string }[] = [];
 
+    // Pro Split eine eigene TX: Nummer-Ziehung + Invoice-Create + Split-Update
+    // sind atomar. Bei Crash in Split N sind Splits 1..N-1 bereits persistiert
+    // (nächster Aufruf setzt fort), Split N wird komplett zurückgerollt →
+    // keine verbrannte Nummer, kein Split ohne Invoice, keine Invoice ohne Split-Link.
+    // (GoBD §14 UStG lückenlose Nummerierung.)
     for (const split of invoice.splits) {
       // Calculate amount for this split
       const grossAmount =
@@ -57,53 +62,61 @@ export async function POST(
         continue;
       }
 
-      const { number: invoiceNumber } = await getNextInvoiceNumber(tenantId, "INVOICE");
-
       const vendorName = invoice.vendor?.name ?? invoice.vendorNameFallback ?? "Lieferant";
       const description =
         split.description ??
         `Kostenanteil ${split.fund.name} — ${vendorName}${invoice.invoiceNumber ? ` Re. ${invoice.invoiceNumber}` : ""}`;
 
-      const outgoing = await prisma.invoice.create({
-        data: {
-          invoiceType: "INVOICE",
-          invoiceNumber,
-          invoiceDate: new Date(),
-          dueDate: invoice.dueDate ?? null,
-          recipientType: "FUND",
-          recipientName: split.fund.name,
-          recipientAddress: null,
-          netAmount: grossAmount, // simplified: treat gross as net for now
-          taxRate: 0,
-          taxAmount: 0,
-          grossAmount,
-          notes: description,
-          status: "DRAFT",
+      const outgoing = await prisma.$transaction(async (tx) => {
+        const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+          tx,
           tenantId,
-          createdById: check.userId!,
-          fundId: split.fund.id,
-          items: {
-            create: [
-              {
-                description,
-                quantity: 1,
-                unitPrice: grossAmount,
-                netAmount: grossAmount,
-                taxRate: 0,
-                taxAmount: 0,
-                grossAmount,
-                position: 1,
-                ...(split.datevAccount && { datevAccountCode: split.datevAccount }),
-              },
-            ],
-          },
-        },
-      });
+          "INVOICE",
+        );
 
-      // Link split → outgoing invoice
-      await prisma.incomingInvoiceSplit.update({
-        where: { id: split.id },
-        data: { outgoingInvoiceId: outgoing.id },
+        const created = await tx.invoice.create({
+          data: {
+            invoiceType: "INVOICE",
+            invoiceNumber,
+            invoiceDate: new Date(),
+            dueDate: invoice.dueDate ?? null,
+            recipientType: "FUND",
+            recipientName: split.fund.name,
+            recipientAddress: null,
+            netAmount: grossAmount, // simplified: treat gross as net for now
+            taxRate: 0,
+            taxAmount: 0,
+            grossAmount,
+            notes: description,
+            status: "DRAFT",
+            tenantId,
+            createdById: check.userId!,
+            fundId: split.fund.id,
+            items: {
+              create: [
+                {
+                  description,
+                  quantity: 1,
+                  unitPrice: grossAmount,
+                  netAmount: grossAmount,
+                  taxRate: 0,
+                  taxAmount: 0,
+                  grossAmount,
+                  position: 1,
+                  ...(split.datevAccount && { datevAccountCode: split.datevAccount }),
+                },
+              ],
+            },
+          },
+        });
+
+        // Link split → outgoing invoice (in derselben TX)
+        await tx.incomingInvoiceSplit.update({
+          where: { id: split.id },
+          data: { outgoingInvoiceId: created.id },
+        });
+
+        return created;
       });
 
       createdInvoices.push({

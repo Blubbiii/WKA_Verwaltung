@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -50,14 +50,18 @@ export async function POST(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwürfe können nicht storniert werden. Bitte löschen Sie den Entwurf." });
     }
 
-    // Generiere Storno-Nummer
-    const { number: stornoNumber } = await getNextInvoiceNumber(
-      check.tenantId!,
-      original.invoiceType
-    );
-
-    // Erstelle Storno in einer Transaktion
+    // Erstelle Storno in einer Transaktion.
+    // Nummer-Vergabe MUSS innerhalb der TX passieren (GoBD §14 UStG:
+    // lückenlose Nummerierung). Bei TX-Rollback wird auch der Sequence-
+    // Increment zurückgerollt → keine "verbrannte" Nummer.
     const result = await prisma.$transaction(async (tx) => {
+      // 0. Storno-Nummer ziehen (innerhalb der TX!)
+      const { number: stornoNumber } = await getNextInvoiceNumberInTx(
+        tx,
+        check.tenantId!,
+        original.invoiceType,
+      );
+
       // 1. Original-Rechnung auf CANCELLED setzen
       await tx.invoice.update({
         where: { id },

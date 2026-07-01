@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumber } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx } from "@/lib/invoices/numberGenerator";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTenantSettings, calculateDueDate } from "@/lib/tenant-settings";
 
@@ -29,15 +29,21 @@ export async function POST(
       return apiError("BAD_REQUEST", 400, { message: "Nur angenommene Angebote können in Rechnungen umgewandelt werden" });
     }
 
-    // Atomic: create invoice + update quote
-    const { number: invoiceNumber } = await getNextInvoiceNumber(check.tenantId!, "INVOICE");
-
     // dueDate aus TenantSettings.paymentTermDays statt hardcoded 30 Tage.
     const settings = await getTenantSettings(check.tenantId!);
     const invoiceDate = new Date();
     const dueDate = calculateDueDate(invoiceDate, settings.paymentTermDays);
 
+    // Atomic: nummer + create invoice + update quote in EINER TX
+    // (GoBD §14 UStG: lückenlose Nummerierung. Bei Rollback wird auch
+    // der Sequence-Increment zurückgerollt → keine verbrannte Nummer.)
     const result = await prisma.$transaction(async (tx) => {
+      const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+        tx,
+        check.tenantId!,
+        "INVOICE",
+      );
+
       // Create invoice from quote data
       const invoice = await tx.invoice.create({
         data: {

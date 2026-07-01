@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { TaxType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -185,10 +185,13 @@ export async function POST(
         const revenueEur = Number(item.revenueShareEur);
         const productionKwh = Number(item.productionShareKwh);
 
-        // Generiere Gutschriftsnummer
-        const { number: invoiceNumber } = await getNextInvoiceNumber(
+        // Generiere Gutschriftsnummer innerhalb der äußeren TX.
+        // (GoBD §14 UStG: bei Rollback wird der Sequence-Increment
+        // ebenfalls zurückgerollt → keine verbrannte Nummer.)
+        const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
+          tx,
           check.tenantId!,
-          "CREDIT_NOTE"
+          "CREDIT_NOTE",
         );
 
         // Empfängeradresse aus Fund
