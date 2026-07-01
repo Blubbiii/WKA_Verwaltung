@@ -493,7 +493,7 @@ export function Sidebar() {
               onClick={() => toggleGroup(group.label!)}
               className="flex items-center justify-between flex-1 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
             >
-              <span className="border-b border-dashed border-sidebar-border/50 pb-0.5 pr-2">{getGroupLabel(group)}</span>
+              <span className="border-b border-dashed border-sidebar-border/50 pb-0.5 pr-2 text-left">{getGroupLabel(group)}</span>
               {groupExpanded ? (
                 <ChevronDown className="h-3 w-3 text-primary/60" />
               ) : (
