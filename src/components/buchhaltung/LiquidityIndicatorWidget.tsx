@@ -90,7 +90,7 @@ const STATUS_META: Record<
     labelKey: "statusGreen",
     badgeVariant: "default",
     Icon: CheckCircle2,
-    iconClass: "text-emerald-600 dark:text-emerald-400",
+    iconClass: "text-emerald-600 dark:text-emerald-300",
     dotClass: "bg-emerald-500",
   },
   yellow: {
@@ -104,7 +104,7 @@ const STATUS_META: Record<
     labelKey: "statusRed",
     badgeVariant: "destructive",
     Icon: AlertTriangle,
-    iconClass: "text-red-600 dark:text-red-400",
+    iconClass: "text-red-600 dark:text-red-300",
     dotClass: "bg-red-500",
   },
 };
@@ -251,13 +251,13 @@ export function LiquidityIndicatorWidget({
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded border p-2">
                     <div className="text-muted-foreground">{t("totalInflows")}</div>
-                    <div className="font-mono font-medium text-emerald-700 dark:text-emerald-400">
+                    <div className="font-mono font-medium text-emerald-700 dark:text-emerald-300">
                       {fmtEur(data.totalInflows)}
                     </div>
                   </div>
                   <div className="rounded border p-2">
                     <div className="text-muted-foreground">{t("totalOutflows")}</div>
-                    <div className="font-mono font-medium text-red-700 dark:text-red-400">
+                    <div className="font-mono font-medium text-red-700 dark:text-red-300">
                       {fmtEur(data.totalOutflows)}
                     </div>
                   </div>

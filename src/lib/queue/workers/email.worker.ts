@@ -205,9 +205,26 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
 // =============================================================================
 
 /**
- * Verarbeitet einen E-Mail-Job
+ * Verarbeitet einen E-Mail-Job.
+ *
+ * Läuft innerhalb eines Request-Context damit alle Logger im Call-Stack
+ * automatisch jobId/tenantId als correlation-IDs mitloggen — bei Bugs
+ * in Produktion kann man requestId aus Sentry direkt in Logs suchen.
  */
 async function processEmailJob(job: Job<EmailJobData, EmailJobResult>): Promise<EmailJobResult> {
+  const { withRequestContext, generateRequestId } = await import("@/lib/request-context");
+  return withRequestContext(
+    {
+      requestId: generateRequestId(),
+      tenantId: job.data.tenantId,
+      jobId: job.data.jobId || job.id || undefined,
+      queueName: "email",
+    },
+    () => processEmailJobInner(job),
+  );
+}
+
+async function processEmailJobInner(job: Job<EmailJobData, EmailJobResult>): Promise<EmailJobResult> {
   const { data } = job;
   const jobId = data.jobId || job.id || "unknown";
 

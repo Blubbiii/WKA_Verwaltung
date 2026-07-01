@@ -438,38 +438,14 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
     };
   }
 
-  // Race-condition-freier Existence-Check + Create in einer TX.
-  // Hintergrund: Das Prisma-Schema hat @@unique([tenantId, parkId, year, month, periodType]),
-  // aber Postgres behandelt NULL in UNIQUE-Constraints als verschieden — d.h. bei
-  // month=null (Jahresabrechnung) greift der Constraint NICHT. Ohne partial unique index
-  // (`WHERE month IS NULL`) ist `findFirst()` nicht atomar gegen parallele Jobs.
-  // TODO(schema): Partial unique index hinzufügen:
-  //   CREATE UNIQUE INDEX lease_settlement_periods_annual_unique
-  //   ON lease_settlement_periods (tenant_id, park_id, year, period_type)
-  //   WHERE month IS NULL;
-  // Bis dahin: TX-Serialisierung über findFirst innerhalb der TX (best-effort).
-  const existingPeriod = await prisma.leaseSettlementPeriod.findFirst({
-    where: {
-      tenantId: data.tenantId,
-      parkId: data.parkId,
-      year: data.year,
-      month: null, // null = Jahresabrechnung
-    },
-  });
-
-  if (existingPeriod) {
-    log("warn", data.jobId, "Settlement period already exists", {
-      existingId: existingPeriod.id,
-      status: existingPeriod.status,
-    });
-    return {
-      success: false,
-      error: `Abrechnungsperiode für Park "${park.name}" Jahr ${data.year} existiert bereits (ID: ${existingPeriod.id})`,
-      settlementIds: [existingPeriod.id],
-      processedCount: 0,
-      processedAt: new Date(),
-    };
-  }
+  // Duplikat-Check erfolgt atomar INNERHALB der TX weiter unten. Ein outer
+  // findFirst wäre ein Race-Window über die Sekunden für activeLease-Loading.
+  //
+  // Für vollständige Race-Sicherheit gibt es zusätzlich einen Partial-Unique-Index
+  // (in `scripts/migrations/2026-07-01-lease-settlement-partial-unique.sql`).
+  // Muss einmalig manuell am Server ausgeführt werden (Prisma-Schema unterstützt
+  // kein partielles @@unique). Wenn der Index existiert, wirft `create()` bei
+  // gleichzeitigem Insert P2002 — wird unten gefangen.
 
   // 3. Calculate total minimum rent from active leases for this park and year
   const activeLeases = await prisma.lease.findMany({
@@ -531,10 +507,27 @@ async function processGenerateSettlement(data: GenerateSettlementJobData): Promi
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.startsWith("__DUPLICATE__")) {
-      const existingId = msg.replace("__DUPLICATE__", "");
+    // P2002 = Unique-Violation vom Partial-Unique-Index (falls installiert).
+    // In dem Fall wurde die Periode zwischen findFirst und create() von einer
+    // anderen TX angelegt — wir laden sie nach und geben sie zurück.
+    const isP2002 =
+      err instanceof Error && "code" in err && (err as { code?: string }).code === "P2002";
+    if (msg.startsWith("__DUPLICATE__") || isP2002) {
+      const existing = await prisma.leaseSettlementPeriod.findFirst({
+        where: {
+          tenantId: data.tenantId,
+          parkId: data.parkId,
+          year: data.year,
+          month: null,
+        },
+        select: { id: true },
+      });
+      const existingId = msg.startsWith("__DUPLICATE__")
+        ? msg.replace("__DUPLICATE__", "")
+        : existing?.id ?? "unknown";
       log("warn", data.jobId, "Settlement period already exists (race detected)", {
         existingId,
+        source: isP2002 ? "unique-index" : "in-tx-check",
       });
       return {
         success: false,

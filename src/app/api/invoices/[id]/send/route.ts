@@ -55,16 +55,39 @@ export async function POST(
       throw err;
     }
 
-    const updated = await prisma.invoice.update({
-      where: { id, tenantId: check.tenantId! },
+    // Race-Guard: Status-Bedingung in die WHERE-Clause des Updates.
+    // Bei Doppel-Klick oder parallelen Requests würde der zweite Update
+    // sonst DRAFT→SENT auf einer bereits SENT-Rechnung machen und
+    // sentAt sowie sofort folgendes auto-posting/webhook doppelt feuern.
+    // `updateMany` gibt count zurück — 0 heißt: schon versendet.
+    const updateResult = await prisma.invoice.updateMany({
+      where: { id, tenantId: check.tenantId!, status: "DRAFT" },
       data: {
         status: "SENT",
         sentAt: new Date(),
       },
+    });
+
+    if (updateResult.count === 0) {
+      // Ein paralleler Request hat die Rechnung zwischen findFirst und update
+      // versendet — kein Fehler, aber auch kein zweites auto-posting/webhook.
+      return apiError("CONFLICT", 409, {
+        message: "Rechnung wurde bereits versendet",
+      });
+    }
+
+    const updated = await prisma.invoice.findFirst({
+      where: { id, tenantId: check.tenantId! },
       include: {
         items: { orderBy: { position: "asc" } },
       },
     });
+
+    if (!updated) {
+      // Kann nur passieren wenn zwischen update und findFirst gelöscht wurde
+      // (praktisch nie — Invoices sind soft-delete). Defensiv abfangen.
+      return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden nach Update" });
+    }
 
     // Fire-and-forget auto-posting
     createAutoPosting(id, check.userId!, check.tenantId!).catch((err) => {

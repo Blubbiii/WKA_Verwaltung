@@ -134,8 +134,17 @@ export function PermissionMatrix({
               {sortedActions.map(action => (
                 <th
                   key={action}
-                  className="text-center p-3 font-medium min-w-[90px] cursor-pointer hover:bg-muted/70 transition-colors"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Alle "${actionLabels[action]}" umschalten`}
+                  className="text-center p-3 font-medium min-w-[90px] cursor-pointer hover:bg-muted/70 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   onClick={() => toggleAll(action)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleAll(action);
+                    }
+                  }}
                   title={`Alle "${actionLabels[action]}" umschalten`}
                 >
                   <span className="text-xs">{actionLabels[action]}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
@@ -304,10 +304,14 @@ export function ActivityTimeline({
     }
   }, [entityType, entityId, t]);
 
-  // Lazy load on first render
-  if (!initialized && !loading) {
-    load();
-  }
+  // Lazy load on mount. Vorher als render-triggered `if (!initialized) load()`
+  // im Body — Anti-Pattern: React 19/StrictMode kann Double-Fetches erzeugen,
+  // Race-Conditions bei schnellem entityId-Wechsel.
+  useEffect(() => {
+    if (!initialized && !loading) {
+      load();
+    }
+  }, [initialized, loading, load]);
 
   const handleDeleted = (id: string) => {
     setActivities((prev) => prev?.filter((a) => a.id !== id) ?? null);

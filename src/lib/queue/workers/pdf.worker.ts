@@ -220,9 +220,26 @@ async function generateAnnualReport(data: AnnualReportPdfJobData): Promise<Buffe
 // =============================================================================
 
 /**
- * Verarbeitet einen PDF-Job
+ * Verarbeitet einen PDF-Job.
+ *
+ * Läuft innerhalb eines Request-Context damit alle Logger im Call-Stack
+ * automatisch jobId/tenantId als correlation-IDs mitloggen — bei Bugs
+ * in Produktion kann man requestId aus Sentry direkt in Logs suchen.
  */
 async function processPdfJob(job: Job<PdfJobData, PdfJobResult>): Promise<PdfJobResult> {
+  const { withRequestContext, generateRequestId } = await import("@/lib/request-context");
+  return withRequestContext(
+    {
+      requestId: generateRequestId(),
+      tenantId: job.data.tenantId,
+      jobId: job.data.jobId || job.id || undefined,
+      queueName: "pdf",
+    },
+    () => processPdfJobInner(job),
+  );
+}
+
+async function processPdfJobInner(job: Job<PdfJobData, PdfJobResult>): Promise<PdfJobResult> {
   const { data } = job;
   const jobId = data.jobId || job.id || "unknown";
 

@@ -130,7 +130,19 @@ function ExecutionRow({ execution }: { execution: ExecutionData }) {
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <TableRow className="cursor-pointer" onClick={() => hasDetails && setIsOpen(!isOpen)}>
+      <TableRow
+        className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        role={hasDetails ? "button" : undefined}
+        tabIndex={hasDetails ? 0 : undefined}
+        aria-expanded={hasDetails ? isOpen : undefined}
+        onClick={() => hasDetails && setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (hasDetails && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setIsOpen(!isOpen);
+          }
+        }}
+      >
         <TableCell>
           <div className="flex items-center gap-2">
             {hasDetails ? (

@@ -30,8 +30,26 @@ let reportWorker: Worker<ReportJobData, ReportJobResult> | null = null;
 /**
  * Process a report job.
  * Delegates to the scheduled report service for actual report generation.
+ *
+ * Läuft innerhalb eines Request-Context (requestId + queueName). Der Job
+ * verarbeitet cross-tenant scheduled reports — tenantId wird pro Report
+ * im scheduled-report-service als eigener Sub-Context gesetzt.
  */
 async function processReportJob(
+  job: Job<ReportJobData, ReportJobResult>
+): Promise<ReportJobResult> {
+  const { withRequestContext, generateRequestId } = await import("@/lib/request-context");
+  return withRequestContext(
+    {
+      requestId: generateRequestId(),
+      jobId: job.id ?? undefined,
+      queueName: "report",
+    },
+    () => processReportJobInner(job),
+  );
+}
+
+async function processReportJobInner(
   job: Job<ReportJobData, ReportJobResult>
 ): Promise<ReportJobResult> {
   logger.info(
