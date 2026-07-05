@@ -1621,120 +1621,33 @@ async function discoverFiles(
   fileType: ScadaFileType,
 ): Promise<string[]> {
   const config = FILE_TYPE_CONFIG[fileType];
-  const ext = config.extension;
-  const files: string[] = [];
 
   if (!(await directoryExists(locationPath))) {
-    return files;
+    return [];
   }
 
-  // Get all year directories
-  const locationEntries = await fs.readdir(locationPath);
-  const yearDirs = locationEntries.filter((e) => /^\d{4}$/.test(e)).sort();
+  // Phase 4: 3-Case-Switch mit hand-gerollten fs.readdir-Loops durch
+  // deklarativen Pattern-Match via fast-glob ersetzt. Verhalten identisch
+  // (Cross-Check-Tests in file-patterns.test.ts). Vorteil: neuer File-
+  // Location-Typ heißt neuen Pattern-Descriptor ergänzen, kein Reader-Code.
+  const { discoverByPattern } = await import("./file-patterns");
+  const files = await discoverByPattern(
+    locationPath,
+    config.extension,
+    config.fileLocation,
+    MAX_DISCOVER_FILES,
+  );
 
-  switch (config.fileLocation) {
-    case 'daily': {
-      // Daily files: {locationPath}/{YYYY}/{MM}/{YYYYMMDD}.{ext}
-      for (const yearDir of yearDirs) {
-        const yearPath = path.join(locationPath, yearDir);
-        if (!(await directoryExists(yearPath))) continue;
-
-        const yearEntries = await fs.readdir(yearPath);
-        const monthDirs = yearEntries.filter((e) => /^\d{2}$/.test(e)).sort();
-
-        for (const monthDir of monthDirs) {
-          const monthPath = path.join(yearPath, monthDir);
-          if (!(await directoryExists(monthPath))) continue;
-
-          const monthEntries = await fs.readdir(monthPath);
-          const matchingFiles = monthEntries
-            .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
-            .sort()
-            .map((f) => path.join(monthPath, f));
-
-          files.push(...matchingFiles);
-        }
-      }
-      break;
-    }
-
-    case 'monthly': {
-      // Monthly files: {locationPath}/{YYYY}/{YYYYMM}00.{ext}
-      // Also check in month subdirectories for some file types.
-      // Filename pattern YYYYMM00.{ext} disambiguates from yearly (YYYY0000)
-      // and alltime (00000000) rollups that may share the same extension.
-      const monthlyPattern = /^\d{4}(0[1-9]|1[0-2])00\.[a-z0-9]+$/i;
-      for (const yearDir of yearDirs) {
-        const yearPath = path.join(locationPath, yearDir);
-        if (!(await directoryExists(yearPath))) continue;
-
-        // Check year directory itself for monthly summary files
-        const yearEntries = await fs.readdir(yearPath);
-        const matchingInYear = yearEntries
-          .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && monthlyPattern.test(f))
-          .sort()
-          .map((f) => path.join(yearPath, f));
-        files.push(...matchingInYear);
-
-        // Also check month subdirectories (some monthly files may be stored there)
-        const monthDirs = yearEntries.filter((e) => /^\d{2}$/.test(e)).sort();
-        for (const monthDir of monthDirs) {
-          const monthPath = path.join(yearPath, monthDir);
-          if (!(await directoryExists(monthPath))) continue;
-
-          const monthEntries = await fs.readdir(monthPath);
-          const matchingInMonth = monthEntries
-            .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && monthlyPattern.test(f))
-            .sort()
-            .map((f) => path.join(monthPath, f));
-          files.push(...matchingInMonth);
-        }
-      }
-      break;
-    }
-
-    case 'yearly': {
-      // Yearly files: {locationPath}/{YYYY}0000.{ext} or {locationPath}/{YYYY}/{YYYY}0000.{ext}
-      // Filename pattern YYYY0000.{ext} disambiguates from monthly (YYYYMM00)
-      // and alltime (00000000) rollups that may share the same extension.
-      // Year part must not be 0000 (that would be an alltime rollup).
-      const yearlyPattern = /^(?!0000)\d{4}0000\.[a-z0-9]+$/i;
-
-      // Check root of location for yearly files
-      const rootEntries = locationEntries
-        .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && yearlyPattern.test(f))
-        .sort()
-        .map((f) => path.join(locationPath, f));
-      files.push(...rootEntries);
-
-      // Also check year directories
-      for (const yearDir of yearDirs) {
-        const yearPath = path.join(locationPath, yearDir);
-        if (!(await directoryExists(yearPath))) continue;
-
-        const yearEntries = await fs.readdir(yearPath);
-        const matchingFiles = yearEntries
-          .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && yearlyPattern.test(f))
-          .sort()
-          .map((f) => path.join(yearPath, f));
-        files.push(...matchingFiles);
-      }
-      break;
-    }
-  }
-
-  // Deduplicate (in case a file is found in multiple scan passes)
-  const deduped = [...new Set(files)].sort();
-
-  if (deduped.length > MAX_DISCOVER_FILES) {
+  // Bei überschrittenem Limit im Caller loggen (discoverByPattern truncated
+  // silently — Caller hat den fileType-Kontext für aussagekräftiges Logging).
+  if (files.length === MAX_DISCOVER_FILES) {
     scadaLogger.warn(
-      { fileType, count: deduped.length, limit: MAX_DISCOVER_FILES },
-      `File discovery exceeded limit, truncating to ${MAX_DISCOVER_FILES} files`,
+      { fileType, count: files.length, limit: MAX_DISCOVER_FILES },
+      `File discovery exceeded limit, truncated to ${MAX_DISCOVER_FILES} files`,
     );
-    return deduped.slice(0, MAX_DISCOVER_FILES);
   }
 
-  return deduped;
+  return files;
 }
 
 // ---------------------------------------------------------------
