@@ -904,99 +904,101 @@ export default function ScadaImportTab() {
     pollingRefs.current.forEach((interval) => clearInterval(interval));
     pollingRefs.current.clear();
 
-    let startedCount = 0;
-    let failedToStart = 0;
-    let aborted = false;
+    // Sprint 2 des Refactors: EINE Bulk-Anfrage statt N POST-Requests.
+    // Löst strukturell das 24×-400-Problem — bei Validation-Errors gibt's
+    // genau EINE Response mit klarer skipped/jobs-Aufteilung.
+    let bulkRes: Response;
+    try {
+      bulkRes = await fetch("/api/energy/scada/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locationCode,
+          fileTypes: types,
+          basePath: trimmedPath,
+        }),
+      });
+    } catch {
+      toast.error(t("toastNoImportStarted"));
+      setIsImporting(false);
+      return;
+    }
 
-    for (const fileType of types) {
-      try {
-        const res = await fetch("/api/energy/scada/import", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            locationCode,
-            fileType,
-            basePath: trimmedPath,
-          }),
-        });
+    if (!bulkRes.ok) {
+      const err = await bulkRes.json().catch(() => ({}));
+      const message =
+        typeof err?.message === "string"
+          ? err.message
+          : typeof err?.error === "string"
+            ? err.error
+            : bulkRes.status === HTTP_STATUS.BAD_REQUEST
+              ? t("errorBadRequest")
+              : t("toastNoImportStarted");
+      toast.error(message);
+      setIsImporting(false);
+      return;
+    }
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          if (res.status === HTTP_STATUS.CONFLICT) {
-            startedCount++;
-          } else if (res.status === HTTP_STATUS.BAD_REQUEST) {
-            // Client-Fehler (z.B. Validation) → weitere Types werden dasselbe Ergebnis liefern.
-            // Loop abbrechen statt alle 24 durchprobieren.
-            const message =
-              typeof err?.message === "string"
-                ? err.message
-                : typeof err?.error === "string"
-                  ? err.error
-                  : t("errorBadRequest");
-            toast.error(message);
-            failedToStart++;
-            aborted = true;
-            break;
-          } else {
-            failedToStart++;
-          }
-          continue;
-        }
+    // Response-Shape: { jobs: [{id, fileType, status}], skipped: [{fileType, reason, existingId?}] }
+    const data = (await bulkRes.json()) as {
+      jobs?: Array<{ id: string; fileType: string; status: string }>;
+      skipped?: Array<{ fileType: string; reason: string; existingId?: string }>;
+    };
 
-        const data = await res.json();
-        const job: ImportJob = data.data ?? data;
-        startedCount++;
+    const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+    const skipped = Array.isArray(data.skipped) ? data.skipped : [];
 
-        setActiveImports((prev) => [...prev, job]);
+    // Skipped "already-running" zählen wie erfolgreich gestartet (das ist der
+    // gewünschte Zustand — Import läuft ja bereits).
+    const startedCount = jobs.length + skipped.filter((s) => s.reason === "already-running").length;
 
-        const pollInterval = setInterval(async () => {
-          try {
-            const pollRes = await fetch(`/api/energy/scada/import/${job.id}`);
-            if (!pollRes.ok) return;
-            const pollData = await pollRes.json();
-            const updatedJob: ImportJob = pollData.data ?? pollData;
+    // Neu-gestartete Jobs polling anhängen
+    for (const job of jobs) {
+      const importJob: ImportJob = { id: job.id, status: job.status, fileType: job.fileType } as ImportJob;
+      setActiveImports((prev) => [...prev, importJob]);
 
-            setActiveImports((prev) =>
-              prev.map((j) => (j.id === updatedJob.id ? updatedJob : j))
-            );
+      const pollInterval = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`/api/energy/scada/import/${job.id}`);
+          if (!pollRes.ok) return;
+          const pollData = await pollRes.json();
+          const updatedJob: ImportJob = pollData.data ?? pollData;
 
-            if (
-              updatedJob.status === "SUCCESS" ||
-              updatedJob.status === "FAILED" ||
-              updatedJob.status === "PARTIAL"
-            ) {
-              const interval = pollingRefs.current.get(job.id);
-              if (interval) {
-                clearInterval(interval);
-                pollingRefs.current.delete(job.id);
-              }
+          setActiveImports((prev) =>
+            prev.map((j) => (j.id === updatedJob.id ? updatedJob : j))
+          );
 
-              if (pollingRefs.current.size === 0) {
-                setIsImporting(false);
-                loadHistory();
-              }
+          if (
+            updatedJob.status === "SUCCESS" ||
+            updatedJob.status === "FAILED" ||
+            updatedJob.status === "PARTIAL"
+          ) {
+            const interval = pollingRefs.current.get(job.id);
+            if (interval) {
+              clearInterval(interval);
+              pollingRefs.current.delete(job.id);
             }
-          } catch {
-            // Polling error - ignore
-          }
-        }, 2000);
 
-        pollingRefs.current.set(job.id, pollInterval);
-      } catch {
-        failedToStart++;
-      }
+            if (pollingRefs.current.size === 0) {
+              setIsImporting(false);
+              loadHistory();
+            }
+          }
+        } catch {
+          // Polling error - ignore
+        }
+      }, 2000);
+
+      pollingRefs.current.set(job.id, pollInterval);
     }
 
     if (startedCount === 0) {
-      // Bei Abbruch durch 400 wurde bereits ein spezifischer Toast angezeigt.
-      if (!aborted) {
-        toast.error(t("toastNoImportStarted"));
-      }
+      toast.error(t("toastNoImportStarted"));
       setIsImporting(false);
-    } else if (failedToStart > 0) {
-      toast.warning(
-        t("toastPartialImportStarted", { started: startedCount, total: types.length, failed: failedToStart })
-      );
+    } else if (jobs.length === 0) {
+      // Alle wurden geskipped weil sie bereits laufen — trotzdem success
+      toast.info(t("toastImportStarted", { count: startedCount, locationCode }));
+      setIsImporting(false);
     } else {
       toast.success(
         t("toastImportStarted", { count: startedCount, locationCode })
