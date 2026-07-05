@@ -33,38 +33,15 @@ import type {
   WindDistributionBin,
   DirectionEfficiency,
   MonthlyRevenuePoint,
+  CurtailmentResponse,
+  ReactivePowerResponse,
+  MeteoResponse,
 } from "@/types/analytics";
 import { ANALYTICS_MODULES } from "@/types/analytics";
-
-// =============================================================================
-// Design Tokens (same as MonthlyReportTemplate)
-// =============================================================================
-
-const C = {
-  navy: "#1E3A5F",
-  navyLight: "#335E99",
-  navyPale: "#E8EEF5",
-  navyDark: "#142940",
-  green: "#16A34A",
-  greenLight: "#DCFCE7",
-  amber: "#D97706",
-  amberLight: "#FEF3C7",
-  red: "#DC2626",
-  redLight: "#FEE2E2",
-  blue: "#2563EB",
-  blueLight: "#DBEAFE",
-  white: "#FFFFFF",
-  gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-  gray300: "#D1D5DB",
-  gray400: "#9CA3AF",
-  gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
-  gray900: "#111827",
-};
+import { CurtailmentSection } from "./components/CurtailmentSection";
+import { ReactivePowerSection } from "./components/ReactivePowerSection";
+import { MeteoExtendedSection } from "./components/MeteoExtendedSection";
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 // =============================================================================
 // StyleSheet
@@ -353,6 +330,10 @@ export interface CustomReportData {
   environmentalData?: DirectionEfficiency[];
   financialOverview?: { totalRevenueEur: number; totalProductionKwh: number; avgRevenuePerKwh: number | null };
   revenueComparison?: MonthlyRevenuePoint[];
+  // Sprint A: 3 neue Data-Module aus dem erweiterten SCADA-Import
+  curtailmentAnalysis?: CurtailmentResponse;
+  reactivePowerQuality?: ReactivePowerResponse;
+  meteoExtended?: MeteoResponse;
 }
 
 // =============================================================================
@@ -1500,6 +1481,80 @@ function DailyProfilePage({ data }: { data: CustomReportData }) {
 }
 
 // =============================================================================
+// Sprint A neue Data-Module — Page-Wrapper um die Section-Komponenten
+// =============================================================================
+
+function CurtailmentPage({ data }: { data: CustomReportData }) {
+  if (!data.curtailmentAnalysis) return null;
+  return (
+    <Page size="A4" style={s.page}>
+      <PageHeader title="Abregelungen (Curtailment)" parkName={data.parkName} year={data.year} />
+      <CurtailmentSection data={data.curtailmentAnalysis} />
+      <PageNumber />
+    </Page>
+  );
+}
+
+function ReactivePowerPage({ data }: { data: CustomReportData }) {
+  if (!data.reactivePowerQuality) return null;
+  return (
+    <Page size="A4" style={s.page}>
+      <PageHeader title="Blindleistung & Netzqualität" parkName={data.parkName} year={data.year} />
+      <ReactivePowerSection
+        timeSeries={data.reactivePowerQuality.timeSeries}
+        summary={data.reactivePowerQuality.summary}
+      />
+      <PageNumber />
+    </Page>
+  );
+}
+
+function MeteoExtendedPage({ data }: { data: CustomReportData }) {
+  if (!data.meteoExtended) return null;
+  return (
+    <Page size="A4" style={s.page}>
+      <PageHeader title="Meteorologie & Vereisung" parkName={data.parkName} year={data.year} />
+      <MeteoExtendedSection data={data.meteoExtended} />
+      <PageNumber />
+    </Page>
+  );
+}
+
+// =============================================================================
+// Module → Page dispatch table (Sprint B: honour user-defined moduleOrder)
+// =============================================================================
+
+type ModulePageComponent = (props: { data: CustomReportData }) => React.ReactElement | null;
+
+const MODULE_PAGES: Record<string, ModulePageComponent> = {
+  // Analytics modules
+  performanceKpis: PerformanceKpisPage,
+  productionHeatmap: ProductionHeatmapPage,
+  turbineRanking: TurbineRankingPage,
+  yearOverYear: YearOverYearPage,
+  availabilityBreakdown: AvailabilityBreakdownPage,
+  availabilityTrend: AvailabilityTrendPage,
+  availabilityHeatmap: AvailabilityHeatmapPage,
+  downtimePareto: DowntimeParetoPage,
+  turbineComparison: TurbineComparisonPage,
+  powerCurveOverlay: PowerCurveOverlayPage,
+  faultPareto: FaultParetoPage,
+  warningTrend: WarningTrendPage,
+  windDistribution: WindDistributionPage,
+  environmentalData: EnvironmentalDataPage,
+  financialOverview: FinancialOverviewPage,
+  revenueComparison: RevenueComparisonPage,
+  // Sprint A modules
+  curtailmentAnalysis: CurtailmentPage,
+  reactivePowerQuality: ReactivePowerPage,
+  meteoExtended: MeteoExtendedPage,
+  // Classic module aliases (map to closest analytics page)
+  kpiSummary: PerformanceKpisPage,
+  production: PerformanceKpisPage,
+  dailyProfile: DailyProfilePage,
+};
+
+// =============================================================================
 // Main Template Component
 // =============================================================================
 
@@ -1509,8 +1564,9 @@ interface CustomReportTemplateProps {
 
 export function CustomReportTemplate({ data }: CustomReportTemplateProps) {
   const modules = data.selectedModules;
-
-  const has = (key: string) => modules.includes(key);
+  // Deduplicate to avoid emitting the same page twice (e.g. kpiSummary +
+  // performanceKpis both dispatch to PerformanceKpisPage).
+  const rendered = new Set<ModulePageComponent>();
 
   return (
     <Document
@@ -1521,79 +1577,13 @@ export function CustomReportTemplate({ data }: CustomReportTemplateProps) {
       {/* Cover Page — always included */}
       <CoverPage data={data} />
 
-      {/* Analytics modules */}
-      {has("performanceKpis") && data.performanceKpis && (
-        <PerformanceKpisPage data={data} />
-      )}
-
-      {has("productionHeatmap") && data.productionHeatmap && (
-        <ProductionHeatmapPage data={data} />
-      )}
-
-      {has("turbineRanking") && data.performanceKpis && (
-        <TurbineRankingPage data={data} />
-      )}
-
-      {has("yearOverYear") && data.yearOverYear && (
-        <YearOverYearPage data={data} />
-      )}
-
-      {has("availabilityBreakdown") && data.availabilityBreakdown && (
-        <AvailabilityBreakdownPage data={data} />
-      )}
-
-      {has("availabilityTrend") && data.availabilityTrend && (
-        <AvailabilityTrendPage data={data} />
-      )}
-
-      {has("availabilityHeatmap") && data.availabilityHeatmap && (
-        <AvailabilityHeatmapPage data={data} />
-      )}
-
-      {has("downtimePareto") && data.downtimePareto && (
-        <DowntimeParetoPage data={data} />
-      )}
-
-      {has("turbineComparison") && data.turbineComparison && (
-        <TurbineComparisonPage data={data} />
-      )}
-
-      {has("powerCurveOverlay") && data.turbineComparison && (
-        <PowerCurveOverlayPage data={data} />
-      )}
-
-      {has("faultPareto") && data.faultPareto && (
-        <FaultParetoPage data={data} />
-      )}
-
-      {has("warningTrend") && data.warningTrend && (
-        <WarningTrendPage data={data} />
-      )}
-
-      {has("windDistribution") && data.windDistribution && (
-        <WindDistributionPage data={data} />
-      )}
-
-      {has("environmentalData") && data.environmentalData && (
-        <EnvironmentalDataPage data={data} />
-      )}
-
-      {has("financialOverview") && data.financialOverview && (
-        <FinancialOverviewPage data={data} />
-      )}
-
-      {has("revenueComparison") && data.revenueComparison && (
-        <RevenueComparisonPage data={data} />
-      )}
-
-      {/* Classic modules */}
-      {(has("kpiSummary") || has("production")) && data.performanceKpis && (
-        <PerformanceKpisPage data={data} />
-      )}
-
-      {has("dailyProfile") && data.turbineComparison && (
-        <DailyProfilePage data={data} />
-      )}
+      {/* Modules — iterated in user-defined order */}
+      {modules.map((key) => {
+        const Page = MODULE_PAGES[key];
+        if (!Page || rendered.has(Page)) return null;
+        rendered.add(Page);
+        return <Page key={key} data={data} />;
+      })}
     </Document>
   );
 }

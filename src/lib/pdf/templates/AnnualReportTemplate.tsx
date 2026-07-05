@@ -17,21 +17,25 @@ import { Footer, PageNumber } from "./components/Footer";
 import { PdfNetworkTopology, type TopologyTurbine } from "./components/PdfNetworkTopology";
 import { formatNumber, formatDate } from "../utils/formatters";
 import { formatCurrency } from "@/lib/format";
+import { PDF_COLORS } from "@/lib/pdf/tokens";
 
 // ===========================================
 // STYLES
 // ===========================================
 
+// Template-local palette: uses brand tokens for shared values (primary,
+// secondary, danger, white) and keeps template-specific greens/ambers/greys
+// as literals because they diverge from the shared PDF_COLORS palette.
 const COLORS = {
-  primary: "#1E3A5F",
-  secondary: "#335E99",
+  primary: PDF_COLORS.navy,
+  secondary: PDF_COLORS.navyLight,
   accent: "#10B981",
   warning: "#F59E0B",
-  danger: "#DC2626",
+  danger: PDF_COLORS.red,
   muted: "#666666",
   light: "#F5F5F5",
   border: "#E0E0E0",
-  white: "#FFFFFF",
+  white: PDF_COLORS.white,
   text: "#333333",
 };
 

@@ -260,6 +260,75 @@ export interface EnvironmentResponse {
   };
 }
 
+// --- Environmental Extended (Meteo + Icing) ---
+
+export interface MeteoPoint {
+  bucket: string;   // "2026-01-15" (daily)
+  meanAirPressureHpa: number;
+  meanHumidityPct: number;
+  meanRainIndex: number;
+  meanVisibility: number;
+  meanBrightnessNight: number;
+}
+
+export interface IcingSummary {
+  totalIcingHours: number;         // Rows × 10min / 60 wo icingCount > 0
+  totalColdIcingHours: number;     // Rows × 10min / 60 wo coldIcing > 0
+  icingRate: number;               // % der Betriebszeit
+  monthlyIcingHours: Array<{ month: number; hours: number; coldHours: number }>;
+  peakIcingMonth: { month: number; hours: number } | null;
+}
+
+export interface MeteoResponse {
+  timeSeries: MeteoPoint[];   // Tägliche Aggregate
+  icing: IcingSummary;
+  summary: {
+    year: number;
+    dataAvailability: number;  // % der 10-min-Buckets die Meteo-Daten haben
+  };
+}
+
+// --- Curtailment (§13a EnWG Redispatch) ---
+
+/**
+ * One time-series bucket (typically one month) of curtailment aggregates.
+ * All *Kw values are AVERAGE curtailment power in the bucket window
+ * (10-minute SCADA measurements averaged).
+ * lostEnergyKwh is the SUM of the four categories converted to kWh
+ * (raw kW × 10 min / 60).
+ */
+export interface CurtailmentPoint {
+  bucket: string;         // "2026-01" (monthly) oder "2026-01-15" (daily)
+  windKw: number;         // mrwSmpPwin — durchschnittliche Wind-Abregelung
+  technicalKw: number;    // mrwSmpPte — technisch abgeregelt
+  forcedKw: number;       // mrwSmpPfm — forced / manuell abgeregelt
+  externalKw: number;     // mrwSmpPext — extern (§13a EnWG Redispatch!)
+  lostEnergyKwh: number;  // = Summe aller Curtailment-Kategorien in kWh
+  lostRevenueEur: number; // = lostEnergyKwh × EEG-Vergütung
+}
+
+export type CurtailmentCategory = "wind" | "technical" | "forced" | "external";
+
+export interface CurtailmentByCategory {
+  category: CurtailmentCategory;
+  label: string;              // "Wind", "Technisch", "Forced", "Extern (§13a EnWG)"
+  totalLostKwh: number;
+  totalLostEur: number;
+  pctOfProduction: number;    // Anteil an theoretischer Produktion (0-100)
+}
+
+export interface CurtailmentResponse {
+  timeSeries: CurtailmentPoint[];    // Monatliche Bins über gewählten Zeitraum
+  byCategory: CurtailmentByCategory[];
+  summary: {
+    totalLostKwh: number;
+    totalLostEur: number;
+    externalRedispatchKwh: number; // "was können wir bei Netzbetreiber einfordern"
+    externalRedispatchEur: number;
+    year: number;
+  };
+}
+
 // --- Financial ---
 
 export interface MonthlyRevenuePoint {
@@ -420,6 +489,40 @@ export interface PhaseSymmetryResponse {
   meta: { year: number; parkId: string };
 }
 
+// --- Reactive Power Quality (Grid-Support) ---
+
+export interface ReactivePowerPoint {
+  bucket: string;                  // "2026-01-15" (daily)
+  meanReactiveVar: number;         // Durchschn. Q (Var)
+  meanCosPhi: number;              // Durchschn. cos phi
+  cosPhiOutOfRangePct: number;     // % Records wo |cos phi - 1| > 0.05
+  meanFrequencyHz: number;
+  frequencyOutOfRangePct: number;  // % wo |f - 50 Hz| > 0.2 Hz (VDE-AR-N 4110)
+}
+
+export interface ReactivePowerSummary {
+  totalReactiveEnergyMWh: number;      // integriert Q ueber Zeit (MVArh)
+  inductiveReactiveEnergyMWh: number;  // Q > 0
+  capacitiveReactiveEnergyMWh: number; // Q < 0
+  meanCosPhiOverall: number;
+  cosPhiComplianceRate: number;        // % im Ziel-Bereich
+  freqComplianceRate: number;
+  year: number;
+}
+
+export interface ReactivePowerHourly {
+  hour: number;
+  meanReactiveVar: number;
+  meanCosPhi: number;
+}
+
+export interface ReactivePowerResponse {
+  timeSeries: ReactivePowerPoint[];
+  summary: ReactivePowerSummary;
+  hourlyProfile: ReactivePowerHourly[];
+  meta: { year: number; parkId: string };
+}
+
 // --- Daily Overview ---
 
 export interface DailyOverviewResponse {
@@ -475,6 +578,7 @@ export const ANALYTICS_MODULES = {
   availabilityTrend: { label: "Verfügbarkeits-Trend", group: "Verfügbarkeit" },
   availabilityHeatmap: { label: "Verfügbarkeits-Heatmap", group: "Verfügbarkeit" },
   downtimePareto: { label: "Ausfallzeiten-Pareto", group: "Verfügbarkeit" },
+  curtailmentAnalysis: { label: "Abregelungen (Curtailment)", group: "Verfügbarkeit" },
   // Comparison modules
   turbineComparison: { label: "Turbinen-Vergleich", group: "Vergleich" },
   powerCurveOverlay: { label: "Leistungskurven-Overlay", group: "Vergleich" },
@@ -484,6 +588,8 @@ export const ANALYTICS_MODULES = {
   // Environment modules
   windDistribution: { label: "Windverteilung", group: "Wind & Umwelt" },
   environmentalData: { label: "Umweltdaten", group: "Wind & Umwelt" },
+  meteoExtended: { label: "Meteorologie & Vereisung", group: "Wind & Umwelt" },
+  reactivePowerQuality: { label: "Blindleistung & Netzqualität", group: "Wind & Umwelt" },
   // Financial modules
   financialOverview: { label: "Finanz-Übersicht", group: "Finanzen" },
   revenueComparison: { label: "Erlösvergleich", group: "Finanzen" },

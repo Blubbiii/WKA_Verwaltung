@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import { formatDate } from "../utils/formatters";
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 const styles = StyleSheet.create({
   page: {
@@ -93,8 +94,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#E5E7EB",
   },
   badgeSystem: {
-    backgroundColor: "#335E99",
-    color: "#FFFFFF",
+    backgroundColor: C.navyLight,
+    color: C.white,
   },
   badgeCustom: {
     backgroundColor: "#8B5CF6",

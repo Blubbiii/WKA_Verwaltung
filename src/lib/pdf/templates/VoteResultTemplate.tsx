@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { ResolvedLetterhead, ResolvedTemplate } from "../utils/templateResolver";
 import { BaseDocument } from "./BaseDocument";
 import { formatDate } from "../utils/formatters";
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 const styles = StyleSheet.create({
   // Meta-Section
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#9CA3AF",
   },
   progressBarDefault: {
-    backgroundColor: "#335E99",
+    backgroundColor: C.navyLight,
   },
 
   // Quorum Section

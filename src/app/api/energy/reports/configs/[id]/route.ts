@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -34,6 +34,10 @@ const VALID_MODULES = [
   "environmentalData",
   "financialOverview",
   "revenueComparison",
+  // Sprint A additions
+  "curtailmentAnalysis",
+  "reactivePowerQuality",
+  "meteoExtended",
 ] as const;
 
 const VALID_INTERVALS = ["10min", "hour", "day", "month", "year"] as const;
@@ -46,6 +50,8 @@ const UpdateConfigSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional().nullable(),
   modules: z.array(z.enum(VALID_MODULES)).min(1).optional(),
+  moduleOrder: z.array(z.enum(VALID_MODULES)).optional(),
+  moduleSettings: z.record(z.string(), z.unknown()).optional(),
   parkId: z.uuid().optional().nullable(),
   turbineId: z.uuid().optional().nullable(),
   interval: z.enum(VALID_INTERVALS).optional(),
@@ -160,6 +166,10 @@ export async function PATCH(
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.modules !== undefined) updateData.modules = data.modules;
+    if (data.moduleOrder !== undefined) updateData.moduleOrder = data.moduleOrder;
+    if (data.moduleSettings !== undefined) {
+      updateData.moduleSettings = data.moduleSettings as Prisma.InputJsonValue;
+    }
     if (data.parkId !== undefined) updateData.parkId = data.parkId;
     if (data.turbineId !== undefined) updateData.turbineId = data.turbineId;
     if (data.interval !== undefined) updateData.interval = data.interval;

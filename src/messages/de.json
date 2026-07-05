@@ -2743,6 +2743,54 @@
       "noCompare": "Kein Vergleich",
       "createReport": "Bericht erstellen"
     },
+    "analytics": {
+      "meteoExtended": {
+        "title": "Meteorologie & Vereisung",
+        "subtitle": "Erweiterte Wetter- und Icing-Statistik aus SCADA-Sensordaten",
+        "kpiIcingHours": "Vereisungs-Stunden gesamt",
+        "kpiColdIcingHours": "Cold-Icing-Stunden",
+        "kpiPeakMonth": "Peak-Icing-Monat",
+        "kpiDataAvailability": "Daten-Verfügbarkeit",
+        "pressureLabel": "Luftdruck (hPa)",
+        "humidityLabel": "Luftfeuchtigkeit (%)",
+        "rainLabel": "Regen-Index",
+        "visibilityLabel": "Sichtweite (m)",
+        "brightnessLabel": "Nachthelligkeit",
+        "icingMonthlyLabel": "Vereisungs-Stunden pro Monat",
+        "coldIcingLabel": "Cold-Icing"
+      },
+      "reactivePower": {
+        "title": "Blindleistung & Netzqualität",
+        "subtitle": "Grid-Support-Nachweis: cos φ- und Frequenz-Compliance je Zeitraum",
+        "kpiTotalReactive": "Blindenergie",
+        "kpiCosPhiCompliance": "cos φ-Compliance",
+        "kpiFreqCompliance": "Frequenz-Compliance",
+        "inductive": "induktiv",
+        "capacitive": "kapazitiv",
+        "cosPhiLabel": "cos φ",
+        "hourLabel": "Tagesprofil (0–23 h)",
+        "complianceGood": "OK",
+        "complianceWarn": "Grenzwertig",
+        "complianceBad": "Verletzt",
+        "noData": "Keine Blindleistungs-Daten vorhanden"
+      },
+      "curtailment": {
+        "title": "Abregelungen (Curtailment)",
+        "subtitle": "Ertragsausfall durch Wind-, technische, forced und externe Abregelung (§13a EnWG Redispatch)",
+        "kpiLostEnergy": "Verlorene Energie (kWh)",
+        "kpiLostRevenue": "Ertragsausfall (€)",
+        "kpiRedispatch": "Redispatch-relevant (€)",
+        "redispatchInfoTooltip": "§13a EnWG: Extern angeordnete Abregelungen (Redispatch) können als Ausgleichsforderung beim Netzbetreiber geltend gemacht werden.",
+        "categoryWind": "Wind",
+        "categoryTechnical": "Technisch",
+        "categoryForced": "Forced",
+        "categoryExternal": "Extern",
+        "categoryExternalDetail": "§13a EnWG einforderbar",
+        "pctOfProduction": "Anteil an theoretischer Produktion",
+        "timeAxisLabel": "Monat",
+        "noData": "Keine Abregelungen im ausgewählten Zeitraum"
+      }
+    },
     "phaseSymmetry": {
       "kpiAvgImbalance": "Ø Unsymmetrie",
       "criticalRange": "Kritisch (> 5 %)",
@@ -8398,6 +8446,21 @@
           "t5": "Stör.",
           "t6": "Sonst."
         }
+      },
+      "reportBuilder": {
+        "livePreviewTitle": "Live-Vorschau",
+        "previewLoading": "Vorschau wird geladen...",
+        "previewPlaceholder": "Bitte Module auswählen, um die Live-Vorschau zu sehen.",
+        "moduleOrderTitle": "Reihenfolge",
+        "dragToReorder": "Ziehen zum Umsortieren",
+        "moduleConfigTitle": "Konfiguration",
+        "compareYearLabel": "Vergleichsjahr",
+        "noComparison": "Kein Vergleich",
+        "turbineFilterLabel": "Turbinen-Filter",
+        "allTurbines": "Alle",
+        "noModuleOptions": "Dieses Modul hat keine zusätzlichen Optionen.",
+        "showPreview": "Preview zeigen",
+        "hidePreview": "Preview ausblenden"
       }
     },
     "profile": {

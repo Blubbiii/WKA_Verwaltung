@@ -32,6 +32,10 @@ const VALID_MODULE_KEYS = [
   "environmentalData",
   "financialOverview",
   "revenueComparison",
+  // Sprint A additions
+  "curtailmentAnalysis",
+  "reactivePowerQuality",
+  "meteoExtended",
   // Classic modules
   "kpiSummary",
   "production",

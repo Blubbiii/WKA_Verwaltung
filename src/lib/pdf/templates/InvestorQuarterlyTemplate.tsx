@@ -10,6 +10,7 @@
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import { LOCALE_DE } from "@/lib/format";
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 // ============================================================
 // DATA INTERFACE
@@ -45,26 +46,6 @@ export interface InvestorQuarterlyData {
   prevYearProductionMwh: number | null;
   productionChangePercent: number | null;
 }
-
-// ============================================================
-// DESIGN TOKENS
-// ============================================================
-
-const C = {
-  navy: "#1E3A5F",
-  navyLight: "#335E99",
-  navyPale: "#E8EEF5",
-  white: "#FFFFFF",
-  gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-  gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
-  green: "#16A34A",
-  red: "#DC2626",
-};
 
 // ============================================================
 // FORMATTERS (inline to keep the template self-contained)

@@ -37,6 +37,16 @@ import type {
   PhaseSymmetryTrendPoint,
   PhaseSymmetryPerTurbine,
   PhasePowersMonthly,
+  MeteoResponse,
+  MeteoPoint,
+  IcingSummary,
+  ReactivePowerResponse,
+  ReactivePowerPoint,
+  ReactivePowerHourly,
+  CurtailmentResponse,
+  CurtailmentPoint,
+  CurtailmentByCategory,
+  CurtailmentCategory,
 } from "@/types/analytics";
 
 // =============================================================================
@@ -1813,4 +1823,586 @@ export async function fetchPhasePowersMonthly(
       avgP3: round(safeNumber(r.avg_p3), 2),
     };
   });
+}
+
+
+// =============================================================================
+// Environmental Extended (Meteo + Icing) Module Fetchers
+// =============================================================================
+
+interface MeteoDailyRow {
+  bucket_day: Date;
+  avg_pressure: Prisma.Decimal | null;
+  avg_humidity: Prisma.Decimal | null;
+  avg_rain: Prisma.Decimal | null;
+  avg_vis: Prisma.Decimal | null;
+  avg_bright: Prisma.Decimal | null;
+}
+
+interface IcingMonthlyRow {
+  month_num: number;
+  icing_rows: bigint;
+  cold_icing_rows: bigint;
+}
+
+interface AvailabilityRow {
+  total_rows: bigint;
+  meteo_rows: bigint;
+  icing_rows: bigint;
+  cold_icing_rows: bigint;
+}
+
+/**
+ * Fetch extended meteorology + icing data for a given year.
+ *
+ * Data source: scada_measurements (WSD 10-minute rows).
+ * Icing definition: rows where icingCount > 0 (aktiver Zustand);
+ * coldIcing > 0 = cold-icing sub-state (typically frost + moisture).
+ * Each active row is counted as 10 minutes.
+ *
+ * Icing rate: percentage of meteo-carrying rows that are in icing state.
+ * dataAvailability: fraction of ALL rows that carry any meteo signal.
+ */
+export async function fetchMeteoExtended(
+  tenantId: string,
+  year: number,
+  parkId?: string | null,
+): Promise<MeteoResponse> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) {
+    return {
+      timeSeries: [],
+      icing: {
+        totalIcingHours: 0,
+        totalColdIcingHours: 0,
+        icingRate: 0,
+        monthlyIcingHours: [],
+        peakIcingMonth: null,
+      },
+      summary: { year, dataAvailability: 0 },
+    };
+  }
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  // 1) Daily time-series aggregation (skip rows where all meteo fields null).
+  const dailyRows = await prisma.$queryRaw<MeteoDailyRow[]>`
+    SELECT
+      date_trunc('day', "timestamp") AS bucket_day,
+      AVG("airPressureHpa") AS avg_pressure,
+      AVG("airHumidityPct") AS avg_humidity,
+      AVG("rainIndex") AS avg_rain,
+      AVG("visibilityRange") AS avg_vis,
+      AVG("brightnessNight") AS avg_bright
+    FROM scada_measurements
+    WHERE "tenantId" = ${tenantId}
+      AND "sourceFile" = 'WSD'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND (
+        "airPressureHpa" IS NOT NULL
+        OR "airHumidityPct" IS NOT NULL
+        OR "rainIndex" IS NOT NULL
+        OR "visibilityRange" IS NOT NULL
+        OR "brightnessNight" IS NOT NULL
+      )
+    GROUP BY date_trunc('day', "timestamp")
+    ORDER BY bucket_day
+  `;
+
+  const timeSeries: MeteoPoint[] = dailyRows.map((r) => {
+    const d = new Date(r.bucket_day);
+    const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    return {
+      bucket: iso,
+      meanAirPressureHpa: round(safeNumber(r.avg_pressure), 2),
+      meanHumidityPct: round(safeNumber(r.avg_humidity), 2),
+      meanRainIndex: round(safeNumber(r.avg_rain), 3),
+      meanVisibility: round(safeNumber(r.avg_vis), 2),
+      meanBrightnessNight: round(safeNumber(r.avg_bright), 2),
+    };
+  });
+
+  // 2) Monthly icing aggregation.
+  const monthlyRows = await prisma.$queryRaw<IcingMonthlyRow[]>`
+    SELECT
+      EXTRACT(MONTH FROM "timestamp")::int AS month_num,
+      COUNT(*) FILTER (WHERE "icingCount"::numeric > 0) AS icing_rows,
+      COUNT(*) FILTER (WHERE "coldIcing"::numeric > 0) AS cold_icing_rows
+    FROM scada_measurements
+    WHERE "tenantId" = ${tenantId}
+      AND "sourceFile" = 'WSD'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND ("icingCount" IS NOT NULL OR "coldIcing" IS NOT NULL)
+    GROUP BY EXTRACT(MONTH FROM "timestamp")
+    ORDER BY month_num
+  `;
+
+  // Each 10-min row that is in icing state contributes 10min / 60 = 1/6 h.
+  const ROW_TO_HOURS = 10 / 60;
+
+  const monthlyIcingHours = monthlyRows.map((r) => ({
+    month: r.month_num,
+    hours: round(Number(r.icing_rows) * ROW_TO_HOURS, 2),
+    coldHours: round(Number(r.cold_icing_rows) * ROW_TO_HOURS, 2),
+  }));
+
+  const totalIcingHours = round(
+    monthlyIcingHours.reduce((s, m) => s + m.hours, 0),
+    2,
+  );
+  const totalColdIcingHours = round(
+    monthlyIcingHours.reduce((s, m) => s + m.coldHours, 0),
+    2,
+  );
+
+  const peakIcingMonth =
+    monthlyIcingHours.length > 0
+      ? monthlyIcingHours.reduce((best, m) => (m.hours > best.hours ? m : best), monthlyIcingHours[0])
+      : null;
+
+  // 3) Data-availability + icing rate.
+  const availabilityRows = await prisma.$queryRaw<AvailabilityRow[]>`
+    SELECT
+      COUNT(*) AS total_rows,
+      COUNT(*) FILTER (
+        WHERE "airPressureHpa" IS NOT NULL
+          OR "airHumidityPct" IS NOT NULL
+          OR "rainIndex" IS NOT NULL
+          OR "visibilityRange" IS NOT NULL
+          OR "brightnessNight" IS NOT NULL
+      ) AS meteo_rows,
+      COUNT(*) FILTER (WHERE "icingCount"::numeric > 0) AS icing_rows,
+      COUNT(*) FILTER (WHERE "coldIcing"::numeric > 0) AS cold_icing_rows
+    FROM scada_measurements
+    WHERE "tenantId" = ${tenantId}
+      AND "sourceFile" = 'WSD'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+  `;
+
+  const availRow = availabilityRows[0];
+  const totalRows = Number(availRow?.total_rows ?? 0);
+  const meteoRows = Number(availRow?.meteo_rows ?? 0);
+  const icingRows = Number(availRow?.icing_rows ?? 0);
+
+  const dataAvailability = totalRows > 0 ? round((meteoRows / totalRows) * 100, 2) : 0;
+  // Icing rate: share of meteo-carrying rows that are in icing state.
+  const icingRate = meteoRows > 0 ? round((icingRows / meteoRows) * 100, 2) : 0;
+
+  const icing: IcingSummary = {
+    totalIcingHours,
+    totalColdIcingHours,
+    icingRate,
+    monthlyIcingHours,
+    peakIcingMonth: peakIcingMonth ? { month: peakIcingMonth.month, hours: peakIcingMonth.hours } : null,
+  };
+
+  return {
+    timeSeries,
+    icing,
+    summary: { year, dataAvailability },
+  };
+}
+
+// =============================================================================
+// Reactive Power Quality Module Fetcher (Grid-Support)
+// =============================================================================
+
+// Uses ScadaElectricalSummary (periodType='DAILY') from UIR imports for the
+// daily time series and summary (fields: meanReactivePowerVar, meanCosPhi,
+// meanFrequencyHz). Hourly profile uses ScadaMeasurement (10-min INTERVAL
+// data) with reactivePowerVar (WSD sourceFile) and powerFactor (UID sourceFile)
+// aggregated per hour of day across the whole year.
+
+interface ReactivePowerDailyRow {
+  bucket: Date;
+  mean_reactive_var: Prisma.Decimal | null;
+  mean_cos_phi: Prisma.Decimal | null;
+  mean_freq_hz: Prisma.Decimal | null;
+  total_rows: bigint;
+  cos_phi_out_rows: bigint;
+  freq_out_rows: bigint;
+}
+
+interface ReactivePowerSummaryRow {
+  sum_reactive_var: Prisma.Decimal | null;
+  sum_ind_reactive_var: Prisma.Decimal | null;
+  sum_cap_reactive_var: Prisma.Decimal | null;
+  avg_cos_phi: Prisma.Decimal | null;
+  total_rows: bigint;
+  cos_phi_ok_rows: bigint;
+  freq_ok_rows: bigint;
+  freq_rows: bigint;
+  cos_phi_rows: bigint;
+}
+
+interface ReactivePowerHourRow {
+  hour: number;
+  mean_reactive_var: Prisma.Decimal | null;
+  mean_cos_phi: Prisma.Decimal | null;
+}
+
+const COS_PHI_TOLERANCE = 0.05;
+const FREQ_TOLERANCE_HZ = 0.2;
+const FREQ_NOMINAL_HZ = 50;
+
+/**
+ * Fetch reactive-power / grid-quality analytics for a given year.
+ *
+ * Sources:
+ *  - Daily time series & summary: ScadaElectricalSummary (periodType='DAILY').
+ *    UIR imports supply meanReactivePowerVar, meanCosPhi, meanFrequencyHz.
+ *  - Hourly profile: ScadaMeasurement 10-min INTERVAL rows. `reactivePowerVar`
+ *    comes from WSD-sourced rows, `powerFactor` (= cos phi) from UID-sourced
+ *    rows. AVG() on nullable columns skips NULLs so combining both source-file
+ *    kinds in one query is safe.
+ *
+ * Compliance thresholds:
+ *  - cos phi: |x - 1| <= 0.05 (VDE-AR-N 4110 uses stricter curves; 0.05 is a
+ *    conservative default that flags obvious deviations only).
+ *  - Frequency: |f - 50 Hz| <= 0.2 Hz.
+ *
+ * Q-Energy integration: each daily row stores a daily-mean Q in Var.
+ * Convert to daily energy (Var * 24 h -> VArh), sum across all rows,
+ * then divide by 1e6 to get MVArh.
+ */
+export async function fetchReactivePowerQuality(
+  tenantId: string,
+  year: number,
+  parkId?: string | null,
+): Promise<ReactivePowerResponse> {
+  const emptyResponse: ReactivePowerResponse = {
+    timeSeries: [],
+    summary: {
+      totalReactiveEnergyMWh: 0,
+      inductiveReactiveEnergyMWh: 0,
+      capacitiveReactiveEnergyMWh: 0,
+      meanCosPhiOverall: 0,
+      cosPhiComplianceRate: 0,
+      freqComplianceRate: 0,
+      year,
+    },
+    hourlyProfile: [],
+    meta: { year, parkId: parkId || "all" },
+  };
+
+  const turbines = await loadTurbines(tenantId, parkId);
+  if (turbines.length === 0) return emptyResponse;
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  // 1) Daily time series
+  const dailyRows = await prisma.$queryRaw<ReactivePowerDailyRow[]>`
+    SELECT
+      date_trunc('day', date) AS bucket,
+      AVG("meanReactivePowerVar") AS mean_reactive_var,
+      AVG("meanCosPhi") AS mean_cos_phi,
+      AVG("meanFrequencyHz") AS mean_freq_hz,
+      COUNT(*)::bigint AS total_rows,
+      COUNT(*) FILTER (
+        WHERE "meanCosPhi" IS NOT NULL
+          AND ABS("meanCosPhi" - 1) > ${COS_PHI_TOLERANCE}
+      )::bigint AS cos_phi_out_rows,
+      COUNT(*) FILTER (
+        WHERE "meanFrequencyHz" IS NOT NULL
+          AND ABS("meanFrequencyHz" - ${FREQ_NOMINAL_HZ}) > ${FREQ_TOLERANCE_HZ}
+      )::bigint AS freq_out_rows
+    FROM scada_electrical_summaries
+    WHERE "tenantId" = ${tenantId}
+      AND "periodType" = 'DAILY'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND date >= ${from}
+      AND date < ${to}
+    GROUP BY date_trunc('day', date)
+    ORDER BY bucket
+  `;
+
+  const timeSeries: ReactivePowerPoint[] = dailyRows.map((r) => {
+    const totalRows = Number(r.total_rows);
+    const cosPhiOutPct =
+      totalRows > 0
+        ? round((Number(r.cos_phi_out_rows) / totalRows) * 100, 2)
+        : 0;
+    const freqOutPct =
+      totalRows > 0
+        ? round((Number(r.freq_out_rows) / totalRows) * 100, 2)
+        : 0;
+    return {
+      bucket: new Date(r.bucket).toISOString().slice(0, 10),
+      meanReactiveVar: round(safeNumber(r.mean_reactive_var), 2),
+      meanCosPhi: round(safeNumber(r.mean_cos_phi), 3),
+      cosPhiOutOfRangePct: cosPhiOutPct,
+      meanFrequencyHz: round(safeNumber(r.mean_freq_hz), 3),
+      frequencyOutOfRangePct: freqOutPct,
+    };
+  });
+
+  // 2) Summary (single-row aggregate)
+  const summaryRows = await prisma.$queryRaw<ReactivePowerSummaryRow[]>`
+    SELECT
+      SUM("meanReactivePowerVar") AS sum_reactive_var,
+      SUM(CASE WHEN "meanReactivePowerVar" > 0 THEN "meanReactivePowerVar" ELSE 0 END) AS sum_ind_reactive_var,
+      SUM(CASE WHEN "meanReactivePowerVar" < 0 THEN "meanReactivePowerVar" ELSE 0 END) AS sum_cap_reactive_var,
+      AVG("meanCosPhi") AS avg_cos_phi,
+      COUNT(*)::bigint AS total_rows,
+      COUNT(*) FILTER (
+        WHERE "meanCosPhi" IS NOT NULL
+          AND ABS("meanCosPhi" - 1) <= ${COS_PHI_TOLERANCE}
+      )::bigint AS cos_phi_ok_rows,
+      COUNT(*) FILTER (WHERE "meanCosPhi" IS NOT NULL)::bigint AS cos_phi_rows,
+      COUNT(*) FILTER (
+        WHERE "meanFrequencyHz" IS NOT NULL
+          AND ABS("meanFrequencyHz" - ${FREQ_NOMINAL_HZ}) <= ${FREQ_TOLERANCE_HZ}
+      )::bigint AS freq_ok_rows,
+      COUNT(*) FILTER (WHERE "meanFrequencyHz" IS NOT NULL)::bigint AS freq_rows
+    FROM scada_electrical_summaries
+    WHERE "tenantId" = ${tenantId}
+      AND "periodType" = 'DAILY'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND date >= ${from}
+      AND date < ${to}
+  `;
+
+  const s = summaryRows[0];
+  const sumVar = safeNumber(s?.sum_reactive_var);
+  const sumIndVar = safeNumber(s?.sum_ind_reactive_var);
+  const sumCapVar = safeNumber(s?.sum_cap_reactive_var);
+  const HOURS_PER_DAY = 24;
+  const totalReactiveEnergyMWh = round((sumVar * HOURS_PER_DAY) / 1_000_000, 3);
+  const inductiveReactiveEnergyMWh = round(
+    (sumIndVar * HOURS_PER_DAY) / 1_000_000,
+    3,
+  );
+  const capacitiveReactiveEnergyMWh = round(
+    (Math.abs(sumCapVar) * HOURS_PER_DAY) / 1_000_000,
+    3,
+  );
+  const cosPhiRows = Number(s?.cos_phi_rows ?? 0);
+  const cosPhiOkRows = Number(s?.cos_phi_ok_rows ?? 0);
+  const freqRows = Number(s?.freq_rows ?? 0);
+  const freqOkRows = Number(s?.freq_ok_rows ?? 0);
+
+  const summary = {
+    totalReactiveEnergyMWh,
+    inductiveReactiveEnergyMWh,
+    capacitiveReactiveEnergyMWh,
+    meanCosPhiOverall: round(safeNumber(s?.avg_cos_phi), 3),
+    cosPhiComplianceRate:
+      cosPhiRows > 0 ? round((cosPhiOkRows / cosPhiRows) * 100, 2) : 0,
+    freqComplianceRate:
+      freqRows > 0 ? round((freqOkRows / freqRows) * 100, 2) : 0,
+    year,
+  };
+
+  // 3) Hourly profile from 10-min ScadaMeasurement rows.
+  const hourRows = await prisma.$queryRaw<ReactivePowerHourRow[]>`
+    SELECT
+      EXTRACT(HOUR FROM "timestamp")::int AS hour,
+      AVG("reactivePowerVar") AS mean_reactive_var,
+      AVG("powerFactor") AS mean_cos_phi
+    FROM scada_measurements
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND ("reactivePowerVar" IS NOT NULL OR "powerFactor" IS NOT NULL)
+    GROUP BY EXTRACT(HOUR FROM "timestamp")
+    ORDER BY hour
+  `;
+
+  const hourlyProfile: ReactivePowerHourly[] = hourRows.map((r) => ({
+    hour: r.hour,
+    meanReactiveVar: round(safeNumber(r.mean_reactive_var), 2),
+    meanCosPhi: round(safeNumber(r.mean_cos_phi), 3),
+  }));
+
+  return {
+    timeSeries,
+    summary,
+    hourlyProfile,
+    meta: { year, parkId: parkId || "all" },
+  };
+}
+
+// =============================================================================
+// Curtailment Module Fetcher (§13a EnWG Redispatch)
+// =============================================================================
+
+interface CurtailmentMonthlyRow {
+  month_start: Date;
+  avg_wind_kw: Prisma.Decimal | null;
+  avg_technical_kw: Prisma.Decimal | null;
+  avg_forced_kw: Prisma.Decimal | null;
+  avg_external_kw: Prisma.Decimal | null;
+  sum_wind_kw: Prisma.Decimal | null;
+  sum_technical_kw: Prisma.Decimal | null;
+  sum_forced_kw: Prisma.Decimal | null;
+  sum_external_kw: Prisma.Decimal | null;
+  avg_power_kw: Prisma.Decimal | null; // AVG(powerW) / 1000
+  data_points: bigint;
+}
+
+/**
+ * Curtailment analysis per §13a EnWG (Redispatch).
+ *
+ * Aggregates the four SCADA curtailment fields (mrwSmpPwin / mrwSmpPte /
+ * mrwSmpPfm / mrwSmpPext) into monthly buckets. Curtailment fields are
+ * stored raw as kW (schema comment: "kW, raw wie im DBF"), so we convert
+ * kW → kWh using the 10-minute measurement interval: SUM(kW) * 10 / 60.
+ *
+ * pctOfProduction is share of theoretical production, where theoretical =
+ * actualAvgPowerKw + AVG(all curtailment) → both averaged, then converted
+ * to kWh per hour.
+ *
+ * EEG-Vergütung: no dedicated field exists in TenantSettings yet, so we
+ * fall back to 0.08 €/kWh. TODO: add `eegFeedInTariffEurPerKwh` to
+ * TenantSettings and use it here.
+ */
+export async function fetchCurtailment(
+  tenantId: string,
+  year: number,
+  parkId?: string | null,
+): Promise<CurtailmentResponse> {
+  const turbines = await loadTurbines(tenantId, parkId);
+  const summary = {
+    totalLostKwh: 0,
+    totalLostEur: 0,
+    externalRedispatchKwh: 0,
+    externalRedispatchEur: 0,
+    year,
+  };
+  if (turbines.length === 0) {
+    return { timeSeries: [], byCategory: [], summary };
+  }
+
+  const turbineIds = turbines.map((t) => t.id);
+  const { from, to } = buildDateRange(year);
+
+  // TODO: source from TenantSettings.eegFeedInTariffEurPerKwh once added.
+  // 0.08 €/kWh is a conservative EEG-average fallback for onshore wind.
+  const eegTariffEurPerKwh = 0.08;
+
+  // Monthly aggregation. Only rows where at least one curtailment field > 0.
+  // 10-min interval → kWh = SUM(kW) * 10 / 60.
+  const rows = await prisma.$queryRaw<CurtailmentMonthlyRow[]>`
+    SELECT
+      date_trunc('month', "timestamp") AS month_start,
+      AVG(COALESCE("powerWindKw", 0))      AS avg_wind_kw,
+      AVG(COALESCE("powerTechnicalKw", 0)) AS avg_technical_kw,
+      AVG(COALESCE("powerForcedKw", 0))    AS avg_forced_kw,
+      AVG(COALESCE("powerExternalKw", 0))  AS avg_external_kw,
+      SUM(COALESCE("powerWindKw", 0))      AS sum_wind_kw,
+      SUM(COALESCE("powerTechnicalKw", 0)) AS sum_technical_kw,
+      SUM(COALESCE("powerForcedKw", 0))    AS sum_forced_kw,
+      SUM(COALESCE("powerExternalKw", 0))  AS sum_external_kw,
+      AVG("powerW") / 1000.0               AS avg_power_kw,
+      COUNT(*)                             AS data_points
+    FROM scada_measurements
+    WHERE "tenantId" = ${tenantId}
+      AND "sourceFile" = 'WSD'
+      AND ${buildTurbineIdFilter(turbineIds)}
+      AND "timestamp" >= ${from}
+      AND "timestamp" < ${to}
+      AND (
+        COALESCE("powerWindKw", 0) > 0
+        OR COALESCE("powerTechnicalKw", 0) > 0
+        OR COALESCE("powerForcedKw", 0) > 0
+        OR COALESCE("powerExternalKw", 0) > 0
+      )
+    GROUP BY date_trunc('month', "timestamp")
+    ORDER BY month_start
+  `;
+
+  // Track category totals for byCategory + summary
+  const catTotals: Record<CurtailmentCategory, number> = {
+    wind: 0,
+    technical: 0,
+    forced: 0,
+    external: 0,
+  };
+  let totalTheoreticalKwh = 0;
+
+  const timeSeries: CurtailmentPoint[] = rows.map((r) => {
+    const d = new Date(r.month_start);
+    const bucket = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+
+    // 10-min interval → kWh factor = 10/60 = 1/6
+    const kWhFactor = 10 / 60;
+    const windKwh = safeNumber(r.sum_wind_kw) * kWhFactor;
+    const technicalKwh = safeNumber(r.sum_technical_kw) * kWhFactor;
+    const forcedKwh = safeNumber(r.sum_forced_kw) * kWhFactor;
+    const externalKwh = safeNumber(r.sum_external_kw) * kWhFactor;
+    const lostEnergyKwh = windKwh + technicalKwh + forcedKwh + externalKwh;
+    const lostRevenueEur = lostEnergyKwh * eegTariffEurPerKwh;
+
+    catTotals.wind += windKwh;
+    catTotals.technical += technicalKwh;
+    catTotals.forced += forcedKwh;
+    catTotals.external += externalKwh;
+
+    // Theoretical production this month: actual avg power + avg curtailment
+    // (both as avg kW) × number of records × 10min/60 = kWh
+    const dataPoints = Number(r.data_points);
+    const avgActualKw = safeNumber(r.avg_power_kw);
+    const avgCurtailKw =
+      safeNumber(r.avg_wind_kw) +
+      safeNumber(r.avg_technical_kw) +
+      safeNumber(r.avg_forced_kw) +
+      safeNumber(r.avg_external_kw);
+    totalTheoreticalKwh += (avgActualKw + avgCurtailKw) * dataPoints * kWhFactor;
+
+    return {
+      bucket,
+      windKw: round(safeNumber(r.avg_wind_kw), 2),
+      technicalKw: round(safeNumber(r.avg_technical_kw), 2),
+      forcedKw: round(safeNumber(r.avg_forced_kw), 2),
+      externalKw: round(safeNumber(r.avg_external_kw), 2),
+      lostEnergyKwh: round(lostEnergyKwh, 1),
+      lostRevenueEur: round(lostRevenueEur, 2),
+    };
+  });
+
+  // Aggregate summary
+  summary.totalLostKwh = round(
+    catTotals.wind + catTotals.technical + catTotals.forced + catTotals.external,
+    1,
+  );
+  summary.totalLostEur = round(summary.totalLostKwh * eegTariffEurPerKwh, 2);
+  summary.externalRedispatchKwh = round(catTotals.external, 1);
+  summary.externalRedispatchEur = round(
+    catTotals.external * eegTariffEurPerKwh,
+    2,
+  );
+
+  // byCategory table
+  const catDef: Array<{ category: CurtailmentCategory; label: string }> = [
+    { category: "wind", label: "Wind" },
+    { category: "technical", label: "Technisch" },
+    { category: "forced", label: "Forced" },
+    { category: "external", label: "Extern (§13a EnWG)" },
+  ];
+
+  const byCategory: CurtailmentByCategory[] = catDef.map((c) => {
+    const kwh = catTotals[c.category];
+    const pct =
+      totalTheoreticalKwh > 0
+        ? round((kwh / totalTheoreticalKwh) * 100, 2)
+        : 0;
+    return {
+      category: c.category,
+      label: c.label,
+      totalLostKwh: round(kwh, 1),
+      totalLostEur: round(kwh * eegTariffEurPerKwh, 2),
+      pctOfProduction: pct,
+    };
+  });
+
+  return { timeSeries, byCategory, summary };
 }

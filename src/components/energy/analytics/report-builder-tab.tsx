@@ -29,6 +29,11 @@ import {
   Trash2,
   FileText,
   Save,
+  GripVertical,
+  Settings,
+  Eye,
+  EyeOff,
+  X,
 } from "lucide-react";
 import { ANALYTICS_MODULES } from "@/types/analytics";
 import {
@@ -41,6 +46,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useDebounce } from "@/hooks/useDebounce";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { ReportLivePreview } from "./report-live-preview";
 
 // =============================================================================
 // Types & Constants
@@ -56,8 +80,16 @@ interface ReportConfig {
   name: string;
   description: string | null;
   modules: string[];
+  moduleOrder: string[];
+  moduleSettings: Record<string, ModuleSettings>;
   interval: string;
   park: { id: string; name: string } | null;
+}
+
+// Per-module settings shape (all optional — modules use only what they support)
+interface ModuleSettings {
+  compareYear?: number | null;
+  turbineIds?: string[];
 }
 
 const MONTH_NAMES = [
@@ -102,6 +134,108 @@ const YEARS = Array.from({ length: 5 }, (_, i) => currentYear - i);
 const TOTAL_MODULE_COUNT =
   Object.keys(ANALYTICS_MODULES).length + Object.keys(CLASSIC_MODULES).length;
 
+// Per-module config schema — declares which options each module supports.
+// Modules not listed here fall back to "compareYear only".
+const MODULE_CONFIG_SCHEMA: Record<
+  string,
+  { supportsCompareYear: boolean; supportsTurbineFilter: boolean }
+> = {
+  performanceKpis: { supportsCompareYear: true, supportsTurbineFilter: true },
+  productionHeatmap: { supportsCompareYear: false, supportsTurbineFilter: true },
+  turbineRanking: { supportsCompareYear: false, supportsTurbineFilter: true },
+  yearOverYear: { supportsCompareYear: true, supportsTurbineFilter: false },
+  availabilityBreakdown: { supportsCompareYear: false, supportsTurbineFilter: true },
+  availabilityTrend: { supportsCompareYear: true, supportsTurbineFilter: false },
+  availabilityHeatmap: { supportsCompareYear: false, supportsTurbineFilter: true },
+  downtimePareto: { supportsCompareYear: false, supportsTurbineFilter: false },
+  turbineComparison: { supportsCompareYear: false, supportsTurbineFilter: true },
+  powerCurveOverlay: { supportsCompareYear: false, supportsTurbineFilter: true },
+  faultPareto: { supportsCompareYear: false, supportsTurbineFilter: false },
+  warningTrend: { supportsCompareYear: true, supportsTurbineFilter: false },
+  windDistribution: { supportsCompareYear: false, supportsTurbineFilter: false },
+  environmentalData: { supportsCompareYear: false, supportsTurbineFilter: false },
+  financialOverview: { supportsCompareYear: true, supportsTurbineFilter: true },
+  revenueComparison: { supportsCompareYear: true, supportsTurbineFilter: false },
+  curtailmentAnalysis: { supportsCompareYear: true, supportsTurbineFilter: false },
+  reactivePowerQuality: { supportsCompareYear: true, supportsTurbineFilter: true },
+  meteoExtended: { supportsCompareYear: false, supportsTurbineFilter: false },
+};
+
+function getModuleLabel(key: string): string {
+  if (key in ANALYTICS_MODULES) {
+    return ANALYTICS_MODULES[key as keyof typeof ANALYTICS_MODULES].label;
+  }
+  return CLASSIC_MODULES[key] ?? key;
+}
+
+// =============================================================================
+// SortableItem — one draggable module row
+// =============================================================================
+
+function SortableModuleItem({
+  id,
+  label,
+  isActive,
+  onSelectConfig,
+  onRemove,
+}: {
+  id: string;
+  label: string;
+  isActive: boolean;
+  onSelectConfig: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 rounded-md border bg-background p-2 text-sm ${
+        isActive ? "border-primary ring-1 ring-primary/40" : ""
+      }`}
+    >
+      <button
+        type="button"
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+        aria-label="Ziehen zum Umsortieren"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <span className="flex-1 truncate">{label}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7"
+        onClick={onSelectConfig}
+        aria-label={`Konfiguration für ${label}`}
+      >
+        <Settings className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+        onClick={onRemove}
+        aria-label={`${label} entfernen`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -109,6 +243,7 @@ const TOTAL_MODULE_COUNT =
 export function ReportBuilderTab() {
   const t = useTranslations("energy.componentToasts");
   const [parks, setParks] = useState<Park[]>([]);
+  const [turbines, setTurbines] = useState<Array<{ id: string; designation: string; parkId: string }>>([]);
   const [templates, setTemplates] = useState<ReportConfig[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
 
@@ -116,9 +251,24 @@ export function ReportBuilderTab() {
   const [parkId, setParkId] = useState("all");
   const [year, setYear] = useState(currentYear.toString());
   const [month, setMonth] = useState("all");
+
+  // Selection + ordering
   const [selectedModules, setSelectedModules] = useState<Set<string>>(
     new Set(["performanceKpis", "availabilityBreakdown", "faultPareto"])
   );
+  const [moduleOrder, setModuleOrder] = useState<string[]>([
+    "performanceKpis",
+    "availabilityBreakdown",
+    "faultPareto",
+  ]);
+
+  // Per-module settings
+  const [moduleSettings, setModuleSettings] = useState<Record<string, ModuleSettings>>({});
+  const [activeConfigModule, setActiveConfigModule] = useState<string | null>(null);
+
+  // Live preview toggle (mobile) / always on for lg+
+  const [previewVisible, setPreviewVisible] = useState(true);
+
   const [generating, setGenerating] = useState(false);
 
   // Save as template state
@@ -127,18 +277,21 @@ export function ReportBuilderTab() {
   const [saving, setSaving] = useState(false);
 
   // Per-template generating / delete state
-  const [generatingTemplate, setGeneratingTemplate] = useState<string | null>(
-    null
-  );
+  const [generatingTemplate, setGeneratingTemplate] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReportConfig | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Per-template park / year selectors
-  const [templateParks, setTemplateParks] = useState<Record<string, string>>(
-    {}
-  );
-  const [templateYears, setTemplateYears] = useState<Record<string, string>>(
-    {}
+  const [templateParks, setTemplateParks] = useState<Record<string, string>>({});
+  const [templateYears, setTemplateYears] = useState<Record<string, string>>({});
+
+  // ---------------------------------------------------------------------------
+  // dnd-kit sensors
+  // ---------------------------------------------------------------------------
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   // ---------------------------------------------------------------------------
@@ -163,33 +316,99 @@ export function ReportBuilderTab() {
       .then((r) => r.json())
       .then((d) => setParks(d.data || []))
       .catch(() => {});
+    fetch("/api/turbines?limit=500")
+      .then((r) => r.json())
+      .then((d) => setTurbines(d.data || []))
+      .catch(() => {});
     loadTemplates();
   }, [loadTemplates]);
 
   // ---------------------------------------------------------------------------
-  // Module toggle helpers
+  // Sync moduleOrder <-> selectedModules
   // ---------------------------------------------------------------------------
 
   const toggleModule = (key: string) => {
     setSelectedModules((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+        setModuleOrder((order) => order.filter((k) => k !== key));
+        // If the removed one was the active config, clear it
+        setActiveConfigModule((current) => (current === key ? null : current));
+      } else {
+        next.add(key);
+        setModuleOrder((order) => (order.includes(key) ? order : [...order, key]));
+      }
       return next;
     });
   };
 
   const toggleGroup = (items: Array<{ key: string }>) => {
     const allOn = items.every((m) => selectedModules.has(m.key));
-    setSelectedModules((prev) => {
-      const next = new Set(prev);
-      for (const m of items) {
-        if (allOn) next.delete(m.key);
-        else next.add(m.key);
-      }
-      return next;
+    if (allOn) {
+      // Turn all off
+      setSelectedModules((prev) => {
+        const next = new Set(prev);
+        for (const m of items) next.delete(m.key);
+        return next;
+      });
+      const keys = new Set(items.map((m) => m.key));
+      setModuleOrder((order) => order.filter((k) => !keys.has(k)));
+      setActiveConfigModule((current) => (current && keys.has(current) ? null : current));
+    } else {
+      // Turn all on
+      setSelectedModules((prev) => {
+        const next = new Set(prev);
+        for (const m of items) next.add(m.key);
+        return next;
+      });
+      setModuleOrder((order) => {
+        const orderSet = new Set(order);
+        const additions = items.map((m) => m.key).filter((k) => !orderSet.has(k));
+        return [...order, ...additions];
+      });
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setModuleOrder((order) => {
+      const oldIdx = order.indexOf(String(active.id));
+      const newIdx = order.indexOf(String(over.id));
+      if (oldIdx === -1 || newIdx === -1) return order;
+      return arrayMove(order, oldIdx, newIdx);
     });
   };
+
+  const updateModuleSettings = (
+    moduleKey: string,
+    patch: Partial<ModuleSettings>
+  ) => {
+    setModuleSettings((prev) => ({
+      ...prev,
+      [moduleKey]: { ...prev[moduleKey], ...patch },
+    }));
+  };
+
+  // ---------------------------------------------------------------------------
+  // Debounced preview data (500 ms after last change)
+  // ---------------------------------------------------------------------------
+
+  const modulesForPreview = useMemo(
+    () => (moduleOrder.length > 0 ? moduleOrder : Array.from(selectedModules)),
+    [moduleOrder, selectedModules]
+  );
+  const debouncedModulesForPreview = useDebounce(modulesForPreview, 500);
+  const debouncedYear = useDebounce(year, 500);
+  const debouncedMonth = useDebounce(month, 500);
+  const debouncedParkId = useDebounce(parkId, 500);
+
+  const previewParkName = useMemo(() => {
+    if (debouncedParkId === "all") return "Alle Parks";
+    const p = parks.find((x) => x.id === debouncedParkId);
+    return p?.name ?? "Vorschau";
+  }, [debouncedParkId, parks]);
 
   // ---------------------------------------------------------------------------
   // PDF download helper
@@ -226,9 +445,7 @@ export function ReportBuilderTab() {
       URL.revokeObjectURL(url);
       toast.success(t("reportDownloaded", { label }));
     } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : t("pdfGenerateError")
-      );
+      toast.error(e instanceof Error ? e.message : t("pdfGenerateError"));
     } finally {
       setLoading(false);
     }
@@ -243,12 +460,15 @@ export function ReportBuilderTab() {
       toast.error(t("moduleSelectRequired"));
       return;
     }
+    // Prefer moduleOrder (user-sorted); fall back to Set iteration order
+    const orderedModules =
+      moduleOrder.length > 0 ? moduleOrder : Array.from(selectedModules);
     downloadPdf(
       {
         parkId: parkId === "all" ? undefined : parkId,
         year: parseInt(year),
         ...(month && month !== "all" ? { month: parseInt(month) } : {}),
-        modules: Array.from(selectedModules),
+        modules: orderedModules,
       },
       `Bericht_${year}.pdf`,
       "Bericht",
@@ -267,12 +487,16 @@ export function ReportBuilderTab() {
     }
     setSaving(true);
     try {
+      const orderedModules =
+        moduleOrder.length > 0 ? moduleOrder : Array.from(selectedModules);
       const res = await fetch("/api/energy/reports/configs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: templateName.trim(),
-          modules: Array.from(selectedModules),
+          modules: orderedModules,
+          moduleOrder: orderedModules,
+          moduleSettings,
           parkId: parkId !== "all" ? parkId : null,
           interval: month && month !== "all" ? "month" : "year",
           portalVisible: false,
@@ -293,11 +517,16 @@ export function ReportBuilderTab() {
   const handleGenerateTemplate = (config: ReportConfig) => {
     const tParkId = templateParks[config.id] || config.park?.id || "all";
     const tYear = templateYears[config.id] || currentYear.toString();
+    // Prefer moduleOrder from saved template, fall back to modules
+    const orderedModules =
+      config.moduleOrder && config.moduleOrder.length > 0
+        ? config.moduleOrder
+        : config.modules;
     downloadPdf(
       {
         parkId: tParkId === "all" ? undefined : tParkId,
         year: parseInt(tYear),
-        modules: config.modules,
+        modules: orderedModules,
       },
       `${config.name}_${tYear}.pdf`,
       config.name,
@@ -330,6 +559,16 @@ export function ReportBuilderTab() {
       Object.entries(CLASSIC_MODULES).map(([key, label]) => ({ key, label })),
     []
   );
+
+  const activeConfigSchema = activeConfigModule
+    ? MODULE_CONFIG_SCHEMA[activeConfigModule] ?? {
+        supportsCompareYear: true,
+        supportsTurbineFilter: false,
+      }
+    : null;
+  const activeSettings = activeConfigModule
+    ? moduleSettings[activeConfigModule] ?? {}
+    : {};
 
   // ---------------------------------------------------------------------------
   // Render
@@ -468,40 +707,54 @@ export function ReportBuilderTab() {
       </div>
 
       {/* ====================================================================
-          Section 2: Neuer Bericht
+          Section 2: Neuer Bericht — Split-Screen (Builder | Live-Preview)
       ==================================================================== */}
       <div>
         <div className="flex items-center gap-3 mb-4">
           <FileText className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-base font-semibold">Neuer Bericht</h2>
           <Separator className="flex-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setPreviewVisible((v) => !v)}
+          >
+            {previewVisible ? (
+              <>
+                <EyeOff className="mr-1.5 h-3.5 w-3.5" /> Preview ausblenden
+              </>
+            ) : (
+              <>
+                <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview zeigen
+              </>
+            )}
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Settings + Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* ================= Left: Builder ================= */}
           <div className="space-y-4">
-            {/* Park selector */}
-            <div className="space-y-2">
-              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Windpark
-              </Label>
-              <Select value={parkId} onValueChange={setParkId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Parks" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Parks</SelectItem>
-                  {parks.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Year + Month selectors */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Global filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Windpark
+                </Label>
+                <Select value={parkId} onValueChange={setParkId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alle Parks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Parks</SelectItem>
+                    {parks.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="space-y-2">
                 <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Jahr
@@ -538,6 +791,240 @@ export function ReportBuilderTab() {
                 </Select>
               </div>
             </div>
+
+            {/* Module selection */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold">
+                  Module auswählen
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {selectedModules.size} von {TOTAL_MODULE_COUNT}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                  {Array.from(MODULE_GROUPS.entries()).map(([groupName, items]) => {
+                    const allOn = items.every((m) => selectedModules.has(m.key));
+                    return (
+                      <div key={groupName} className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-foreground">
+                            {groupName}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleGroup(items)}
+                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {allOn ? "Alle ab" : "Alle an"}
+                          </button>
+                        </div>
+                        {items.map((m) => (
+                          <label
+                            key={m.key}
+                            className="flex items-center gap-2 cursor-pointer group"
+                          >
+                            <Checkbox
+                              checked={selectedModules.has(m.key)}
+                              onCheckedChange={() => toggleModule(m.key)}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-sm group-hover:text-foreground transition-colors">
+                              {m.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-foreground">
+                        Klassische Module
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(classicItems)}
+                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {classicItems.every((m) => selectedModules.has(m.key))
+                          ? "Alle ab"
+                          : "Alle an"}
+                      </button>
+                    </div>
+                    {classicItems.map((m) => (
+                      <label
+                        key={m.key}
+                        className="flex items-center gap-2 cursor-pointer group"
+                      >
+                        <Checkbox
+                          checked={selectedModules.has(m.key)}
+                          onCheckedChange={() => toggleModule(m.key)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-sm group-hover:text-foreground transition-colors">
+                          {m.label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Module Sorter (DnD) */}
+            {moduleOrder.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold">
+                    Reihenfolge
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      Ziehen zum Umsortieren
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={moduleOrder}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-1.5">
+                        {moduleOrder.map((key) => (
+                          <SortableModuleItem
+                            key={key}
+                            id={key}
+                            label={getModuleLabel(key)}
+                            isActive={activeConfigModule === key}
+                            onSelectConfig={() => setActiveConfigModule(key)}
+                            onRemove={() => toggleModule(key)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Per-module config panel */}
+            {activeConfigModule && activeConfigSchema && (
+              <Card>
+                <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-sm font-semibold">
+                    Konfiguration: {getModuleLabel(activeConfigModule)}
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setActiveConfigModule(null)}
+                    aria-label="Konfiguration schließen"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {activeConfigSchema.supportsCompareYear && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Vergleichsjahr
+                      </Label>
+                      <Select
+                        value={
+                          activeSettings.compareYear != null
+                            ? String(activeSettings.compareYear)
+                            : "none"
+                        }
+                        onValueChange={(v) =>
+                          updateModuleSettings(activeConfigModule, {
+                            compareYear: v === "none" ? null : parseInt(v),
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Kein Vergleich</SelectItem>
+                          {[1, 2, 3].map((offset) => {
+                            const y = parseInt(year) - offset;
+                            return (
+                              <SelectItem key={y} value={y.toString()}>
+                                {y}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {activeConfigSchema.supportsTurbineFilter && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Turbinen-Filter
+                        <span className="ml-2 normal-case tracking-normal font-normal text-muted-foreground">
+                          {activeSettings.turbineIds?.length
+                            ? `${activeSettings.turbineIds.length} ausgewählt`
+                            : "Alle"}
+                        </span>
+                      </Label>
+                      <div className="max-h-40 overflow-y-auto rounded-md border p-2 space-y-1">
+                        {turbines.length === 0 ? (
+                          <div className="text-xs text-muted-foreground italic p-2">
+                            Keine Turbinen verfügbar
+                          </div>
+                        ) : (
+                          turbines
+                            .filter(
+                              (tur) =>
+                                parkId === "all" || tur.parkId === parkId
+                            )
+                            .map((tur) => {
+                              const checked =
+                                activeSettings.turbineIds?.includes(tur.id) ??
+                                false;
+                              return (
+                                <label
+                                  key={tur.id}
+                                  className="flex items-center gap-2 cursor-pointer text-xs"
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={() => {
+                                      const current =
+                                        activeSettings.turbineIds ?? [];
+                                      const next = checked
+                                        ? current.filter((id) => id !== tur.id)
+                                        : [...current, tur.id];
+                                      updateModuleSettings(activeConfigModule, {
+                                        turbineIds: next.length > 0 ? next : undefined,
+                                      });
+                                    }}
+                                    className="h-3.5 w-3.5"
+                                  />
+                                  {tur.designation}
+                                </label>
+                              );
+                            })
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {!activeConfigSchema.supportsCompareYear &&
+                    !activeConfigSchema.supportsTurbineFilter && (
+                      <p className="text-xs text-muted-foreground italic">
+                        Dieses Modul hat keine zusätzlichen Optionen.
+                      </p>
+                    )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Action buttons */}
             <div className="pt-2 space-y-2">
@@ -606,83 +1093,19 @@ export function ReportBuilderTab() {
             </div>
           </div>
 
-          {/* Right: Module selection */}
-          <div className="lg:col-span-2">
-            <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground block mb-3">
-              Module auswählen
-              <span className="ml-2 normal-case tracking-normal font-normal text-muted-foreground">
-                {selectedModules.size} von {TOTAL_MODULE_COUNT} ausgewählt
-              </span>
-            </Label>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-              {/* Analytics module groups */}
-              {Array.from(MODULE_GROUPS.entries()).map(([groupName, items]) => {
-                const allOn = items.every((m) => selectedModules.has(m.key));
-                return (
-                  <div key={groupName} className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-foreground">
-                        {groupName}
-                      </span>
-                      <button
-                        onClick={() => toggleGroup(items)}
-                        className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {allOn ? "Alle ab" : "Alle an"}
-                      </button>
-                    </div>
-                    {items.map((m) => (
-                      <label
-                        key={m.key}
-                        className="flex items-center gap-2 cursor-pointer group"
-                      >
-                        <Checkbox
-                          checked={selectedModules.has(m.key)}
-                          onCheckedChange={() => toggleModule(m.key)}
-                          className="h-3.5 w-3.5"
-                        />
-                        <span className="text-sm group-hover:text-foreground transition-colors">
-                          {m.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                );
-              })}
-
-              {/* Classic modules */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-foreground">
-                    Klassische Module
-                  </span>
-                  <button
-                    onClick={() => toggleGroup(classicItems)}
-                    className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {classicItems.every((m) => selectedModules.has(m.key))
-                      ? "Alle ab"
-                      : "Alle an"}
-                  </button>
-                </div>
-                {classicItems.map((m) => (
-                  <label
-                    key={m.key}
-                    className="flex items-center gap-2 cursor-pointer group"
-                  >
-                    <Checkbox
-                      checked={selectedModules.has(m.key)}
-                      onCheckedChange={() => toggleModule(m.key)}
-                      className="h-3.5 w-3.5"
-                    />
-                    <span className="text-sm group-hover:text-foreground transition-colors">
-                      {m.label}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
+          {/* ================= Right: Live-Preview ================= */}
+          <div
+            className={`${
+              previewVisible ? "" : "hidden lg:block"
+            } lg:sticky lg:top-4 h-[calc(100vh-8rem)] border rounded-lg overflow-hidden bg-muted/10`}
+          >
+            <ReportLivePreview
+              parkName={previewParkName}
+              year={parseInt(debouncedYear)}
+              month={debouncedMonth === "all" ? undefined : parseInt(debouncedMonth)}
+              tenantName="Vorschau"
+              selectedModules={debouncedModulesForPreview}
+            />
           </div>
         </div>
       </div>
@@ -712,9 +1135,7 @@ export function ReportBuilderTab() {
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Löschen
             </AlertDialogAction>
           </AlertDialogFooter>

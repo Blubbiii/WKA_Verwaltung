@@ -15,6 +15,7 @@ import type { SettlementCalculationResult, LeaseCalculationResult } from "@/lib/
 import { Header } from "./components/Header";
 import { Footer, PageNumber } from "./components/Footer";
 import { formatCurrency, formatDate, formatPercent } from "../utils/formatters";
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 // ===========================================
 // STYLES
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 3,
     borderLeftWidth: 3,
-    borderLeftColor: "#335E99",
+    borderLeftColor: C.navyLight,
   },
   configLabel: {
     fontSize: 8,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#1E3A5F",
+    backgroundColor: C.navy,
     paddingVertical: 8,
     paddingHorizontal: 5,
   },
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: 8,
     paddingHorizontal: 5,
-    backgroundColor: "#1E3A5F",
+    backgroundColor: C.navy,
     marginTop: 10,
   },
   summaryText: {

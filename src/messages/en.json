@@ -2743,6 +2743,54 @@
       "noCompare": "No comparison",
       "createReport": "Create report"
     },
+    "analytics": {
+      "meteoExtended": {
+        "title": "Meteorology & icing",
+        "subtitle": "Extended weather and icing statistics from SCADA sensor data",
+        "kpiIcingHours": "Total icing hours",
+        "kpiColdIcingHours": "Cold-icing hours",
+        "kpiPeakMonth": "Peak icing month",
+        "kpiDataAvailability": "Data availability",
+        "pressureLabel": "Air pressure (hPa)",
+        "humidityLabel": "Humidity (%)",
+        "rainLabel": "Rain index",
+        "visibilityLabel": "Visibility (m)",
+        "brightnessLabel": "Night brightness",
+        "icingMonthlyLabel": "Icing hours per month",
+        "coldIcingLabel": "Cold icing"
+      },
+      "reactivePower": {
+        "title": "Reactive power & grid quality",
+        "subtitle": "Grid-support evidence: cos phi and frequency compliance over time",
+        "kpiTotalReactive": "Reactive energy",
+        "kpiCosPhiCompliance": "cos phi compliance",
+        "kpiFreqCompliance": "Frequency compliance",
+        "inductive": "inductive",
+        "capacitive": "capacitive",
+        "cosPhiLabel": "cos phi",
+        "hourLabel": "Hourly profile (0-23 h)",
+        "complianceGood": "OK",
+        "complianceWarn": "Borderline",
+        "complianceBad": "Violated",
+        "noData": "No reactive-power data available"
+      },
+      "curtailment": {
+        "title": "Curtailment",
+        "subtitle": "Lost revenue from wind, technical, forced and external curtailment (§13a EnWG redispatch)",
+        "kpiLostEnergy": "Lost energy (kWh)",
+        "kpiLostRevenue": "Lost revenue (€)",
+        "kpiRedispatch": "Redispatch-relevant (€)",
+        "redispatchInfoTooltip": "§13a EnWG: Externally ordered curtailment (redispatch) can be claimed as compensation from the grid operator.",
+        "categoryWind": "Wind",
+        "categoryTechnical": "Technical",
+        "categoryForced": "Forced",
+        "categoryExternal": "External",
+        "categoryExternalDetail": "§13a EnWG claimable",
+        "pctOfProduction": "Share of theoretical production",
+        "timeAxisLabel": "Month",
+        "noData": "No curtailment in the selected period"
+      }
+    },
     "phaseSymmetry": {
       "kpiAvgImbalance": "Avg imbalance",
       "criticalRange": "Critical (> 5 %)",
@@ -8398,6 +8446,21 @@
           "t5": "Stör.",
           "t6": "Sonst."
         }
+      },
+      "reportBuilder": {
+        "livePreviewTitle": "Live preview",
+        "previewLoading": "Loading preview...",
+        "previewPlaceholder": "Please select modules to see the live preview.",
+        "moduleOrderTitle": "Order",
+        "dragToReorder": "Drag to reorder",
+        "moduleConfigTitle": "Configuration",
+        "compareYearLabel": "Comparison year",
+        "noComparison": "No comparison",
+        "turbineFilterLabel": "Turbine filter",
+        "allTurbines": "All",
+        "noModuleOptions": "This module has no additional options.",
+        "showPreview": "Show preview",
+        "hidePreview": "Hide preview"
       }
     },
     "profile": {

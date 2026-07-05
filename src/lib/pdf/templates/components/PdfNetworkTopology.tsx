@@ -8,6 +8,7 @@
  */
 
 import { View, Text, StyleSheet, Svg, Circle, Rect, G, Text as SvgText, Path } from "@react-pdf/renderer";
+import { PDF_COLORS } from "@/lib/pdf/tokens";
 
 // ---------------------------------------------------------------------------
 // Types (matching the data shape provided by the annual report generator)
@@ -377,11 +378,11 @@ function computeLayout(
 // ---------------------------------------------------------------------------
 
 const COLORS = {
-  primary: "#1E3A5F",
+  primary: PDF_COLORS.navy,
   muted: "#666666",
   light: "#F5F5F5",
   border: "#E0E0E0",
-  white: "#FFFFFF",
+  white: PDF_COLORS.white,
 };
 
 const s = StyleSheet.create({
@@ -533,7 +534,7 @@ export function PdfNetworkTopology({
                   x={node.p.x}
                   y={node.p.y - 4}
                   textAnchor="middle"
-                  style={{ fontSize: 5.5, fontWeight: "bold", fill: "#1E3A5F" }}
+                  style={{ fontSize: 5.5, fontWeight: "bold", fill: COLORS.primary }}
                 >
                   {node.label.length > 20 ? node.label.slice(0, 18) + "…" : node.label}
                 </SvgText>

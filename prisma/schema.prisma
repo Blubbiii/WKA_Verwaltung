@@ -1547,20 +1547,22 @@ model MarketPrice {
 }
 
 model EnergyReportConfig {
-  id            String   @id @default(uuid())
-  name          String
-  description   String?
-  modules       String[]
-  parkId        String?
-  turbineId     String?
-  interval      String   @default("month")
-  portalVisible Boolean  @default(false)
-  portalLabel   String?
-  isTemplate    Boolean  @default(false)
-  tenantId      String
-  createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  modules        String[]
+  moduleOrder    String[] // Reihenfolge (Modul-Keys) — leere Liste = Default-Reihenfolge aus modules
+  moduleSettings Json     @default("{}") // Pro-Modul Config als key→value: { curtailmentAnalysis: { compareYear: 2025 }, ... }
+  parkId         String?
+  turbineId      String?
+  interval       String   @default("month")
+  portalVisible  Boolean  @default(false)
+  portalLabel    String?
+  isTemplate     Boolean  @default(false)
+  tenantId       String
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   createdBy         User     @relation(fields: [createdById], references: [id], onDelete: Restrict)
   park         Park?    @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)

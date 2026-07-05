@@ -34,6 +34,10 @@ const VALID_MODULES = [
   "environmentalData",
   "financialOverview",
   "revenueComparison",
+  // Sprint A additions
+  "curtailmentAnalysis",
+  "reactivePowerQuality",
+  "meteoExtended",
 ] as const;
 
 const VALID_INTERVALS = ["10min", "hour", "day", "month", "year"] as const;
@@ -48,6 +52,8 @@ const CreateConfigSchema = z.object({
   modules: z
     .array(z.enum(VALID_MODULES))
     .min(1, "Mindestens ein Modul muss ausgewaehlt werden"),
+  moduleOrder: z.array(z.enum(VALID_MODULES)).optional().default([]),
+  moduleSettings: z.record(z.string(), z.unknown()).optional().default({}),
   parkId: z.uuid().optional().nullable(),
   turbineId: z.uuid().optional().nullable(),
   interval: z.enum(VALID_INTERVALS).optional().default("month"),
@@ -151,6 +157,8 @@ export async function POST(request: NextRequest) {
         name: data.name,
         description: data.description ?? null,
         modules: data.modules,
+        moduleOrder: data.moduleOrder ?? [],
+        moduleSettings: (data.moduleSettings ?? {}) as Prisma.InputJsonValue,
         parkId: data.parkId ?? null,
         turbineId: data.turbineId ?? null,
         interval: data.interval,

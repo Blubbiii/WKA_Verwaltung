@@ -24,41 +24,7 @@ import { PdfWindRose, PdfWindRoseLegend } from "../charts/PdfWindRose";
 import { PdfWindDistribution } from "../charts/PdfWindDistribution";
 import { PdfPowerCurve } from "../charts/PdfPowerCurve";
 import { PdfDailyProfile } from "../charts/PdfDailyProfile";
-
-// ===========================================
-// DESIGN TOKENS
-// ===========================================
-
-const C = {
-  // Brand (warm navy)
-  navy: "#1E3A5F",
-  navyLight: "#335E99",
-  navyPale: "#E8EEF5",
-  navyDark: "#142940",
-
-  // Semantic
-  green: "#16A34A",
-  greenLight: "#DCFCE7",
-  amber: "#D97706",
-  amberLight: "#FEF3C7",
-  red: "#DC2626",
-  redLight: "#FEE2E2",
-  blue: "#2563EB",
-  blueLight: "#DBEAFE",
-
-  // Neutrals
-  white: "#FFFFFF",
-  gray50: "#F9FAFB",
-  gray100: "#F3F4F6",
-  gray200: "#E5E7EB",
-  gray300: "#D1D5DB",
-  gray400: "#9CA3AF",
-  gray500: "#6B7280",
-  gray600: "#4B5563",
-  gray700: "#374151",
-  gray800: "#1F2937",
-  gray900: "#111827",
-};
+import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 const s = StyleSheet.create({
   page: {
