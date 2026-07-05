@@ -18,6 +18,16 @@ exports[`scanAllFileTypes — Discovery gegen Fixture-Location > Snapshot: gefun
     "fileType": "AVM",
   },
   {
+    "ext": "avr",
+    "fileCount": 1,
+    "fileType": "AVR",
+  },
+  {
+    "ext": "pes",
+    "fileCount": 1,
+    "fileType": "PES",
+  },
+  {
     "ext": "ssm",
     "fileCount": 1,
     "fileType": "SSM",

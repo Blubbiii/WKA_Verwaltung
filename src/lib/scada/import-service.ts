@@ -176,7 +176,11 @@ const FILE_TYPE_CONFIG: Record<ScadaFileType, FileTypeConfig> = {
   UID: { extension: 'uid', fileLocation: 'daily', periodType: null, modelName: 'ScadaMeasurement', readerKey: 'uid' },
 
   // Availability time budgets
-  AVR: { extension: 'avr', fileLocation: 'daily', periodType: 'DAILY', modelName: 'ScadaAvailability', readerKey: 'avr' },
+  // fileLocation: 'monthly' — Enercon legt AVR als monatliches File im
+  // YYYY-Verzeichnis ab (YYYYMM00.avr), enthält Daily-Rollups (periodType).
+  // Vorherige 'daily'-Klassifikation war falsch; deshalb wurden AVR-Files
+  // (Availability Rolling) in Prod nicht erkannt.
+  AVR: { extension: 'avr', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaAvailability', readerKey: 'avr' },
   AVW: { extension: 'avw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaAvailability', readerKey: 'avr' },
   AVM: { extension: 'avm', fileLocation: 'monthly', periodType: 'MONTHLY', modelName: 'ScadaAvailability', readerKey: 'avr' },
   AVY: { extension: 'avy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaAvailability', readerKey: 'avr' },
@@ -186,9 +190,11 @@ const FILE_TYPE_CONFIG: Record<ScadaFileType, FileTypeConfig> = {
   SWM: { extension: 'swm', fileLocation: 'monthly', periodType: null, modelName: 'ScadaWarningSummary', readerKey: 'swm' },
 
   // Event logs
-  PES: { extension: 'pes', fileLocation: 'daily', periodType: null, modelName: 'ScadaStateEvent', readerKey: 'pes' },
-  PEW: { extension: 'pew', fileLocation: 'daily', periodType: null, modelName: 'ScadaWarningEvent', readerKey: 'pew' },
-  PET: { extension: 'pet', fileLocation: 'daily', periodType: null, modelName: 'ScadaTextEvent', readerKey: 'pet' },
+  // Event-Files: Enercon legt PES/PEW/PET als monatliche Files ab, YYYYMM00.pes
+  // etc. Vorher als 'daily' klassifiziert → keine Discovery in Prod.
+  PES: { extension: 'pes', fileLocation: 'monthly', periodType: null, modelName: 'ScadaStateEvent', readerKey: 'pes' },
+  PEW: { extension: 'pew', fileLocation: 'monthly', periodType: null, modelName: 'ScadaWarningEvent', readerKey: 'pew' },
+  PET: { extension: 'pet', fileLocation: 'monthly', periodType: null, modelName: 'ScadaTextEvent', readerKey: 'pet' },
 
   // Wind summaries (aggregated)
   WSR: { extension: 'wsr', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaWindSummary', readerKey: 'wsr' },

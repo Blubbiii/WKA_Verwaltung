@@ -45,16 +45,14 @@ describe("scanAllFileTypes — Discovery gegen Fixture-Location", () => {
     expect(dailyTypes).toEqual(expect.arrayContaining(["WSD", "UID", "UQD", "WDD", "84D", "85D"]));
   });
 
-  it("findet Monthly-Aggregate (AVM, WSR, SSM, SWM)", async () => {
-    // NOTE: AVR und PES sind in FILE_TYPE_CONFIG als 'daily' klassifiziert
-    // (existieren aber real auch als monthly cumulative im Loc-Root).
-    // Der aktuelle Discovery-Code findet sie nicht als monthly — bewusst
-    // als Discovery-Verhalten festgehalten; falls Fix gewünscht: separater Sprint.
+  it("findet Monthly-Aggregate (AVM, AVR, WSR, SSM, SWM, PES)", async () => {
+    // Nach Punkt-3-Fix: AVR und PES sind korrekt als 'monthly' klassifiziert
+    // (vorher fälschlich 'daily', wurden in Prod nicht erkannt).
     const results = await scanAllFileTypes(FIXTURE_ROOT, "Loc_TEST");
     const monthlyTypes = results.filter((r) => r.fileLocation === "monthly" || r.fileLocation === "yearly")
       .map((r) => r.fileType);
 
-    expect(monthlyTypes).toEqual(expect.arrayContaining(["AVM", "WSR", "SSM", "SWM"]));
+    expect(monthlyTypes).toEqual(expect.arrayContaining(["AVM", "AVR", "WSR", "SSM", "SWM", "PES"]));
   });
 
   it("wirft aussagekräftigen Fehler bei nicht-existentem Standort", async () => {

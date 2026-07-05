@@ -546,7 +546,7 @@ export function getInt(rec: Record<string, unknown>, fieldName: string): number 
  * Extracts a boolean field from a DBF record using case-insensitive lookup.
  * DBF boolean fields may be stored as boolean, number (0/1), or string ("T"/"F").
  */
-function getBool(rec: Record<string, unknown>, fieldName: string): boolean {
+export function getBool(rec: Record<string, unknown>, fieldName: string): boolean {
   const val = caseGet(rec, fieldName);
   if (val == null) return false;
   if (typeof val === 'boolean') return val;
@@ -621,7 +621,7 @@ export function getPlantNo(rec: Record<string, unknown>): number | null {
  * Extracts the Date field from a DBF record.
  * Returns the date or null if missing/invalid.
  */
-function getDateField(rec: Record<string, unknown>): Date | null {
+export function getDateField(rec: Record<string, unknown>): Date | null {
   return toDate(caseGet(rec, 'Date'));
 }
 
@@ -682,102 +682,11 @@ export async function readWsdFile(filePath: string): Promise<WsdRecord[]> {
  * @returns Array der geparseten UID-Messwerte
  */
 export async function readUidFile(filePath: string): Promise<UidRecord[]> {
+  // Phase 3-Erweiterung: Schema-Descriptor mit Composite-Support für
+  // Voltages/Currents pro Phase ([U1,U2,U3], [I1,I2,I3], [S1,S2,S3]).
   try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    const records: UidRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const timestamp = buildTimestamp(rec);
-      if (!timestamp) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      records.push({
-        timestamp,
-        plantNo,
-        error: getInt(rec, 'Error'),
-
-        // Active Power (W)
-        meanPowerW: getNum(rec, 'mruiSmpP'),
-        peakPowerW: getNum(rec, 'pruiSmpP'),
-        lowPowerW: getNum(rec, 'lruiSmpP'),
-
-        // Reactive Power (VAr)
-        meanReactivePowerVar: getNum(rec, 'mruiSmpQ'),
-        peakReactivePowerVar: getNum(rec, 'pruiSmpQ'),
-        lowReactivePowerVar: getNum(rec, 'lruiSmpQ'),
-
-        // Apparent Power (VA)
-        meanApparentPowerVa: getNum(rec, 'mruiSmpS'),
-        peakApparentPowerVa: getNum(rec, 'pruiSmpS'),
-        lowApparentPowerVa: getNum(rec, 'lruiSmpS'),
-
-        // Power Factor
-        meanCosPhi: getNum(rec, 'mruiSmpCos'),
-        peakCosPhi: getNum(rec, 'pruiSmpCos'),
-        lowCosPhi: getNum(rec, 'lruiSmpCos'),
-
-        // Grid Frequency (Hz)
-        meanFrequencyHz: getNum(rec, 'mruiSmpFre'),
-        peakFrequencyHz: getNum(rec, 'pruiSmpFre'),
-        lowFrequencyHz: getNum(rec, 'lruiSmpFre'),
-
-        // Phase Voltages (V)
-        meanVoltagesV: [
-          getNum(rec, 'mruiSmpU1'),
-          getNum(rec, 'mruiSmpU2'),
-          getNum(rec, 'mruiSmpU3'),
-        ],
-        peakVoltagesV: [
-          getNum(rec, 'pruiSmpU1'),
-          getNum(rec, 'pruiSmpU2'),
-          getNum(rec, 'pruiSmpU3'),
-        ],
-        lowVoltagesV: [
-          getNum(rec, 'lruiSmpU1'),
-          getNum(rec, 'lruiSmpU2'),
-          getNum(rec, 'lruiSmpU3'),
-        ],
-
-        // Phase Currents (A)
-        meanCurrentsA: [
-          getNum(rec, 'mruiSmpI1'),
-          getNum(rec, 'mruiSmpI2'),
-          getNum(rec, 'mruiSmpI3'),
-        ],
-        peakCurrentsA: [
-          getNum(rec, 'pruiSmpI1'),
-          getNum(rec, 'pruiSmpI2'),
-          getNum(rec, 'pruiSmpI3'),
-        ],
-        lowCurrentsA: [
-          getNum(rec, 'lruiSmpI1'),
-          getNum(rec, 'lruiSmpI2'),
-          getNum(rec, 'lruiSmpI3'),
-        ],
-
-        // Apparent Power per Phase (VA)
-        meanApparentPowerPerPhaseVa: [
-          getNum(rec, 'mruiSmpS1'),
-          getNum(rec, 'mruiSmpS2'),
-          getNum(rec, 'mruiSmpS3'),
-        ],
-
-        // Cumulative Counters
-        cumulativeActiveEnergyProduced: getNum(rec, 'aruiAbWpr'),
-        cumulativeEnergyConsumed: getNum(rec, 'aruiAbWcm'),
-        cumulativeInductiveReactiveEnergy: getNum(rec, 'aruiAbQin'),
-        cumulativeCapacitiveReactiveEnergy: getNum(rec, 'aruiAbQcap'),
-        cumulativeWorkingHours: getNum(rec, 'aruiAbWkH'),
-      });
-    }
-
-    return records;
+    const { readDbfWithSchema, UID_SCHEMA } = await import("./dbf-schemas");
+    return await readDbfWithSchema<UidRecord>(filePath, UID_SCHEMA, "UID");
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading UID file");
     return [];
@@ -802,37 +711,10 @@ export async function readUidFile(filePath: string): Promise<UidRecord[]> {
  * @returns Array der geparseten Availability-Records
  */
 export async function readAvrFile(filePath: string): Promise<AvailabilityRecord[]> {
+  // Phase 3 Erweiterung: Aggregat-Reader mit date statt timestamp via Schema.
   try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    const records: AvailabilityRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const date = getDateField(rec);
-      if (!date) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      records.push({
-        date,
-        plantNo,
-        t1: getInt(rec, 'T1'),
-        t2: getInt(rec, 'T2'),
-        t3: getInt(rec, 'T3'),
-        t4: getInt(rec, 'T4'),
-        t5: getInt(rec, 'T5'),
-        t6: getInt(rec, 'T6'),
-        t5_1: getInt(rec, 'T5_1'),
-        t5_2: getInt(rec, 'T5_2'),
-        t5_3: getInt(rec, 'T5_3'),
-      });
-    }
-
-    return records;
+    const { readDbfWithDateSchema, AVR_SCHEMA } = await import("./dbf-schemas");
+    return await readDbfWithDateSchema<AvailabilityRecord>(filePath, AVR_SCHEMA, "AVR");
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading AVR file");
     return [];
@@ -853,32 +735,8 @@ export async function readAvrFile(filePath: string): Promise<AvailabilityRecord[
  */
 export async function readSsmFile(filePath: string): Promise<StateSummaryRecord[]> {
   try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    const records: StateSummaryRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const date = getDateField(rec);
-      if (!date) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      records.push({
-        date,
-        plantNo,
-        state: getInt(rec, 'State'),
-        subState: getInt(rec, 'SubState'),
-        isFault: getBool(rec, 'FaultMsg'),
-        frequency: getInt(rec, 'Frequency'),
-        duration: getInt(rec, 'Duration'),
-      });
-    }
-
-    return records;
+    const { readDbfWithDateSchema, SSM_SCHEMA } = await import("./dbf-schemas");
+    return await readDbfWithDateSchema<StateSummaryRecord>(filePath, SSM_SCHEMA, "SSM");
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading SSM file");
     return [];
@@ -899,32 +757,8 @@ export async function readSsmFile(filePath: string): Promise<StateSummaryRecord[
  */
 export async function readSwmFile(filePath: string): Promise<WarningSummaryRecord[]> {
   try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    const records: WarningSummaryRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const date = getDateField(rec);
-      if (!date) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      records.push({
-        date,
-        plantNo,
-        warn: getInt(rec, 'Warn'),
-        subWarn: getInt(rec, 'SubWarn'),
-        isWarnMsg: getBool(rec, 'WarnMsg'),
-        frequency: getInt(rec, 'Frequency'),
-        duration: getInt(rec, 'Duration'),
-      });
-    }
-
-    return records;
+    const { readDbfWithDateSchema, SWM_SCHEMA } = await import("./dbf-schemas");
+    return await readDbfWithDateSchema<WarningSummaryRecord>(filePath, SWM_SCHEMA, "SWM");
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading SWM file");
     return [];
