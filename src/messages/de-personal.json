@@ -1847,7 +1847,9 @@
         "toastImportStarted": "Import gestartet: {count} Dateityp(en) für {locationCode}",
         "errorNoScanPath": "Bitte gib einen Scan-Pfad ein, bevor du den Import startest",
         "errorInvalidLocation": "Ungültiger Standort-Code — erwartet Format „Loc_XXXX\"",
-        "errorBadRequest": "Ungültige Anfrage — bitte deine Eingaben prüfen"
+        "errorBadRequest": "Ungültige Anfrage — bitte deine Eingaben prüfen",
+        "filesFailedShort": "{count} übersprungen",
+        "filesFailedTooltip": "{count} Datei(en) hab ich übersprungen (waren kaputt). Import läuft trotzdem weiter."
       },
       "mappingsTab": {
         "cardTitle": "SCADA-Zuordnungen",

@@ -1890,6 +1890,7 @@ export default function ScadaImportTab() {
                   (job.filesTotal ?? 0) > 0
                     ? Math.round(((job.filesProcessed ?? 0) / job.filesTotal) * 100)
                     : 0;
+                const failedFiles = job.filesFailed ?? 0;
                 return (
                   <div key={job.id} className="flex items-center gap-4 px-4 py-2 text-sm">
                     <span className="font-mono font-medium w-10">{job.fileType}</span>
@@ -1897,6 +1898,17 @@ export default function ScadaImportTab() {
                       <Progress value={jobProgress} className="h-2" />
                     </div>
                     <span className="font-mono text-xs w-10 text-right">{jobProgress}%</span>
+                    {/* Sprint "3 Ideen": File-Level-Skip-Anzeige — Import läuft
+                        weiter, corrupt files werden übersprungen und hier gezählt */}
+                    {failedFiles > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-warning/30 bg-warning/10 text-warning"
+                        title={t("filesFailedTooltip", { count: failedFiles })}
+                      >
+                        {t("filesFailedShort", { count: failedFiles })}
+                      </Badge>
+                    )}
                     <Badge
                       variant="outline"
                       className={`text-xs ${STATUS_BADGE_COLORS[job.status] || ""}`}

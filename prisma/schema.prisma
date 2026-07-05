@@ -2423,6 +2423,9 @@ model ScadaImportLog {
   fileType          String?
   filesTotal        Int       @default(0)
   filesProcessed    Int       @default(0)
+  /// Anzahl Dateien die während des Imports gescheitert sind (corrupt DBF etc.).
+  /// Import läuft weiter — File-Level Skip statt Import-Level Fail.
+  filesFailed       Int       @default(0)
   recordsImported   Int       @default(0)
   recordsSkipped    Int       @default(0)
   recordsFailed     Int       @default(0)

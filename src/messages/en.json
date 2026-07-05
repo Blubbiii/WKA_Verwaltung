@@ -1847,7 +1847,9 @@
         "toastImportStarted": "Import started: {count} file type(s) for {locationCode}",
         "errorNoScanPath": "Please enter a scan path before starting the import",
         "errorInvalidLocation": "Invalid location code — expected format \"Loc_XXXX\"",
-        "errorBadRequest": "Invalid request — please check your input"
+        "errorBadRequest": "Invalid request — please check your input",
+        "filesFailedShort": "{count} failed",
+        "filesFailedTooltip": "{count} file(s) skipped (corrupt or malformed). Import continues."
       },
       "mappingsTab": {
         "cardTitle": "SCADA Mappings",

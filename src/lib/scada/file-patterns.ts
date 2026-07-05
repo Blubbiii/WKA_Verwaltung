@@ -112,3 +112,64 @@ export async function discoverByPattern(
 
   return validated;
 }
+
+/**
+ * Batch-Discovery: findet Files für MEHRERE Extensions in EINEM Glob-Aufruf.
+ *
+ * Löst das N+1-Problem in `scanAllFileTypes` — dort wurden 27 File-Types
+ * mit je einem separaten Glob-Scan durchgesucht. Bei großen Filesystemen
+ * (10k+ Files pro Location) macht das den Discovery-Prozess merklich langsam.
+ *
+ * Statt N Scans: 1 Scan mit fast-glob's brace-Expansion + In-Memory-Filter
+ * nach Extension. Returnt Map<extension, string[]> für O(1)-Zugriff im Caller.
+ *
+ * WICHTIG: alle Extensions in `extensions` müssen dieselbe fileLocation-
+ * Kategorie haben. Für gemischte Suche → mehrmals aufrufen (1× pro Location).
+ */
+export async function discoverBatchByLocation(
+  locationPath: string,
+  extensions: readonly string[],
+  fileLocation: FileLocation,
+  maxFilesPerExtension: number = 50_000,
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  for (const ext of extensions) result.set(ext.toLowerCase(), []);
+
+  if (extensions.length === 0) return result;
+
+  const pattern = PATTERNS[fileLocation];
+  // Brace-Expansion für alle Extensions in einem Aufruf:
+  // "*/[0-9][0-9]/????????.{wsd,uid,uqd,wdd,84d,85d}"
+  const extList = extensions.map((e) => e.toLowerCase()).join(",");
+  const glob = pattern.globPattern.replace("[ext]", `{${extList}}`);
+
+  const normalizedRoot = locationPath.replace(/\\/g, "/");
+
+  const files = await fg(glob, {
+    cwd: normalizedRoot,
+    caseSensitiveMatch: false,
+    onlyFiles: true,
+    absolute: true,
+    stats: false,
+  });
+
+  // In-Memory-Gruppierung nach Extension + Filename-Regex-Validation
+  for (const f of files) {
+    const base = path.basename(f);
+    if (!pattern.filenameRegex.test(base)) continue;
+
+    const dotIdx = base.lastIndexOf(".");
+    if (dotIdx < 0) continue;
+    const ext = base.substring(dotIdx + 1).toLowerCase();
+
+    const bucket = result.get(ext);
+    if (bucket && bucket.length < maxFilesPerExtension) {
+      bucket.push(f);
+    }
+  }
+
+  // Sortieren pro Bucket (Callers erwarten sortierte Ausgabe)
+  for (const bucket of result.values()) bucket.sort();
+
+  return result;
+}

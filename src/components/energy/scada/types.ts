@@ -53,6 +53,8 @@ export interface ImportJob {
   fileType: string;
   filesTotal: number;
   filesProcessed: number;
+  /** Anzahl Dateien die während des Imports gescheitert sind (File-Level Skip) */
+  filesFailed?: number;
   recordsImported: number;
   recordsSkipped: number;
   recordsFailed: number;

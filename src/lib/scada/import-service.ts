@@ -262,6 +262,7 @@ async function updateImportLog(
   importLogId: string,
   data: {
     filesProcessed?: number;
+    filesFailed?: number;
     recordsImported?: number;
     recordsSkipped?: number;
     recordsFailed?: number;
@@ -276,6 +277,7 @@ async function updateImportLog(
   };
 
   if (data.filesProcessed !== undefined) updateData.filesProcessed = data.filesProcessed;
+  if (data.filesFailed !== undefined) updateData.filesFailed = data.filesFailed;
   if (data.recordsImported !== undefined) updateData.recordsImported = data.recordsImported;
   if (data.recordsSkipped !== undefined) updateData.recordsSkipped = data.recordsSkipped;
   if (data.recordsFailed !== undefined) updateData.recordsFailed = data.recordsFailed;
@@ -1680,18 +1682,41 @@ export async function scanAllFileTypes(
     throw new Error(`Standort-Verzeichnis nicht gefunden: ${locationPath}`);
   }
 
-  const results: FileTypeScanResult[] = [];
+  // Batch-Discovery: 1 Glob pro fileLocation (daily/monthly/yearly)
+  // statt 1 Glob pro File-Type (27 einzeln). Bei 10k+ Files auf großen
+  // Volumes deutlich schneller — Glob-Init-Overhead entfällt.
+  const { discoverBatchByLocation } = await import("./file-patterns");
+
+  // Gruppiere File-Types nach fileLocation
+  const byLocation: Record<FileLocation, Array<{ fileType: ScadaFileType; config: FileTypeConfig }>> = {
+    daily: [],
+    monthly: [],
+    yearly: [],
+  };
 
   for (const [fileType, config] of Object.entries(FILE_TYPE_CONFIG) as Array<[ScadaFileType, FileTypeConfig]>) {
-    const files = await discoverFiles(locationPath, fileType);
+    byLocation[config.fileLocation].push({ fileType, config });
+  }
 
-    if (files.length > 0) {
-      results.push({
-        fileType,
-        fileCount: files.length,
-        extension: config.extension,
-        fileLocation: config.fileLocation,
-      });
+  const results: FileTypeScanResult[] = [];
+
+  for (const location of ["daily", "monthly", "yearly"] as const) {
+    const entries = byLocation[location];
+    if (entries.length === 0) continue;
+
+    const extensions = entries.map((e) => e.config.extension);
+    const filesByExt = await discoverBatchByLocation(locationPath, extensions, location);
+
+    for (const { fileType, config } of entries) {
+      const files = filesByExt.get(config.extension) ?? [];
+      if (files.length > 0) {
+        results.push({
+          fileType,
+          fileCount: files.length,
+          extension: config.extension,
+          fileLocation: config.fileLocation,
+        });
+      }
     }
   }
 
@@ -1719,6 +1744,7 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
 
   const errors: string[] = [];
   let filesProcessed = 0;
+  let filesFailed = 0;
   let totalImported = 0;
   let totalSkipped = 0;
   let totalFailed = 0;
@@ -1969,12 +1995,17 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
           recordsFailed: totalFailed,
         });
       } catch (err) {
+        // File-Level Skip: dieser einzelne File failed — Import läuft weiter.
+        // filesFailed als eigener Counter (statt nur in errors[]) für schnelle
+        // UI-Anzeige "X von Y Dateien fehlgeschlagen, Import fortlaufend".
         filesProcessed++;
+        filesFailed++;
         const errorMsg = err instanceof Error ? err.message : String(err);
         errors.push(`Fehler beim Verarbeiten von ${filePath}: ${errorMsg}`);
 
         await updateImportLog(importLogId, {
           filesProcessed,
+          filesFailed,
           recordsFailed: totalFailed,
           errorDetails: { errors },
         });
