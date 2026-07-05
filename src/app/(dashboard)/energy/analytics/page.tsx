@@ -24,6 +24,9 @@ import {
   FinancialAnalysis,
   ShadowChart,
   PhaseSymmetryChart,
+  CurtailmentChart,
+  ReactivePowerChart,
+  MeteoExtendedChart,
 } from "@/components/energy/analytics/analytics-dynamic";
 import { useDrillDown } from "@/hooks/useDrillDown";
 import { Button } from "@/components/ui/button";
@@ -65,6 +68,9 @@ import type {
   ShadowResponse,
   PhaseSymmetryResponse,
   AvailabilityTarget,
+  CurtailmentResponse,
+  ReactivePowerResponse,
+  MeteoResponse,
 } from "@/types/analytics";
 
 // =============================================================================
@@ -175,6 +181,9 @@ export default function AnalyticsPage() {
   const faultUrl = isOperationsTab ? `/api/energy/analytics/faults?${baseParams}` : null;
   const envUrl = isOperationsTab ? `/api/energy/analytics/environment?${baseParams}` : null;
   const shadowUrl = isOperationsTab ? `/api/energy/analytics/shadow?${baseParams}` : null;
+  // Sprint A: neue Data-Module (nutzen erweiterten SCADA-Import)
+  const curtailmentUrl = isOperationsTab ? `/api/energy/analytics/curtailment?${baseParams}` : null;
+  const meteoUrl = isOperationsTab ? `/api/energy/analytics/meteo-extended?${baseParams}` : null;
 
   const { data: availData, error: availError, isLoading: availLoading } = useQuery<AvailabilityResponse>({
     queryKey: [availUrl],
@@ -209,12 +218,25 @@ export default function AnalyticsPage() {
     enabled: !!shadowUrl,
     refetchOnWindowFocus: false,
   });
+  const { data: curtailmentData, isLoading: curtailmentLoading } = useQuery<CurtailmentResponse>({
+    queryKey: [curtailmentUrl],
+    queryFn: () => fetcher(curtailmentUrl!),
+    enabled: !!curtailmentUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: meteoData, isLoading: meteoLoading } = useQuery<MeteoResponse>({
+    queryKey: [meteoUrl],
+    queryFn: () => fetcher(meteoUrl!),
+    enabled: !!meteoUrl,
+    refetchOnWindowFocus: false,
+  });
 
   // --- Tab 4: Finance & Technical ---
   const isFinanceTab = activeTab === "finance";
 
   const finUrl = isFinanceTab ? `/api/energy/analytics/financial?${baseParams}` : null;
   const phaseUrl = isFinanceTab ? `/api/energy/analytics/phase-symmetry?${baseParams}` : null;
+  const reactivePowerUrl = isFinanceTab ? `/api/energy/analytics/reactive-power?${baseParams}` : null;
 
   const { data: finData, error: finError, isLoading: finLoading } = useQuery<FinancialResponse>({
     queryKey: [finUrl],
@@ -226,6 +248,12 @@ export default function AnalyticsPage() {
     queryKey: [phaseUrl],
     queryFn: () => fetcher(phaseUrl!),
     enabled: !!phaseUrl,
+    refetchOnWindowFocus: false,
+  });
+  const { data: reactivePowerData, isLoading: reactivePowerLoading } = useQuery<ReactivePowerResponse>({
+    queryKey: [reactivePowerUrl],
+    queryFn: () => fetcher(reactivePowerUrl!),
+    enabled: !!reactivePowerUrl,
     refetchOnWindowFocus: false,
   });
 
@@ -419,6 +447,24 @@ export default function AnalyticsPage() {
               />
             )}
           </CollapsibleSection>
+
+          {/* Sprint A: Abregelungen (§13a EnWG) */}
+          <CollapsibleSection title={t("curtailment")} icon={AlertTriangle} defaultOpen={false}>
+            <CurtailmentChart
+              parkId={selectedParkId !== "all" ? selectedParkId : null}
+              year={selectedYear}
+              data={curtailmentData}
+              isLoading={curtailmentLoading}
+            />
+          </CollapsibleSection>
+
+          {/* Sprint A: Meteo + Vereisung */}
+          <CollapsibleSection title={t("meteoExtended")} icon={Cloud} defaultOpen={false}>
+            <MeteoExtendedChart
+              data={meteoData}
+              isLoading={meteoLoading}
+            />
+          </CollapsibleSection>
         </TabsContent>
 
         {/* ================================================================= */}
@@ -450,6 +496,24 @@ export default function AnalyticsPage() {
                 isLoading={phaseLoading}
               />
             )}
+          </CollapsibleSection>
+
+          {/* Sprint A: Blindleistung & Netzqualität */}
+          <CollapsibleSection title={t("reactivePower")} icon={Zap} defaultOpen={false}>
+            <ReactivePowerChart
+              timeSeries={reactivePowerData?.timeSeries ?? []}
+              hourlyProfile={reactivePowerData?.hourlyProfile ?? []}
+              summary={reactivePowerData?.summary ?? {
+                totalReactiveEnergyMWh: 0,
+                inductiveReactiveEnergyMWh: 0,
+                capacitiveReactiveEnergyMWh: 0,
+                meanCosPhiOverall: 0,
+                cosPhiComplianceRate: 0,
+                freqComplianceRate: 0,
+                year: selectedYear,
+              }}
+              isLoading={reactivePowerLoading}
+            />
           </CollapsibleSection>
         </TabsContent>
 

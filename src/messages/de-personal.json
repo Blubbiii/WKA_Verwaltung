@@ -1954,7 +1954,54 @@
         "noLogs": "Keine Protokolle vorhanden"
       }
     },
-    "analytics": "Analytics",
+    "analytics": {
+      "meteoExtended": {
+        "title": "Meteorologie & Vereisung",
+        "subtitle": "Wetter- und Icing-Daten aus Deinen SCADA-Sensoren",
+        "kpiIcingHours": "Vereisungs-Stunden gesamt",
+        "kpiColdIcingHours": "Cold-Icing-Stunden",
+        "kpiPeakMonth": "Peak-Icing-Monat",
+        "kpiDataAvailability": "Daten-Verfügbarkeit",
+        "pressureLabel": "Luftdruck (hPa)",
+        "humidityLabel": "Luftfeuchtigkeit (%)",
+        "rainLabel": "Regen-Index",
+        "visibilityLabel": "Sichtweite (m)",
+        "brightnessLabel": "Nachthelligkeit",
+        "icingMonthlyLabel": "Vereisungs-Stunden pro Monat",
+        "coldIcingLabel": "Cold-Icing"
+      },
+      "reactivePower": {
+        "title": "Blindleistung & Netzqualität",
+        "subtitle": "Dein Grid-Support-Nachweis: cos φ- und Frequenz-Compliance",
+        "kpiTotalReactive": "Blindenergie",
+        "kpiCosPhiCompliance": "cos φ-Compliance",
+        "kpiFreqCompliance": "Frequenz-Compliance",
+        "inductive": "induktiv",
+        "capacitive": "kapazitiv",
+        "cosPhiLabel": "cos φ",
+        "hourLabel": "Tagesprofil (0–23 h)",
+        "complianceGood": "OK",
+        "complianceWarn": "Grenzwertig",
+        "complianceBad": "Verletzt",
+        "noData": "Keine Blindleistungs-Daten vorhanden"
+      },
+      "curtailment": {
+        "title": "Deine Abregelungen",
+        "subtitle": "Was Dich Wind, technische Regelung, Forced und Netzbetreiber-Redispatch (§13a EnWG) gekostet haben",
+        "kpiLostEnergy": "Verlorene Energie (kWh)",
+        "kpiLostRevenue": "Ertragsausfall (€)",
+        "kpiRedispatch": "Redispatch-relevant (€)",
+        "redispatchInfoTooltip": "§13a EnWG: Extern angeordnete Abregelungen kannst Du als Ausgleichsforderung beim Netzbetreiber geltend machen.",
+        "categoryWind": "Wind",
+        "categoryTechnical": "Technisch",
+        "categoryForced": "Forced",
+        "categoryExternal": "Extern",
+        "categoryExternalDetail": "§13a EnWG einforderbar",
+        "pctOfProduction": "Anteil an theoretischer Produktion",
+        "timeAxisLabel": "Monat",
+        "noData": "Keine Abregelungen im ausgewählten Zeitraum"
+      }
+    },
     "reports": "Berichte",
     "availability": "Verfügbarkeit",
     "windSpeed": "Windgeschwindigkeit",
@@ -2086,7 +2133,10 @@
       "dataComparison": "Datenabgleich",
       "pdfReports": "PDF-Berichte",
       "templates": "Vorlagen",
-      "archive": "Archiv"
+      "archive": "Archiv",
+      "curtailment": "Abregelungen (§13a EnWG)",
+      "meteoExtended": "Wetter & Vereisung",
+      "reactivePower": "Blindleistung & Netzqualität"
     },
     "sourceLabels": {
       "MANUAL": "Manuell",
@@ -2742,54 +2792,6 @@
       "compare": "Vergleich:",
       "noCompare": "Kein Vergleich",
       "createReport": "Bericht erstellen"
-    },
-    "analytics": {
-      "meteoExtended": {
-        "title": "Meteorologie & Vereisung",
-        "subtitle": "Wetter- und Icing-Daten aus Deinen SCADA-Sensoren",
-        "kpiIcingHours": "Vereisungs-Stunden gesamt",
-        "kpiColdIcingHours": "Cold-Icing-Stunden",
-        "kpiPeakMonth": "Peak-Icing-Monat",
-        "kpiDataAvailability": "Daten-Verfügbarkeit",
-        "pressureLabel": "Luftdruck (hPa)",
-        "humidityLabel": "Luftfeuchtigkeit (%)",
-        "rainLabel": "Regen-Index",
-        "visibilityLabel": "Sichtweite (m)",
-        "brightnessLabel": "Nachthelligkeit",
-        "icingMonthlyLabel": "Vereisungs-Stunden pro Monat",
-        "coldIcingLabel": "Cold-Icing"
-      },
-      "reactivePower": {
-        "title": "Blindleistung & Netzqualität",
-        "subtitle": "Dein Grid-Support-Nachweis: cos φ- und Frequenz-Compliance",
-        "kpiTotalReactive": "Blindenergie",
-        "kpiCosPhiCompliance": "cos φ-Compliance",
-        "kpiFreqCompliance": "Frequenz-Compliance",
-        "inductive": "induktiv",
-        "capacitive": "kapazitiv",
-        "cosPhiLabel": "cos φ",
-        "hourLabel": "Tagesprofil (0–23 h)",
-        "complianceGood": "OK",
-        "complianceWarn": "Grenzwertig",
-        "complianceBad": "Verletzt",
-        "noData": "Keine Blindleistungs-Daten vorhanden"
-      },
-      "curtailment": {
-        "title": "Deine Abregelungen",
-        "subtitle": "Was Dich Wind, technische Regelung, Forced und Netzbetreiber-Redispatch (§13a EnWG) gekostet haben",
-        "kpiLostEnergy": "Verlorene Energie (kWh)",
-        "kpiLostRevenue": "Ertragsausfall (€)",
-        "kpiRedispatch": "Redispatch-relevant (€)",
-        "redispatchInfoTooltip": "§13a EnWG: Extern angeordnete Abregelungen kannst Du als Ausgleichsforderung beim Netzbetreiber geltend machen.",
-        "categoryWind": "Wind",
-        "categoryTechnical": "Technisch",
-        "categoryForced": "Forced",
-        "categoryExternal": "Extern",
-        "categoryExternalDetail": "§13a EnWG einforderbar",
-        "pctOfProduction": "Anteil an theoretischer Produktion",
-        "timeAxisLabel": "Monat",
-        "noData": "Keine Abregelungen im ausgewählten Zeitraum"
-      }
     },
     "phaseSymmetry": {
       "kpiAvgImbalance": "Ø Unsymmetrie",

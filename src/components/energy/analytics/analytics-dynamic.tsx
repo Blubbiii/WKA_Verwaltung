@@ -98,3 +98,28 @@ export const DailyOverview = dynamic(
     ),
   { ssr: false, loading: () => <ChartSkeleton /> }
 );
+
+// Sprint A neue Data-Module (nutzen die erweiterten SCADA-Felder)
+export const CurtailmentChart = dynamic(
+  () =>
+    import("@/components/energy/analytics/curtailment-chart").then(
+      (mod) => mod.CurtailmentChart
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+export const ReactivePowerChart = dynamic(
+  () =>
+    import("@/components/energy/analytics/reactive-power-chart").then(
+      (mod) => mod.ReactivePowerChart
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
+
+export const MeteoExtendedChart = dynamic(
+  () =>
+    import("@/components/energy/analytics/meteo-extended-chart").then(
+      (mod) => mod.MeteoExtendedChart
+    ),
+  { ssr: false, loading: () => <ChartSkeleton /> }
+);
