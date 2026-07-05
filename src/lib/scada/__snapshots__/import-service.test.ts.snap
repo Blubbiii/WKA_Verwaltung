@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scanAllFileTypes — Discovery gegen Fixture-Location > Snapshot: gefundene File-Types + Anzahl (Regression-Guard) 1`] = `
+[
+  {
+    "ext": "84d",
+    "fileCount": 1,
+    "fileType": "84D",
+  },
+  {
+    "ext": "85d",
+    "fileCount": 1,
+    "fileType": "85D",
+  },
+  {
+    "ext": "avm",
+    "fileCount": 1,
+    "fileType": "AVM",
+  },
+  {
+    "ext": "ssm",
+    "fileCount": 1,
+    "fileType": "SSM",
+  },
+  {
+    "ext": "swm",
+    "fileCount": 1,
+    "fileType": "SWM",
+  },
+  {
+    "ext": "uid",
+    "fileCount": 1,
+    "fileType": "UID",
+  },
+  {
+    "ext": "uqd",
+    "fileCount": 1,
+    "fileType": "UQD",
+  },
+  {
+    "ext": "wdd",
+    "fileCount": 1,
+    "fileType": "WDD",
+  },
+  {
+    "ext": "wsd",
+    "fileCount": 1,
+    "fileType": "WSD",
+  },
+  {
+    "ext": "wsr",
+    "fileCount": 1,
+    "fileType": "WSR",
+  },
+]
+`;

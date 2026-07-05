@@ -1570,7 +1570,13 @@ export function extractDateFromFilename(filePath: string): Date | null {
   const month = parseInt(basename.substring(4, 6), 10); // 1-based
   const day = parseInt(basename.substring(6, 8), 10);
 
-  // Handle special filenames:
+  // 00000000 = alltime file → kein Datum ableitbar. MUSS vor den Yearly-Check,
+  // sonst würde `year === 0 && month === 0 && day === 0` als Yearly interpretiert
+  // und ein Datum wie 1900-01-01 zurückgegeben (Regression aus Snapshot-Tests).
+  if (year === 0 && month === 0 && day === 0) {
+    return null;
+  }
+
   // YYYY0000 = yearly file, use Jan 1
   if (month === 0 && day === 0) {
     return new Date(Date.UTC(year, 0, 1));
@@ -1579,11 +1585,6 @@ export function extractDateFromFilename(filePath: string): Date | null {
   // YYYYMM00 = monthly file, use first of month
   if (day === 0 && month >= 1 && month <= 12) {
     return new Date(Date.UTC(year, month - 1, 1));
-  }
-
-  // 00000000 = alltime file
-  if (year === 0 && month === 0 && day === 0) {
-    return null; // Cannot determine date from alltime files
   }
 
   // Basic sanity check for daily files

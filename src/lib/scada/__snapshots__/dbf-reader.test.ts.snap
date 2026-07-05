@@ -1,0 +1,277 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`read84dFile — Operating State A0-A39 > Snapshot: erster 84D-Record 1`] = `
+{
+  "error": 0,
+  "plantNo": 1,
+  "states": {
+    "A0": 24,
+    "A1": 25,
+    "A10": 29,
+    "A11": 28,
+    "A12": 166,
+    "A13": 167,
+    "A14": 167,
+    "A15": 47,
+    "A16": 46,
+    "A17": 73,
+    "A18": 77,
+    "A19": 2,
+    "A2": 20,
+    "A20": 7,
+    "A21": 10,
+    "A22": 56,
+    "A23": 55,
+    "A24": 24,
+    "A25": 43,
+    "A36": 7,
+    "A37": 24,
+    "A38": 30,
+    "A39": 47,
+    "A6": 15,
+    "A7": 16,
+    "A8": 16,
+    "A9": 28,
+  },
+  "timestamp": "2026-01-01T00:00:00.000Z",
+}
+`;
+
+exports[`read85dFile — Operating State A48+ > Snapshot: erster 85D-Record 1`] = `
+{
+  "error": 0,
+  "plantNo": 1,
+  "states": {
+    "A102": 21,
+    "A111": 21,
+    "A48": 21,
+    "A57": 21,
+    "A66": 21,
+    "A75": 20,
+    "A84": 21,
+    "A93": 20,
+  },
+  "timestamp": "2026-01-01T00:00:00.000Z",
+}
+`;
+
+exports[`readAvrFile — Availability Rolling > Snapshot: erster AVR-Record 1`] = `
+{
+  "date": "2026-01-01T00:00:00.000Z",
+  "plantNo": 2,
+  "t1": 86400,
+  "t2": 86400,
+  "t3": 0,
+  "t4": 0,
+  "t5": 0,
+  "t5_1": 0,
+  "t5_2": 0,
+  "t5_3": 0,
+  "t6": 0,
+}
+`;
+
+exports[`readPesFile — Power/State Events Monthly > Snapshot: erster PES-Record 1`] = `
+{
+  "isFault": false,
+  "isService": false,
+  "plantNo": 1,
+  "state": 0,
+  "subState": 5,
+  "timestamp": "2026-01-01T08:13:22.000Z",
+  "windSpeedAtEvent": 15.9,
+}
+`;
+
+exports[`readSsmFile — State Summary Monthly > Snapshot: erster SSM-Record 1`] = `
+{
+  "date": 2026-01-31T00:00:00.000Z,
+  "duration": 2486283,
+  "frequency": 38,
+  "isFault": false,
+  "plantNo": 1,
+  "state": 0,
+  "subState": 0,
+}
+`;
+
+exports[`readSwmFile — Warning Summary Monthly > Snapshot: erster SWM-Record 1`] = `
+{
+  "date": 2026-01-21T00:00:00.000Z,
+  "duration": 916924,
+  "frequency": 6104,
+  "isWarnMsg": false,
+  "plantNo": 1,
+  "subWarn": 0,
+  "warn": 0,
+}
+`;
+
+exports[`readUidFile — Electrical Daily (P/Q/S/cos φ/U/I) > Snapshot: erster UID-Record 1`] = `
+{
+  "cumulativeActiveEnergyProduced": 53211630,
+  "cumulativeCapacitiveReactiveEnergy": 160500,
+  "cumulativeEnergyConsumed": 112500,
+  "cumulativeInductiveReactiveEnergy": 607640,
+  "cumulativeWorkingHours": 99969,
+  "error": 0,
+  "lowApparentPowerVa": 1123,
+  "lowCosPhi": 1,
+  "lowCurrentsA": [
+    31.891,
+    31.896,
+    31.798,
+  ],
+  "lowFrequencyHz": 49.9,
+  "lowPowerW": 1123,
+  "lowReactivePowerVar": -40,
+  "lowVoltagesV": [
+    20351,
+    20383,
+    20262,
+  ],
+  "meanApparentPowerPerPhaseVa": [
+    2350,
+    2350,
+    2350,
+  ],
+  "meanApparentPowerVa": 1852,
+  "meanCosPhi": 1,
+  "meanCurrentsA": [
+    52.451,
+    52.428,
+    52.371,
+  ],
+  "meanFrequencyHz": 50,
+  "meanPowerW": 1851,
+  "meanReactivePowerVar": -1,
+  "meanVoltagesV": [
+    20414,
+    20447,
+    20328,
+  ],
+  "peakApparentPowerVa": 2375,
+  "peakCosPhi": 1,
+  "peakCurrentsA": [
+    67.116,
+    67.064,
+    67.027,
+  ],
+  "peakFrequencyHz": 50,
+  "peakPowerW": 2375,
+  "peakReactivePowerVar": 59,
+  "peakVoltagesV": [
+    20498,
+    20531,
+    20416,
+  ],
+  "plantNo": 2,
+  "timestamp": "2026-01-01T00:00:00.000Z",
+}
+`;
+
+exports[`readUqdFile — Reactive per-Phase Daily > Snapshot: erster UQD-Record 1`] = `
+{
+  "error": 0,
+  "lowP1": 374,
+  "lowP2": 377,
+  "lowP3": 378,
+  "lowQ1": -9,
+  "lowQ2": -16,
+  "lowQ3": -15,
+  "meanP1": 612,
+  "meanP2": 617,
+  "meanP3": 620,
+  "meanQ1": 3,
+  "meanQ2": -3,
+  "meanQ3": -1,
+  "peakP1": 786,
+  "peakP2": 792,
+  "peakP3": 796,
+  "peakQ1": 23,
+  "peakQ2": 18,
+  "peakQ3": 20,
+  "plantNo": 2,
+  "timestamp": "2026-01-01T00:00:00.000Z",
+}
+`;
+
+exports[`readWddFile — Shadow Casting Daily > Snapshot: erster WDD-Record 1`] = `
+{
+  "error": 0,
+  "lowShadow": 100,
+  "meanShadow": 100,
+  "peakShadow": 100,
+  "plantNo": 1,
+  "setCumShadowH": 36,
+  "timestamp": "2026-01-01T00:00:00.000Z",
+}
+`;
+
+exports[`readWsdFile — Wind Speed Daily > Snapshot: erster Record aus WSD-Fixture 1`] = `
+{
+  "airHumidityPct": null,
+  "airPressureHpa": null,
+  "brightnessNight": 0,
+  "coldIcing": 0,
+  "cumulativeEnergyWh": 53937315,
+  "icingCount": null,
+  "operatingHours": 88728,
+  "operatingMinutes": 44,
+  "pitchAngle": 0,
+  "plantNo": 1,
+  "powerExternalKw": 1856,
+  "powerForcedKw": 1841,
+  "powerTechnicalKw": 1856,
+  "powerW": 1867000,
+  "powerWindKw": 1856,
+  "rainIndex": null,
+  "reactivePowerVar": 160000,
+  "rotorRpm": 16.2,
+  "timestamp": "2026-01-01T00:00:00.000Z",
+  "visibilityRange": 17.1,
+  "windDirection": 607,
+  "windSpeedMs": 9.9,
+}
+`;
+
+exports[`readWsrFile — Wind Summary Rolling > Snapshot: erster WSR-Record 1`] = `
+{
+  "cumulativeEnergyKwh": 53770,
+  "cumulativeOperatingHours": 24,
+  "cumulativeWorkMinutes": -2,
+  "date": "2026-01-01T00:00:00.000Z",
+  "lowPowerKw": 0,
+  "lowRainfall": null,
+  "lowReactivePowerKvar": -2,
+  "lowRotorRpm": 2.22,
+  "lowVisibilityRange": 2.3,
+  "lowWindSpeedMs": 5.9,
+  "meanAirHumidity": null,
+  "meanAirPressure": null,
+  "meanBladeAngle": 5.68,
+  "meanBrightness": 93,
+  "meanIceDetection": 357,
+  "meanLightningCurrent": null,
+  "meanPowerExternalKw": 2252,
+  "meanPowerForcedKw": 2238,
+  "meanPowerKw": 2244,
+  "meanPowerTechnicalKw": 2252,
+  "meanPowerWindKw": 2252,
+  "meanRainfall": null,
+  "meanReactivePowerKvar": 210,
+  "meanRotorRpm": 16.77,
+  "meanVisibilityRange": 33.7,
+  "meanWindDirection": 599,
+  "meanWindSpeedMs": 12.4,
+  "peakPowerKw": 2447,
+  "peakRainfall": null,
+  "peakReactivePowerKvar": 258,
+  "peakRotorRpm": 18.28,
+  "peakTimestamps": {},
+  "peakVisibilityRange": 100,
+  "peakWindSpeedMs": 24,
+  "plantNo": 1,
+  "sampleCount": null,
+}
+`;
