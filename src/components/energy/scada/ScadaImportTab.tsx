@@ -78,11 +78,19 @@ import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 
 const SCADA_EXTENSIONS = [
-  ".wsd", ".uid",
-  ".avr", ".avw", ".avm", ".avy",
-  ".ssm", ".swm",
+  // Daily measurements & events
+  ".wsd", ".uid", ".uqd", ".wdd", ".84d", ".85d",
   ".pes", ".pew", ".pet",
+  // Availability summaries (daily/weekly/monthly/yearly)
+  ".avr", ".avw", ".avm", ".avy",
+  // State / warning monthly summaries
+  ".ssm", ".swm",
+  // Wind summaries (daily/weekly/monthly/yearly)
   ".wsr", ".wsw", ".wsm", ".wsy",
+  // Electrical summaries (daily/weekly/monthly/yearly)
+  ".uir", ".uiw", ".uim", ".uiy",
+  // Electrical per-phase summaries (daily/weekly/monthly/yearly)
+  ".uqr", ".uqw", ".uqm", ".uqy",
 ];
 
 export default function ScadaImportTab() {

@@ -73,8 +73,8 @@ export type ScadaFileType =
   | 'WSR' | 'WSW' | 'WSM' | 'WSY'
   | 'WDD'
   | '84D' | '85D'
-  | 'UQD' | 'UQR' | 'UQW' | 'UQY'
-  | 'UIR' | 'UIW' | 'UIY';
+  | 'UQD' | 'UQR' | 'UQW' | 'UQM' | 'UQY'
+  | 'UIR' | 'UIW' | 'UIM' | 'UIY';
 
 /** Period type for summary/availability files */
 export type ScadaPeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
@@ -116,7 +116,7 @@ export interface ImportResult {
 }
 
 /** File discovery location (daily vs monthly vs yearly) */
-type FileLocation = 'daily' | 'monthly' | 'yearly' | 'alltime';
+type FileLocation = 'daily' | 'monthly' | 'yearly';
 
 /** Configuration for a single file type */
 interface FileTypeConfig {
@@ -171,7 +171,8 @@ const BATCH_SIZE = 1000;
  *     daily:   {basePath}/{year}/{month}/{YYYYMMDD}.{ext}
  *     monthly: {basePath}/{year}/{YYYYMM}00.{ext}
  *     yearly:  {basePath}/{YYYY}0000.{ext}
- *     alltime: {basePath}/00000000.{ext}
+ *   Note: Alltime rollups ({basePath}/00000000.{ext}) are NOT imported —
+ *   they overlap with yearly files and add no unique business value.
  * - periodType: For summary files, which period the data covers
  * - modelName: The Prisma model that stores this data
  * - readerKey: Which reader function to use from dbf-reader
@@ -213,11 +214,13 @@ const FILE_TYPE_CONFIG: Record<ScadaFileType, FileTypeConfig> = {
   UQD: { extension: 'uqd', fileLocation: 'daily', periodType: null, modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
   UQR: { extension: 'uqr', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
   UQW: { extension: 'uqw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
+  UQM: { extension: 'uqm', fileLocation: 'yearly', periodType: 'MONTHLY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
   UQY: { extension: 'uqy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaElectricalPhase', readerKey: 'uqd' },
 
   // Electrical summaries (full UID field set)
   UIR: { extension: 'uir', fileLocation: 'monthly', periodType: 'DAILY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
   UIW: { extension: 'uiw', fileLocation: 'monthly', periodType: 'WEEKLY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
+  UIM: { extension: 'uim', fileLocation: 'yearly', periodType: 'MONTHLY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
   UIY: { extension: 'uiy', fileLocation: 'yearly', periodType: 'YEARLY', modelName: 'ScadaElectricalSummary', readerKey: 'uid' },
 };
 
@@ -331,6 +334,22 @@ async function writeWsdMeasurements(
       rotorRpm: Decimal | null;
       operatingHours: Decimal | null;
       windDirection: Decimal | null;
+      // WSD-Erweiterung
+      reactivePowerVar: Decimal | null;
+      cumulativeEnergyWh: Decimal | null;
+      operatingMinutes: Decimal | null;
+      powerWindKw: Decimal | null;
+      powerTechnicalKw: Decimal | null;
+      powerForcedKw: Decimal | null;
+      powerExternalKw: Decimal | null;
+      pitchAngle: Decimal | null;
+      rainIndex: Decimal | null;
+      airPressureHpa: Decimal | null;
+      airHumidityPct: Decimal | null;
+      visibilityRange: Decimal | null;
+      brightnessNight: Decimal | null;
+      icingCount: Decimal | null;
+      coldIcing: Decimal | null;
       sourceFile: string;
     }> = [];
 
@@ -348,11 +367,27 @@ async function writeWsdMeasurements(
         turbineId,
         tenantId,
         timestamp: rec.timestamp,
-        windSpeedMs: rec.windSpeedMs != null ? new Decimal(rec.windSpeedMs) : null,
-        powerW: rec.powerW != null ? new Decimal(rec.powerW) : null,
-        rotorRpm: rec.rotorRpm != null ? new Decimal(rec.rotorRpm) : null,
-        operatingHours: rec.operatingHours != null ? new Decimal(rec.operatingHours) : null,
-        windDirection: rec.windDirection != null ? new Decimal(rec.windDirection) : null,
+        windSpeedMs: toDecimalOrNull(rec.windSpeedMs),
+        powerW: toDecimalOrNull(rec.powerW),
+        rotorRpm: toDecimalOrNull(rec.rotorRpm),
+        operatingHours: toDecimalOrNull(rec.operatingHours),
+        windDirection: toDecimalOrNull(rec.windDirection),
+        // WSD-Erweiterung
+        reactivePowerVar: toDecimalOrNull(rec.reactivePowerVar),
+        cumulativeEnergyWh: toDecimalOrNull(rec.cumulativeEnergyWh),
+        operatingMinutes: toDecimalOrNull(rec.operatingMinutes),
+        powerWindKw: toDecimalOrNull(rec.powerWindKw),
+        powerTechnicalKw: toDecimalOrNull(rec.powerTechnicalKw),
+        powerForcedKw: toDecimalOrNull(rec.powerForcedKw),
+        powerExternalKw: toDecimalOrNull(rec.powerExternalKw),
+        pitchAngle: toDecimalOrNull(rec.pitchAngle),
+        rainIndex: toDecimalOrNull(rec.rainIndex),
+        airPressureHpa: toDecimalOrNull(rec.airPressureHpa),
+        airHumidityPct: toDecimalOrNull(rec.airHumidityPct),
+        visibilityRange: toDecimalOrNull(rec.visibilityRange),
+        brightnessNight: toDecimalOrNull(rec.brightnessNight),
+        icingCount: toDecimalOrNull(rec.icingCount),
+        coldIcing: toDecimalOrNull(rec.coldIcing),
         sourceFile: 'WSD',
       });
     }
@@ -1578,7 +1613,9 @@ async function directoryExists(dirPath: string): Promise<boolean> {
  * - daily:   {locationPath}/{YYYY}/{MM}/{YYYYMMDD}.{ext}
  * - monthly: {locationPath}/{YYYY}/{YYYYMM}00.{ext}
  * - yearly:  {locationPath}/{YYYY}0000.{ext}
- * - alltime: {locationPath}/00000000.{ext}
+ *
+ * Note: Alltime rollups (00000000.{ext}) are intentionally not discovered —
+ * they overlap with yearly files.
  *
  * @returns Sorted array of absolute file paths
  */
@@ -1629,7 +1666,10 @@ async function discoverFiles(
 
     case 'monthly': {
       // Monthly files: {locationPath}/{YYYY}/{YYYYMM}00.{ext}
-      // Also check in month subdirectories for some file types
+      // Also check in month subdirectories for some file types.
+      // Filename pattern YYYYMM00.{ext} disambiguates from yearly (YYYY0000)
+      // and alltime (00000000) rollups that may share the same extension.
+      const monthlyPattern = /^\d{4}(0[1-9]|1[0-2])00\.[a-z0-9]+$/i;
       for (const yearDir of yearDirs) {
         const yearPath = path.join(locationPath, yearDir);
         if (!(await directoryExists(yearPath))) continue;
@@ -1637,7 +1677,7 @@ async function discoverFiles(
         // Check year directory itself for monthly summary files
         const yearEntries = await fs.readdir(yearPath);
         const matchingInYear = yearEntries
-          .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
+          .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && monthlyPattern.test(f))
           .sort()
           .map((f) => path.join(yearPath, f));
         files.push(...matchingInYear);
@@ -1650,7 +1690,7 @@ async function discoverFiles(
 
           const monthEntries = await fs.readdir(monthPath);
           const matchingInMonth = monthEntries
-            .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
+            .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && monthlyPattern.test(f))
             .sort()
             .map((f) => path.join(monthPath, f));
           files.push(...matchingInMonth);
@@ -1661,9 +1701,14 @@ async function discoverFiles(
 
     case 'yearly': {
       // Yearly files: {locationPath}/{YYYY}0000.{ext} or {locationPath}/{YYYY}/{YYYY}0000.{ext}
+      // Filename pattern YYYY0000.{ext} disambiguates from monthly (YYYYMM00)
+      // and alltime (00000000) rollups that may share the same extension.
+      // Year part must not be 0000 (that would be an alltime rollup).
+      const yearlyPattern = /^(?!0000)\d{4}0000\.[a-z0-9]+$/i;
+
       // Check root of location for yearly files
       const rootEntries = locationEntries
-        .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
+        .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && yearlyPattern.test(f))
         .sort()
         .map((f) => path.join(locationPath, f));
       files.push(...rootEntries);
@@ -1675,21 +1720,11 @@ async function discoverFiles(
 
         const yearEntries = await fs.readdir(yearPath);
         const matchingFiles = yearEntries
-          .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
+          .filter((f) => f.toLowerCase().endsWith(`.${ext}`) && yearlyPattern.test(f))
           .sort()
           .map((f) => path.join(yearPath, f));
         files.push(...matchingFiles);
       }
-      break;
-    }
-
-    case 'alltime': {
-      // Alltime files: {locationPath}/00000000.{ext}
-      const rootEntries = locationEntries
-        .filter((f) => f.toLowerCase().endsWith(`.${ext}`))
-        .sort()
-        .map((f) => path.join(locationPath, f));
-      files.push(...rootEntries);
       break;
     }
   }

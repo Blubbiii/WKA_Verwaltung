@@ -58,6 +58,38 @@ export interface WsdRecord {
   operatingHours: number | null;
   /** Windrichtung in Grad (null = kein Messwert) */
   windDirection: number | null;
+
+  // --- WSD-Erweiterung (Enercon-Vollfelder) ---
+  /** Blindleistung Q in VAr (mrwSmpQ * 1000; DBF-Rohwert ist kVAr) */
+  reactivePowerVar: number | null;
+  /** Kumulative Wirkenergie in Wh (arwAbW, Rohwert aus DBF) */
+  cumulativeEnergyWh: number | null;
+  /** Betriebsminuten (arwAbWrkM) — feiner als operatingHours */
+  operatingMinutes: number | null;
+  /** Curtailment: Wind-restricted output (mrwSmpPwin) in kW */
+  powerWindKw: number | null;
+  /** Curtailment: technisch abgeregelt (mrwSmpPte) in kW */
+  powerTechnicalKw: number | null;
+  /** Curtailment: forced / manuell abgeregelt (mrwSmpPfm) in kW */
+  powerForcedKw: number | null;
+  /** Curtailment: extern / Redispatch (mrwSmpPext) in kW */
+  powerExternalKw: number | null;
+  /** Anstellwinkel / Pitch in Grad (mrwSmpAng) */
+  pitchAngle: number | null;
+  /** Regen-Index (mrwSmpRai) */
+  rainIndex: number | null;
+  /** Luftdruck in hPa (mrwSmpAirP) */
+  airPressureHpa: number | null;
+  /** Luftfeuchtigkeit in % (mrwSmpAirH) */
+  airHumidityPct: number | null;
+  /** Sichtweite (mrwSmpVisR) */
+  visibilityRange: number | null;
+  /** Helligkeit Nacht (mrwSmpBriN) */
+  brightnessNight: number | null;
+  /** Eis-Anzahl / Icing-Count (mrwSmpLIcA) */
+  icingCount: number | null;
+  /** Eis-Cold / Cold-Icing (mrwSmpCIce) */
+  coldIcing: number | null;
 }
 
 /** Einzelner Messwert aus einer UID-Datei (Electrical / Grid Data) */
@@ -646,6 +678,8 @@ export async function readWsdFile(filePath: string): Promise<WsdRecord[]> {
 
       // Power: mrwSmpP is in kW, database expects Watt -> * 1000
       const powerKw = getNum(rec, 'mrwSmpP');
+      // Reactive Power: mrwSmpQ ist in kVAr (raw DBF), DB speichert VAr -> * 1000
+      const reactivePowerKvar = getNum(rec, 'mrwSmpQ');
 
       records.push({
         timestamp,
@@ -655,6 +689,25 @@ export async function readWsdFile(filePath: string): Promise<WsdRecord[]> {
         rotorRpm: getNum(rec, 'mrwSmpNRot'),
         operatingHours: getNum(rec, 'arwAbWorkH'),
         windDirection: getNum(rec, 'mrwAbGoPos'),
+
+        // --- Erweiterung (siehe readWsrFile für Feld-Semantik) ---
+        reactivePowerVar: reactivePowerKvar != null ? reactivePowerKvar * 1000 : null,
+        cumulativeEnergyWh: getNum(rec, 'arwAbW'),
+        operatingMinutes: getNum(rec, 'arwAbWrkM'),
+        // Curtailment in kW (raw wie im DBF — konsistent zu WSR, NICHT auf Watt umgerechnet)
+        powerWindKw: getNum(rec, 'mrwSmpPwin'),
+        powerTechnicalKw: getNum(rec, 'mrwSmpPte'),
+        powerForcedKw: getNum(rec, 'mrwSmpPfm'),
+        powerExternalKw: getNum(rec, 'mrwSmpPext'),
+        // Pitch / Meteo
+        pitchAngle: getNum(rec, 'mrwSmpAng'),
+        rainIndex: getNum(rec, 'mrwSmpRai'),
+        airPressureHpa: getNum(rec, 'mrwSmpAirP'),
+        airHumidityPct: getNum(rec, 'mrwSmpAirH'),
+        visibilityRange: getNum(rec, 'mrwSmpVisR'),
+        brightnessNight: getNum(rec, 'mrwSmpBriN'),
+        icingCount: getNum(rec, 'mrwSmpLIcA'),
+        coldIcing: getNum(rec, 'mrwSmpCIce'),
       });
     }
 

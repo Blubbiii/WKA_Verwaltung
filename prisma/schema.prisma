@@ -2450,6 +2450,26 @@ model ScadaMeasurement {
   powerFactor     Decimal? @db.Decimal(4, 3)
   frequencyHz     Decimal? @db.Decimal(5, 2)
   meterReadingKwh Decimal? @db.Decimal(15, 3)
+  // WSD-Ergänzungen (Enercon 10-Minuten-Intervall):
+  // Blindleistung (mrwSmpQ) — als VAr gespeichert (raw DBF-Wert * 1000; DBF ist kVAr).
+  reactivePowerVar   Decimal? @db.Decimal(14, 2)
+  // Kumulative Zähler
+  cumulativeEnergyWh Decimal? @db.Decimal(18, 2)  // arwAbW (raw Wh aus DBF, KEIN Umrechnungsfaktor)
+  operatingMinutes   Decimal? @db.Decimal(12, 2)  // arwAbWrkM (Betriebsminuten, feiner als operatingHours)
+  // Curtailment / Leistungskomponenten (kW, raw wie im DBF — NICHT auf Watt umgerechnet!)
+  powerWindKw        Decimal? @db.Decimal(10, 2)  // mrwSmpPwin — wind-restricted output
+  powerTechnicalKw   Decimal? @db.Decimal(10, 2)  // mrwSmpPte — technisch abgeregelt
+  powerForcedKw      Decimal? @db.Decimal(10, 2)  // mrwSmpPfm — forced / manuell abgeregelt
+  powerExternalKw    Decimal? @db.Decimal(10, 2)  // mrwSmpPext — extern (Redispatch)
+  // Pitch / Meteorologie
+  pitchAngle         Decimal? @db.Decimal(6, 2)   // mrwSmpAng — Anstellwinkel (Grad)
+  rainIndex          Decimal? @db.Decimal(8, 3)   // mrwSmpRai
+  airPressureHpa     Decimal? @db.Decimal(7, 2)   // mrwSmpAirP
+  airHumidityPct     Decimal? @db.Decimal(5, 2)   // mrwSmpAirH
+  visibilityRange    Decimal? @db.Decimal(8, 2)   // mrwSmpVisR
+  brightnessNight    Decimal? @db.Decimal(8, 2)   // mrwSmpBriN
+  icingCount         Decimal? @db.Decimal(8, 2)   // mrwSmpLIcA — Eis-Anzahl (Icing-Count)
+  coldIcing          Decimal? @db.Decimal(8, 2)   // mrwSmpCIce — Eis-Cold (Cold-Icing)
   sourceFile      String
   turbineId       String
   tenantId        String

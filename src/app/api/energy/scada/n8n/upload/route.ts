@@ -8,13 +8,23 @@ import { apiError } from "@/lib/api-errors";
 
 const locationSchema = z.string().regex(/^Loc_\d+$/, "Ungültiger Location-Code");
 
-// Supported SCADA file extensions
+// Supported SCADA file extensions — muss 1:1 zu FILE_TYPE_CONFIG in
+// src/lib/scada/import-service.ts passen. 23 Extensions:
 const SCADA_EXTENSIONS = new Set([
-  "wsd", "uid",
+  // Daily (10-Minuten-Werte)
+  "wsd", "uid", "uqd", "wdd", "84d", "85d",
+  // Availability
   "avr", "avw", "avm", "avy",
+  // State / Warning Summaries
   "ssm", "swm",
+  // Events
   "pes", "pew", "pet",
+  // Wind Summaries
   "wsr", "wsw", "wsm", "wsy",
+  // Electrical Summaries
+  "uir", "uiw", "uim", "uiy",
+  // Electrical Per-Phase
+  "uqr", "uqw", "uqm", "uqy",
 ]);
 
 // =============================================================================
