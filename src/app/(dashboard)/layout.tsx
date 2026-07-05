@@ -9,6 +9,7 @@ import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
 import { OfflineIndicator } from "@/components/providers/offline-indicator";
 import { PageTransition } from "@/components/providers/page-transition";
+import { AppVersionMonitor } from "@/components/providers/app-version-monitor";
 import { CommandPalette } from "@/components/global/command-palette";
 
 export default function DashboardLayout({
@@ -28,6 +29,7 @@ export default function DashboardLayout({
         </a>
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
+          <AppVersionMonitor />
           <CommandPalette />
           <TabTitleSync />
           {/* Desktop sidebar */}

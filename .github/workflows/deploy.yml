@@ -96,6 +96,13 @@ jobs:
             # Datum-basierter Tag (z.B. "2026-02-12")
             type=raw,value={{date 'YYYY-MM-DD'}},enable={{is_default_branch}}
 
+      # Zusaetzlicher Build-Zeitstempel im ISO-Format (UTC)
+      # Wird als NEXT_PUBLIC_BUILD_TIME ins Image gebrannt und vom Version-Check
+      # (/api/version) verwendet, um Client-seitig Updates zu erkennen.
+      - name: Compute Build Time
+        id: buildtime
+        run: echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       # Schritt 5: Docker Image bauen und pushen
       # Nutzt den vorhandenen Multi-Stage Dockerfile
       # Layer-Caching via GitHub Actions Cache fuer schnellere Builds
@@ -109,9 +116,14 @@ jobs:
           # Build-Cache fuer schnellere wiederholte Builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          # Build Arguments (oeffentliche URL fuer NEXT_PUBLIC_ Variablen)
+          # Build Arguments
+          # - NEXT_PUBLIC_APP_URL: oeffentliche URL fuer NEXT_PUBLIC_ Variablen
+          # - NEXT_PUBLIC_COMMIT_SHA / NEXT_PUBLIC_BUILD_TIME: Version-Check
+          #   /api/version + Client-Update-Toast (useAppVersion)
           build-args: |
             NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL || 'https://wpm.example.com' }}
+            NEXT_PUBLIC_COMMIT_SHA=${{ github.sha }}
+            NEXT_PUBLIC_BUILD_TIME=${{ steps.buildtime.outputs.BUILD_TIME }}
 
       # Schritt 6: Build-Zusammenfassung in der GitHub Actions UI anzeigen
       - name: Build Summary

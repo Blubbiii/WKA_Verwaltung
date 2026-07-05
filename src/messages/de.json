@@ -332,6 +332,11 @@
     "switchToGerman": "Zu Deutsch wechseln",
     "language": "Sprache"
   },
+  "versionCheck": {
+    "newVersionTitle": "Neue Version verfügbar",
+    "newVersionDescription": "Bitte neu laden, um die aktuelle Version zu verwenden.",
+    "reload": "Neu laden"
+  },
   "commandPalette": {
     "placeholder": "Was möchten Sie tun?",
     "empty": "Nichts gefunden",
@@ -1839,7 +1844,10 @@
         "toastMappingsSavedCount": "{count} Zuordnung(en) erfolgreich gespeichert",
         "toastNoImportStarted": "Kein Import konnte gestartet werden",
         "toastPartialImportStarted": "{started} von {total} Dateitypen gestartet ({failed} fehlgeschlagen)",
-        "toastImportStarted": "Import gestartet: {count} Dateityp(en) für {locationCode}"
+        "toastImportStarted": "Import gestartet: {count} Dateityp(en) für {locationCode}",
+        "errorNoScanPath": "Bitte einen Scan-Pfad eingeben, bevor der Import gestartet wird",
+        "errorInvalidLocation": "Ungültiger Standort-Code — erwartet Format „Loc_XXXX\"",
+        "errorBadRequest": "Ungültige Anfrage — bitte Eingaben prüfen"
       },
       "mappingsTab": {
         "cardTitle": "SCADA-Zuordnungen",

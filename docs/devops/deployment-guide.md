@@ -357,9 +357,20 @@ docker compose exec -T postgres psql -U wpm windparkmanager < backup.sql
 
 ### Health Endpoints
 
+Die App bietet **drei** Endpunkte fuer unterschiedliche Zwecke:
+
+| Endpoint | Auth | Prueft | Verwendung |
+|----------|------|--------|------------|
+| `/api/health/live` | keine | nur "Prozess laeuft" | Docker/Portainer `HEALTHCHECK` — Container gilt sofort als live |
+| `/api/health/ready` | keine | DB + Redis erreichbar (503 sonst) | Load-Balancer-Routing / externes Monitoring |
+| `/api/health` | keine | DB + Redis (Legacy-Alias fuer `/ready`) | Rueckwaerts-Kompatibilitaet fuer bestehende Monitoring-Tools |
+
 ```bash
-# Application Health
-curl -f https://wpm.example.com/api/health
+# Liveness (nur Prozess)
+curl -f https://wpm.example.com/api/health/live
+
+# Readiness (DB + Redis)
+curl -f https://wpm.example.com/api/health/ready
 
 # PostgreSQL
 docker compose exec postgres pg_isready -U wpm
@@ -371,10 +382,43 @@ docker compose exec redis redis-cli ping
 ### Docker Health Checks
 
 Alle Services haben integrierte Health Checks:
-- App: `/api/health` (30s Interval, 60s Startup)
+- App: `/api/health/live` (30s Interval, 60s Startup) — DB/Redis werden separat via `/api/health/ready` geprueft, damit der Container beim Start nicht in "unhealthy" kippt, wenn Postgres/Redis noch nicht bereit sind
 - PostgreSQL: `pg_isready`
 - Redis: `redis-cli ping`
 - MinIO: `curl http://localhost:9000/minio/health/live`
+
+---
+
+## Build-Time-Env-Variablen für Version-Check
+
+`/api/version` liefert Commit-SHA + Build-Time zurueck; der Client-Hook
+`useAppVersion` (mounted in `src/app/(dashboard)/layout.tsx`) pollt alle 5 min
+und zeigt einen persistenten Toast **"Neue Version verfuegbar - Neu laden"**,
+sobald sich Server-Version zwischen Boot und Poll unterscheidet.
+
+Damit das funktioniert, muessen im Build folgende Build-Args gesetzt sein:
+
+- `NEXT_PUBLIC_COMMIT_SHA` — voller Git-SHA des Deploy-Commits
+- `NEXT_PUBLIC_BUILD_TIME` — ISO-8601-UTC-Zeitstempel des Builds
+
+**CI (`.github/workflows/deploy.yml`)** reicht beide bereits durch:
+
+```yaml
+- name: Compute Build Time
+  id: buildtime
+  run: echo "BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+- name: Build and Push Docker Image
+  uses: docker/build-push-action@v5
+  with:
+    build-args: |
+      NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+      NEXT_PUBLIC_COMMIT_SHA=${{ github.sha }}
+      NEXT_PUBLIC_BUILD_TIME=${{ steps.buildtime.outputs.BUILD_TIME }}
+```
+
+**Manuelle lokale Builds** funktionieren auch ohne — Fallback ist `"unknown"`
+(kein Toast, aber auch kein Crash).
 
 ### Logging
 

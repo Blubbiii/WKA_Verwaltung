@@ -97,7 +97,9 @@ services:
       # Middlewares
       - "traefik.http.routers.app.middlewares=security-headers@file,compress@file"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3050/api/health"]
+      # LIVE-Check: nur "HTTP-Server laeuft" — schnell verfuegbar nach Restart.
+      # DB/Redis werden separat via /api/health/ready geprueft (Monitoring).
+      test: ["CMD", "curl", "-f", "http://localhost:3050/api/health/live"]
       interval: 30s
       timeout: 10s
       start_period: 60s

@@ -332,6 +332,11 @@
     "switchToGerman": "Zu Deutsch wechseln",
     "language": "Language"
   },
+  "versionCheck": {
+    "newVersionTitle": "New version available",
+    "newVersionDescription": "Please reload to use the latest version.",
+    "reload": "Reload"
+  },
   "commandPalette": {
     "placeholder": "Search command...",
     "empty": "No matches",
@@ -1839,7 +1844,10 @@
         "toastMappingsSavedCount": "{count} mapping(s) saved successfully",
         "toastNoImportStarted": "No import could be started",
         "toastPartialImportStarted": "{started} of {total} file types started ({failed} failed)",
-        "toastImportStarted": "Import started: {count} file type(s) for {locationCode}"
+        "toastImportStarted": "Import started: {count} file type(s) for {locationCode}",
+        "errorNoScanPath": "Please enter a scan path before starting the import",
+        "errorInvalidLocation": "Invalid location code — expected format \"Loc_XXXX\"",
+        "errorBadRequest": "Invalid request — please check your input"
       },
       "mappingsTab": {
         "cardTitle": "SCADA Mappings",

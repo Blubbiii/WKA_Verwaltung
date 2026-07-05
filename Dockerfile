@@ -54,6 +54,14 @@ ENV NODE_ENV=production
 ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
+# Version-Metadaten fuer /api/version + Client-Update-Toast (useAppVersion).
+# CI (deploy.yml) reicht COMMIT_SHA und BUILD_TIME als build-args durch.
+# Beide bleiben "unknown", wenn lokal gebaut wird — das ist ok.
+ARG NEXT_PUBLIC_COMMIT_SHA=unknown
+ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
+ARG NEXT_PUBLIC_BUILD_TIME=unknown
+ENV NEXT_PUBLIC_BUILD_TIME=${NEXT_PUBLIC_BUILD_TIME}
+
 # Build mit erhoehtem Memory-Limit (Next.js Build braucht ~2GB)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
@@ -87,6 +95,12 @@ WORKDIR /app
 # Production Environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Version-Metadaten in Runtime durchreichen — /api/version liest sie zur Antwort.
+ARG NEXT_PUBLIC_COMMIT_SHA=unknown
+ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
+ARG NEXT_PUBLIC_BUILD_TIME=unknown
+ENV NEXT_PUBLIC_BUILD_TIME=${NEXT_PUBLIC_BUILD_TIME}
 
 # Sicherheit: Non-root User erstellen
 RUN addgroup --system --gid 1001 nodejs
@@ -132,8 +146,11 @@ ENV PORT=3050
 ENV HOSTNAME="0.0.0.0"
 
 # Healthcheck — nutzt $PORT damit es mit docker-compose ENV uebereinstimmt
+# Liveness: nur "Prozess laeuft" — DB/Redis werden von /api/health/ready geprueft.
+# So kippt der Container nicht in "unhealthy" wenn externe Deps beim Start
+# noch nicht ready sind.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-3050}/api/health || exit 1
+    CMD curl -f http://localhost:${PORT:-3050}/api/health/live || exit 1
 
 # Entrypoint (fuehrt Migrations aus, dann startet App)
 ENTRYPOINT ["./docker-entrypoint.sh"]

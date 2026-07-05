@@ -897,6 +897,19 @@ export default function ScadaImportTab() {
   // ---------------------------------------------------------------------------
   const startImportAllTypes = async (locationCode: string, fileTypes: string[]) => {
     const types = fileTypes.length > 0 ? fileTypes : ["WSD"];
+
+    // Early-Exit-Guards: verhindert 24× 400 "basePath ist erforderlich" bei leerem Pfad
+    // bzw. 24× 400 bei ungültigem locationCode-Format.
+    const trimmedPath = scanPath.trim();
+    if (!trimmedPath) {
+      toast.error(t("errorNoScanPath"));
+      return;
+    }
+    if (!locationCode || !locationCode.startsWith("Loc_")) {
+      toast.error(t("errorInvalidLocation"));
+      return;
+    }
+
     setIsImporting(true);
     setActiveImports([]);
 
@@ -905,6 +918,7 @@ export default function ScadaImportTab() {
 
     let startedCount = 0;
     let failedToStart = 0;
+    let aborted = false;
 
     for (const fileType of types) {
       try {
@@ -914,14 +928,27 @@ export default function ScadaImportTab() {
           body: JSON.stringify({
             locationCode,
             fileType,
-            basePath: scanPath.trim(),
+            basePath: trimmedPath,
           }),
         });
 
         if (!res.ok) {
-          const _err = await res.json().catch(() => ({}));
+          const err = await res.json().catch(() => ({}));
           if (res.status === HTTP_STATUS.CONFLICT) {
             startedCount++;
+          } else if (res.status === HTTP_STATUS.BAD_REQUEST) {
+            // Client-Fehler (z.B. Validation) → weitere Types werden dasselbe Ergebnis liefern.
+            // Loop abbrechen statt alle 24 durchprobieren.
+            const message =
+              typeof err?.message === "string"
+                ? err.message
+                : typeof err?.error === "string"
+                  ? err.error
+                  : t("errorBadRequest");
+            toast.error(message);
+            failedToStart++;
+            aborted = true;
+            break;
           } else {
             failedToStart++;
           }
@@ -973,7 +1000,10 @@ export default function ScadaImportTab() {
     }
 
     if (startedCount === 0) {
-      toast.error(t("toastNoImportStarted"));
+      // Bei Abbruch durch 400 wurde bereits ein spezifischer Toast angezeigt.
+      if (!aborted) {
+        toast.error(t("toastNoImportStarted"));
+      }
       setIsImporting(false);
     } else if (failedToStart > 0) {
       toast.warning(

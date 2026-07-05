@@ -7,6 +7,7 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { UiStyleProvider } from "@/components/providers/ui-style-provider";
+import { HydrationRecovery } from "@/components/providers/hydration-recovery";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -47,19 +48,21 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: uiStyleInitScript }} />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider>
-          <UiStyleProvider>
-            <NextIntlClientProvider messages={messages}>
-              <QueryProvider>
-                <SessionProvider>
-                  {children}
-                  <Toaster />
-                  <CookieBanner />
-                </SessionProvider>
-              </QueryProvider>
-            </NextIntlClientProvider>
-          </UiStyleProvider>
-        </ThemeProvider>
+        <HydrationRecovery>
+          <ThemeProvider>
+            <UiStyleProvider>
+              <NextIntlClientProvider messages={messages}>
+                <QueryProvider>
+                  <SessionProvider>
+                    {children}
+                    <Toaster />
+                    <CookieBanner />
+                  </SessionProvider>
+                </QueryProvider>
+              </NextIntlClientProvider>
+            </UiStyleProvider>
+          </ThemeProvider>
+        </HydrationRecovery>
       </body>
     </html>
   );
