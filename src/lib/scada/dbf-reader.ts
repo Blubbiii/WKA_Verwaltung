@@ -24,7 +24,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { logger } from '@/lib/logger';
 
-const scadaLogger = logger.child({ module: 'scada' });
+export const scadaLogger = logger.child({ module: 'scada' });
 
 // ---------------------------------------------------------------
 // Types
@@ -529,7 +529,7 @@ function caseGet(rec: Record<string, unknown>, fieldName: string): unknown {
  * Extracts a number field from a DBF record using case-insensitive lookup.
  * Returns null for invalid/sentinel values.
  */
-function getNum(rec: Record<string, unknown>, fieldName: string): number | null {
+export function getNum(rec: Record<string, unknown>, fieldName: string): number | null {
   return toValidNumber(caseGet(rec, fieldName));
 }
 
@@ -537,7 +537,7 @@ function getNum(rec: Record<string, unknown>, fieldName: string): number | null 
  * Extracts an integer field from a DBF record using case-insensitive lookup.
  * Returns null for invalid/sentinel values. Rounds the value to integer.
  */
-function getInt(rec: Record<string, unknown>, fieldName: string): number | null {
+export function getInt(rec: Record<string, unknown>, fieldName: string): number | null {
   const val = toValidNumber(caseGet(rec, fieldName));
   return val != null ? Math.round(val) : null;
 }
@@ -587,7 +587,7 @@ function toDate(val: unknown): Date | null {
  * Builds a UTC timestamp from a Date field plus Hour/Minute/Second fields in a DBF record.
  * Returns null if the date field is missing or invalid.
  */
-function buildTimestamp(rec: Record<string, unknown>): Date | null {
+export function buildTimestamp(rec: Record<string, unknown>): Date | null {
   const dateVal = toDate(caseGet(rec, 'Date'));
   if (!dateVal) return null;
 
@@ -611,7 +611,7 @@ function buildTimestamp(rec: Record<string, unknown>): Date | null {
  * Extracts the PlantNo field from a DBF record.
  * Returns the plant number or null if missing/invalid.
  */
-function getPlantNo(rec: Record<string, unknown>): number | null {
+export function getPlantNo(rec: Record<string, unknown>): number | null {
   const plantNo = Number(caseGet(rec, 'PlantNo'));
   if (isNaN(plantNo) || plantNo <= 0) return null;
   return plantNo;
@@ -661,61 +661,12 @@ async function directoryExists(dirPath: string): Promise<boolean> {
  * @returns Array der geparseten WSD-Messwerte
  */
 export async function readWsdFile(filePath: string): Promise<WsdRecord[]> {
-  try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    const records: WsdRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const timestamp = buildTimestamp(rec);
-      if (!timestamp) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      // Power: mrwSmpP is in kW, database expects Watt -> * 1000
-      const powerKw = getNum(rec, 'mrwSmpP');
-      // Reactive Power: mrwSmpQ ist in kVAr (raw DBF), DB speichert VAr -> * 1000
-      const reactivePowerKvar = getNum(rec, 'mrwSmpQ');
-
-      records.push({
-        timestamp,
-        plantNo,
-        windSpeedMs: getNum(rec, 'mrwSmpVWi'),
-        powerW: powerKw != null ? powerKw * 1000 : null,
-        rotorRpm: getNum(rec, 'mrwSmpNRot'),
-        operatingHours: getNum(rec, 'arwAbWorkH'),
-        windDirection: getNum(rec, 'mrwAbGoPos'),
-
-        // --- Erweiterung (siehe readWsrFile für Feld-Semantik) ---
-        reactivePowerVar: reactivePowerKvar != null ? reactivePowerKvar * 1000 : null,
-        cumulativeEnergyWh: getNum(rec, 'arwAbW'),
-        operatingMinutes: getNum(rec, 'arwAbWrkM'),
-        // Curtailment in kW (raw wie im DBF — konsistent zu WSR, NICHT auf Watt umgerechnet)
-        powerWindKw: getNum(rec, 'mrwSmpPwin'),
-        powerTechnicalKw: getNum(rec, 'mrwSmpPte'),
-        powerForcedKw: getNum(rec, 'mrwSmpPfm'),
-        powerExternalKw: getNum(rec, 'mrwSmpPext'),
-        // Pitch / Meteo
-        pitchAngle: getNum(rec, 'mrwSmpAng'),
-        rainIndex: getNum(rec, 'mrwSmpRai'),
-        airPressureHpa: getNum(rec, 'mrwSmpAirP'),
-        airHumidityPct: getNum(rec, 'mrwSmpAirH'),
-        visibilityRange: getNum(rec, 'mrwSmpVisR'),
-        brightnessNight: getNum(rec, 'mrwSmpBriN'),
-        icingCount: getNum(rec, 'mrwSmpLIcA'),
-        coldIcing: getNum(rec, 'mrwSmpCIce'),
-      });
-    }
-
-    return records;
-  } catch (err) {
-    scadaLogger.error({ err, filePath }, "Error reading WSD file");
-    return [];
-  }
+  // Phase 3 Schema-Descriptor-Refactor: die Field-Extraktion ist jetzt
+  // deklarativ in `WSD_SCHEMA` (dbf-schemas.ts). Dynamisch importiert um
+  // Circular-Import-Fragilität zu vermeiden (dbf-schemas.ts importiert aus
+  // dieser Datei die Types + Helpers).
+  const { readDbfWithSchema, WSD_SCHEMA } = await import("./dbf-schemas");
+  return readDbfWithSchema<WsdRecord>(filePath, WSD_SCHEMA, "WSD");
 }
 
 /**
@@ -1385,82 +1336,14 @@ async function readOperatingStateFile(
  * Falls back to dynamic field discovery if standard names not found.
  */
 export async function readUqdFile(filePath: string): Promise<ElectricalPhaseRecord[]> {
+  // Phase 3 Schema-Descriptor-Refactor: die dynamische Feld-Erkennung
+  // (`hasStandardNames` + `resolveField` mit starts-with/ends-with-Scan) ist
+  // durch explizite Fallback-Namen im UQD_SCHEMA ersetzt. Falls neue Firmware-
+  // Versionen andere Prefixe nutzen, im Schema ergänzen — kein Reader-Code-
+  // Change nötig.
   try {
-    const dbf = await DBFFile.open(filePath);
-    const rawRecords = await dbf.readRecords();
-
-    // Build dynamic field name map from DBF header
-    // Standard Enercon: mruqSmpP1, pruqSmpP1, lruqSmpP1, etc.
-    // Fallback: detect mr*P1, pr*P1, lr*P1 patterns dynamically
-    const fieldNames = new Set(dbf.fields.map((f) => f.name.toLowerCase()));
-    const hasStandardNames = fieldNames.has('mruqsmpp1');
-
-    // Resolve field name: try standard first, then scan for pattern
-    function resolveField(prefix: string, phase: string): string | null {
-      const standard = `${prefix}uqSmp${phase}`;
-      if (fieldNames.has(standard.toLowerCase())) return standard;
-      // Fallback: search for any field ending with phase identifier
-      for (const f of dbf.fields) {
-        if (f.name.toLowerCase().startsWith(prefix.toLowerCase()) && f.name.endsWith(phase)) {
-          return f.name;
-        }
-      }
-      return null;
-    }
-
-    const fieldMap = hasStandardNames ? null : {
-      meanP1: resolveField('mr', 'P1'), peakP1: resolveField('pr', 'P1'), lowP1: resolveField('lr', 'P1'),
-      meanP2: resolveField('mr', 'P2'), peakP2: resolveField('pr', 'P2'), lowP2: resolveField('lr', 'P2'),
-      meanP3: resolveField('mr', 'P3'), peakP3: resolveField('pr', 'P3'), lowP3: resolveField('lr', 'P3'),
-      meanQ1: resolveField('mr', 'Q1'), peakQ1: resolveField('pr', 'Q1'), lowQ1: resolveField('lr', 'Q1'),
-      meanQ2: resolveField('mr', 'Q2'), peakQ2: resolveField('pr', 'Q2'), lowQ2: resolveField('lr', 'Q2'),
-      meanQ3: resolveField('mr', 'Q3'), peakQ3: resolveField('pr', 'Q3'), lowQ3: resolveField('lr', 'Q3'),
-    };
-
-    if (!hasStandardNames) {
-      scadaLogger.warn(
-        { filePath, resolvedFields: fieldMap },
-        "UQD file uses non-standard field names, using dynamic detection"
-      );
-    }
-
-    const records: ElectricalPhaseRecord[] = [];
-
-    for (const raw of rawRecords) {
-      const rec = raw as Record<string, unknown>;
-
-      const timestamp = buildTimestamp(rec);
-      if (!timestamp) continue;
-
-      const plantNo = getPlantNo(rec);
-      if (!plantNo) continue;
-
-      const gf = (key: string | null) => key ? getNum(rec, key) : null;
-
-      if (hasStandardNames) {
-        records.push({
-          timestamp, plantNo, error: getInt(rec, 'Error'),
-          meanP1: getNum(rec, 'mruqSmpP1'), peakP1: getNum(rec, 'pruqSmpP1'), lowP1: getNum(rec, 'lruqSmpP1'),
-          meanP2: getNum(rec, 'mruqSmpP2'), peakP2: getNum(rec, 'pruqSmpP2'), lowP2: getNum(rec, 'lruqSmpP2'),
-          meanP3: getNum(rec, 'mruqSmpP3'), peakP3: getNum(rec, 'pruqSmpP3'), lowP3: getNum(rec, 'lruqSmpP3'),
-          meanQ1: getNum(rec, 'mruqSmpQ1'), peakQ1: getNum(rec, 'pruqSmpQ1'), lowQ1: getNum(rec, 'lruqSmpQ1'),
-          meanQ2: getNum(rec, 'mruqSmpQ2'), peakQ2: getNum(rec, 'pruqSmpQ2'), lowQ2: getNum(rec, 'lruqSmpQ2'),
-          meanQ3: getNum(rec, 'mruqSmpQ3'), peakQ3: getNum(rec, 'pruqSmpQ3'), lowQ3: getNum(rec, 'lruqSmpQ3'),
-        });
-      } else {
-        records.push({
-          timestamp, plantNo, error: getInt(rec, 'Error'),
-          meanP1: gf(fieldMap!.meanP1), peakP1: gf(fieldMap!.peakP1), lowP1: gf(fieldMap!.lowP1),
-          meanP2: gf(fieldMap!.meanP2), peakP2: gf(fieldMap!.peakP2), lowP2: gf(fieldMap!.lowP2),
-          meanP3: gf(fieldMap!.meanP3), peakP3: gf(fieldMap!.peakP3), lowP3: gf(fieldMap!.lowP3),
-          meanQ1: gf(fieldMap!.meanQ1), peakQ1: gf(fieldMap!.peakQ1), lowQ1: gf(fieldMap!.lowQ1),
-          meanQ2: gf(fieldMap!.meanQ2), peakQ2: gf(fieldMap!.peakQ2), lowQ2: gf(fieldMap!.lowQ2),
-          meanQ3: gf(fieldMap!.meanQ3), peakQ3: gf(fieldMap!.peakQ3), lowQ3: gf(fieldMap!.lowQ3),
-        });
-      }
-    }
-
-    return records;
+    const { readDbfWithSchema, UQD_SCHEMA } = await import("./dbf-schemas");
+    return await readDbfWithSchema<ElectricalPhaseRecord>(filePath, UQD_SCHEMA, "UQD");
   } catch (err) {
     scadaLogger.error({ err, filePath }, "Error reading UQD file");
     return [];
