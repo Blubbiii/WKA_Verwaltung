@@ -9,24 +9,8 @@ import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 
-// All supported SCADA file extensions — muss 1:1 zu FILE_TYPE_CONFIG in
-// src/lib/scada/import-service.ts passen. 23 Extensions:
-const SCADA_EXTENSIONS = new Set([
-  // Daily (10-Minuten-Werte)
-  "wsd", "uid", "uqd", "wdd", "84d", "85d",
-  // Availability
-  "avr", "avw", "avm", "avy",
-  // State / Warning Summaries
-  "ssm", "swm",
-  // Events
-  "pes", "pew", "pet",
-  // Wind Summaries
-  "wsr", "wsw", "wsm", "wsy",
-  // Electrical Summaries (Full UID Field-Set)
-  "uir", "uiw", "uim", "uiy",
-  // Electrical Per-Phase (Uq)
-  "uqr", "uqw", "uqm", "uqy",
-]);
+// Single Source of Truth: src/lib/scada/file-types.ts
+import { SCADA_EXTENSIONS_SET as SCADA_EXTENSIONS } from "@/lib/scada/file-types";
 
 // Max upload: 500 MB total (SCADA archives can be large). Env-override via
 // UPLOAD_LIMIT_SCADA_TOTAL_MB; single-file via UPLOAD_LIMIT_SCADA_SINGLE_MB.

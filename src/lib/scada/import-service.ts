@@ -64,17 +64,10 @@ import type {
 // Types
 // ---------------------------------------------------------------
 
-/** All supported SCADA file types */
-export type ScadaFileType =
-  | 'WSD' | 'UID'
-  | 'AVR' | 'AVW' | 'AVM' | 'AVY'
-  | 'SSM' | 'SWM'
-  | 'PES' | 'PEW' | 'PET'
-  | 'WSR' | 'WSW' | 'WSM' | 'WSY'
-  | 'WDD'
-  | '84D' | '85D'
-  | 'UQD' | 'UQR' | 'UQW' | 'UQM' | 'UQY'
-  | 'UIR' | 'UIW' | 'UIM' | 'UIY';
+// ScadaFileType-Master liegt in file-types.ts (frontend-safe, keine Prisma-Deps).
+// Re-Export für Backwards-Compat der bestehenden Importer dieser Datei.
+import type { ScadaFileTypeKey } from "./file-types";
+export type ScadaFileType = ScadaFileTypeKey;
 
 /** Period type for summary/availability files */
 export type ScadaPeriodType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';

@@ -76,22 +76,10 @@ import {
 } from "./types";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
-
-const SCADA_EXTENSIONS = [
-  // Daily measurements & events
-  ".wsd", ".uid", ".uqd", ".wdd", ".84d", ".85d",
-  ".pes", ".pew", ".pet",
-  // Availability summaries (daily/weekly/monthly/yearly)
-  ".avr", ".avw", ".avm", ".avy",
-  // State / warning monthly summaries
-  ".ssm", ".swm",
-  // Wind summaries (daily/weekly/monthly/yearly)
-  ".wsr", ".wsw", ".wsm", ".wsy",
-  // Electrical summaries (daily/weekly/monthly/yearly)
-  ".uir", ".uiw", ".uim", ".uiy",
-  // Electrical per-phase summaries (daily/weekly/monthly/yearly)
-  ".uqr", ".uqw", ".uqm", ".uqy",
-];
+// Single Source of Truth für die 27 SCADA-Dateiendungen — siehe
+// src/lib/scada/file-types.ts. Historisch war die Liste hier separat definiert
+// und driftete regelmäßig gegen Backend + Upload-Routes auseinander.
+import { SCADA_EXTENSIONS_DOTTED as SCADA_EXTENSIONS } from "@/lib/scada/file-types";
 
 export default function ScadaImportTab() {
   const t = useTranslations("energy.scada.importTab");
