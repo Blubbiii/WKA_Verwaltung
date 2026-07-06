@@ -1747,6 +1747,20 @@
         "errorLoadingHistory": "Fehler beim Laden der Import-Historie",
         "errorLoadingLogs": "Fehler beim Laden der Protokolle"
       },
+      "uploader": {
+        "dropOrClick": "SCADA-Dateien hier ablegen oder klicken",
+        "hint": "Standort: {code}",
+        "selectFiles": "Dateien auswählen",
+        "overallProgress": "{pct}% hochgeladen",
+        "counts": "{ok}/{total} erfolgreich, {fail} Fehler",
+        "clearAll": "Alle entfernen",
+        "retry": "Wiederholen",
+        "cancel": "Abbrechen",
+        "someFailed": "{count} Datei(en) fehlgeschlagen",
+        "uploadedAndStarted": "{count} Datei(en) hochgeladen — Import läuft",
+        "finalizeFailed": "Fehler beim Starten des Imports",
+        "invalidExtension": "Ungültige Datei: {name} (Extension .{ext})"
+      },
       "importTab": {
         "cardTitle": "SCADA-Daten importieren",
         "cardDescription": "Ordner oder Dateien vom PC auswählen, oder einen Server-Pfad scannen — Duplikate werden automatisch übersprungen",
@@ -1763,6 +1777,9 @@
         "import": "Import",
         "importAllLocations": "Alle Standorte importieren",
         "infoLocCode": "Der Standort-Code wird automatisch aus dem Ordnernamen erkannt (z.B. Loc_5842). Duplikate werden beim Import automatisch übersprungen.",
+        "v2LocCodeLabel": "Standort-Code (Loc_XXXX)",
+        "v2Badge": "Neu (V2, resumable)",
+        "v2ImportsStarted": "{count} Import(e) gestartet",
         "checkingMappings": "Prüfe Zuordnungen...",
         "mapPlantsTitle": "Anlagen zuordnen — {locCode}",
         "mapPlantsDescription": "{unmapped} von {total} Anlagen sind noch nicht zugeordnet. Bitte ordnen Sie die Anlagen einem Park und einer Turbine zu.",
@@ -7776,7 +7793,8 @@
         "inbox": "Inbox",
         "wirtschaftsplan": "Wirtschaftsplan",
         "accounting": "Buchhaltung",
-        "marketData": "Marktwert-Vergleich"
+        "marketData": "Marktwert-Vergleich",
+        "scada-uploader-v2": "SCADA-Uploader V2 (resumable)"
       },
       "accounting": {
         "accounting.reports": "Reports (SuSa, BWA, EÜR, GuV)",

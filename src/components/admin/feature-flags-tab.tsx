@@ -55,6 +55,7 @@ interface ModuleFlags {
   "wirtschaftsplan": boolean;
   "accounting": boolean;
   "marketData": boolean;
+  "scada-uploader-v2": boolean;
 }
 
 // Accounting sub-module flags
@@ -111,6 +112,7 @@ const MODULE_KEYS = [
   "wirtschaftsplan",
   "accounting",
   "marketData",
+  "scada-uploader-v2",
 ] as const satisfies readonly (keyof ModuleFlags)[];
 
 const ACCOUNTING_SUB_KEYS = [

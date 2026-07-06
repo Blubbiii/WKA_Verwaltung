@@ -34,6 +34,8 @@ interface FeatureFlags {
   "storage": boolean;
   "predictive-maintenance": boolean;
   "investor-reports": boolean;
+  /** New resumable SCADA-Upload (Uppy + tus). Off = legacy uploader. */
+  "scada-uploader-v2": boolean;
 }
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -69,6 +71,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   "storage": false,
   "predictive-maintenance": false,
   "investor-reports": false,
+  "scada-uploader-v2": false,
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.ok ? r.json() : DEFAULT_FLAGS);

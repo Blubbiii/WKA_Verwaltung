@@ -1747,6 +1747,20 @@
         "errorLoadingHistory": "Failed to load import history",
         "errorLoadingLogs": "Failed to load logs"
       },
+      "uploader": {
+        "dropOrClick": "Drop SCADA files here or click",
+        "hint": "Location: {code}",
+        "selectFiles": "Select files",
+        "overallProgress": "{pct}% uploaded",
+        "counts": "{ok}/{total} ok, {fail} failed",
+        "clearAll": "Clear all",
+        "retry": "Retry",
+        "cancel": "Cancel",
+        "someFailed": "{count} file(s) failed",
+        "uploadedAndStarted": "{count} file(s) uploaded — import running",
+        "finalizeFailed": "Failed to start import",
+        "invalidExtension": "Invalid file: {name} (extension .{ext})"
+      },
       "importTab": {
         "cardTitle": "Import SCADA Data",
         "cardDescription": "Select files or folders from your PC, or scan a server path — duplicates are skipped automatically",
@@ -1763,6 +1777,9 @@
         "import": "Import",
         "importAllLocations": "Import all locations",
         "infoLocCode": "The location code is detected automatically from the folder name (e.g. Loc_5842). Duplicates are skipped automatically during import.",
+        "v2LocCodeLabel": "Location code (Loc_XXXX)",
+        "v2Badge": "New (V2, resumable)",
+        "v2ImportsStarted": "{count} import(s) started",
         "checkingMappings": "Checking mappings...",
         "mapPlantsTitle": "Map plants — {locCode}",
         "mapPlantsDescription": "{unmapped} of {total} plants are not yet mapped. Please assign each plant to a park and turbine.",
@@ -7776,7 +7793,8 @@
         "inbox": "Inbox",
         "wirtschaftsplan": "Business plan",
         "accounting": "Accounting",
-        "marketData": "Market value comparison"
+        "marketData": "Market value comparison",
+        "scada-uploader-v2": "SCADA uploader V2 (resumable)"
       },
       "accounting": {
         "accounting.reports": "Reports (trial balance, BWA, EUR, P&L)",

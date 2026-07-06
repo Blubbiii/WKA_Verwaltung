@@ -59,6 +59,8 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useParks } from "@/hooks/useParks";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { UppyScadaUpload } from "./UppyScadaUpload";
 import type {
   ScanResult,
   PreviewResult,
@@ -85,6 +87,12 @@ export default function ScadaImportTab() {
   const t = useTranslations("energy.scada.importTab");
   const tc = useTranslations("energy.scada.common");
   const { parks, isLoading: parksLoading } = useParks();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isV2UploaderEnabled = isFeatureEnabled("scada-uploader-v2");
+
+  // Uploader V2 state (Uppy + tus resumable) — only used when the feature
+  // flag `scada-uploader-v2` is on for this tenant.
+  const [v2LocationCode, setV2LocationCode] = useState("");
 
   // Scan state
   const [scanPath, setScanPath] = useState(DEFAULT_SCAN_PATH_FALLBACK);
@@ -1058,66 +1066,99 @@ export default function ScadaImportTab() {
           <CardDescription>{t("cardDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Drop Zone */}
-          <div
-            className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-              isDragOver
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-muted-foreground/50"
-            )}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragOver(true);
-            }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={handleDrop}
-          >
-            <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm font-medium mb-3">{t("dropzoneText")}</p>
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => folderInputRef.current?.click()}
-              >
-                <FolderOpen className="h-4 w-4 mr-1" />
-                {t("selectFolder")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => uploadInputRef.current?.click()}
-              >
-                <FileUp className="h-4 w-4 mr-1" />
-                {t("selectFiles")}
-              </Button>
+          {isV2UploaderEnabled ? (
+            /* V2: Uppy + tus resumable uploader */
+            <div className="space-y-3">
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
+                  <Label htmlFor="v2-loc-code" className="text-xs">
+                    {t("v2LocCodeLabel")}
+                  </Label>
+                  <Input
+                    id="v2-loc-code"
+                    placeholder="Loc_XXXX"
+                    className="font-mono h-9"
+                    value={v2LocationCode}
+                    onChange={(e) => setV2LocationCode(e.target.value.trim())}
+                  />
+                </div>
+                <Badge variant="outline" className="mb-1 border-primary/40 bg-primary/5">
+                  {t("v2Badge")}
+                </Badge>
+              </div>
+              <UppyScadaUpload
+                locationCode={v2LocationCode}
+                disabled={!v2LocationCode.startsWith("Loc_")}
+                onBatchComplete={(result) => {
+                  toast.success(
+                    t("v2ImportsStarted", { count: result.imports.length })
+                  );
+                  loadHistory();
+                }}
+              />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {t("supportedFormats", { formats: SCADA_EXTENSIONS.join(", ") })}
-            </p>
-            <input
-              ref={uploadInputRef}
-              type="file"
-              multiple
-              accept={SCADA_EXTENSIONS.join(",")}
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files) handleFileInput(e.target.files);
-                e.target.value = "";
+          ) : (
+            /* V1: legacy dropzone with folder-name Loc_ auto-detection */
+            <div
+              className={cn(
+                "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+                isDragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-muted-foreground/25 hover:border-muted-foreground/50"
+              )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
               }}
-            />
-            <input
-              ref={folderInputRef}
-              type="file"
-              {...{ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>}
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files) handleFolderInput(e.target.files);
-                e.target.value = "";
-              }}
-            />
-          </div>
+              onDragLeave={() => setIsDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <Upload className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-sm font-medium mb-3">{t("dropzoneText")}</p>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => folderInputRef.current?.click()}
+                >
+                  <FolderOpen className="h-4 w-4 mr-1" />
+                  {t("selectFolder")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => uploadInputRef.current?.click()}
+                >
+                  <FileUp className="h-4 w-4 mr-1" />
+                  {t("selectFiles")}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {t("supportedFormats", { formats: SCADA_EXTENSIONS.join(", ") })}
+              </p>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                multiple
+                accept={SCADA_EXTENSIONS.join(",")}
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFileInput(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <input
+                ref={folderInputRef}
+                type="file"
+                {...{ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>}
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFolderInput(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          )}
 
           {/* Grouped upload summary by location */}
           {uploadGroups.length > 0 && (
