@@ -36,6 +36,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { AuthVersionFooter } from "@/components/layout/auth-version-footer";
 
 const resetPasswordSchema = z
   .object({
@@ -350,9 +351,7 @@ export default function ResetPasswordPage() {
       <Suspense fallback={<ResetPasswordFormFallback />}>
         <ResetPasswordForm />
       </Suspense>
-      <div className="fixed bottom-4 text-center text-sm text-muted-foreground">
-        WindparkManager v{process.env.NEXT_PUBLIC_APP_VERSION || "0.4.0"}
-      </div>
+      <AuthVersionFooter />
     </div>
   );
 }

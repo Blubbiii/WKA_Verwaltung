@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-
-const appVersion = process.env.NEXT_PUBLIC_APP_VERSION || "0.0.0";
+import { useDisplayVersion } from "@/hooks/useDisplayVersion";
 
 export function DashboardFooter() {
   const t = useTranslations("footer");
+  const appVersion = useDisplayVersion();
 
   return (
     <footer className="mt-auto border-t border-border/50 px-6 py-3">

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Wind, Loader2, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { AuthVersionFooter } from "@/components/layout/auth-version-footer";
 
 const forgotPasswordSchema = z.object({
   email: z
@@ -162,9 +163,7 @@ export default function ForgotPasswordPage() {
           </Form>
         )}
       </Card>
-      <div className="fixed bottom-4 text-center text-sm text-muted-foreground">
-        WindparkManager v{process.env.NEXT_PUBLIC_APP_VERSION || "0.4.0"}
-      </div>
+      <AuthVersionFooter />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Wind, Loader2, AlertCircle, CheckCircle2, Shield } from "lucide-react";
+import { AuthVersionFooter } from "@/components/layout/auth-version-footer";
 
 function LoginForm() {
   const router = useRouter();
@@ -236,9 +237,7 @@ export default function LoginPage() {
       <Suspense fallback={<LoginFormFallback />}>
         <LoginForm />
       </Suspense>
-      <div className="fixed bottom-4 text-center text-sm text-muted-foreground">
-        WindparkManager v{process.env.NEXT_PUBLIC_APP_VERSION || "0.4.0"}
-      </div>
+      <AuthVersionFooter />
     </div>
   );
 }
