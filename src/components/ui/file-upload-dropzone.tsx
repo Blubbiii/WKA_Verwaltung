@@ -4,6 +4,8 @@ import { useState, useCallback } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { UppyDropzone } from "./uppy-dropzone";
 
 /**
  * Generic drag & drop file upload zone.
@@ -49,6 +51,7 @@ export function FileUploadDropzone({
   hint,
 }: FileUploadDropzoneProps) {
   const t = useTranslations("common.dropzone");
+  const { isFeatureEnabled } = useFeatureFlags();
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -102,6 +105,23 @@ export function FileUploadDropzone({
     },
     [endpoint, additionalFields, maxFiles, onUploadComplete, t]
   );
+
+  // V2 delegates to Uppy + tus (resumable). Placed after all hooks so
+  // React Hook-order stays stable.
+  if (isFeatureEnabled("uploader-v2-generic")) {
+    return (
+      <UppyDropzone
+        endpoint={endpoint}
+        additionalFields={additionalFields}
+        accept={accept}
+        maxFiles={maxFiles}
+        onUploadComplete={onUploadComplete}
+        disabled={disabled}
+        className={className}
+        hint={hint}
+      />
+    );
+  }
 
   if (disabled) return null;
 

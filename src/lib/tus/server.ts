@@ -25,6 +25,11 @@ import {
   dispatchScadaUpload,
   validateScadaMetadata,
 } from "./dispatchers/scada";
+import {
+  dispatchS3Upload,
+  validateS3Metadata,
+} from "./dispatchers/s3";
+import { checkStorageLimit } from "@/lib/storage-tracking";
 import { auth } from "@/lib/auth";
 import * as path from "path";
 
@@ -96,26 +101,49 @@ export async function getTusServer(): Promise<Server> {
 
       const uploadType = meta.uploadType;
 
-      // Every upload MUST declare its target dispatcher. Right now only
-      // "scada" is supported; further dispatchers (documents, gis, …) will
-      // be added in later phases.
-      if (uploadType !== "scada") {
+      if (uploadType === "scada") {
+        const validation = validateScadaMetadata(meta);
+        if (!validation.ok) {
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "VALIDATION_FAILED",
+              error: validation.reason,
+            }),
+          };
+        }
+      } else if (uploadType === "s3") {
+        // Storage-limit pre-check with the size the client announced via
+        // Upload-Length (tus fills upload.size before onUploadCreate runs).
+        const size = upload.size ?? 0;
+        const validation = validateS3Metadata(meta, size);
+        if (!validation.ok) {
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "VALIDATION_FAILED",
+              error: validation.reason,
+            }),
+          };
+        }
+        if (size > 0) {
+          const limit = await checkStorageLimit(tenantId, size);
+          if (!limit.allowed) {
+            throw {
+              status_code: 413,
+              body: JSON.stringify({
+                code: "QUOTA_EXCEEDED",
+                error: `Speicherlimit erreicht (${limit.info.usedFormatted} / ${limit.info.limitFormatted})`,
+              }),
+            };
+          }
+        }
+      } else {
         throw {
           status_code: 400,
           body: JSON.stringify({
             code: "BAD_REQUEST",
             error: `Unbekannter uploadType: ${uploadType ?? "(fehlt)"}`,
-          }),
-        };
-      }
-
-      const validation = validateScadaMetadata(meta);
-      if (!validation.ok) {
-        throw {
-          status_code: 400,
-          body: JSON.stringify({
-            code: "VALIDATION_FAILED",
-            error: validation.reason,
           }),
         };
       }
@@ -153,9 +181,10 @@ export async function getTusServer(): Promise<Server> {
         };
       }
 
+      // FileStore writes each upload as `${directory}/${upload.id}`
+      const tusFilePath = path.join(TUS_UPLOAD_DIR, upload.id);
+
       if (meta.uploadType === "scada") {
-        // FileStore writes each upload as `${directory}/${upload.id}`
-        const tusFilePath = path.join(TUS_UPLOAD_DIR, upload.id);
         const result = await dispatchScadaUpload({
           uploadId: upload.id,
           tusFilePath,
@@ -172,6 +201,30 @@ export async function getTusServer(): Promise<Server> {
             }),
           };
         }
+      } else if (meta.uploadType === "s3") {
+        const result = await dispatchS3Upload({
+          uploadId: upload.id,
+          tusFilePath,
+          fileSize: upload.size ?? 0,
+          metadata: meta,
+          tenantId,
+        });
+        if (!result.ok) {
+          tusLogger.warn({ uploadId: upload.id, reason: result.reason }, "S3-Dispatch failed");
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "PROCESS_FAILED",
+              error: result.reason ?? "S3-Dispatch fehlgeschlagen",
+            }),
+          };
+        }
+        // Return the s3Key + signed URL so the client can render the asset
+        return {
+          status_code: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ s3Key: result.s3Key, signedUrl: result.signedUrl }),
+        };
       }
 
       return {};

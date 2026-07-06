@@ -81,6 +81,17 @@
       "uploadedSingle": "{count} file uploaded",
       "uploadedMultiple": "{count} files uploaded"
     },
+    "uppy": {
+      "dragOrSelect": "Drag files here or",
+      "select": "select",
+      "overallProgress": "{pct}% uploaded",
+      "counts": "{ok}/{total} ok, {fail} failed",
+      "clearAll": "Clear all",
+      "retry": "Retry",
+      "cancel": "Cancel",
+      "someFailed": "{count} file(s) failed",
+      "uploadedSuccess": "{count} file(s) uploaded"
+    },
     "deleteConfirm": {
       "defaultTitle": "Delete entry",
       "defaultDescription": "Do you really want to permanently delete this entry?",
@@ -7794,7 +7805,8 @@
         "wirtschaftsplan": "Business plan",
         "accounting": "Accounting",
         "marketData": "Market value comparison",
-        "scada-uploader-v2": "SCADA uploader V2 (resumable)"
+        "scada-uploader-v2": "SCADA uploader V2 (resumable)",
+        "uploader-v2-generic": "Generic uploader V2 (documents/inbox)"
       },
       "accounting": {
         "accounting.reports": "Reports (trial balance, BWA, EUR, P&L)",

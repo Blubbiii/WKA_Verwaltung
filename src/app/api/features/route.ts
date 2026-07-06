@@ -47,6 +47,7 @@ export async function GET() {
       documentRoutingEnabled,
       marketDataEnabled,
       scadaUploaderV2Enabled,
+      uploaderV2GenericEnabled,
     ] = await Promise.all([
       getConfigBoolean("management-billing.enabled", tid, false),
       getConfigBoolean("paperless.enabled", tid, false),
@@ -59,6 +60,7 @@ export async function GET() {
       getConfigBoolean("document-routing.enabled", tid, false),
       getConfigBoolean("marketData.enabled", tid, false),
       getConfigBoolean("scada-uploader-v2.enabled", tid, false),
+      getConfigBoolean("uploader-v2-generic.enabled", tid, false),
     ]);
 
     // Load accounting sub-flags only if master is enabled
@@ -91,6 +93,7 @@ export async function GET() {
       "document-routing": documentRoutingEnabled,
       "marketData": marketDataEnabled,
       "scada-uploader-v2": scadaUploaderV2Enabled,
+      "uploader-v2-generic": uploaderV2GenericEnabled,
       ...accountingSub,
     });
   } catch {
@@ -105,6 +108,7 @@ export async function GET() {
       "accounting": false,
       "document-routing": false,
       "scada-uploader-v2": false,
+      "uploader-v2-generic": false,
       "accounting.reports": false,
       "accounting.bank": false,
       "accounting.dunning": false,

@@ -38,6 +38,7 @@ const MODULE_FLAG_KEYS = [
   "document-routing.enabled",
   "marketData.enabled",
   "scada-uploader-v2.enabled",
+  "uploader-v2-generic.enabled",
 ] as const;
 
 // Accounting sub-module flags
@@ -91,6 +92,7 @@ export interface ModuleFlags {
   "accounting": boolean;
   "document-routing": boolean;
   "scada-uploader-v2": boolean;
+  "uploader-v2-generic": boolean;
 }
 
 const DEFAULT_MODULE_FLAGS: ModuleFlags = {
@@ -104,6 +106,7 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "accounting": false,
   "document-routing": false,
   "scada-uploader-v2": false,
+  "uploader-v2-generic": false,
 };
 
 // GET /api/admin/feature-flags - List all tenants with their feature flags (SUPERADMIN only)

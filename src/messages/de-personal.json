@@ -81,6 +81,17 @@
       "uploadedSingle": "{count} Datei hochgeladen",
       "uploadedMultiple": "{count} Dateien hochgeladen"
     },
+    "uppy": {
+      "dragOrSelect": "Dateien hierher ziehen oder",
+      "select": "auswählen",
+      "overallProgress": "{pct}% hochgeladen",
+      "counts": "{ok}/{total} erfolgreich, {fail} Fehler",
+      "clearAll": "Alle entfernen",
+      "retry": "Wiederholen",
+      "cancel": "Abbrechen",
+      "someFailed": "{count} Datei(en) fehlgeschlagen",
+      "uploadedSuccess": "{count} Datei(en) hochgeladen"
+    },
     "deleteConfirm": {
       "defaultTitle": "Eintrag löschen",
       "defaultDescription": "Willst du diesen Eintrag wirklich unwiderruflich löschen?",
@@ -7794,7 +7805,8 @@
         "wirtschaftsplan": "Wirtschaftsplan",
         "accounting": "Buchhaltung",
         "marketData": "Marktwert-Vergleich",
-        "scada-uploader-v2": "SCADA-Uploader V2 (resumable)"
+        "scada-uploader-v2": "SCADA-Uploader V2 (resumable)",
+        "uploader-v2-generic": "Uploader V2 generisch (Dokumente/Inbox)"
       },
       "accounting": {
         "accounting.reports": "Reports (SuSa, BWA, EÜR, GuV)",
