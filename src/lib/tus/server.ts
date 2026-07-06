@@ -29,6 +29,14 @@ import {
   dispatchS3Upload,
   validateS3Metadata,
 } from "./dispatchers/s3";
+import {
+  dispatchBankImportUpload,
+  validateBankImportMetadata,
+} from "./dispatchers/bank-import";
+import {
+  dispatchShapefileUpload,
+  validateShapefileMetadata,
+} from "./dispatchers/shapefile";
 import { checkStorageLimit } from "@/lib/storage-tracking";
 import { auth } from "@/lib/auth";
 import * as path from "path";
@@ -138,6 +146,28 @@ export async function getTusServer(): Promise<Server> {
             };
           }
         }
+      } else if (uploadType === "bank-import") {
+        const validation = validateBankImportMetadata(meta);
+        if (!validation.ok) {
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "VALIDATION_FAILED",
+              error: validation.reason,
+            }),
+          };
+        }
+      } else if (uploadType === "shapefile") {
+        const validation = validateShapefileMetadata(meta);
+        if (!validation.ok) {
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "VALIDATION_FAILED",
+              error: validation.reason,
+            }),
+          };
+        }
       } else {
         throw {
           status_code: 400,
@@ -224,6 +254,50 @@ export async function getTusServer(): Promise<Server> {
           status_code: 200,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ s3Key: result.s3Key, signedUrl: result.signedUrl }),
+        };
+      } else if (meta.uploadType === "bank-import") {
+        const result = await dispatchBankImportUpload({
+          uploadId: upload.id,
+          tusFilePath,
+          metadata: meta,
+          tenantId,
+        });
+        if (!result.ok) {
+          tusLogger.warn({ uploadId: upload.id, reason: result.reason }, "Bank-Import-Dispatch failed");
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "PROCESS_FAILED",
+              error: result.reason ?? "Bank-Import-Dispatch fehlgeschlagen",
+            }),
+          };
+        }
+        return {
+          status_code: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result.preview),
+        };
+      } else if (meta.uploadType === "shapefile") {
+        const result = await dispatchShapefileUpload({
+          uploadId: upload.id,
+          tusFilePath,
+          metadata: meta,
+          tenantId,
+        });
+        if (!result.ok) {
+          tusLogger.warn({ uploadId: upload.id, reason: result.reason }, "Shapefile-Dispatch failed");
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "PROCESS_FAILED",
+              error: result.reason ?? "Shapefile-Dispatch fehlgeschlagen",
+            }),
+          };
+        }
+        return {
+          status_code: 200,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(result.preview),
         };
       }
 
