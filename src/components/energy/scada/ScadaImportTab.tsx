@@ -1067,16 +1067,19 @@ export default function ScadaImportTab() {
         </CardHeader>
         <CardContent className="space-y-4">
           {isV2UploaderEnabled ? (
-            /* V2: Uppy + tus resumable uploader */
+            /* V2: Uppy + tus resumable uploader.
+             * locationCode is a FALLBACK: files whose Loc_ can be extracted
+             * from their filename or folder path use their own. The input
+             * only kicks in for files that don't self-identify. */
             <div className="space-y-3">
               <div className="flex items-end gap-3">
                 <div className="flex-1">
                   <Label htmlFor="v2-loc-code" className="text-xs">
-                    {t("v2LocCodeLabel")}
+                    {t("v2LocCodeLabelOptional")}
                   </Label>
                   <Input
                     id="v2-loc-code"
-                    placeholder="Loc_XXXX"
+                    placeholder="Loc_XXXX (optional — wird sonst aus Dateiname/Ordner erkannt)"
                     className="font-mono h-9"
                     value={v2LocationCode}
                     onChange={(e) => setV2LocationCode(e.target.value.trim())}
@@ -1088,7 +1091,9 @@ export default function ScadaImportTab() {
               </div>
               <UppyScadaUpload
                 locationCode={v2LocationCode}
-                disabled={!v2LocationCode.startsWith("Loc_")}
+                onLocationDetected={(code) => {
+                  if (!v2LocationCode) setV2LocationCode(code);
+                }}
                 onBatchComplete={(result) => {
                   toast.success(
                     t("v2ImportsStarted", { count: result.imports.length })

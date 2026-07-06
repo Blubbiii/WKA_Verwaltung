@@ -1759,10 +1759,14 @@
         "errorLoadingLogs": "Failed to load logs"
       },
       "uploader": {
-        "dropOrClick": "Drop SCADA files here or click",
+        "dropOrClick": "Drop SCADA files or folders here",
         "hint": "Location: {code}",
+        "hintAutoDetect": "Location code is detected automatically from filename/folder",
+        "hintWithFallback": "Fallback location: {code} (if not in name)",
         "missingLocationTitle": "Please enter a location code first",
         "missingLocationHint": "Format: Loc_5842 — then you can drop files here",
+        "noLocationInFile": "No Loc_ code detected in {name} — please enter one above",
+        "selectFolder": "Select folder",
         "selectFiles": "Select files",
         "overallProgress": "{pct}% uploaded",
         "counts": "{ok}/{total} ok, {fail} failed",
@@ -1791,6 +1795,7 @@
         "importAllLocations": "Import all locations",
         "infoLocCode": "The location code is detected automatically from the folder name (e.g. Loc_5842). Duplicates are skipped automatically during import.",
         "v2LocCodeLabel": "Location code (Loc_XXXX)",
+        "v2LocCodeLabelOptional": "Location code (optional — detected automatically otherwise)",
         "v2Badge": "New (V2, resumable)",
         "v2ImportsStarted": "{count} import(s) started",
         "checkingMappings": "Checking mappings...",

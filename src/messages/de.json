@@ -1759,10 +1759,14 @@
         "errorLoadingLogs": "Fehler beim Laden der Protokolle"
       },
       "uploader": {
-        "dropOrClick": "SCADA-Dateien hier ablegen oder klicken",
+        "dropOrClick": "SCADA-Dateien oder Ordner hier ablegen",
         "hint": "Standort: {code}",
+        "hintAutoDetect": "Standort-Code wird automatisch aus Dateiname/Ordner erkannt",
+        "hintWithFallback": "Fallback-Standort: {code} (falls nicht im Namen)",
         "missingLocationTitle": "Bitte zuerst Standort-Code eingeben",
         "missingLocationHint": "Format: Loc_5842 — dann kannst du Dateien hier ablegen",
+        "noLocationInFile": "Kein Loc_-Code in {name} erkannt — bitte oben eingeben",
+        "selectFolder": "Ordner auswählen",
         "selectFiles": "Dateien auswählen",
         "overallProgress": "{pct}% hochgeladen",
         "counts": "{ok}/{total} erfolgreich, {fail} Fehler",
@@ -1791,6 +1795,7 @@
         "importAllLocations": "Alle Standorte importieren",
         "infoLocCode": "Der Standort-Code wird automatisch aus dem Ordnernamen erkannt (z.B. Loc_5842). Duplikate werden beim Import automatisch übersprungen.",
         "v2LocCodeLabel": "Standort-Code (Loc_XXXX)",
+        "v2LocCodeLabelOptional": "Standort-Code (optional — wird sonst automatisch erkannt)",
         "v2Badge": "Neu (V2, resumable)",
         "v2ImportsStarted": "{count} Import(e) gestartet",
         "checkingMappings": "Prüfe Zuordnungen...",

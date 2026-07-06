@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   X,
   RotateCw,
+  FolderOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -47,12 +48,34 @@ export interface UppyScadaUploadResult {
 }
 
 interface UppyScadaUploadProps {
-  /** Enercon Location-Code, e.g. "Loc_5842" (must start with "Loc_") */
+  /**
+   * Fallback Enercon Location-Code (e.g. "Loc_5842"). Applied to any file
+   * whose Loc_ can NOT be detected from its name or folder path. Optional —
+   * files that carry their own Loc_ don't need it.
+   */
   locationCode: string;
   /** Fires once the whole batch is finalized on the server */
   onBatchComplete?: (result: UppyScadaUploadResult) => void;
+  /**
+   * Called when the uploader auto-detects a Loc_ code from the first file
+   * of a batch. The parent can sync its Loc_-input for user feedback.
+   */
+  onLocationDetected?: (code: string) => void;
   disabled?: boolean;
   className?: string;
+}
+
+/** Regex matching Enercon location codes like Loc_5842. */
+const LOC_PATTERN = /Loc_\d+/i;
+
+/** Try to pull a Loc_XXXX code out of a filename or folder path. */
+function extractLocCode(...candidates: (string | undefined | null)[]): string | null {
+  for (const c of candidates) {
+    if (!c) continue;
+    const match = c.match(LOC_PATTERN);
+    if (match) return match[0];
+  }
+  return null;
 }
 
 interface FileRow {
@@ -80,6 +103,7 @@ function newSessionId(): string {
 export function UppyScadaUpload({
   locationCode,
   onBatchComplete,
+  onLocationDetected,
   disabled,
   className,
 }: UppyScadaUploadProps) {
@@ -90,13 +114,18 @@ export function UppyScadaUpload({
   const [isDragging, setIsDragging] = useState(false);
   const uppyRef = useRef<Uppy | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef<string>("");
+  const locationCodeRef = useRef(locationCode);
   const onBatchCompleteRef = useRef(onBatchComplete);
+  const onLocationDetectedRef = useRef(onLocationDetected);
   const tRef = useRef(t);
 
   // Keep callback refs in sync so we don't need to re-init Uppy on prop change
   useEffect(() => {
     onBatchCompleteRef.current = onBatchComplete;
+    onLocationDetectedRef.current = onLocationDetected;
+    locationCodeRef.current = locationCode;
     tRef.current = t;
   });
 
@@ -126,6 +155,32 @@ export function UppyScadaUpload({
     });
 
     uppy.on("file-added", (file) => {
+      // Auto-detect Loc_XXXX from the filename or the folder path (when
+      // the file came in via <input webkitdirectory>). Falls back to the
+      // parent-provided locationCode if no self-identifying code is found.
+      const fromName = file.name;
+      const fromPath =
+        (file.data as File | undefined)?.webkitRelativePath || undefined;
+      const detected = extractLocCode(fromName, fromPath);
+      const effective = detected ?? locationCodeRef.current;
+
+      if (!effective || !effective.startsWith("Loc_")) {
+        // Reject rather than uploading with an empty locationCode — server
+        // would refuse it downstream anyway.
+        toast.error(tRef.current("noLocationInFile", { name: file.name }));
+        uppy.removeFile(file.id);
+        return;
+      }
+
+      // Apply this file's own Loc_ so a batch mixing multiple locations
+      // still gets grouped correctly server-side.
+      uppy.setFileMeta(file.id, { locationCode: effective });
+
+      // Sync back to parent for user feedback (first detected wins)
+      if (detected && !locationCodeRef.current) {
+        onLocationDetectedRef.current?.(detected);
+      }
+
       setFiles((prev) => [
         ...prev,
         {
@@ -264,12 +319,6 @@ export function UppyScadaUpload({
   const successCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
 
-  // Show a clear "please set locationCode first" state when the parent
-  // disabled the uploader because it hasn't been provided a valid Loc_
-  // yet. Otherwise the greyed-out dropzone looks broken instead of "not
-  // ready".
-  const needsLocationCode = disabled && (!locationCode || !locationCode.startsWith("Loc_"));
-
   return (
     <div className={cn("space-y-3", className)}>
       <div
@@ -287,9 +336,7 @@ export function UppyScadaUpload({
         }}
         className={cn(
           "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-          needsLocationCode &&
-            "border-warning/50 bg-warning/5 text-warning cursor-not-allowed",
-          !needsLocationCode && disabled && "opacity-50 pointer-events-none",
+          disabled && "opacity-50 pointer-events-none",
           !disabled && isDragging
             ? "border-primary bg-primary/5"
             : !disabled && "border-muted-foreground/25 hover:border-muted-foreground/40"
@@ -307,31 +354,46 @@ export function UppyScadaUpload({
           }}
           disabled={disabled}
         />
+        <input
+          ref={folderInputRef}
+          type="file"
+          {...({ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)}
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length) addFiles(e.target.files);
+            e.target.value = "";
+          }}
+          disabled={disabled}
+        />
         <div className="flex flex-col items-center gap-2">
-          {needsLocationCode ? (
-            <>
-              <AlertCircle className="h-8 w-8" />
-              <p className="text-sm font-medium">{t("missingLocationTitle")}</p>
-              <p className="text-xs opacity-80">{t("missingLocationHint")}</p>
-            </>
-          ) : (
-            <>
-              <Upload className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm font-medium">{t("dropOrClick")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("hint", { code: locationCode })}
-              </p>
-            </>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled}
-          >
-            {t("selectFiles")}
-          </Button>
+          <Upload className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-medium">{t("dropOrClick")}</p>
+          <p className="text-xs text-muted-foreground">
+            {locationCode
+              ? t("hintWithFallback", { code: locationCode })
+              : t("hintAutoDetect")}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => folderInputRef.current?.click()}
+              disabled={disabled}
+            >
+              <FolderOpen className="h-4 w-4 mr-1" />
+              {t("selectFolder")}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => inputRef.current?.click()}
+              disabled={disabled}
+            >
+              {t("selectFiles")}
+            </Button>
+          </div>
         </div>
       </div>
 
