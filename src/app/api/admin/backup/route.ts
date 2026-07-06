@@ -13,6 +13,10 @@ import {
 } from "@/lib/backup";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
+import { ListObjectsV2Command, type ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
+import { s3Client, S3_BUCKET } from "@/lib/storage";
+import { cache } from "@/lib/cache";
+import { runTusGarbageCollection } from "@/lib/tus/gc";
 
 const backupActionSchema = z.object({
   action: z.enum(["create", "applyRetention", "searchOrphans", "clearCache", "deleteTemp", "export"]),
@@ -186,75 +190,190 @@ export async function POST(request: NextRequest) {
       case "searchOrphans": {
         logger.info("[STORAGE] Searching for orphaned files...");
 
-        // Compare MinIO/S3 files with database records
-        // For now, count documents without valid storage references
-        const documentsWithoutFile = await prisma.document.count({
-          where: {
-            fileUrl: "",
-          },
+        // Two orphan classes:
+        //  A) S3 objects with no matching document.fileUrl (dead files
+        //     leaking storage — this is what "orphan" typically means)
+        //  B) DB documents whose fileUrl points to a missing S3 object
+        //     (broken references — user-facing 404s)
+
+        // Collect all S3 keys via paginated ListObjectsV2
+        const s3Keys = new Set<string>();
+        let continuationToken: string | undefined = undefined;
+        try {
+          do {
+            const resp: ListObjectsV2CommandOutput = await s3Client.send(
+              new ListObjectsV2Command({
+                Bucket: S3_BUCKET,
+                ContinuationToken: continuationToken,
+                MaxKeys: 1000,
+              })
+            );
+            for (const obj of resp.Contents ?? []) {
+              if (obj.Key) s3Keys.add(obj.Key);
+            }
+            continuationToken = resp.IsTruncated ? resp.NextContinuationToken : undefined;
+          } while (continuationToken);
+        } catch (err) {
+          logger.error({ err }, "[STORAGE] Failed to list S3 objects");
+          return apiError("STORAGE_FAILED", 500, {
+            message: "S3/MinIO konnte nicht gelistet werden",
+          });
+        }
+
+        // Collect all referenced fileUrls (== s3Keys) from DB. Documents
+        // store the s3Key directly in fileUrl (see /api/upload).
+        const docs = await prisma.document.findMany({
+          select: { id: true, fileUrl: true },
+          where: { fileUrl: { not: "" } },
         });
+        const dbKeys = new Set(docs.map((d) => d.fileUrl).filter(Boolean));
+
+        // A) S3 keys not referenced by any document
+        const orphanedS3Keys: string[] = [];
+        for (const k of s3Keys) {
+          if (!dbKeys.has(k)) orphanedS3Keys.push(k);
+        }
+
+        // B) DB references pointing to missing S3 objects
+        const brokenDocRefs = docs.filter((d) => d.fileUrl && !s3Keys.has(d.fileUrl));
 
         logger.info(
-          { orphanedCount: documentsWithoutFile },
+          {
+            s3ObjectCount: s3Keys.size,
+            dbDocumentCount: docs.length,
+            orphanedS3: orphanedS3Keys.length,
+            brokenDocRefs: brokenDocRefs.length,
+          },
           "[STORAGE] Orphan search completed"
         );
 
         return NextResponse.json({
           success: true,
-          orphanedCount: documentsWithoutFile,
-          message: `${documentsWithoutFile} Dokument(e) ohne Datei-Referenz gefunden`,
+          // Legacy field kept for the existing UI
+          orphanedCount: orphanedS3Keys.length,
+          // Detailed breakdown for future UI
+          s3ObjectCount: s3Keys.size,
+          dbDocumentCount: docs.length,
+          orphanedS3Sample: orphanedS3Keys.slice(0, 10),
+          brokenDocRefsSample: brokenDocRefs.slice(0, 10).map((d) => ({
+            id: d.id,
+            fileUrl: d.fileUrl,
+          })),
+          message:
+            `${orphanedS3Keys.length} S3-Objekt(e) ohne DB-Referenz, ` +
+            `${brokenDocRefs.length} DB-Referenzen ohne S3-Objekt`,
         });
       }
 
       case "clearCache": {
         logger.info("[STORAGE] Clearing application cache...");
 
-        // Clear Next.js cache by touching a file or using revalidation
-        // In production with Redis, we would flush the cache
-        // For now, log the action
-        logger.info("[STORAGE] Cache cleared successfully");
+        // We clear per tenant + global via the wrapper's delPattern. That
+        // wipes wpm:{tenantId}:* and wpm:global:* — the exact key scheme
+        // used by cache.set()/cache.get(). Redis fallback (memory cache) is
+        // handled by the same call.
+        let clearedGlobal = false;
+        let clearedTenants = 0;
+        try {
+          clearedGlobal = await cache.delPattern("*");
+        } catch (err) {
+          logger.warn({ err }, "[STORAGE] Cache clear global failed");
+        }
+
+        try {
+          const tenants = await prisma.tenant.findMany({
+            select: { id: true },
+          });
+          for (const t of tenants) {
+            const ok = await cache.clearTenant(t.id);
+            if (ok) clearedTenants++;
+          }
+        } catch (err) {
+          logger.warn({ err }, "[STORAGE] Cache clear per-tenant failed");
+        }
+
+        const stats = await cache.getStats().catch(() => null);
+
+        logger.info(
+          { clearedGlobal, clearedTenants, statsAfter: stats },
+          "[STORAGE] Cache cleared"
+        );
 
         return NextResponse.json({
           success: true,
-          message: "Cache erfolgreich geleert",
+          clearedGlobal,
+          clearedTenants,
+          usingMemoryFallback: stats?.usingMemoryFallback ?? true,
+          message:
+            `Cache geleert — global: ${clearedGlobal ? "ok" : "fehlgeschlagen"}, ` +
+            `${clearedTenants} Mandanten-Cache(s) gelöscht` +
+            (stats?.usingMemoryFallback ? " (In-Memory-Fallback aktiv)" : ""),
         });
       }
 
       case "deleteTemp": {
         logger.info("[STORAGE] Deleting temporary files...");
 
-        // In production, clean up temp directory
+        // Delegate to the tus GC which handles the two directories the
+        // uploader actually uses:
+        //   1. TUS_UPLOAD_DIR — in-flight chunk store
+        //   2. TUS_SCADA_STAGING_DIR — post-upload per-session tree
+        // Both respect a 24h TTL so in-flight uploads are NOT killed.
+        const gcResult = await runTusGarbageCollection();
+
+        // Additionally sweep the legacy /app/tmp path if present (older
+        // uploaders may still write there).
         const fs = await import("fs/promises");
         const path = await import("path");
-        const tempDir = path.join(process.cwd(), "tmp");
-        let deletedCount = 0;
-
+        const legacyTempDir = path.join(process.cwd(), "tmp");
+        let legacyDeleted = 0;
         try {
-          const files = await fs.readdir(tempDir);
+          const files = await fs.readdir(legacyTempDir);
+          const cutoff = Date.now() - 24 * 60 * 60 * 1000;
           for (const file of files) {
             try {
-              const filePath = path.join(tempDir, file);
+              const filePath = path.join(legacyTempDir, file);
               const stat = await fs.lstat(filePath);
               if (!stat.isFile()) continue;
+              if (stat.mtimeMs > cutoff) continue; // fresh — likely in use
               await fs.unlink(filePath);
-              deletedCount++;
+              legacyDeleted++;
             } catch {
               // Skip files that cannot be deleted
             }
           }
         } catch {
-          // tmp directory may not exist
+          // legacy tmp dir may not exist — normal
         }
 
+        const total =
+          gcResult.tusExpiredCount +
+          gcResult.scadaSessionsRemoved +
+          legacyDeleted;
+
         logger.info(
-          { deletedCount },
-          "[STORAGE] Temporary files deleted"
+          {
+            tusExpired: gcResult.tusExpiredCount,
+            scadaSessions: gcResult.scadaSessionsRemoved,
+            legacyDeleted,
+            errors: gcResult.errors,
+          },
+          "[STORAGE] Temp cleanup done"
         );
 
         return NextResponse.json({
           success: true,
-          deletedCount,
-          message: `${deletedCount} temporaere Datei(en) gelöscht`,
+          // Legacy field kept for the existing UI
+          deletedCount: total,
+          // Detailed breakdown
+          tusExpiredCount: gcResult.tusExpiredCount,
+          scadaSessionsRemoved: gcResult.scadaSessionsRemoved,
+          legacyDeleted,
+          errors: gcResult.errors,
+          message:
+            `Bereinigt: ${gcResult.tusExpiredCount} tus-Uploads, ` +
+            `${gcResult.scadaSessionsRemoved} SCADA-Sessions, ` +
+            `${legacyDeleted} Legacy-Temp-Dateien (alles > 24h alt)`,
         });
       }
 
