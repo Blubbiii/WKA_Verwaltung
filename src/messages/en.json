@@ -1761,6 +1761,8 @@
       "uploader": {
         "dropOrClick": "Drop SCADA files here or click",
         "hint": "Location: {code}",
+        "missingLocationTitle": "Please enter a location code first",
+        "missingLocationHint": "Format: Loc_5842 — then you can drop files here",
         "selectFiles": "Select files",
         "overallProgress": "{pct}% uploaded",
         "counts": "{ok}/{total} ok, {fail} failed",

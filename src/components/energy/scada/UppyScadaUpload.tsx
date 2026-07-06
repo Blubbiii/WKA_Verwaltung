@@ -264,25 +264,35 @@ export function UppyScadaUpload({
   const successCount = files.filter((f) => f.status === "success").length;
   const failedCount = files.filter((f) => f.status === "failed").length;
 
+  // Show a clear "please set locationCode first" state when the parent
+  // disabled the uploader because it hasn't been provided a valid Loc_
+  // yet. Otherwise the greyed-out dropzone looks broken instead of "not
+  // ready".
+  const needsLocationCode = disabled && (!locationCode || !locationCode.startsWith("Loc_"));
+
   return (
     <div className={cn("space-y-3", className)}>
       <div
         onDragOver={(e) => {
+          if (disabled) return;
           e.preventDefault();
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
         onDrop={(e) => {
+          if (disabled) return;
           e.preventDefault();
           setIsDragging(false);
           if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
         }}
         className={cn(
           "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-          disabled && "opacity-50 pointer-events-none",
-          isDragging
+          needsLocationCode &&
+            "border-warning/50 bg-warning/5 text-warning cursor-not-allowed",
+          !needsLocationCode && disabled && "opacity-50 pointer-events-none",
+          !disabled && isDragging
             ? "border-primary bg-primary/5"
-            : "border-muted-foreground/25 hover:border-muted-foreground/40"
+            : !disabled && "border-muted-foreground/25 hover:border-muted-foreground/40"
         )}
       >
         <input
@@ -298,11 +308,21 @@ export function UppyScadaUpload({
           disabled={disabled}
         />
         <div className="flex flex-col items-center gap-2">
-          <Upload className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm font-medium">{t("dropOrClick")}</p>
-          <p className="text-xs text-muted-foreground">
-            {t("hint", { code: locationCode })}
-          </p>
+          {needsLocationCode ? (
+            <>
+              <AlertCircle className="h-8 w-8" />
+              <p className="text-sm font-medium">{t("missingLocationTitle")}</p>
+              <p className="text-xs opacity-80">{t("missingLocationHint")}</p>
+            </>
+          ) : (
+            <>
+              <Upload className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm font-medium">{t("dropOrClick")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("hint", { code: locationCode })}
+              </p>
+            </>
+          )}
           <Button
             type="button"
             size="sm"

@@ -1761,6 +1761,8 @@
       "uploader": {
         "dropOrClick": "SCADA-Dateien hier ablegen oder klicken",
         "hint": "Standort: {code}",
+        "missingLocationTitle": "Bitte zuerst Standort-Code eingeben",
+        "missingLocationHint": "Format: Loc_5842 — dann kannst du Dateien hier ablegen",
         "selectFiles": "Dateien auswählen",
         "overallProgress": "{pct}% hochgeladen",
         "counts": "{ok}/{total} erfolgreich, {fail} Fehler",
