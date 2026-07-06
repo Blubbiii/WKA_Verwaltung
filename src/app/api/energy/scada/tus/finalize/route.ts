@@ -57,7 +57,21 @@ export async function POST(request: NextRequest) {
     const { sessionId } = parsed.data;
     const tenantId = check.tenantId!;
 
-    const sessionRoot = path.join(TUS_SCADA_STAGING_DIR, tenantId, sessionId);
+    const tenantRoot = path.resolve(path.join(TUS_SCADA_STAGING_DIR, tenantId));
+    const sessionRoot = path.resolve(path.join(tenantRoot, sessionId));
+
+    // Defense-in-depth: even though the zod-regex on sessionId forbids `/`
+    // and `..`, we double-check the resolved path stays inside the tenant
+    // sandbox. Any traversal attempt is rejected here.
+    if (!sessionRoot.startsWith(tenantRoot + path.sep) && sessionRoot !== tenantRoot) {
+      logger.warn(
+        { tenantId, sessionId, sessionRoot, tenantRoot },
+        "SCADA-tus finalize: path-traversal attempt blocked"
+      );
+      return apiError("VALIDATION_FAILED", 400, {
+        message: "Ungültige sessionId",
+      });
+    }
 
     // Session dir may not exist if the batch had no successful uploads
     let sessionExists = true;

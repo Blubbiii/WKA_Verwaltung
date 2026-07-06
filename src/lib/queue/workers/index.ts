@@ -121,6 +121,14 @@ import type {
   RetentionCronJobResult,
 } from "../queues/retention-cron.queue";
 
+import {
+  startTusGcWorker,
+  stopTusGcWorker,
+  isTusGcWorkerRunning,
+  getTusGcWorker,
+} from "./tus-gc.worker";
+import type { TusGcJobData, TusGcJobResult } from "../queues/tus-gc.queue";
+
 // Daily-Digest-Worker wird direkt in src/workers/index.ts gestartet
 // (eigener Pattern statt Registry-basiertem Wrapper hier).
 
@@ -144,6 +152,7 @@ export const WORKER_NAMES = {
   APPROVALS_EXPIRY: "approvals-expiry",
   APPROVALS_RECONCILE: "approvals-reconcile",
   RETENTION_CRON: "retention-cron",
+  TUS_GC: "tus-gc",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -281,6 +290,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopRetentionCronWorker,
     isRunning: isRetentionCronWorkerRunning,
     getWorker: getRetentionCronWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.TUS_GC,
+    displayName: "tus GC Worker",
+    start: startTusGcWorker as () => Worker<unknown, unknown>,
+    stop: stopTusGcWorker,
+    isRunning: isTusGcWorkerRunning,
+    getWorker: getTusGcWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -608,3 +625,12 @@ export {
   getRetentionCronWorker,
 };
 export type { RetentionCronJobData, RetentionCronJobResult };
+
+// tus GC Worker
+export {
+  startTusGcWorker,
+  stopTusGcWorker,
+  isTusGcWorkerRunning,
+  getTusGcWorker,
+};
+export type { TusGcJobData, TusGcJobResult };

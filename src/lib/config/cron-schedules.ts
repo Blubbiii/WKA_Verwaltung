@@ -14,4 +14,6 @@ export const CRON_SCHEDULES = {
   REMINDER: envCron("CRON_REMINDER", "0 8 * * *"),
   /** Täglich 8:00 Uhr — Daily-Digest-Mail (Idee E) */
   DAILY_DIGEST: envCron("CRON_DAILY_DIGEST", "0 8 * * *"),
+  /** Alle 6 Stunden — tus resumable-upload garbage collection */
+  TUS_GC: envCron("CRON_TUS_GC", "0 */6 * * *"),
 };

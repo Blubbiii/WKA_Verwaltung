@@ -48,6 +48,10 @@ export async function getTusServer(): Promise<Server> {
     datastore,
     maxSize: TUS_MAX_SIZE_BYTES,
     respectForwardedHeaders: true,
+    // Cap how frequently the POST_RECEIVE event fires per upload so we don't
+    // log-spam once per received chunk on huge files. 5s is enough for UI
+    // progress polling anyway.
+    postReceiveInterval: 5000,
 
     /**
      * Runs BEFORE any file bytes are received. This is the correct place to
@@ -74,6 +78,22 @@ export async function getTusServer(): Promise<Server> {
       }
 
       const meta = upload.metadata ?? {};
+
+      // Reject upload metadata with absurdly long values before doing any
+      // real work — protects against Header-DoS via Upload-Metadata.
+      const MAX_METADATA_VALUE_LEN = 512;
+      for (const [key, value] of Object.entries(meta)) {
+        if (typeof value === "string" && value.length > MAX_METADATA_VALUE_LEN) {
+          throw {
+            status_code: 400,
+            body: JSON.stringify({
+              code: "VALIDATION_FAILED",
+              error: `Metadata-Feld ${key} zu lang (max ${MAX_METADATA_VALUE_LEN} Zeichen)`,
+            }),
+          };
+        }
+      }
+
       const uploadType = meta.uploadType;
 
       // Every upload MUST declare its target dispatcher. Right now only

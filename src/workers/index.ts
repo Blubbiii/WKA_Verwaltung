@@ -259,6 +259,19 @@ async function main(): Promise<void> {
     });
   }
 
+  // tus-GC Cron registrieren (alle 6h — Resumable-Upload-Cleanup)
+  try {
+    const { scheduleTusGc } = await import(
+      "@/lib/queue/queues/tus-gc.queue"
+    );
+    await scheduleTusGc();
+    log("info", "tus-GC cron scheduled (every 6h)");
+  } catch (err) {
+    log("warn", "Failed to schedule tus-GC cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // Daily-Digest Cron registrieren (täglich 08:00 — Idee E)
   try {
     const { scheduleDailyDigest } = await import(
