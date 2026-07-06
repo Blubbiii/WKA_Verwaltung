@@ -1796,7 +1796,9 @@
         "someFailed": "{count} Datei(en) fehlgeschlagen",
         "uploadedAndStarted": "{count} Datei(en) hochgeladen — Import läuft",
         "finalizeFailed": "Fehler beim Starten des Imports",
-        "invalidExtension": "Ungültige Datei: {name} (Extension .{ext})"
+        "invalidExtension": "Ungültige Datei: {name} (Extension .{ext})",
+        "tooManyFiles": "Zu viele Dateien: {count} — bitte in Batches von max. {max} aufteilen",
+        "largeBatchWarning": "{count} Dateien — großer Batch, kann etwas dauern. Bei Problemen kleiner aufteilen."
       },
       "importTab": {
         "cardTitle": "SCADA-Daten importieren",

@@ -64,6 +64,8 @@ interface FileRow {
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
 const DEFAULT_MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
+/** Max concurrent tus uploads. Match server-side capacity. */
+const TUS_CONCURRENCY_LIMIT = 3;
 const DEFAULT_ACCEPT =
   ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.csv,.txt";
 
@@ -116,7 +118,8 @@ export function UppyDropzone({
     }).use(Tus, {
       endpoint: "/api/tus",
       chunkSize: CHUNK_SIZE,
-      retryDelays: [0, 1000, 3000, 5000, 10000],
+      limit: TUS_CONCURRENCY_LIMIT,
+      retryDelays: [0, 2000, 6000, 15000, 30000],
       removeFingerprintOnSuccess: true,
     });
 

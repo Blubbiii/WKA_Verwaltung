@@ -1796,7 +1796,9 @@
         "someFailed": "{count} file(s) failed",
         "uploadedAndStarted": "{count} file(s) uploaded — import running",
         "finalizeFailed": "Failed to start import",
-        "invalidExtension": "Invalid file: {name} (extension .{ext})"
+        "invalidExtension": "Invalid file: {name} (extension .{ext})",
+        "tooManyFiles": "Too many files: {count} — please split into batches of max {max}",
+        "largeBatchWarning": "{count} files — big batch, may take a while. Split smaller if problems arise."
       },
       "importTab": {
         "cardTitle": "Import SCADA Data",

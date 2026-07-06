@@ -79,6 +79,12 @@ interface RejectedFile {
 
 const CHUNK_SIZE = 5 * 1024 * 1024;
 const MAX_FILE_SIZE = 500 * 1024 * 1024;
+/** Max concurrent tus uploads. Higher = faster but more server RAM/Disk. */
+const TUS_CONCURRENCY_LIMIT = 3;
+/** Hard cap on files per batch to protect the server from a 10k-file drop. */
+const MAX_FILES_PER_BATCH = 200;
+/** Soft warning threshold — batches above this get a "consider splitting" toast. */
+const SOFT_WARN_FILES = 100;
 
 const LOC_PATTERN = /Loc_\d+/i;
 
@@ -149,12 +155,18 @@ export function UppyScadaUpload({
       allowMultipleUploadBatches: true,
       restrictions: {
         maxFileSize: MAX_FILE_SIZE,
+        maxNumberOfFiles: MAX_FILES_PER_BATCH,
         allowedFileTypes: SCADA_EXTENSIONS_DOTTED as unknown as string[],
       },
     }).use(Tus, {
       endpoint: "/api/tus",
       chunkSize: CHUNK_SIZE,
-      retryDelays: [0, 1000, 3000, 5000, 10000],
+      // Limit concurrent uploads so we don't drown the server in parallel
+      // PATCH requests when the user drops a whole Enercon folder.
+      limit: TUS_CONCURRENCY_LIMIT,
+      // Longer backoff than default — give the server time to breathe on
+      // transient errors instead of hammering it with retries.
+      retryDelays: [0, 2000, 6000, 15000, 30000],
       removeFingerprintOnSuccess: true,
     });
 
@@ -294,7 +306,21 @@ export function UppyScadaUpload({
 
   const addFiles = (fileList: FileList) => {
     if (!uppyRef.current) return;
-    for (const file of Array.from(fileList)) {
+    const arr = Array.from(fileList);
+
+    // Hard cap: refuse batches bigger than what the server can safely handle
+    if (arr.length > MAX_FILES_PER_BATCH) {
+      toast.error(
+        t("tooManyFiles", { count: arr.length, max: MAX_FILES_PER_BATCH })
+      );
+      return;
+    }
+    // Soft cap: warn but let it through
+    if (arr.length > SOFT_WARN_FILES) {
+      toast.warning(t("largeBatchWarning", { count: arr.length }));
+    }
+
+    for (const file of arr) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       if (!SCADA_EXTENSIONS_SET.has(ext)) {
         setRejected((prev) => [
