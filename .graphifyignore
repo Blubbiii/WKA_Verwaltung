@@ -1,0 +1,15 @@
+# Bundled minified assets — parsing them yields thousands of internal-symbol
+# noise nodes. Not source code, don't index.
+public/pdf.worker.min.mjs
+public/samples/
+
+# User-uploaded content
+public/uploads/
+
+# Playwright visual-regression snapshots
+e2e/**/*.spec.ts-snapshots/
+
+# Build outputs
+.next/
+node_modules/
+graphify-out/
