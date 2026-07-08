@@ -1,3 +1,10 @@
+/**
+ * ⚠️  GOD FILE — 622 dependent edges (3rd-highest betweenness in codebase).
+ * Structured Logger für die gesamte App (incl. apiLogger, cacheLogger,
+ * jobLogger etc.). Änderungen an der Log-API brechen Observability.
+ * Regeln: siehe /CLAUDE.md → "God Files". CODEOWNERS: /.github/CODEOWNERS.
+ */
+
 import pino from "pino";
 import { getRequestContext } from "./request-context";
 

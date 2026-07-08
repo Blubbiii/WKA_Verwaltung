@@ -1,3 +1,10 @@
+/**
+ * ⚠️  GOD FILE — 1052 dependent edges (2nd-highest betweenness in codebase).
+ * Auth-Middleware für 513 API-Routes. Änderungen hier können das gesamte
+ * Auth-System destabilisieren.
+ * Regeln: siehe /CLAUDE.md → "God Files". CODEOWNERS: /.github/CODEOWNERS.
+ */
+
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";

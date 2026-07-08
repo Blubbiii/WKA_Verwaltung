@@ -1,0 +1,21 @@
+# CODEOWNERS for WPM
+#
+# Rationale: Aus dem Knowledge-Graph-Audit (2026-07-07, siehe CLAUDE.md)
+# haben diese 3 Dateien die höchste Betweenness-Zentralität im gesamten
+# Codebase (Blast-Radius bei Bruch trifft je > 500 andere Files).
+#
+# Zweck dieser Datei:
+# - GitHub markiert PRs die diese Dateien anfassen automatisch mit dem
+#   Owner. Solo-Setup → dient primär als visueller Reminder + späterer
+#   Skalierbarkeit wenn Team dazukommt.
+# - Sobald ein 2. Reviewer da ist: Branch-Protection so setzen dass
+#   Änderungen an diesen 3 Files zwei Approvals brauchen.
+
+# God File 1: API-Error-Response backbone (1398 dependent edges)
+/src/lib/api-errors.ts @Blubbiii
+
+# God File 2: Auth-Middleware backbone (1052 dependent edges)
+/src/lib/auth/withPermission.ts @Blubbiii
+
+# God File 3: Structured-Logger (622 dependent edges)
+/src/lib/logger.ts @Blubbiii

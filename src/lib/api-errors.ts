@@ -1,4 +1,8 @@
 /**
+ * ⚠️  GOD FILE — 1398 dependent edges (highest betweenness in codebase).
+ * Änderungen hier treffen praktisch jede API-Response.
+ * Regeln: siehe /CLAUDE.md → "God Files". CODEOWNERS: /.github/CODEOWNERS.
+ *
  * Structured API error responses.
  *
  * Instead of returning `NextResponse.json({ error: "Deutsche Nachricht" })`,
