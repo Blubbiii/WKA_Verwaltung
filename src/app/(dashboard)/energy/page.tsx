@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
@@ -101,12 +101,6 @@ interface OverviewData {
 }
 
 // =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const currentYear = new Date().getFullYear();
-
-// =============================================================================
 // HELPERS
 // =============================================================================
 
@@ -126,7 +120,7 @@ function formatNumber(value: number): string {
 // DATA FETCHING
 // =============================================================================
 
-async function fetchOverviewData(): Promise<OverviewData> {
+async function fetchOverviewData(currentYear: number): Promise<OverviewData> {
   // Fetch all data in parallel
   const [
     productionsRes,
@@ -213,6 +207,15 @@ export default function EnergyOverviewPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
+  // currentYear per Mount berechnen — auf Modul-Ebene wird das beim Long-Running
+  // Container-Prozess nach Silvester nicht aktualisiert (Bug: alte Zahlen).
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+
+  // TODO: Refresh-Button oder react-query mit staleTime für Live-Updates.
+  // Aktuell wird die Overview nur beim Mount geladen — nach einem Import
+  // neuer Produktionsdaten muss der User die Seite manuell neu laden.
+  // Sinnvolle Nachbesserungen: (a) sichtbarer Refresh-Button in PageHeader,
+  // (b) useQuery mit staleTime: 60_000 und refetchOnWindowFocus.
   useEffect(() => {
     let cancelled = false;
 
@@ -220,7 +223,7 @@ export default function EnergyOverviewPage() {
       setIsLoading(true);
       setIsError(false);
       try {
-        const result = await fetchOverviewData();
+        const result = await fetchOverviewData(currentYear);
         if (!cancelled) {
           setData(result);
         }
@@ -239,7 +242,7 @@ export default function EnergyOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentYear]);
 
   return (
     <div className="space-y-6">

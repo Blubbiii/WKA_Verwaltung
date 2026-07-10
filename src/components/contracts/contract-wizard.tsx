@@ -1330,7 +1330,10 @@ export function ContractWizard() {
       {/* Step Actions */}
       <StepActions>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/contracts")}
+          >
             Abbrechen
           </Button>
           <Button

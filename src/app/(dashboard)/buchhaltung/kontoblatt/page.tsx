@@ -4,7 +4,7 @@
  * P22: Kontoblatt / Kontoausdruck — Steuerberater-Standardreport.
  */
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Card,
@@ -74,31 +74,40 @@ export default function KontoblattPage() {
   const [data, setData] = useState<KontoblattResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const load = async () => {
+  // AbortController um bei rascher Filter-Änderung stale Requests zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
+  const load = useCallback(async () => {
     if (!account) {
       toast.error("Bitte Konto angeben");
       return;
     }
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setIsLoading(true);
     try {
       const res = await fetch(
         `/api/buchhaltung/kontoblatt?account=${encodeURIComponent(account)}&from=${from}&to=${to}`,
+        { signal: ac.signal }
       );
       if (!res.ok) throw new Error("Fehler");
       const json = await res.json();
-      setData(json.data);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Kontoblatt konnte nicht geladen werden");
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
-  };
+  }, [account, from, to]);
 
-  // F-8: Auto-Load wenn via Drilldown-URL geöffnet
+  // F-8: Auto-Load wenn via Drilldown-URL geöffnet (nur beim Mount).
   useEffect(() => {
     if (account && !data) {
       void load();
     }
+    return () => abortRef.current?.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

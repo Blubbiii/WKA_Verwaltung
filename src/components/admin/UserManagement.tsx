@@ -446,9 +446,17 @@ export function UserManagement() {
 
       if (oldType !== newType || oldIds !== newIds) {
         // Delete old assignment and create new one with updated scope
-        await fetch(`/api/admin/users/${userId}/roles?roleId=${roleId}`, {
-          method: "DELETE",
-        });
+        const delRes = await fetch(
+          `/api/admin/users/${userId}/roles?roleId=${roleId}`,
+          { method: "DELETE" }
+        );
+        if (!delRes.ok) {
+          const err = await delRes.json().catch(() => ({}));
+          throw new Error(
+            (err as { error?: string }).error ??
+              "Fehler beim Aktualisieren der Rolle"
+          );
+        }
         const res = await fetch(`/api/admin/users/${userId}/roles`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -592,11 +600,18 @@ export function UserManagement() {
           if (!membershipsPayload.find((m) => m.tenantId === primaryTenantId)) {
             membershipsPayload.push({ tenantId: primaryTenantId, isPrimary: true });
           }
-          await fetch(`/api/admin/users/${userId}`, {
+          const res = await fetch(`/api/admin/users/${userId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ memberships: membershipsPayload }),
           });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(
+              (err as { error?: string }).error ??
+                "Memberships-Update fehlgeschlagen"
+            );
+          }
         }
       }
 

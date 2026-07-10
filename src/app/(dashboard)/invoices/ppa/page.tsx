@@ -186,7 +186,7 @@ export default function PPAPage() {
       const res = await fetch(`/api/ppa?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        if (!ac.signal.aborted) setPpas(data.ppas ?? []);
+        if (!ac.signal.aborted) setPpas(data.data ?? data.ppas ?? []);
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;

@@ -36,6 +36,7 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { ANALYTICS_MODULES } from "@/types/analytics";
+import { extractFilename } from "@/lib/download-filename";
 
 // =============================================================================
 // Types
@@ -171,9 +172,8 @@ export function PdfReportsTab() {
       }
 
       const blob = await response.blob();
-      const cd = response.headers.get("Content-Disposition");
-      const match = cd?.match(/filename="(.+)"/);
-      const filename = match?.[1] || fallbackFilename;
+      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
+      const filename = extractFilename(response.headers.get("Content-Disposition")) ?? fallbackFilename;
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

@@ -24,7 +24,17 @@ export interface SepaWizardState {
   debtorIban: string;
   debtorBic: string;
   executionDate: string;
+  /**
+   * Timestamp of the wizard-run start (unix ms). Used to detect stale
+   * localStorage from an aborted/older run — invoiceIds might reference
+   * invoices that were already paid or deleted since. Steps that guard
+   * against empty state should also treat wizards older than 24h as stale.
+   */
+  createdAt: number | null;
 }
+
+/** TTL for a wizard run before its state is considered stale. */
+export const SEPA_WIZARD_TTL_MS = 24 * 60 * 60 * 1000;
 
 const DEFAULT_STATE: SepaWizardState = {
   invoiceIds: [],
@@ -33,6 +43,7 @@ const DEFAULT_STATE: SepaWizardState = {
   debtorIban: "",
   debtorBic: "",
   executionDate: "",
+  createdAt: null,
 };
 
 function loadFromStorage(): SepaWizardState {

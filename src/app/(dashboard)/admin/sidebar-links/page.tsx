@@ -210,13 +210,19 @@ export default function SidebarLinksPage() {
 
   const toggleStatus = async (link: SidebarLink) => {
     const newStatus = link.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
-    const res = await fetch(`/api/admin/sidebar-links/${link.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch(`/api/admin/sidebar-links/${link.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        toast.error("Sichtbarkeit konnte nicht geändert werden");
+        return;
+      }
       setLinks((prev) => prev.map((l) => l.id === link.id ? { ...l, status: newStatus } : l));
+    } catch {
+      toast.error("Sichtbarkeit konnte nicht geändert werden");
     }
   };
 

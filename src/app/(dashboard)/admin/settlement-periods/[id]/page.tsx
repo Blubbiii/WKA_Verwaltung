@@ -335,10 +335,15 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       setIsDeleting(true);
       await deleteSettlementPeriod(id);
       toast.success(t("deletedMsg"));
+      // Reset local state BEFORE navigating away — otherwise the finally
+      // block runs after unmount and React warns about setState on an
+      // unmounted component.
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
       router.push("/admin/settlement-periods");
+      return;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("deleteError"));
-    } finally {
       setIsDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -1143,10 +1148,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setShowRejectDialog(false);
-                setRejectionNotes("");
-              }}
+              onClick={() => setShowRejectDialog(false)}
             >
               Abbrechen
             </Button>

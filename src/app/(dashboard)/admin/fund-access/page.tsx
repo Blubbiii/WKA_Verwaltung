@@ -68,15 +68,22 @@ export default function FundAccessPage() {
   const [loadingAccess, setLoadingAccess] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Initial-Load: alle User
+  // Initial-Load: alle User — mit AbortController um Unmount-Race zu vermeiden.
   useEffect(() => {
-    fetch("/api/admin/users")
+    const ac = new AbortController();
+    fetch("/api/admin/users", { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d?.data) setUsers(d.data);
+        if (!ac.signal.aborted && d?.data) setUsers(d.data);
       })
-      .catch(() => toast.error("User konnten nicht geladen werden"))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err instanceof Error && err.name === "AbortError") return;
+        toast.error("User konnten nicht geladen werden");
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setLoading(false);
+      });
+    return () => ac.abort();
   }, []);
 
   // AbortController um stale Requests bei User-Wechsel zu cancelln.

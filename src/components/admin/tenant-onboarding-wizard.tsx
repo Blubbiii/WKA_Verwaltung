@@ -21,6 +21,7 @@ import {
   FileText,
   LayoutDashboard,
   SkipForward,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -926,21 +927,46 @@ export function TenantOnboardingWizard() {
           <CardContent className="space-y-3">
             <SummaryItem
               done={companyUpdated}
+              hasUnsavedData={
+                !companyUpdated &&
+                (company.contactEmail.trim() !== "" ||
+                  company.contactPhone.trim() !== "" ||
+                  company.street.trim() !== "" ||
+                  company.houseNumber.trim() !== "" ||
+                  company.postalCode.trim() !== "" ||
+                  company.city.trim() !== "" ||
+                  company.taxId.trim() !== "" ||
+                  company.vatId.trim() !== "" ||
+                  company.bankName.trim() !== "" ||
+                  company.iban.trim() !== "" ||
+                  company.bic.trim() !== "")
+              }
               label={t("summaryCompany")}
               skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={!!createdParkName}
+              hasUnsavedData={!createdParkName && park.name.trim() !== ""}
               label={t("summaryPark", { name: createdParkName ?? "" })}
               skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={!!createdFundName}
+              hasUnsavedData={!createdFundName && fund.name.trim() !== ""}
               label={t("summaryFund", { name: createdFundName ?? "" })}
               skipLabel={t("summarySkipped")}
             />
             <SummaryItem
               done={invitedUsers.length > 0}
+              hasUnsavedData={
+                invitedUsers.length === 0 &&
+                userForms.some(
+                  (u) =>
+                    u.email.trim() !== "" ||
+                    u.firstName.trim() !== "" ||
+                    u.lastName.trim() !== "",
+                )
+              }
               label={t("summaryUsers", { count: invitedUsers.length })}
               skipLabel={t("summarySkipped")}
             />
@@ -1138,21 +1164,39 @@ function SummaryItem({
   done,
   label,
   skipLabel,
+  hasUnsavedData = false,
 }: {
   done: boolean;
   label: string;
   skipLabel: string;
+  /**
+   * True if the user entered data for this step but never persisted it via
+   * the "Weiter" button (i.e. they hit "Ueberspringen" instead). We then
+   * show a warning icon + the real label — showing "Uebersprungen" for
+   * a step that had data entered is misleading.
+   */
+  hasUnsavedData?: boolean;
 }) {
+  if (done) {
+    return (
+      <div className="flex items-center gap-3">
+        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+        <span className="text-foreground">{label}</span>
+      </div>
+    );
+  }
+  if (hasUnsavedData) {
+    return (
+      <div className="flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+        <span className="text-amber-700 dark:text-amber-500">{label}</span>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-3">
-      {done ? (
-        <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-      ) : (
-        <SkipForward className="h-5 w-5 text-muted-foreground shrink-0" />
-      )}
-      <span className={done ? "text-foreground" : "text-muted-foreground"}>
-        {done ? label : skipLabel}
-      </span>
+      <SkipForward className="h-5 w-5 text-muted-foreground shrink-0" />
+      <span className="text-muted-foreground">{skipLabel}</span>
     </div>
   );
 }

@@ -101,8 +101,8 @@ interface Turbine {
 // CONSTANTS
 // =============================================================================
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 11 }, (_, i) => currentYear + 1 - i);
+// currentYear/years werden pro Mount in der Component berechnet, sonst
+// zeigt der lang laufende Container nach Silvester das alte Jahr.
 
 // sourceLabels moved to useTranslations
 
@@ -143,6 +143,13 @@ export default function ProductionDataPage() {
   const t = useTranslations("energy.productions");
   const tSrc = useTranslations("energy.sourceLabels");
   const tSt = useTranslations("energy.statusLabels");
+  // currentYear per Mount berechnen — sonst zeigt der Long-Running Container
+  // nach Silvester noch das alte Jahr.
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const years = useMemo(
+    () => Array.from({ length: 11 }, (_, i) => currentYear + 1 - i),
+    [currentYear]
+  );
   // Filter State
   const [selectedYear, setSelectedYear] = useState<string>(currentYear.toString());
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -747,6 +754,10 @@ export default function ProductionDataPage() {
         onSuccess={handleImportSuccess}
       />
       <ProductionEntryDialog
+        // Force a fresh mount whenever the edit target changes. Two internal
+        // useEffects (on `open`/`editData` and on `parkId`) can otherwise race
+        // when switching between rows and clobber `turbineId` mid-load.
+        key={editData?.id ?? "new"}
         open={entryDialogOpen}
         onOpenChange={(open) => {
           setEntryDialogOpen(open);

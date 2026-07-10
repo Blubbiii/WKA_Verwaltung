@@ -25,6 +25,15 @@ export const PAGE_SIZE_LARGE = envInt("PAGE_SIZE_LARGE", 50);
 /** Default page size for dropdown/autocomplete fetches */
 export const PAGE_SIZE_DROPDOWN = envInt("PAGE_SIZE_DROPDOWN", 100);
 
+/**
+ * Safe fallback size for lists that don't yet have Pagination-UI
+ * (invoices, leases, contracts, vendors, contacts). Large enough that
+ * 99% of tenants see everything; env-overridable per Ops if needed.
+ * Ziel-Zustand: alle diese Listen bekommen echte Pagination-UI, dann
+ * kann diese Konstante wieder weg.
+ */
+export const PAGE_SIZE_BULK_LIST = envInt("PAGE_SIZE_BULK_LIST", 200);
+
 /** Default page size for CSV export bulk fetches */
 export const PAGE_SIZE_CSV_EXPORT = envInt("PAGE_SIZE_CSV_EXPORT", 500);
 

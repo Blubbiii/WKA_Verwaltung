@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
 import { de, enUS } from "date-fns/locale";
@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useDebounce } from "@/hooks/useDebounce";
+import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -168,8 +170,13 @@ export default function CrmContactsPage() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  // Debounce search so we do not fire a request on every keystroke.
+  const debouncedSearch = useDebounce(search, 300);
   const [activeLabels, setActiveLabels] = useState<string[]>([]);
   const [labelPopoverOpen, setLabelPopoverOpen] = useState(false);
+
+  // AbortController um stale Requests bei rascher Suche zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
 
   // Initialize from URL ?labels=Verpächter,Bank so deep links work
   // Read from window directly (not useSearchParams) to avoid the Next.js
@@ -197,22 +204,36 @@ export default function CrmContactsPage() {
   // --------------------------------------------------------------------------
   // Data loading
   // --------------------------------------------------------------------------
-  const load = async () => {
+  const load = async (signalArg?: AbortSignal) => {
+    // If no signal was passed (manual reload after mutation), open a fresh
+    // controller and abort any in-flight request so we do not race with it.
+    let controller: AbortController | null = null;
+    let signal: AbortSignal | undefined = signalArg;
+    if (!signal) {
+      abortRef.current?.abort();
+      controller = new AbortController();
+      abortRef.current = controller;
+      signal = controller.signal;
+    }
+
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "200" });
-      if (search) params.set("search", search);
+      // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE_BULK_LIST) });
+      if (debouncedSearch) params.set("search", debouncedSearch);
       if (activeLabels.length > 0) params.set("labels", activeLabels.join(","));
 
-      const res = await fetch(`/api/crm/contacts?${params}`);
+      const res = await fetch(`/api/crm/contacts?${params}`, { signal });
       if (!res.ok) throw new Error();
       const json = await res.json();
+      if (signal.aborted) return;
       setContacts(json.data ?? []);
       setTotal(json.pagination?.total ?? 0);
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(t("loadError"));
     } finally {
-      setLoading(false);
+      if (!signal.aborted) setLoading(false);
     }
   };
 
@@ -222,8 +243,15 @@ export default function CrmContactsPage() {
     isDerivedLabel(key) ? tLabels(key) : key;
 
   useEffect(() => {
-    if (flags.crm) load();
-  }, [search, activeLabels, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!flags.crm) return;
+    // Cancel any in-flight request from a prior render so the newest
+    // response wins even if the older one resolves later.
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    load(controller.signal);
+    return () => controller.abort();
+  }, [debouncedSearch, activeLabels, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load custom labels (PersonTag table) once for the filter dropdown
   useEffect(() => {

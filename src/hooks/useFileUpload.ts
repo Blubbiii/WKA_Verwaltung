@@ -84,11 +84,24 @@ export function useFileUpload(options: FileUploadOptions = {}): FileUploadResult
         xhr.addEventListener("load", () => {
           xhrRef.current = null;
 
+          const contentType = xhr.getResponseHeader("content-type") ?? "";
           let responseData: unknown;
-          try {
-            responseData = JSON.parse(xhr.responseText);
-          } catch {
-            responseData = xhr.responseText;
+          if (contentType.includes("application/json")) {
+            try {
+              responseData = JSON.parse(xhr.responseText);
+            } catch {
+              // Server claimed JSON but sent something else — fall back to a
+              // generic error rather than leaking the raw body into a toast.
+              responseData = {
+                error: `Ungültige Server-Antwort (Status ${xhr.status})`,
+              };
+            }
+          } else {
+            // Non-JSON (e.g. HTML error page from reverse proxy on 502/503).
+            // Don't put the HTML into the toast — surface a clean status.
+            responseData = {
+              error: `Server-Fehler (Status ${xhr.status})`,
+            };
           }
 
           if (xhr.status >= 200 && xhr.status < 300) {

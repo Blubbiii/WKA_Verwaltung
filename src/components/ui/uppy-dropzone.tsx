@@ -113,7 +113,22 @@ export function UppyDropzone({
       restrictions: {
         maxFileSize: DEFAULT_MAX_FILE_SIZE,
         maxNumberOfFiles: maxFiles,
-        allowedFileTypes: accept.split(",").map((s) => s.trim()).filter(Boolean),
+        // Uppy compares allowedFileTypes case-sensitively against the file
+        // extension → iOS-Kamera-Fotos ("IMG_0001.JPG") würden von einer
+        // Allowlist mit nur `.jpg` abgewiesen. Wir expandieren jede
+        // Dot-Extension in lower- und upper-case, MIME-Types bleiben unverändert.
+        allowedFileTypes: accept
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .flatMap((entry) => {
+            if (entry.startsWith(".")) {
+              const lower = entry.toLowerCase();
+              const upper = entry.toUpperCase();
+              return lower === upper ? [lower] : [lower, upper];
+            }
+            return [entry];
+          }),
       },
     }).use(Tus, {
       endpoint: "/api/tus",

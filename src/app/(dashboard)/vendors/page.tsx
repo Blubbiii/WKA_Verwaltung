@@ -9,6 +9,7 @@ import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -261,7 +262,8 @@ export default function VendorsPage() {
     abortRef.current = ac;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "200" });
+      // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE_BULK_LIST) });
       if (search) params.set("q", search);
       const res = await fetch(`/api/vendors?${params}`, { signal: ac.signal });
       if (res.ok) {

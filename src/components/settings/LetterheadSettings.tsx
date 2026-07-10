@@ -340,6 +340,9 @@ export function LetterheadSettings() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
+      // Give the new tab time to load the PDF before releasing the blob URL,
+      // otherwise the preview goes blank in some browsers.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("previewError"));
     } finally {

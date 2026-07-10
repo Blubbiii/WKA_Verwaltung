@@ -150,7 +150,13 @@ export class PaperlessClient {
     options: PaperlessUploadOptions
   ): Promise<string> {
     const formData = new FormData();
-    formData.append("document", new Blob([new Uint8Array(file)]), options.filename);
+    formData.append(
+      "document",
+      new Blob([new Uint8Array(file)], {
+        type: options.mimeType ?? "application/octet-stream",
+      }),
+      options.filename
+    );
     formData.append("title", options.title);
 
     if (options.correspondent) {

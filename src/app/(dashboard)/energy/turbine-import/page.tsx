@@ -116,7 +116,9 @@ const TURBINE_FIELD_LABELS: Record<keyof TurbineColumnMapping, string> = {
 };
 
 const MAX_FILE_SIZE = UPLOAD_LIMITS.energyImport;
-const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
+// .xls kept so users get a friendly "please save as .xlsx" error from
+// handleFileSelect instead of a silent file-picker rejection.
+const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xlsm", ".xls"];
 
 // ============================================================================
 // Helper Functions
@@ -350,7 +352,7 @@ function FileUploadStep({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv,.xlsx,.xls"
+        accept=".csv,.xlsx,.xlsm,.xls"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -1035,28 +1037,78 @@ export default function TurbineDataImportPage() {
         setParsedData(parsed);
         const autoMapping = autoDetectTurbineMapping(parsed.headers);
         setColumnMapping(autoMapping);
-      } else if (extension === "xlsx" || extension === "xls") {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("action", "parse");
+      } else if (extension === "xlsx" || extension === "xlsm") {
+        // Parse XLSX client-side using ExcelJS (dynamic import → bundle-splitting).
+        // The server-side /api/energy/productions/import endpoint only accepts
+        // JSON, so we do the parsing here and hand off the rows via the wizard
+        // format. Same approach as production-import-sheet / settlement-import-sheet.
+        const ExcelJS = (await import("exceljs")).default;
+        const workbook = new ExcelJS.Workbook();
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        await workbook.xlsx.load(arrayBuffer);
 
-        const response = await fetch("/api/energy/productions/import", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || "Fehler beim Parsen der Datei");
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
+          setFileError("Die Datei enthält keine Tabellenblätter");
+          return;
         }
 
-        const result = await response.json();
-        setParsedData({
-          headers: result.headers,
-          rows: result.rows,
+        // Extract headers from first row
+        const headerRow = worksheet.getRow(1);
+        const headers: string[] = [];
+        headerRow.eachCell({ includeEmpty: false }, (cell) => {
+          headers.push(String(cell.value ?? "").trim());
         });
-        const autoMapping = autoDetectTurbineMapping(result.headers);
+
+        if (headers.length === 0) {
+          setFileError("Die Datei enthaelt keine gültigen Daten");
+          return;
+        }
+
+        // Extract data rows
+        const rows: ParsedRow[] = [];
+        worksheet.eachRow({ includeEmpty: false }, (row, rowIndex) => {
+          if (rowIndex === 1) return; // skip header
+          const rowObj: ParsedRow = {};
+          headers.forEach((h, idx) => {
+            const cell = row.getCell(idx + 1);
+            const val = cell.value;
+            if (val === null || val === undefined) {
+              rowObj[h] = "";
+            } else if (typeof val === "object" && "result" in (val as object)) {
+              // Formula cell → use computed result
+              const raw = (val as { result: unknown }).result;
+              if (typeof raw === "number") {
+                rowObj[h] = raw;
+              } else {
+                rowObj[h] = String(raw ?? "");
+              }
+            } else if (val instanceof Date) {
+              rowObj[h] = val.toISOString().split("T")[0];
+            } else if (typeof val === "number") {
+              rowObj[h] = val;
+            } else {
+              rowObj[h] = String(val);
+            }
+          });
+          rows.push(rowObj);
+        });
+
+        setParsedData({ headers, rows });
+        const autoMapping = autoDetectTurbineMapping(headers);
         setColumnMapping(autoMapping);
+      } else if (extension === "xls") {
+        // Legacy binary .xls format — ExcelJS only handles .xlsx/.xlsm. Ask the
+        // user to re-save the file.
+        setFileError(
+          "Das ältere .xls-Format wird nicht unterstützt. Bitte die Datei als .xlsx oder .csv speichern."
+        );
+        return;
+      } else {
+        setFileError(
+          "Dateiformat nicht unterstützt. Bitte .csv, .xlsx oder .xlsm verwenden."
+        );
+        return;
       }
     } catch (error) {
       setFileError(

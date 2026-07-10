@@ -26,7 +26,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/format";
-import { useSepaWizardState } from "@/hooks/useSepaWizardState";
+import {
+  SEPA_WIZARD_TTL_MS,
+  useSepaWizardState,
+} from "@/hooks/useSepaWizardState";
 
 interface BankAccount {
   id: string;
@@ -63,18 +66,35 @@ function todayIso(): string {
 export default function SepaWizardStep2() {
   const t = useTranslations("buchhaltung.sepaWizard");
   const router = useRouter();
-  const { state, setState, hydrated } = useSepaWizardState();
+  const { state, setState, reset, hydrated } = useSepaWizardState();
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Guard: ohne Rechnungen direkt zurück.
+  // Guard: ohne Rechnungen — oder mit staler localStorage-Session —
+  // direkt zurück zu Step 1. Ohne TTL bleiben IDs aus einem früheren
+  // abgebrochenen Wizard-Run bestehen und step-4 wirft dann 400
+  // "invoice not found".
   useEffect(() => {
-    if (hydrated && state.invoiceIds.length === 0) {
+    if (!hydrated) return;
+    const isEmpty = state.invoiceIds.length === 0;
+    const isStale =
+      state.createdAt !== null &&
+      Date.now() - state.createdAt > SEPA_WIZARD_TTL_MS;
+    const hasNoTimestamp =
+      state.invoiceIds.length > 0 && state.createdAt === null;
+    if (isEmpty || isStale || hasNoTimestamp) {
+      reset();
       router.replace("/buchhaltung/sepa/new/step-1");
     }
-  }, [hydrated, state.invoiceIds.length, router]);
+  }, [
+    hydrated,
+    state.invoiceIds.length,
+    state.createdAt,
+    reset,
+    router,
+  ]);
 
   // Default executionDate setzen, sobald hydrated und noch leer.
   useEffect(() => {

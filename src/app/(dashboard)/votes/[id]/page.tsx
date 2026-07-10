@@ -30,6 +30,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { VOTE_STATUS, getStatusBadge } from "@/lib/status-config";
+import { extractFilename } from "@/lib/download-filename";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -151,14 +152,10 @@ export default function VoteDetailPage() {
       link.href = url;
 
       // Filename aus Content-Disposition Header extrahieren oder Fallback
-      const contentDisposition = response.headers.get("Content-Disposition");
-      let filename = `Abstimmungsergebnis_${vote.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="(.+)"/);
-        if (match) {
-          filename = match[1];
-        }
-      }
+      // (RFC-6266-aware — filename*=UTF-8'' mit Umlauten wird korrekt gedeckelt)
+      const filename =
+        extractFilename(response.headers.get("Content-Disposition")) ??
+        `Abstimmungsergebnis_${vote.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
 
       link.download = filename;
       document.body.appendChild(link);

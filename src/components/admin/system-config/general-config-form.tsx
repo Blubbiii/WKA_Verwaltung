@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Cog, AlertTriangle, Loader2 } from "lucide-react";
@@ -82,6 +82,19 @@ export function GeneralConfigForm({
 
   // UI state
   const [saving, setSaving] = useState(false);
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  // Sonst zeigt das Form nach Reload der Config immer noch die alten Mount-Werte.
+  useEffect(() => {
+    setAppName(getConfigValue("general.app.name") || "WindparkManager");
+    setTimezone(getConfigValue("general.app.timezone") || "Europe/Berlin");
+    setMaintenanceEnabled(getConfigValue("general.maintenance.enabled") === "true");
+    setMaintenanceMessage(
+      getConfigValue("general.maintenance.message") ||
+        "Das System wird gewartet. Bitte versuchen Sie es später erneut."
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   // Save configuration
   async function handleSave() {

@@ -8,6 +8,7 @@ import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
 import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
+import { extractFilename } from "@/lib/download-filename";
 import {
   ArrowLeft,
   Pencil,
@@ -470,8 +471,8 @@ export default function InvoiceDetailPage({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const disposition = response.headers.get("Content-Disposition");
-      const filename = disposition?.match(/filename="(.+)"/)?.[1] || "rechnung.pdf";
+      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
+      const filename = extractFilename(response.headers.get("Content-Disposition")) ?? "rechnung.pdf";
       a.download = filename;
       document.body.appendChild(a);
       a.click();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
@@ -94,6 +94,15 @@ export function PaperlessConfigForm({
   } | null>(null);
 
   const tokenSaved = isConfigSaved("paperless.token");
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  // Token bleibt bewusst leer — der wird nie zurückgeschrieben (verschluesselt/masked).
+  useEffect(() => {
+    setUrl(getConfigValue("paperless.url"));
+    setAutoArchive(getConfigValue("paperless.auto-archive") !== "false");
+    setDefaultDocumentType(getConfigValue("paperless.default-document-type"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   async function handleSave() {
     try {

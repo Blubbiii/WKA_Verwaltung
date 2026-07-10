@@ -8,6 +8,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
+import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
 import { format } from "date-fns/format";
 import { differenceInDays } from "date-fns/differenceInDays";
 import { de } from "date-fns/locale/de";
@@ -122,8 +123,9 @@ export default function LeasesPage() {
   const invalidate = useInvalidateQuery();
 
   // Build query URL
+  // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
   const queryParams = new URLSearchParams({
-    limit: "100",
+    limit: String(PAGE_SIZE_BULK_LIST),
     ...(statusFilter !== "all" && { status: statusFilter }),
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -124,7 +124,8 @@ function getStatusBadge(status: string) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const currentYear = new Date().getFullYear();
+// currentYear + YEAR_OPTIONS werden pro Mount in der Component berechnet,
+// sonst zeigt der lang laufende Container nach Silvester das alte Jahr.
 
 function formatPeriod(year: number, month: number | null): string {
   if (month) {
@@ -149,11 +150,6 @@ const MONTH_OPTIONS = [
   { value: "12", label: "Dezember" },
 ];
 
-const YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => {
-  const y = currentYear - 2 + i;
-  return { value: String(y), label: String(y) };
-});
-
 const STATUS_OPTIONS = [
   { value: "all", label: "Alle Status" },
   { value: "DRAFT", label: "Entwurf" },
@@ -168,6 +164,18 @@ const STATUS_OPTIONS = [
 
 export default function BillingsPage() {
   const router = useRouter();
+
+  // currentYear per Mount berechnen — sonst zeigt der Long-Running Container
+  // nach Silvester noch das alte Jahr.
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const YEAR_OPTIONS = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, i) => {
+        const y = currentYear - 2 + i;
+        return { value: String(y), label: String(y) };
+      }),
+    [currentYear]
+  );
 
   // Filter state
   const [yearFilter, setYearFilter] = useState(String(currentYear));
@@ -213,7 +221,7 @@ export default function BillingsPage() {
       if (!response.ok) throw new Error("Fehler beim Laden");
 
       const data = await response.json();
-      if (!ac.signal.aborted) setBillings(data.billings || []);
+      if (!ac.signal.aborted) setBillings(data.data ?? data.billings ?? []);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
       toast.error("Fehler beim Laden der Abrechnungen");

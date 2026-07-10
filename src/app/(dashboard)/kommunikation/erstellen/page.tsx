@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,17 @@ function CreateMailingWizard() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [mailingId, setMailingId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+
+  // Mount-tracker: prevents "setState on unmounted component" warnings and
+  // stale spinners when router.push in handleSend triggers an unmount before
+  // the finally-block runs.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Load templates
@@ -251,14 +262,19 @@ function CreateMailingWizard() {
         if (data.sentCount > 0) parts.push(`${data.sentCount} E-Mails gesendet`);
         if (data.postCount > 0) parts.push(`${data.postCount} Post-Empfaenger markiert`);
         toast.success(parts.join(", ") || "Versand abgeschlossen");
+        // Navigate away — after this the component will unmount, so skip
+        // the finally-block state update by returning early via mountedRef.
         router.push("/kommunikation");
+        return;
       } else {
         toast.error(data.error ?? "Fehler beim Senden");
       }
     } catch {
-      toast.error("Versand fehlgeschlagen");
+      if (mountedRef.current) toast.error("Versand fehlgeschlagen");
     } finally {
-      setSending(false);
+      // Skip the state update once the component has unmounted (typical
+      // after router.push on success).
+      if (mountedRef.current) setSending(false);
     }
   };
 

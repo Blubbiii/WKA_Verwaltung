@@ -238,7 +238,7 @@ export default function ScadaAnomaliesPage() {
 
       const data = await res.json();
       if (ac.signal.aborted) return;
-      setAnomalies(data.anomalies);
+      setAnomalies(data.data ?? data.anomalies ?? []);
       setTotal(data.total);
       setStats(data.stats);
     } catch (err) {
@@ -254,7 +254,7 @@ export default function ScadaAnomaliesPage() {
       const res = await fetch("/api/parks?limit=100");
       if (!res.ok) return;
       const data = await res.json();
-      setParks(data.parks || data.data || []);
+      setParks(data.data ?? data.parks ?? []);
     } catch {
       // Parks filter is optional
     }
@@ -317,8 +317,12 @@ export default function ScadaAnomaliesPage() {
       });
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
-    } catch {
-      // Silent — non-critical action
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Anomalie konnte nicht als bearbeitet markiert werden"
+      );
     }
   };
 
@@ -340,8 +344,12 @@ export default function ScadaAnomaliesPage() {
       setSelectedAnomaly(null);
       setNotes("");
       await fetchAnomalies();
-    } catch {
-      // Silent — UI shows saving state
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Anomalie konnte nicht als gelöst markiert werden"
+      );
     } finally {
       setSaving(false);
     }
@@ -358,8 +366,12 @@ export default function ScadaAnomaliesPage() {
       });
       if (!res.ok) throw new Error("Fehler");
       await fetchAnomalies();
-    } catch {
-      // Silent — UI shows saving state
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Notizen konnten nicht gespeichert werden"
+      );
     } finally {
       setSaving(false);
     }
@@ -377,8 +389,12 @@ export default function ScadaAnomaliesPage() {
       if (!res.ok) throw new Error("Fehler");
       const data = await res.json();
       setConfig(data.config);
-    } catch {
-      // Silent — UI shows saving state
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Konfiguration konnte nicht gespeichert werden"
+      );
     } finally {
       setConfigSaving(false);
     }

@@ -4,7 +4,7 @@
  * PF-3: Admin-UI für Bankdaten-Änderungs-Approval-Workflow.
  * Listet pending PendingBankUpdate-Einträge mit Approve/Reject-Aktion.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,22 +39,32 @@ export default function BankUpdateRequestsPage() {
   const [filter, setFilter] = useState<"PENDING" | "ALL">("PENDING");
   const [busy, setBusy] = useState<string | null>(null);
 
+  // AbortController um bei Filter-Wechsel stale Requests zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchRequests = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/bank-update-requests?status=${filter}`);
+      const res = await fetch(`/api/admin/bank-update-requests?status=${filter}`, {
+        signal: ac.signal,
+      });
       if (!res.ok) throw new Error(t("errors.loadFailed"));
       const json = await res.json();
-      setRequests(json.data || []);
+      if (!ac.signal.aborted) setRequests(json.data || []);
     } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error(err instanceof Error ? err.message : t("errors.loadFailed"));
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
   }, [filter, t]);
 
   useEffect(() => {
     fetchRequests();
+    return () => abortRef.current?.abort();
   }, [fetchRequests]);
 
   async function decide(id: string, action: "APPROVE" | "REJECT") {

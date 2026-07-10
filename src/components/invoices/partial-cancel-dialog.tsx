@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -81,17 +81,21 @@ export function PartialCancelDialog({
     }))
   );
 
-  // Reset state when dialog opens
+  // Reset positions whenever the dialog opens OR the items prop changes.
+  // The lazy initializer on useState above only runs on mount — without
+  // this effect a parent re-fetching the invoice would leave stale positions.
+  useEffect(() => {
+    if (!open) return;
+    setPositions(
+      items.map((item) => ({
+        selected: false,
+        cancelQuantity: String(item.quantity),
+      }))
+    );
+    setReason("");
+  }, [open, items]);
+
   const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setPositions(
-        items.map((item) => ({
-          selected: false,
-          cancelQuantity: String(item.quantity),
-        }))
-      );
-      setReason("");
-    }
     onOpenChange(newOpen);
   };
 

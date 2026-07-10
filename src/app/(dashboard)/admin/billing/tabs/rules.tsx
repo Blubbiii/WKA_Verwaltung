@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { formatDateTime } from "@/lib/format";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,7 +134,7 @@ export default function BillingRulesTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: PAGE_SIZE_DEFAULT,
     total: 0,
     totalPages: 0,
   });
@@ -170,11 +171,11 @@ export default function BillingRulesTab() {
 
       const data = await response.json();
       if (ac.signal.aborted) return;
-      setRules(data.data);
+      setRules(data.data ?? []);
       setPagination((prev) => ({
         ...prev,
-        total: data.pagination.total,
-        totalPages: data.pagination.totalPages,
+        total: data.pagination?.total ?? data.data?.length ?? 0,
+        totalPages: data.pagination?.totalPages ?? 1,
       }));
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;

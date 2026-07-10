@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -16,6 +15,13 @@ import {
   FileText,
   Download,
 } from "lucide-react";
+
+// Assign the PDF.js worker at module load time — not in useEffect. The old
+// pattern (useEffect + setTimeout(0) hack + workerReady state) had a race
+// window where <Document> could mount before workerSrc was set, causing a
+// blank viewer. Setting workerSrc here happens once, before the component
+// ever renders.
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 interface DocumentPreviewDialogPDFProps {
   fileUrl: string;
@@ -53,24 +59,6 @@ export function DocumentPreviewDialogPDF({
   handleDownload,
 }: DocumentPreviewDialogPDFProps) {
   const t = useTranslations("documents.preview");
-  const [workerReady, setWorkerReady] = useState(false);
-
-  // Configure PDF.js worker on mount using local file
-  // Worker is copied from node_modules to public/ folder
-  useEffect(() => {
-    // Use local worker for reliability (no CDN dependency)
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    setTimeout(() => setWorkerReady(true), 0);
-  }, []);
-
-  if (!workerReady) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="mt-2 text-sm text-muted-foreground">{t("pdfViewerInit")}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full">

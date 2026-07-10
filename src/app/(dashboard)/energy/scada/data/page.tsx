@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// NOTE: useRef not needed — each useEffect owns its own AbortController via closure.
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
@@ -113,20 +114,23 @@ export default function ScadaDataPage() {
 
   // Load parks
   useEffect(() => {
+    const controller = new AbortController();
     async function loadParks() {
       try {
-        const res = await fetch("/api/parks?limit=100");
+        const res = await fetch("/api/parks?limit=100", { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
-          setParks(data.data ?? []);
+          if (!controller.signal.aborted) setParks(data.data ?? []);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // ignore other errors
       } finally {
-        setIsParksLoading(false);
+        if (!controller.signal.aborted) setIsParksLoading(false);
       }
     }
     loadParks();
+    return () => controller.abort();
   }, []);
 
   // Load turbines when park changes
@@ -136,18 +140,21 @@ export default function ScadaDataPage() {
       setTurbineId("");
       return;
     }
+    const controller = new AbortController();
     async function loadTurbines() {
       try {
-        const res = await fetch(`/api/parks/${parkId}`);
+        const res = await fetch(`/api/parks/${parkId}`, { signal: controller.signal });
         if (res.ok) {
           const data = await res.json();
-          setTurbines(data.turbines ?? []);
+          if (!controller.signal.aborted) setTurbines(data.turbines ?? []);
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // ignore other errors
       }
     }
     loadTurbines();
+    return () => controller.abort();
   }, [parkId]);
 
   // Load measurements
@@ -158,6 +165,8 @@ export default function ScadaDataPage() {
       return;
     }
 
+    const controller = new AbortController();
+
     async function loadData() {
       setIsLoading(true);
       try {
@@ -167,21 +176,36 @@ export default function ScadaDataPage() {
           offset: String((page - 1) * limit),
         });
         if (dateFrom) params.set("from", dateFrom);
-        if (dateTo) params.set("to", dateTo + "T23:59:59");
+        if (dateTo) {
+          // dateTo ist YYYY-MM-DD (aus <input type="date">). Wir wollen
+          // "Ende des Tages in DE-Zeit" als ISO an das Backend schicken.
+          // Naive "YYYY-MM-DDT23:59:59" wird als Local Time interpretiert und
+          // kann in bestimmten Setups die letzten 60 min des Tages verlieren.
+          // Winter-DE = UTC+1 → 23:59:59.999+01:00 ist die 90%-Lösung.
+          // TODO: DST-safe date parsing — Backend sollte "endOfDay(dateTo, 'Europe/Berlin')"
+          //       machen (mit date-fns-tz), damit auch Sommerzeit (UTC+2) korrekt ist.
+          params.set("to", `${dateTo}T23:59:59.999+01:00`);
+        }
 
-        const res = await fetch(`/api/energy/scada/measurements?${params}`);
+        const res = await fetch(`/api/energy/scada/measurements?${params}`, {
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data = await res.json();
-          setMeasurements(data.data ?? []);
-          setTotal(data.pagination?.total ?? data.data?.length ?? 0);
+          if (!controller.signal.aborted) {
+            setMeasurements(data.data ?? []);
+            setTotal(data.pagination?.total ?? data.data?.length ?? 0);
+          }
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // ignore other errors
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     }
     loadData();
+    return () => controller.abort();
   }, [turbineId, dateFrom, dateTo, page]);
 
   const totalPages = Math.ceil(total / limit);

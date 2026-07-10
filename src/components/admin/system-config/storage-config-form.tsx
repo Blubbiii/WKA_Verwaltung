@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
@@ -104,6 +104,16 @@ export function StorageConfigForm({
   const hasExistingSecretKey = configs.some(
     (c) => c.key === "storage.s3.secretKey" && c.value && c.value !== ""
   );
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  // Access/Secret bleiben leer — die werden nie zurückgeschrieben (verschluesselt/masked).
+  useEffect(() => {
+    setProvider(getConfigValue("storage.provider") || "local");
+    setS3Endpoint(getConfigValue("storage.s3.endpoint"));
+    setS3Bucket(getConfigValue("storage.s3.bucket"));
+    setS3Region(getConfigValue("storage.s3.region") || "eu-central-1");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   // Save configuration
   async function handleSave() {

@@ -358,9 +358,25 @@ export function OnboardingWizard() {
         )}
       </StepActions>
 
-      {/* Success Dialog with optional password display */}
-      <Dialog open={showResultDialog} onOpenChange={handleResultDialogClose}>
-        <DialogContent className="sm:max-w-md">
+      {/* Success Dialog with optional password display.
+          Non-dismissible via overlay-click or Escape — the temporary password
+          is displayed once and cannot be retrieved again, so accidental
+          dismissal would lose it. Overlay/Escape are prevented via the
+          Radix props below; the X button and the footer CTA both route
+          away explicitly via handleResultDialogClose. */}
+      <Dialog
+        open={showResultDialog}
+        onOpenChange={(open) => {
+          // Only the explicit X-button click reaches this with open=false
+          // (Escape/overlay are cancelled by preventDefault below).
+          if (!open) handleResultDialogClose();
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />

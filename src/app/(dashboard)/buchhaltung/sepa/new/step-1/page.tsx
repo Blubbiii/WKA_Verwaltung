@@ -125,7 +125,13 @@ export default function SepaWizardStep1() {
         const next = new Set(prev.invoiceIds);
         if (checked) next.add(id);
         else next.delete(id);
-        return { invoiceIds: Array.from(next) };
+        const arr = Array.from(next);
+        // Refresh createdAt whenever the selection becomes non-empty —
+        // this powers the 24h staleness guard in step-2.
+        return {
+          invoiceIds: arr,
+          createdAt: arr.length > 0 ? Date.now() : null,
+        };
       });
     },
     [setState],
@@ -140,7 +146,11 @@ export default function SepaWizardStep1() {
         } else {
           for (const inv of filtered) next.delete(inv.id);
         }
-        return { invoiceIds: Array.from(next) };
+        const arr = Array.from(next);
+        return {
+          invoiceIds: arr,
+          createdAt: arr.length > 0 ? Date.now() : null,
+        };
       });
     },
     [filtered, setState],

@@ -131,12 +131,17 @@ function NotificationsPageInner() {
     return () => abortRef.current?.abort();
   }, [fetchNotifications, fetchUnreadCount]);
 
-  // Fetch deadlines when tab switches to fristen
+  // Fetch deadlines when tab switches to fristen.
+  // Kein "deadlines.length === 0"-Guard: nach delete/mark-done muss der Tab
+  // die neuen Daten sehen, sonst zeigt die UI Stale-State.
+  // deadlinesLoading NICHT in deps (würde infinite loop erzeugen, weil
+  // fetchDeadlines dieses Flag selbst togglet).
+  // TODO: bei sichtbarer Latenz auf react-query mit staleTime umziehen.
   useEffect(() => {
-    if (tab === "fristen" && deadlines.length === 0 && !deadlinesLoading) {
+    if (tab === "fristen") {
       fetchDeadlines();
     }
-  }, [tab, deadlines.length, deadlinesLoading, fetchDeadlines]);
+  }, [tab, fetchDeadlines]);
 
   // ---------------------------------------------------------------------------
   // Mark as read

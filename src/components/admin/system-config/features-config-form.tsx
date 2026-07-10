@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { Briefcase, FileArchive, Mail, BarChart3, Search, Loader2 } from "lucide-react";
@@ -71,6 +71,16 @@ export function FeaturesConfigForm({
 
   // UI state
   const [saving, setSaving] = useState(false);
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  useEffect(() => {
+    setManagementBillingEnabled(getConfigValue("management-billing.enabled") === "true");
+    setPaperlessEnabled(getConfigValue("paperless.enabled") === "true");
+    setCommunicationEnabled(getConfigValue("communication.enabled") === "true");
+    setWirtschaftsplanEnabled(getConfigValue("wirtschaftsplan.enabled") === "true");
+    setMeilisearchEnabled(getConfigValue("meilisearch.enabled") === "true");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   async function handleSave() {
     try {

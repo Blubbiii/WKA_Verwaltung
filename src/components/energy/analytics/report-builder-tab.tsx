@@ -47,6 +47,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useDebounce } from "@/hooks/useDebounce";
+import { extractFilename } from "@/lib/download-filename";
 import {
   DndContext,
   closestCenter,
@@ -432,9 +433,8 @@ export function ReportBuilderTab() {
         throw new Error(err.error || "Fehler beim Generieren");
       }
       const blob = await res.blob();
-      const cd = res.headers.get("Content-Disposition");
-      const match = cd?.match(/filename="(.+)"/);
-      const filename = match?.[1] || fallbackFilename;
+      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
+      const filename = extractFilename(res.headers.get("Content-Disposition")) ?? fallbackFilename;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
@@ -101,6 +101,18 @@ export function EmailConfigForm({
   const hasExistingPassword = configs.some(
     (c) => c.key === "email.smtp.password" && c.value && c.value !== ""
   );
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  // Password bleibt leer — der wird nie zurückgeschrieben (verschluesselt/masked).
+  useEffect(() => {
+    setSmtpHost(getConfigValue("email.smtp.host"));
+    setSmtpPort(getConfigValue("email.smtp.port") || "587");
+    setSmtpUser(getConfigValue("email.smtp.user"));
+    setSmtpSecure(getConfigValue("email.smtp.secure") === "true");
+    setFromAddress(getConfigValue("email.from.address"));
+    setFromName(getConfigValue("email.from.name") || "WindparkManager");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   // Save configuration
   async function handleSave() {

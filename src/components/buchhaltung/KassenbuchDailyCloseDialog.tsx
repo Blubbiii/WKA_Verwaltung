@@ -6,7 +6,7 @@
  * Trigger den Tagesabschluss + alle Einträge des Tages werden festgeschrieben.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,13 @@ export function KassenbuchDailyCloseDialog({
   );
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Reset auf Reopen + auf balance-change — sonst zeigt der Reopen den alten Saldo.
+  useEffect(() => {
+    if (open) {
+      setCountedBalance(computedBalance.toFixed(2));
+    }
+  }, [computedBalance, open]);
 
   const counted = Number(countedBalance);
   const difference = !isNaN(counted) ? counted - computedBalance : 0;

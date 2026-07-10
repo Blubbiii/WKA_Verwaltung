@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -99,20 +99,24 @@ export function CorrectionDialog({
     }))
   );
 
-  // Reset state when dialog opens
+  // Reset edits whenever the dialog opens OR the items prop changes.
+  // The lazy initializer on useState above only runs on mount — without
+  // this effect a parent re-fetching the invoice would leave stale edits.
+  useEffect(() => {
+    if (!open) return;
+    setEditedPositions(
+      items.map((item) => ({
+        editing: false,
+        description: item.description,
+        quantity: String(item.quantity),
+        unitPrice: String(item.unitPrice),
+        taxType: item.taxType,
+      }))
+    );
+    setReason("");
+  }, [open, items]);
+
   const handleOpenChange = (newOpen: boolean) => {
-    if (newOpen) {
-      setEditedPositions(
-        items.map((item) => ({
-          editing: false,
-          description: item.description,
-          quantity: String(item.quantity),
-          unitPrice: String(item.unitPrice),
-          taxType: item.taxType,
-        }))
-      );
-      setReason("");
-    }
     onOpenChange(newOpen);
   };
 

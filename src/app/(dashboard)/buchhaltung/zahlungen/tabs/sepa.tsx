@@ -125,8 +125,12 @@ export default function SepaContent() {
       const a = document.createElement("a");
       a.href = url;
       a.download = `${batchNumber}.xml`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      // FF/Safari abort the download if we revoke the blob URL synchronously
+      // after click() → defer revoke to give the browser time to start the fetch.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       toast.error(t("toastDownloadError"));
     }

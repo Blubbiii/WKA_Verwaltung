@@ -98,6 +98,10 @@ export interface PaperlessCorrespondent {
 export interface PaperlessUploadOptions {
   title: string;
   filename: string;
+  /** MIME type of the uploaded document. Falls back to application/octet-stream
+   *  when unspecified. Set explicitly (e.g. "application/pdf") so Paperless-ngx
+   *  can determine the content type in strict setups. */
+  mimeType?: string;
   correspondent?: number;
   documentType?: number;
   tags?: number[];

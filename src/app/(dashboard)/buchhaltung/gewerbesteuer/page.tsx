@@ -4,7 +4,7 @@
  * P22: GewSt-Hinzurechnung §8 Nr 1 GewStG — Reports-View.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -69,24 +69,34 @@ export default function GewerbesteuerPage() {
   const [data, setData] = useState<GewStResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const load = async () => {
+  // AbortController um bei year-Wechsel stale Requests zu cancelln.
+  const abortRef = useRef<AbortController | null>(null);
+
+  const load = useCallback(async () => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/buchhaltung/gewerbesteuer?year=${year}`);
+      const res = await fetch(`/api/buchhaltung/gewerbesteuer?year=${year}`, {
+        signal: ac.signal,
+      });
       if (!res.ok) throw new Error("Fehler beim Laden");
       const json = await res.json();
-      setData(json.data);
-    } catch {
+      if (!ac.signal.aborted) setData(json.data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
       toast.error("GewSt-Report konnte nicht geladen werden");
     } finally {
-      setIsLoading(false);
+      if (!ac.signal.aborted) setIsLoading(false);
     }
-  };
+  }, [year]);
 
+  // Auto-Reload bei year-Wechsel.
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => abortRef.current?.abort();
+  }, [load]);
 
   const handlePrint = () => window.print();
 

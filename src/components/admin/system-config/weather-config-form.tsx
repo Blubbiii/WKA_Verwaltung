@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import {
@@ -93,6 +93,13 @@ export function WeatherConfigForm({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
+
+  // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
+  useEffect(() => {
+    setSyncInterval(getConfigValue("weather.sync.interval") || "60");
+    setCacheTtl(getConfigValue("weather.cache.ttl") || "15");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configs]);
 
   // Save configuration
   async function handleSave() {

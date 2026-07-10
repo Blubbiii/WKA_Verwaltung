@@ -308,27 +308,45 @@ export function UppyScadaUpload({
     if (!uppyRef.current) return;
     const arr = Array.from(fileList);
 
-    // Hard cap: refuse batches bigger than what the server can safely handle
-    if (arr.length > MAX_FILES_PER_BATCH) {
-      toast.error(
-        t("tooManyFiles", { count: arr.length, max: MAX_FILES_PER_BATCH })
-      );
-      return;
-    }
-    // Soft cap: warn but let it through
-    if (arr.length > SOFT_WARN_FILES) {
-      toast.warning(t("largeBatchWarning", { count: arr.length }));
-    }
-
+    // Prefilter by extension BEFORE Uppy sees anything. The folder input
+    // (webkitdirectory) has no accept-attribute — dropping an Enercon root
+    // folder can produce 4800+ files, so a per-file setRejected() call would
+    // trigger thousands of React re-renders and hang the UI for 5–10s.
+    // We batch all rejects in one state update at the end.
+    const accepted: File[] = [];
+    const rejectedInBatch: RejectedFile[] = [];
     for (const file of arr) {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
       if (!SCADA_EXTENSIONS_SET.has(ext)) {
-        setRejected((prev) => [
-          ...prev,
-          { name: file.name, reason: "invalid-extension" },
-        ]);
-        continue;
+        rejectedInBatch.push({ name: file.name, reason: "invalid-extension" });
+      } else {
+        accepted.push(file);
       }
+    }
+
+    // Hard cap applies to ACCEPTED files — a folder with 4800 files but only
+    // 200 SCADA-relevant ones should still work.
+    if (accepted.length > MAX_FILES_PER_BATCH) {
+      toast.error(
+        t("tooManyFiles", { count: accepted.length, max: MAX_FILES_PER_BATCH })
+      );
+      // Still surface the extension rejects so the user sees what was filtered.
+      if (rejectedInBatch.length > 0) {
+        setRejected((prev) => [...prev, ...rejectedInBatch]);
+      }
+      return;
+    }
+    // Soft cap: warn but let it through
+    if (accepted.length > SOFT_WARN_FILES) {
+      toast.warning(t("largeBatchWarning", { count: accepted.length }));
+    }
+
+    // Batch the reject-state update ONCE for the entire drop.
+    if (rejectedInBatch.length > 0) {
+      setRejected((prev) => [...prev, ...rejectedInBatch]);
+    }
+
+    for (const file of accepted) {
       try {
         uppyRef.current.addFile({
           name: file.name,

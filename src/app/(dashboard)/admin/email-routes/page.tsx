@@ -122,12 +122,14 @@ export default function EmailRoutesPage() {
     if (!confirm(t("deleteConfirm"))) return;
     try {
       const res = await fetch(`/api/admin/email-routes/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success(t("routeDeleted"));
-        load();
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || t("deleteError"));
       }
-    } catch {
-      toast.error(t("deleteError"));
+      toast.success(t("routeDeleted"));
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("deleteError"));
     }
   };
 

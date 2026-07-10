@@ -47,6 +47,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { formatCurrency, LOCALE_DE } from "@/lib/format";
@@ -363,6 +369,9 @@ export function SettlementWizard() {
   // Step 3: Create settlement and calculate
   // -------------------------------------------------------------------------
   async function handleCalculate() {
+    // Guard gegen Doppel-Click: 2. Klick vor Re-Render darf keine 2.
+    // Settlement erzeugen, sonst gibt es Duplicates.
+    if (calculating) return;
     setCalculating(true);
     try {
       let currentSettlementId = settlementId;
@@ -427,9 +436,14 @@ export function SettlementWizard() {
       setCalculationResult(calcData);
       toast.success(t("calculationSuccess"));
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t("calculationError")
-      );
+      // "Failed to fetch" ist Browser-Standardtext bei Netzwerk-Fehler — kryptisch.
+      const humanMessage =
+        err instanceof Error && err.message.includes("Failed to fetch")
+          ? "Netzwerkfehler — Server nicht erreichbar. Bitte Verbindung prüfen."
+          : err instanceof Error
+            ? err.message
+            : t("calculationError");
+      toast.error(humanMessage);
     } finally {
       setCalculating(false);
     }
@@ -523,6 +537,11 @@ export function SettlementWizard() {
         "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
       );
       if (!confirmed) return;
+      // Verwerfen bedeutet auch: settlementId + calculationResult zurücksetzen,
+      // damit ein erneutes "Weiter → Berechnen" eine frische Settlement erzeugt
+      // (statt die alte weiter zu verwenden und Duplicate-State zu produzieren).
+      setSettlementId(null);
+      setCalculationResult(null);
     }
     setStep((prev) => Math.max(0, prev - 1));
   }
@@ -1676,11 +1695,32 @@ export function SettlementWizard() {
             </Button>
           )}
 
-          {step === 2 && calculationResult && (
-            <Button onClick={handleNext}>
-              Weiter zu Gutschriften
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          {step === 2 && (
+            calculationResult ? (
+              <Button onClick={handleNext}>
+                Weiter zu Gutschriften
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              // Disabled statt versteckt — sonst wirkt der Wizard "kaputt",
+              // wenn der User nach dem Öffnen erst berechnen muss.
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {/* span wrapper: disabled Button feuert kein pointer event */}
+                    <span tabIndex={0}>
+                      <Button disabled>
+                        Weiter zu Gutschriften
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Erst berechnen um fortzufahren
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )
           )}
 
           {step === 3 && invoicesResult && (
