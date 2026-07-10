@@ -30,6 +30,7 @@ import {
 } from "@/components/energy/analytics/analytics-dynamic";
 import { useDrillDown } from "@/hooks/useDrillDown";
 import { Button } from "@/components/ui/button";
+import { useParks } from "@/hooks/useParks";
 
 // Lazy-load the large tab components (each > 500 LoC) — only the active tab
 // is hydrated. Cuts initial JS bundle significantly on first analytics load.
@@ -57,6 +58,10 @@ const ReportConfigsTab = dynamic(
 const ReportBuilderTab = dynamic(
   () => import("@/components/energy/analytics/report-builder-tab").then((m) => m.ReportBuilderTab),
   { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
+);
+const MarketComparison = dynamic(
+  () => import("@/components/energy/analytics/market-comparison").then((m) => m.MarketComparison),
+  { ssr: false, loading: () => <Skeleton className="w-full h-[300px]" /> },
 );
 import type {
   PerformanceOverviewResponse,
@@ -118,6 +123,9 @@ export default function AnalyticsPage() {
 
   // Drill-down state for performance section
   const drillDown = useDrillDown(currentYear);
+
+  // Park list for the market-comparison widget (finance tab)
+  const { parks: parksList } = useParks();
 
   const handleYearChange = useCallback((year: number) => {
     setSelectedYear(year);
@@ -482,6 +490,13 @@ export default function AnalyticsPage() {
                 isLoading={finLoading}
               />
             )}
+          </CollapsibleSection>
+
+          {/* Marktwert-Vergleich (SMARD-Spot vs. Park-Erlöse) — für EEG-Direktvermarktung */}
+          <CollapsibleSection title={t("marketComparison")} icon={GitCompare} defaultOpen={false}>
+            <MarketComparison
+              parks={(parksList ?? []).map((p) => ({ id: p.id, name: p.name, shortName: null }))}
+            />
           </CollapsibleSection>
 
           <CollapsibleSection title={t("phaseAnalysis")} icon={Zap} defaultOpen>

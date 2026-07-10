@@ -129,6 +129,14 @@ import {
 } from "./tus-gc.worker";
 import type { TusGcJobData, TusGcJobResult } from "../queues/tus-gc.queue";
 
+import {
+  startWebhookWorker,
+  stopWebhookWorker,
+  isWebhookWorkerRunning,
+  getWebhookWorker,
+} from "./webhook.worker";
+import type { WebhookJobData, WebhookJobResult } from "../queues/webhook.queue";
+
 // Daily-Digest-Worker wird direkt in src/workers/index.ts gestartet
 // (eigener Pattern statt Registry-basiertem Wrapper hier).
 
@@ -153,6 +161,7 @@ export const WORKER_NAMES = {
   APPROVALS_RECONCILE: "approvals-reconcile",
   RETENTION_CRON: "retention-cron",
   TUS_GC: "tus-gc",
+  WEBHOOK: "webhook",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -298,6 +307,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopTusGcWorker,
     isRunning: isTusGcWorkerRunning,
     getWorker: getTusGcWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.WEBHOOK,
+    displayName: "Webhook Delivery Worker",
+    start: startWebhookWorker as () => Worker<unknown, unknown>,
+    stop: stopWebhookWorker,
+    isRunning: isWebhookWorkerRunning,
+    getWorker: getWebhookWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -634,3 +651,12 @@ export {
   getTusGcWorker,
 };
 export type { TusGcJobData, TusGcJobResult };
+
+// Webhook Delivery Worker
+export {
+  startWebhookWorker,
+  stopWebhookWorker,
+  isWebhookWorkerRunning,
+  getWebhookWorker,
+};
+export type { WebhookJobData, WebhookJobResult };

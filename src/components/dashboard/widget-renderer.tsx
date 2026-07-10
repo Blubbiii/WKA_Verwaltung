@@ -74,6 +74,7 @@ import {
   TodayFocusWidget,
 } from "./widgets";
 import { RecentlyVisitedWidget } from "./widgets/recently-visited-widget";
+import { SinceLastVisitWidget } from "./widgets/since-last-visit-widget";
 import { CpiReminderWidget } from "@/components/leases/CpiReminderWidget";
 import { useAnalytics, useFormatCurrencyCompact } from "@/hooks/useAnalytics";
 import type { AvailableWidget } from "@/hooks/useDashboardConfig";
@@ -124,6 +125,7 @@ const WIDGET_TITLE_KEYS: Record<string, string> = {
   "chart-revenue-by-park": "revenueByPark",
   "list-lease-overview": "leaseOverview",
   "list-recently-visited": "recentlyVisited",
+  "since-last-visit": "sinceLastVisit",
   "kpi-budget-variance": "budgetVariance",
   "chart-wirtschaftsplan-pl": "wirtschaftsplanPL",
   "cpi-reminders": "cpiReminders",
@@ -432,6 +434,19 @@ export function WidgetRenderer({
           onRemove={onRemove}
         >
           <RecentlyVisitedWidget />
+        </WidgetWrapper>
+      );
+    }
+
+    // Since Last Visit Widget (opt-in, nicht im Default-Layout)
+    if (widgetId === "since-last-visit") {
+      return (
+        <WidgetWrapper
+          title={widgetTitle}
+          isEditing={isEditing}
+          onRemove={onRemove}
+        >
+          <SinceLastVisitWidget />
         </WidgetWrapper>
       );
     }
