@@ -241,8 +241,43 @@ export async function DELETE(_request: NextRequest) {
       return apiError("BAD_REQUEST", undefined, { message: "Keine aktive Impersonation" });
     }
 
+    // FIX 9 (Compliance): Cookie-Payload für Audit-Log lesen BEVOR er
+    // gelöscht wird. Keine Fehler-Weiterreichung — bei ungültigem Cookie
+    // wird trotzdem gelöscht, aber ohne Audit-Detail.
+    const cookiePayload = verifyCookieValue(impersonationCookie.value);
+    const originalUserId =
+      (cookiePayload?.originalUserId as string | undefined) ?? null;
+    const targetUserId =
+      (cookiePayload?.targetUserId as string | undefined) ?? null;
+    const targetTenantId =
+      (cookiePayload?.targetTenantId as string | undefined) ?? null;
+
     // Remove the impersonation cookie
     cookieStore.delete("impersonation");
+
+    // FIX 9: Impersonation-Stop-Ereignis in AuditLog schreiben.
+    // Es gibt keinen dedizierten "IMPERSONATION_STOP" Action-Type — daher
+    // "IMPERSONATE" mit description-Diskriminator + strukturierten newValues.
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "IMPERSONATE",
+          entityType: "User",
+          entityId: targetUserId ?? check.userId!,
+          userId: check.userId,
+          tenantId: check.tenantId,
+          newValues: {
+            event: "STOP",
+            originalUserId,
+            targetUserId,
+            targetTenantId,
+          },
+        },
+      });
+    } catch (auditErr) {
+      // Audit-Fehler dürfen die Stop-Aktion nicht scheitern lassen
+      logger.warn({ err: auditErr }, "Failed to write impersonation-stop audit log");
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

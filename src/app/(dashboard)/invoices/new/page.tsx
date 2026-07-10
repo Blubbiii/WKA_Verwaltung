@@ -64,15 +64,20 @@ interface InvoiceItem {
   taxType: "STANDARD" | "REDUCED" | "EXEMPT";
 }
 
-const TAX_RATES = {
+// Fallback wenn TenantSettings noch nicht geladen sind. Der Client rechnet
+// nur die Vorschau — Ground Truth kommt vom Server, der die DB-Sätze nutzt.
+const FALLBACK_TAX_RATES: Record<"STANDARD" | "REDUCED" | "EXEMPT", number> = {
   STANDARD: 19,
   REDUCED: 7,
   EXEMPT: 0,
 };
 
-function calculateItemAmounts(item: InvoiceItem) {
+function calculateItemAmounts(
+  item: InvoiceItem,
+  rates: Record<"STANDARD" | "REDUCED" | "EXEMPT", number> = FALLBACK_TAX_RATES,
+) {
   const netAmount = item.quantity * item.unitPrice;
-  const taxRate = TAX_RATES[item.taxType];
+  const taxRate = rates[item.taxType] ?? FALLBACK_TAX_RATES[item.taxType];
   const taxAmount = netAmount * (taxRate / 100);
   const grossAmount = netAmount + taxAmount;
   return { netAmount, taxAmount, grossAmount, taxRate };
@@ -120,6 +125,11 @@ function NewInvoiceContent() {
   const [skontoPercent, setSkontoPercent] = useState(2);
   const [skontoDays, setSkontoDays] = useState(7);
 
+  // Steuersätze aus TenantSettings — fallback auf Legacy-Konstanten.
+  const [taxRates, setTaxRates] = useState<
+    Record<"STANDARD" | "REDUCED" | "EXEMPT", number>
+  >(FALLBACK_TAX_RATES);
+
   const [parks, setParks] = useState<Array<{ id: string; name: string }>>([]);
   const [funds, setFunds] = useState<Array<{ id: string; name: string }>>([]);
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
@@ -138,7 +148,7 @@ function NewInvoiceContent() {
       .then((data) => setFunds(data.data || []))
       .catch(() => { /* silently ignore */ });
 
-    // Load skonto defaults from tenant settings
+    // Load skonto + tax defaults from tenant settings
     fetch("/api/admin/tenant-settings")
       .then((res) => res.ok ? res.json() : Promise.reject())
       .then((settings) => {
@@ -147,6 +157,13 @@ function NewInvoiceContent() {
         }
         if (typeof settings?.defaultSkontoDays === "number") {
           setSkontoDays(settings.defaultSkontoDays);
+        }
+        // TenantSettings.taxRates ist optional — bei Fehlen bleiben die
+        // Fallback-Sätze aktiv; Server rechnet ohnehin final nach.
+        if (settings?.taxRates && typeof settings.taxRates === "object") {
+          setTaxRates((prev) => ({ ...prev, ...settings.taxRates }));
+        } else if (typeof settings?.defaultTaxRate === "number") {
+          setTaxRates((prev) => ({ ...prev, STANDARD: settings.defaultTaxRate }));
         }
       })
       .catch(() => { /* fall back to hardcoded defaults */ });
@@ -226,7 +243,7 @@ function NewInvoiceContent() {
   // Berechne Summen
   const totals = items.reduce(
     (acc, item) => {
-      const { netAmount, taxAmount, grossAmount } = calculateItemAmounts(item);
+      const { netAmount, taxAmount, grossAmount } = calculateItemAmounts(item, taxRates);
       return {
         netAmount: acc.netAmount + netAmount,
         taxAmount: acc.taxAmount + taxAmount,
@@ -260,7 +277,7 @@ function NewInvoiceContent() {
 
       // Bereite Items vor
       const preparedItems = items.map((item, index) => {
-        const { netAmount, taxAmount, grossAmount, taxRate } = calculateItemAmounts(item);
+        const { netAmount, taxAmount, grossAmount, taxRate } = calculateItemAmounts(item, taxRates);
         return {
           position: index + 1,
           description: item.description,
@@ -497,7 +514,7 @@ function NewInvoiceContent() {
                 </TableHeader>
                 <TableBody>
                   {items.map((item) => {
-                    const { netAmount } = calculateItemAmounts(item);
+                    const { netAmount } = calculateItemAmounts(item, taxRates);
                     return (
                       <TableRow key={item.id}>
                         <TableCell>

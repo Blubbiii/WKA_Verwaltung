@@ -57,6 +57,40 @@ export async function POST(request: NextRequest) {
       return apiError("ALREADY_EXISTS", undefined, { message: "Für diesen Park und dieses Jahr existiert bereits eine Abrechnung" });
     }
 
+    // Cross-tenant FK protection: verify every referenced lease + lessorPerson
+    // belongs to this tenant. Prevents importing rows that reference other
+    // tenants' Leases/Persons via crafted payloads.
+    const leaseIds = [...new Set(items.map((it) => it.leaseId))];
+    const lessorIds = [...new Set(items.map((it) => it.lessorPersonId))];
+
+    const [validLeases, validLessors] = await Promise.all([
+      prisma.lease.findMany({
+        where: { id: { in: leaseIds }, tenantId: check.tenantId! },
+        select: { id: true },
+      }),
+      prisma.person.findMany({
+        where: { id: { in: lessorIds }, tenantId: check.tenantId! },
+        select: { id: true },
+      }),
+    ]);
+
+    if (validLeases.length !== leaseIds.length) {
+      const foundIds = new Set(validLeases.map((l) => l.id));
+      const invalid = leaseIds.filter((id) => !foundIds.has(id));
+      return apiError("BAD_REQUEST", undefined, {
+        message: "Ein oder mehrere Pachtverträge nicht gefunden oder keine Berechtigung",
+        details: { invalidLeaseIds: invalid },
+      });
+    }
+    if (validLessors.length !== lessorIds.length) {
+      const foundIds = new Set(validLessors.map((p) => p.id));
+      const invalid = lessorIds.filter((id) => !foundIds.has(id));
+      return apiError("BAD_REQUEST", undefined, {
+        message: "Ein oder mehrere Verpächter (Personen) nicht gefunden oder keine Berechtigung",
+        details: { invalidPersonIds: invalid },
+      });
+    }
+
     // Create settlement + items in a transaction
     const settlement = await prisma.$transaction(async (tx) => {
       // Create the settlement with status CLOSED (historical import)

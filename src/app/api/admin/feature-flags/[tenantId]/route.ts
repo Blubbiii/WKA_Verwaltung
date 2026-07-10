@@ -57,6 +57,11 @@ export async function PUT(
       data: { settings: updatedSettings },
     });
 
+    // FIX 6: Tenant-Settings-Cache invalidieren, sonst bleiben die alten
+    // Feature-Flag-Werte bis zu TENANT_SETTINGS TTL (~10min) im Redis-Cache.
+    const { invalidateTenantSettings } = await import("@/lib/tenant-settings");
+    await invalidateTenantSettings(tenantId);
+
     return NextResponse.json({
       message: "Feature-Flags aktualisiert",
       features: parsed.data,

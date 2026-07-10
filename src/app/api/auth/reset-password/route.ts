@@ -47,26 +47,14 @@ export async function POST(request: Request) {
 
     const { token, password } = parsed.data;
 
-    // Atomic token claim: mark as used ONLY if not yet used and not expired.
-    // This prevents race conditions where two concurrent requests both pass the check.
-    const claimed = await prisma.passwordResetToken.updateMany({
-      where: {
-        token,
-        usedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-      data: { usedAt: new Date() },
-    });
+    // FIX 18: Token-Prüfung + user.update + usedAt-Set in einer TX.
+    // Vorher: updateMany claimed den Token BEVOR das Passwort gesetzt wurde —
+    // fällt user.update aus (DB-Timeout, Constraint), ist der User locked out.
+    // Jetzt: In interactiver TX prüfen, danach hashen, User updaten, ERST DANN
+    // usedAt setzen. Bei Fehler rollt Prisma alles zurück.
 
-    if (claimed.count === 0) {
-      // Frontend reset-password/page.tsx checkt explizit auf code === "INVALID_TOKEN"
-      // um eine spezielle Fehlermeldung anzuzeigen.
-      return apiError("INVALID_TOKEN", 400, {
-        message: "Ungültiger, bereits verwendeter oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
-      });
-    }
-
-    // Fetch token data for user reference (already claimed, safe to read)
+    // Pre-fetch Token-Daten (User-Status prüfen) außerhalb TX — hier passiert
+    // noch kein Mutations-Kommit, daher unkritisch.
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
       include: {
@@ -76,31 +64,63 @@ export async function POST(request: Request) {
       },
     });
 
-    if (!resetToken || resetToken.user.status !== "ACTIVE") {
+    if (!resetToken || resetToken.usedAt !== null || resetToken.expiresAt <= new Date()) {
+      // Frontend reset-password/page.tsx checkt explizit auf code === "INVALID_TOKEN"
+      // um eine spezielle Fehlermeldung anzuzeigen.
+      return apiError("INVALID_TOKEN", 400, {
+        message: "Ungültiger, bereits verwendeter oder abgelaufener Token. Bitte fordern Sie einen neuen Reset-Link an.",
+      });
+    }
+
+    if (resetToken.user.status !== "ACTIVE") {
       return apiError("USER_INACTIVE", 400, {
         message: "Dieses Benutzerkonto ist nicht aktiv. Bitte kontaktieren Sie den Administrator.",
       });
     }
 
-    // Hash new password
+    // Hash new password (außerhalb TX — CPU-intensiv, blockt sonst DB-Slot).
     const passwordHash = await bcrypt.hash(password, AUTH_CONFIG.bcryptSaltRounds);
 
-    // Update user password and invalidate all other tokens
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: resetToken.userId },
-        data: { passwordHash },
-      }),
-      // Invalidate all other tokens for this user
-      prisma.passwordResetToken.updateMany({
-        where: {
-          userId: resetToken.userId,
-          usedAt: null,
-          id: { not: resetToken.id },
-        },
-        data: { usedAt: new Date() },
-      }),
-    ]);
+    // TX: Race-safe atomischer Claim + user.update + Peer-Token-Invalidate.
+    // Atomic claim via `usedAt: null` in WHERE — schlägt parallele Requests fehl.
+    try {
+      await prisma.$transaction(async (tx) => {
+        // 1. User-Passwort setzen (idempotent; sicher vor Token-Claim).
+        await tx.user.update({
+          where: { id: resetToken.userId },
+          data: { passwordHash },
+        });
+        // 2. Atomarer Token-Claim (verhindert Doppelnutzung des Tokens).
+        const claimed = await tx.passwordResetToken.updateMany({
+          where: {
+            id: resetToken.id,
+            usedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+          data: { usedAt: new Date() },
+        });
+        if (claimed.count === 0) {
+          // Wettlauf verloren — TX rollen (auch das user.update).
+          throw new Error("TOKEN_ALREADY_CLAIMED");
+        }
+        // 3. Alle anderen offenen Tokens dieses Users invalidieren.
+        await tx.passwordResetToken.updateMany({
+          where: {
+            userId: resetToken.userId,
+            usedAt: null,
+            id: { not: resetToken.id },
+          },
+          data: { usedAt: new Date() },
+        });
+      });
+    } catch (txErr) {
+      if (txErr instanceof Error && txErr.message === "TOKEN_ALREADY_CLAIMED") {
+        return apiError("INVALID_TOKEN", 400, {
+          message: "Token wurde bereits verwendet. Bitte fordern Sie einen neuen Reset-Link an.",
+        });
+      }
+      throw txErr;
+    }
 
     // Audit log: password reset completed (no sensitive data)
     logger.info(`Password reset completed for userId=${resetToken.userId} at ${new Date().toISOString()}`);

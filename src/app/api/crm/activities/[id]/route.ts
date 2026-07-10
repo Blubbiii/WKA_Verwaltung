@@ -79,7 +79,7 @@ export async function PUT(
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const d = parsed.data;
@@ -131,6 +131,41 @@ export async function DELETE(
       where: { id },
       data: { deletedAt: new Date() },
     });
+
+    // lastActivityAt auf verknüpfter Entität neu berechnen — sonst zeigt
+    // der Kontakt-Header nach dem Löschen der jüngsten Aktivität weiter das
+    // alte Datum bis zum nächsten harten Reload.
+    const recomputeLastActivity = async (
+      field: "personId" | "fundId" | "leaseId",
+      value: string,
+    ) => {
+      const latest = await prisma.crmActivity.findFirst({
+        where: { [field]: value, tenantId: check.tenantId!, deletedAt: null },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      });
+      const lastActivityAt = latest?.createdAt ?? null;
+      if (field === "personId") {
+        await prisma.person.update({
+          where: { id: value },
+          data: { lastActivityAt },
+        });
+      } else if (field === "fundId") {
+        await prisma.fund.update({
+          where: { id: value },
+          data: { lastActivityAt },
+        });
+      } else if (field === "leaseId") {
+        await prisma.lease.update({
+          where: { id: value },
+          data: { lastActivityAt },
+        });
+      }
+    };
+
+    if (existing.personId) await recomputeLastActivity("personId", existing.personId);
+    if (existing.fundId) await recomputeLastActivity("fundId", existing.fundId);
+    if (existing.leaseId) await recomputeLastActivity("leaseId", existing.leaseId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

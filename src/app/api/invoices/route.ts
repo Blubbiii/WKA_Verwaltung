@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getAllTaxRates } from "@/lib/tax/tax-rates";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -141,21 +143,29 @@ async function postHandler(request: NextRequest) {
     const body = await request.json();
     const validatedData = invoiceCreateSchema.parse(body);
 
-    // Berechne Summen aus Items
-    let totalNet = 0;
-    let totalTax = 0;
-    let totalGross = 0;
+    // Steuersätze aus DB laden (TaxRateConfig), fallback auf hardcoded Defaults.
+    // Wichtig für §-Wechsel wie Corona-USt-Senkung — hardcoded 19% wäre falsch.
+    const invoiceDate = new Date(validatedData.invoiceDate);
+    const taxRatesForDate = await getAllTaxRates(check.tenantId!, invoiceDate);
+
+    // Berechne Summen aus Items (Decimal-Arithmetik, kein Float-Drift).
+    let totalNetDec = new Decimal(0);
+    let totalTaxDec = new Decimal(0);
+    let totalGrossDec = new Decimal(0);
 
     const itemsData = validatedData.items.map((item, index) => {
-      const netAmount = item.quantity * item.unitPrice;
+      const taxType = item.taxType as "STANDARD" | "REDUCED" | "EXEMPT";
+      const rateForType = taxRatesForDate[taxType as TaxType];
+      const netDec = new Decimal(item.quantity).mul(item.unitPrice);
       const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(
-        netAmount,
-        item.taxType as "STANDARD" | "REDUCED" | "EXEMPT"
+        netDec.toNumber(),
+        taxType,
+        rateForType,
       );
 
-      totalNet += netAmount;
-      totalTax += taxAmount;
-      totalGross += grossAmount;
+      totalNetDec = totalNetDec.plus(netDec);
+      totalTaxDec = totalTaxDec.plus(taxAmount);
+      totalGrossDec = totalGrossDec.plus(grossAmount);
 
       return {
         position: index + 1,
@@ -163,7 +173,7 @@ async function postHandler(request: NextRequest) {
         quantity: item.quantity,
         unit: item.unit,
         unitPrice: item.unitPrice,
-        netAmount,
+        netAmount: netDec.toDecimalPlaces(2).toNumber(),
         taxType: item.taxType as TaxType,
         taxRate,
         taxAmount,
@@ -175,8 +185,11 @@ async function postHandler(request: NextRequest) {
       };
     });
 
+    const totalNet = totalNetDec.toDecimalPlaces(2).toNumber();
+    const totalTax = totalTaxDec.toDecimalPlaces(2).toNumber();
+    const totalGross = totalGrossDec.toDecimalPlaces(2).toNumber();
+
     // Calculate Skonto fields if both percent and days are provided
-    const invoiceDate = new Date(validatedData.invoiceDate);
     let skontoData: {
       skontoPercent?: number;
       skontoDays?: number;

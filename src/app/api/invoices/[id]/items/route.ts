@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getTaxRate } from "@/lib/tax/tax-rates";
 import { z } from "zod";
 import { TaxType, PlotAreaType } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
@@ -97,10 +98,12 @@ export async function POST(
     const body = await request.json();
     const validatedData = itemCreateSchema.parse(body);
 
-    // Prüfe ob Rechnung existiert und DRAFT ist
+    // Prüfe ob Rechnung existiert und DRAFT ist. `invoiceDate` wird
+    // gebraucht, um den korrekten (datums-abhängigen) Steuersatz aus
+    // TaxRateConfig zu ermitteln.
     const invoice = await prisma.invoice.findUnique({
       where: { id },
-      select: { id: true, tenantId: true, status: true },
+      select: { id: true, tenantId: true, status: true, invoiceDate: true },
     });
 
     if (!invoice) {
@@ -123,11 +126,17 @@ export async function POST(
     });
     const nextPosition = (lastItem?.position ?? 0) + 1;
 
-    // Berechne Beträge
+    // Berechne Beträge — Steuersatz aus DB (fallback default) statt hardcoded.
+    const rateForType = await getTaxRate(
+      invoice.tenantId,
+      validatedData.taxType as TaxType,
+      invoice.invoiceDate,
+    );
     const netAmount = validatedData.quantity * validatedData.unitPrice;
     const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(
       netAmount,
-      validatedData.taxType as "STANDARD" | "REDUCED" | "EXEMPT"
+      validatedData.taxType as "STANDARD" | "REDUCED" | "EXEMPT",
+      rateForType,
     );
 
     // Item erstellen + Rechnung-Summen aktualisieren atomar in einer Transaktion

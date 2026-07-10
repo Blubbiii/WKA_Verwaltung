@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperadmin, requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
+import { createAuditLog } from "@/lib/audit";
 import { apiError } from "@/lib/api-errors";
 
 const tenantUpdateSchema = z.object({
@@ -17,8 +19,15 @@ const tenantUpdateSchema = z.object({
   city: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   logoUrl: z.string().optional().or(z.literal("")),
-  primaryColor: z.string().optional(),
-  secondaryColor: z.string().optional(),
+  // FIX 8: HEX-Farb-Validierung analog POST-Schema (Format #RRGGBB).
+  primaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Ungültige HEX-Farbe (Format: #RRGGBB)")
+    .optional(),
+  secondaryColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Ungültige HEX-Farbe (Format: #RRGGBB)")
+    .optional(),
 });
 
 // GET /api/admin/tenants/[id]
@@ -139,6 +148,19 @@ export async function PATCH(
       },
     });
 
+    // FIX 17: Audit-Log für Tenant-Änderung (Compliance).
+    await createAuditLog({
+      action: "UPDATE",
+      entityType: "Tenant",
+      entityId: id,
+      oldValues: {
+        name: existingTenant.name,
+        slug: existingTenant.slug,
+        status: existingTenant.status,
+      },
+      newValues: validatedData,
+    });
+
     return NextResponse.json(tenant);
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren des Mandanten");
@@ -176,12 +198,31 @@ export async function DELETE(
       try {
         await prisma.tenant.delete({ where: { id } });
       } catch (deleteError: unknown) {
-        const msg = deleteError instanceof Error ? deleteError.message : "";
-        if (msg.includes("Foreign key constraint")) {
-          return apiError("OPERATION_NOT_ALLOWED", undefined, { message: "Mandant kann nicht gelöscht werden, da noch zugehoerige Daten existieren" });
+        // FIX 15: Strukturierter Prisma-Error-Code P2003 statt fragile
+        // String-Match auf "Foreign key constraint" (locale-abhängig).
+        if (
+          deleteError instanceof Prisma.PrismaClientKnownRequestError &&
+          deleteError.code === "P2003"
+        ) {
+          return apiError("DEPENDENCY_EXISTS", 409, {
+            message:
+              "Mandant kann nicht gelöscht werden, da noch zugehörige Daten existieren",
+          });
         }
         throw deleteError;
       }
+
+      // FIX 17: Audit-Log für Tenant Hard-Delete (Compliance).
+      await createAuditLog({
+        action: "DELETE",
+        entityType: "Tenant",
+        entityId: id,
+        oldValues: {
+          name: existingTenant.name,
+          slug: existingTenant.slug,
+          hardDeleted: true,
+        },
+      });
 
       return NextResponse.json({ success: true, hardDeleted: true });
     }
@@ -196,6 +237,16 @@ export async function DELETE(
     await prisma.user.updateMany({
       where: { tenantId: id },
       data: { status: "INACTIVE" },
+    });
+
+    // FIX 17: Audit-Log für Tenant-Deaktivierung (Compliance).
+    await createAuditLog({
+      action: "UPDATE",
+      entityType: "Tenant",
+      entityId: id,
+      oldValues: { status: existingTenant.status },
+      newValues: { status: "INACTIVE", cascadedUsers: true },
+      description: "Mandant deaktiviert (Soft-Delete), alle Nutzer inaktiv gesetzt",
     });
 
     return NextResponse.json({ success: true });

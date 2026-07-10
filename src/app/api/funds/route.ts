@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
+import { createAuditLog } from "@/lib/audit";
 import { apiError } from "@/lib/api-errors";
 import { getAllowedFundIds } from "@/lib/auth/fund-access";
 
@@ -17,7 +19,12 @@ const fundCreateSchema = z.object({
   registrationCourt: z.string().optional().nullable(),
   foundingDate: z.string().optional().nullable(),
   fiscalYearEnd: z.string().default("12-31"),
-  totalCapital: z.number().optional().nullable(),
+  // FIX 13: Union{number,string} → Prisma.Decimal an der Prisma-Grenze.
+  totalCapital: z
+    .union([z.number(), z.string()])
+    .transform((v) => new Prisma.Decimal(typeof v === "number" ? v : v))
+    .optional()
+    .nullable(),
   managingDirector: z.string().optional().nullable(),
   street: z.string().optional().nullable(),
   houseNumber: z.string().optional().nullable(),
@@ -157,6 +164,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = fundCreateSchema.parse(body);
 
+    // FIX 12 (SECURITY): fundCategoryId muss zum eigenen Tenant gehören —
+    // sonst kann ein Nutzer einen Fund unter fremder Kategorie einreihen.
+    if (validatedData.fundCategoryId) {
+      const cat = await prisma.fundCategory.findFirst({
+        where: {
+          id: validatedData.fundCategoryId,
+          tenantId: check.tenantId!,
+        },
+        select: { id: true },
+      });
+      if (!cat) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: "Fund-Category gehört nicht zu diesem Mandanten",
+        });
+      }
+    }
+
     const fund = await prisma.fund.create({
       data: {
         ...validatedData,
@@ -171,6 +195,21 @@ export async function POST(request: NextRequest) {
     // Invalidate dashboard caches after fund creation
     invalidate.onFundChange(check.tenantId!, fund.id, 'create').catch((err) => {
       logger.warn({ err }, '[Funds] Cache invalidation error after create');
+    });
+
+    // FIX 11: Audit-Log für Fund-Create (Compliance).
+    after(async () => {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "Fund",
+        entityId: fund.id,
+        newValues: {
+          name: fund.name,
+          legalForm: fund.legalForm,
+          fundCategoryId: fund.fundCategoryId,
+          totalCapital: fund.totalCapital ? Number(fund.totalCapital) : null,
+        },
+      });
     });
 
     return NextResponse.json(fund, { status: 201 });

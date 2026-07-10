@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 const putAssetSchema = z.object({
   name: z.string().min(1).optional(),
@@ -13,7 +14,8 @@ const putAssetSchema = z.object({
   accountNumber: z.string().optional(),
   depAccountNumber: z.string().optional(),
   disposalDate: z.string().optional(),
-  disposalProceeds: z.number().optional(),
+  // F15: Verkaufserlös nie negativ (Verlust → 0 + separate Wertberichtigung).
+  disposalProceeds: z.number().min(0, "Verkaufserlös darf nicht negativ sein").optional(),
 });
 
 // GET /api/buchhaltung/assets/[id] — Asset details with depreciation history
@@ -68,6 +70,22 @@ export async function PUT(
 
     if (!asset) {
       return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
+    }
+
+    // F15: Anlagenabgang (Disposal) = Buchung im Disposal-Monat. Periode
+    // muss offen sein — sonst kein POSTED-Update ohne Unlock.
+    if (data.disposalDate) {
+      try {
+        await assertPeriodOpen(check.tenantId!, new Date(data.disposalDate));
+      } catch (err) {
+        if (err instanceof PeriodLockedError) {
+          return apiError("PERIOD_LOCKED", 409, {
+            message: err.message,
+            details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+          });
+        }
+        throw err;
+      }
     }
 
     const updated = await prisma.fixedAsset.update({

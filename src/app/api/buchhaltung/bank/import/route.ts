@@ -51,11 +51,81 @@ export async function POST(request: NextRequest) {
     // Match against open invoices
     const matches = await matchTransactions(transactions, check.tenantId!);
 
+    // Idempotenz: gleiche CAMT/MT940-Datei zweimal importieren darf keine
+    // Duplikate erzeugen. Natural-Key = (bankReference, amount, bookingDate,
+    // counterpartIban). Wir laden alle bestehenden Rows im bookingDate-Fenster
+    // der Kandidaten und filtern raus.
+    const buildKey = (t: {
+      bankReference?: string | null;
+      amount: number | string;
+      date: Date;
+      counterpartIban?: string | null;
+    }) =>
+      [
+        (t.bankReference ?? "").trim(),
+        String(t.amount),
+        t.date.toISOString(),
+        (t.counterpartIban ?? "").trim(),
+      ].join("|");
+
+    const candidateDates = matches
+      .map((m) => m.transaction.date)
+      .filter((d): d is Date => d instanceof Date);
+    const minDate =
+      candidateDates.length > 0
+        ? new Date(Math.min(...candidateDates.map((d) => d.getTime())))
+        : null;
+    const maxDate =
+      candidateDates.length > 0
+        ? new Date(Math.max(...candidateDates.map((d) => d.getTime())))
+        : null;
+
+    const existingRows =
+      minDate && maxDate
+        ? await prisma.bankTransaction.findMany({
+            where: {
+              tenantId: check.tenantId!,
+              bookingDate: { gte: minDate, lte: maxDate },
+            },
+            select: {
+              bankReference: true,
+              amount: true,
+              bookingDate: true,
+              counterpartIban: true,
+            },
+          })
+        : [];
+
+    const existingKeys = new Set(
+      existingRows.map((r) =>
+        buildKey({
+          bankReference: r.bankReference,
+          amount: r.amount.toString(),
+          date: r.bookingDate,
+          counterpartIban: r.counterpartIban,
+        }),
+      ),
+    );
+
+    const filteredMatches = matches.filter((m) => {
+      const key = buildKey({
+        bankReference: m.transaction.bankReference,
+        amount: m.transaction.amount,
+        date: m.transaction.date,
+        counterpartIban: m.transaction.counterpartIban,
+      });
+      if (existingKeys.has(key)) return false;
+      existingKeys.add(key); // Duplikate innerhalb desselben Files
+      return true;
+    });
+
+    const skipped = matches.length - filteredMatches.length;
+
     // Persist to DB
     const batchId = randomUUID().slice(0, 8);
     const now = new Date();
     const created = await prisma.bankTransaction.createMany({
-      data: matches.map((m) => {
+      data: filteredMatches.map((m) => {
         const wasMatched = m.confidence !== "none" && !!m.matchedInvoiceId;
         return {
           tenantId: check.tenantId!,
@@ -82,12 +152,20 @@ export async function POST(request: NextRequest) {
       }),
     });
 
+    if (skipped > 0) {
+      logger.info(
+        { tenantId: check.tenantId, batchId, skipped, imported: created.count },
+        "Bank-Import: Duplikate erkannt und übersprungen",
+      );
+    }
+
     return NextResponse.json({
       imported: created.count,
       batchId,
-      matched: matches.filter((m) => m.confidence === "high").length,
-      suggested: matches.filter((m) => m.confidence === "medium").length,
-      unmatched: matches.filter((m) => m.confidence === "none").length,
+      matched: filteredMatches.filter((m) => m.confidence === "high").length,
+      suggested: filteredMatches.filter((m) => m.confidence === "medium").length,
+      unmatched: filteredMatches.filter((m) => m.confidence === "none").length,
+      skipped,
     });
   } catch (error) {
     logger.error({ err: error }, "Error importing bank transactions");

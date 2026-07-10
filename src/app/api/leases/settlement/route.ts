@@ -199,8 +199,56 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Cancelled or settled settlements can be reactivated — reset to OPEN
+      // Cancelled or settled settlements can be reactivated — reset to OPEN.
+      // ABER: Wenn noch Invoices verknüpft sind, die NICHT storniert oder
+      // gelöscht sind, würde das Zurücksetzen der Links echte Buchhaltungs-
+      // belege verwaisen. Erst die Rechnungen stornieren, dann reaktivieren.
       if (existing.status === "CANCELLED" || existing.status === "SETTLED") {
+        const activeInvoices = await prisma.leaseRevenueSettlementItem.findMany({
+          where: {
+            settlementId: existing.id,
+            OR: [
+              { settlementInvoiceId: { not: null } },
+              { advanceInvoiceId: { not: null } },
+            ],
+          },
+          select: {
+            id: true,
+            settlementInvoiceId: true,
+            advanceInvoiceId: true,
+          },
+        });
+
+        const linkedInvoiceIds = activeInvoices
+          .flatMap((item) => [item.settlementInvoiceId, item.advanceInvoiceId])
+          .filter((id): id is string => id !== null);
+
+        if (linkedInvoiceIds.length > 0) {
+          const activeInvoiceRecords = await prisma.invoice.findMany({
+            where: {
+              id: { in: linkedInvoiceIds },
+              tenantId: check.tenantId!,
+              cancelledAt: null,
+              deletedAt: null,
+            },
+            select: { id: true, invoiceNumber: true, status: true },
+          });
+
+          if (activeInvoiceRecords.length > 0) {
+            return apiError("BAD_REQUEST", 409, {
+              message:
+                "Reaktivierung nicht möglich: Es existieren noch aktive Rechnungen. Bitte zuerst stornieren.",
+              details: {
+                activeInvoices: activeInvoiceRecords.map((inv) => ({
+                  id: inv.id,
+                  invoiceNumber: inv.invoiceNumber,
+                  status: inv.status,
+                })),
+              },
+            });
+          }
+        }
+
         // Reset settlement items: clear invoice links and advance data
         await prisma.leaseRevenueSettlementItem.updateMany({
           where: { settlementId: existing.id },

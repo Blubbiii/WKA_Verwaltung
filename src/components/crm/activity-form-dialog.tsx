@@ -105,17 +105,32 @@ export function ActivityFormDialog({
 
     setLoading(true);
     try {
+      // Bei Edit: alle nullable Felder EXPLIZIT senden (auch null), damit ein
+      // vom Nutzer geleertes Feld auch in der DB geleert wird. Bei Create:
+      // nur setzen, wenn ein Wert vorhanden ist.
       const body: Record<string, unknown> = {
-        type,
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || null,
         status,
       };
 
-      if (direction) body.direction = direction;
-      if (duration) body.duration = parseInt(duration);
-      if (startTime) body.startTime = new Date(startTime).toISOString();
-      if (dueDate) body.dueDate = new Date(dueDate).toISOString();
+      // Bei Create wird der Type gebraucht; bei Edit stripped das UpdateSchema
+      // ihn ohnehin — wir lassen ihn weg, damit die Route-Semantik klar ist.
+      if (!isEdit) {
+        body.type = type;
+      }
+
+      if (isEdit) {
+        body.direction = direction || null;
+        body.duration = duration ? parseInt(duration) : null;
+        body.startTime = startTime ? new Date(startTime).toISOString() : null;
+        body.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
+      } else {
+        if (direction) body.direction = direction;
+        if (duration) body.duration = parseInt(duration);
+        if (startTime) body.startTime = new Date(startTime).toISOString();
+        if (dueDate) body.dueDate = new Date(dueDate).toISOString();
+      }
 
       if (!isEdit) {
         body[`${entityType}Id`] = entityId;

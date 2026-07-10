@@ -111,10 +111,49 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = activitySchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     const data = parsed.data;
+
+    // Cross-tenant FK protection: verify every referenced entity belongs to
+    // the caller's tenant before creating. Without this a valid UUID from
+    // another tenant would leak names/details on subsequent GET.
+    if (data.personId) {
+      const p = await prisma.person.findFirst({
+        where: { id: data.personId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!p) return apiError("VALIDATION_FAILED", 400, { message: "Person nicht im Mandanten" });
+    }
+    if (data.fundId) {
+      const f = await prisma.fund.findFirst({
+        where: { id: data.fundId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!f) return apiError("VALIDATION_FAILED", 400, { message: "Fonds nicht im Mandanten" });
+    }
+    if (data.leaseId) {
+      const l = await prisma.lease.findFirst({
+        where: { id: data.leaseId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!l) return apiError("VALIDATION_FAILED", 400, { message: "Pacht nicht im Mandanten" });
+    }
+    if (data.parkId) {
+      const park = await prisma.park.findFirst({
+        where: { id: data.parkId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!park) return apiError("VALIDATION_FAILED", 400, { message: "Windpark nicht im Mandanten" });
+    }
+    if (data.assignedToId) {
+      const u = await prisma.user.findFirst({
+        where: { id: data.assignedToId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!u) return apiError("VALIDATION_FAILED", 400, { message: "Zuweisung: User nicht im Mandanten" });
+    }
 
     const activity = await prisma.crmActivity.create({
       data: {

@@ -8,6 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 const cancelSchema = z.object({
   reason: z.string().min(1, "Storno-Grund erforderlich"),
@@ -26,9 +27,10 @@ export async function POST(
     const body = await request.json();
     const { reason } = cancelSchema.parse(body);
 
-    // Hole Original-Rechnung
-    const original = await prisma.invoice.findUnique({
-      where: { id },
+    // Hole Original-Rechnung. deletedAt:null-Filter vorhandene Soft-Deletes
+    // ausblenden — sonst könnte man eine gelöschte Rechnung stornieren.
+    const original = await prisma.invoice.findFirst({
+      where: { id, deletedAt: null },
       include: {
         items: true,
       },
@@ -48,6 +50,22 @@ export async function POST(
 
     if (original.status === "DRAFT") {
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwürfe können nicht storniert werden. Bitte löschen Sie den Entwurf." });
+    }
+
+    // GoBD §146 AO: Storno erzeugt eine Buchung ins ORIGINAL-Monat der
+    // Rechnung — dieser muss offen sein. (Die Storno-Rechnung selbst hat
+    // invoiceDate=jetzt; wir prüfen zusätzlich, dass beide Perioden offen sind.)
+    try {
+      await assertPeriodOpen(check.tenantId!, original.invoiceDate);
+      await assertPeriodOpen(check.tenantId!, new Date());
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
     }
 
     // Erstelle Storno in einer Transaktion.

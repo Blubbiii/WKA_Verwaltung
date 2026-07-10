@@ -209,35 +209,65 @@ export async function PATCH(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
-    // Build Skonto update data if provided
+    // Build Skonto update data if provided. Wir MERGEN mit den bestehenden
+    // Werten statt sie zu überschreiben — sonst würde ein PATCH mit nur
+    // `{skontoPercent: 3}` `skontoDays` auf null triggern und den Skonto
+    // komplett löschen (Regression #F4).
     let skontoUpdateData: Record<string, unknown> = {};
-    if (validatedData.skontoPercent !== undefined || validatedData.skontoDays !== undefined) {
-      const skontoPercent = validatedData.skontoPercent ?? null;
-      const skontoDays = validatedData.skontoDays ?? null;
+    const percentTouched = Object.prototype.hasOwnProperty.call(validatedData, "skontoPercent");
+    const daysTouched = Object.prototype.hasOwnProperty.call(validatedData, "skontoDays");
+    if (percentTouched || daysTouched) {
+      // Lade die bestehenden Skonto-Werte, um sie mit dem Delta zu mergen.
+      const currentSkonto = percentTouched && daysTouched
+        ? { skontoPercent: null as unknown as number | null, skontoDays: null as number | null }
+        : await prisma.invoice.findUnique({
+            where: { id },
+            select: { skontoPercent: true, skontoDays: true },
+          });
 
-      if (skontoPercent && skontoDays) {
-        // Recalculate Skonto fields - use updated invoiceDate if provided, else existing
+      const effectivePercent = percentTouched
+        ? validatedData.skontoPercent ?? null
+        : currentSkonto?.skontoPercent != null
+          ? Number(currentSkonto.skontoPercent)
+          : null;
+      const effectiveDays = daysTouched
+        ? validatedData.skontoDays ?? null
+        : currentSkonto?.skontoDays ?? null;
+
+      if (effectivePercent && effectiveDays) {
+        // Beide Werte gesetzt → Skonto neu berechnen.
         const effectiveInvoiceDate = validatedData.invoiceDate
           ? new Date(validatedData.invoiceDate)
           : existing.invoiceDate;
         const grossAmount = Number(existing.grossAmount);
-        const skontoDiscount = calculateSkontoDiscount(grossAmount, skontoPercent);
-        const skontoDeadline = calculateSkontoDeadline(effectiveInvoiceDate, skontoDays);
+        const skontoDiscount = calculateSkontoDiscount(grossAmount, effectivePercent);
+        const skontoDeadline = calculateSkontoDeadline(effectiveInvoiceDate, effectiveDays);
 
         skontoUpdateData = {
-          skontoPercent,
-          skontoDays,
+          skontoPercent: effectivePercent,
+          skontoDays: effectiveDays,
           skontoDeadline,
           skontoAmount: skontoDiscount,
         };
-      } else {
-        // Clear Skonto fields when one value is null/removed
+      } else if (
+        (percentTouched && validatedData.skontoPercent === null) ||
+        (daysTouched && validatedData.skontoDays === null)
+      ) {
+        // Explizit auf null gesetzt → Skonto entfernen.
         skontoUpdateData = {
           skontoPercent: null,
           skontoDays: null,
           skontoDeadline: null,
           skontoAmount: null,
           skontoPaid: false,
+        };
+      } else {
+        // Merge unvollständig (z.B. `{skontoPercent: 3}` ohne bestehende
+        // skontoDays) — schreibe nur die geänderten Felder, lasse die anderen
+        // Skonto-Werte unangetastet.
+        skontoUpdateData = {
+          ...(percentTouched && { skontoPercent: validatedData.skontoPercent }),
+          ...(daysTouched && { skontoDays: validatedData.skontoDays }),
         };
       }
     }

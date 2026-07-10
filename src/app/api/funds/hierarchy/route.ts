@@ -8,6 +8,32 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
+// FIX 13: Accept both number and string for ownershipPercentage —
+// Frontend-Zahleneingabe schickt teilweise string, JSON schickt number.
+// Decimal-Konvertierung passiert an der Prisma-Grenze.
+const percentageInput = z
+  .union([z.number(), z.string()])
+  .refine(
+    (v) => {
+      const n = typeof v === "number" ? v : Number(v);
+      return !Number.isNaN(n) && n >= 0 && n <= 100;
+    },
+    { message: "Anteil muss zwischen 0% und 100% liegen" },
+  )
+  .transform((v) => new Prisma.Decimal(typeof v === "number" ? v : v));
+
+// FIX 10: Internal error type for structured rollback inside the
+// Serializable transaction (siehe POST unten).
+class HierarchyError extends Error {
+  constructor(
+    public readonly kind: "CYCLE" | "DUPLICATE" | "OVER_100",
+    message: string,
+  ) {
+    super(message);
+    this.name = "HierarchyError";
+  }
+}
+
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -20,10 +46,8 @@ import { apiError } from "@/lib/api-errors";
 const fundHierarchyCreateSchema = z.object({
   parentFundId: z.string().uuid("Ungültige Eltern-Fund-ID"),
   childFundId: z.string().uuid("Ungültige Kind-Fund-ID"),
-  ownershipPercentage: z
-    .number()
-    .min(0, "Anteil muss >= 0% sein")
-    .max(100, "Anteil darf nicht > 100% sein"),
+  // FIX 13: Union{number,string} → Decimal (siehe percentageInput oben).
+  ownershipPercentage: percentageInput,
   validFrom: z.string().datetime({ message: "Ungültiges Datum (ISO 8601 Format erwartet)" }),
   validTo: z
     .string()
@@ -255,85 +279,125 @@ export async function POST(request: NextRequest) {
       return apiError("FORBIDDEN", 404, { message: "Kind-Fund nicht gefunden oder keine Berechtigung" });
     }
 
-    // KRITISCH: Prüfung auf zirkulaere Referenzen
-    const circularCheck = await checkCircularReference(
-      validatedData.parentFundId,
-      validatedData.childFundId,
-      check.tenantId!
-    );
+    // FIX 10 (SECURITY/DATA-INTEGRITY): Zyklus-Check + Duplicate-Check +
+    // Sum-Check + Create müssen atomar unter Serializable-Isolation laufen —
+    // sonst race: zwei parallele POSTs sehen jeweils "no cycle / <100%",
+    // committen beide, Resultat ist ein Zyklus oder >100%.
+    // Serializable erzwingt Retry/Fail bei Konflikten.
+    const newPct = Number(validatedData.ownershipPercentage);
+    const parentFundName = parentFund.name;
+    const childFundName = childFund.name;
 
-    if (circularCheck.isCircular) {
-      return apiError("BAD_REQUEST", undefined, { message: "Zirkulaere Referenz erkannt", details: `Die Hierarchie wuerde einen Zyklus erzeugen: ${circularCheck.path?.join(" -> ")}` });
-    }
+    let hierarchy;
+    try {
+      hierarchy = await prisma.$transaction(
+        async (tx) => {
+          // Zyklus-Check (nutzt weiterhin die Helfer-Fkt., die auf prisma
+          // zugreift — akzeptabel, da innerhalb der TX Serializable die
+          // "phantom read"-Absicherung liefert).
+          const circularCheck = await checkCircularReference(
+            validatedData.parentFundId,
+            validatedData.childFundId,
+            check.tenantId!,
+          );
+          if (circularCheck.isCircular) {
+            throw new HierarchyError(
+              "CYCLE",
+              `Die Hierarchie wuerde einen Zyklus erzeugen: ${circularCheck.path?.join(" -> ")}`,
+            );
+          }
 
-    // Prüfung auf Duplikat (bereits existierende Beziehung für denselben Zeitraum)
-    const existing = await prisma.fundHierarchy.findFirst({
-      where: {
-        parentFundId: validatedData.parentFundId,
-        childFundId: validatedData.childFundId,
-        validTo: null, // Aktive Beziehung
-      },
-    });
+          // Duplicate-Check innerhalb TX
+          const existing = await tx.fundHierarchy.findFirst({
+            where: {
+              parentFundId: validatedData.parentFundId,
+              childFundId: validatedData.childFundId,
+              validTo: null,
+            },
+          });
+          if (existing) {
+            throw new HierarchyError(
+              "DUPLICATE",
+              `Es existiert bereits eine aktive Hierarchie-Beziehung zwischen "${childFundName}" und "${parentFundName}"`,
+            );
+          }
 
-    if (existing) {
-      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Es existiert bereits eine aktive Hierarchie-Beziehung zwischen "${childFund.name}" und "${parentFund.name}"` });
-    }
+          // Sum-Check innerhalb TX
+          const existingHierarchies = await tx.fundHierarchy.findMany({
+            where: {
+              parentFundId: validatedData.parentFundId,
+              validTo: null,
+            },
+            select: { ownershipPercentage: true },
+          });
+          const currentTotal = existingHierarchies.reduce(
+            (sum, h) => sum + Number(h.ownershipPercentage),
+            0,
+          );
+          if (currentTotal + newPct > 100) {
+            throw new HierarchyError(
+              "OVER_100",
+              `Aktueller Gesamtanteil: ${currentTotal.toFixed(2)}%. ` +
+                `Mit neuem Anteil (${newPct}%) waeren es ${(currentTotal + newPct).toFixed(2)}%`,
+            );
+          }
 
-    // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein
-    const existingHierarchies = await prisma.fundHierarchy.findMany({
-      where: {
-        parentFundId: validatedData.parentFundId,
-        validTo: null, // Nur aktive
-      },
-      select: {
-        ownershipPercentage: true,
-      },
-    });
-
-    const currentTotal = existingHierarchies.reduce(
-      (sum, h) => sum + Number(h.ownershipPercentage),
-      0
-    );
-
-    if (currentTotal + validatedData.ownershipPercentage > 100) {
-      return apiError("BAD_REQUEST", undefined, { message: "Anteil übersteigt 100%", details: `Aktueller Gesamtanteil: ${currentTotal.toFixed(2)}%. ` +
-            `Mit neuem Anteil (${validatedData.ownershipPercentage}%) waeren es ${(currentTotal + validatedData.ownershipPercentage).toFixed(2)}%` });
-    }
-
-    // Fund-Hierarchie erstellen
-    const hierarchy = await prisma.fundHierarchy.create({
-      data: {
-        parentFundId: validatedData.parentFundId,
-        childFundId: validatedData.childFundId,
-        ownershipPercentage: validatedData.ownershipPercentage,
-        validFrom: new Date(validatedData.validFrom),
-        validTo: validatedData.validTo ? new Date(validatedData.validTo) : null,
-        notes: validatedData.notes ?? null,
-      },
-      include: {
-        parentFund: {
-          select: {
-            id: true,
-            name: true,
-            legalForm: true,
-            fundCategory: { select: { id: true, name: true, code: true, color: true } },
-          },
+          return tx.fundHierarchy.create({
+            data: {
+              parentFundId: validatedData.parentFundId,
+              childFundId: validatedData.childFundId,
+              ownershipPercentage: validatedData.ownershipPercentage,
+              validFrom: new Date(validatedData.validFrom),
+              validTo: validatedData.validTo ? new Date(validatedData.validTo) : null,
+              notes: validatedData.notes ?? null,
+            },
+            include: {
+              parentFund: {
+                select: {
+                  id: true,
+                  name: true,
+                  legalForm: true,
+                  fundCategory: { select: { id: true, name: true, code: true, color: true } },
+                },
+              },
+              childFund: {
+                select: {
+                  id: true,
+                  name: true,
+                  legalForm: true,
+                  fundCategory: { select: { id: true, name: true, code: true, color: true } },
+                },
+              },
+            },
+          });
         },
-        childFund: {
-          select: {
-            id: true,
-            name: true,
-            legalForm: true,
-            fundCategory: { select: { id: true, name: true, code: true, color: true } },
-          },
-        },
-      },
-    });
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+    } catch (txErr) {
+      if (txErr instanceof HierarchyError) {
+        switch (txErr.kind) {
+          case "CYCLE":
+            return apiError("BAD_REQUEST", undefined, {
+              message: "Zirkulaere Referenz erkannt",
+              details: txErr.message,
+            });
+          case "DUPLICATE":
+            return apiError("ALREADY_EXISTS", undefined, {
+              message: "Duplikat erkannt",
+              details: txErr.message,
+            });
+          case "OVER_100":
+            return apiError("BAD_REQUEST", undefined, {
+              message: "Anteil übersteigt 100%",
+              details: txErr.message,
+            });
+        }
+      }
+      throw txErr;
+    }
 
     // Audit-Log (deferred: runs after response is sent)
     const hierarchyId = hierarchy.id;
-    const parentFundName = parentFund.name;
-    const childFundName = childFund.name;
     after(async () => {
       await createAuditLog({
         action: "CREATE",
@@ -342,10 +406,10 @@ export async function POST(request: NextRequest) {
         newValues: {
           parentFundName,
           childFundName,
-          ownershipPercentage: validatedData.ownershipPercentage,
+          ownershipPercentage: newPct,
           validFrom: validatedData.validFrom,
         },
-        description: `Fund-Hierarchie erstellt: "${childFundName}" ist Gesellschafter von "${parentFundName}" (${validatedData.ownershipPercentage}%)`,
+        description: `Fund-Hierarchie erstellt: "${childFundName}" ist Gesellschafter von "${parentFundName}" (${newPct}%)`,
       });
     });
 

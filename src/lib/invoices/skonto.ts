@@ -75,9 +75,11 @@ export function isSkontoValid(
   referenceDate?: Date
 ): boolean {
   const now = referenceDate ?? new Date();
-  // Compare end-of-day of the deadline with the reference date
+  // UTC-safe: setHours() nutzt lokale Zeit — Backend (UTC) und Client
+  // (z.B. UTC+2 Sommerzeit) würden bei 23:00–01:00 UTC-Rand unterschiedlich
+  // urteilen. setUTCHours() macht "Ende des Tages" reproduzierbar.
   const deadlineEndOfDay = new Date(skontoDeadline);
-  deadlineEndOfDay.setHours(23, 59, 59, 999);
+  deadlineEndOfDay.setUTCHours(23, 59, 59, 999);
   return now <= deadlineEndOfDay;
 }
 

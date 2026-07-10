@@ -52,12 +52,16 @@ interface Vendor {
   id: string;
   name: string;
   taxId: string | null;
+  vatId: string | null;
   iban: string | null;
   bic: string | null;
   email: string | null;
+  street: string | null;
+  postalCode: string | null;
   city: string | null;
   country: string;
   notes: string | null;
+  personId: string | null;
   person: { id: string; firstName: string | null; lastName: string | null; companyName: string | null } | null;
 }
 
@@ -98,12 +102,12 @@ function VendorDialog({
       setForm({
         name: vendor.name,
         taxId: vendor.taxId ?? "",
-        vatId: "",
+        vatId: vendor.vatId ?? "",
         iban: vendor.iban ?? "",
         bic: vendor.bic ?? "",
         email: vendor.email ?? "",
-        street: "",
-        postalCode: "",
+        street: vendor.street ?? "",
+        postalCode: vendor.postalCode ?? "",
         city: vendor.city ?? "",
         country: vendor.country,
         notes: vendor.notes ?? "",
@@ -248,6 +252,8 @@ export default function VendorsPage() {
   const [editVendor, setEditVendor] = useState<Vendor | null>(null);
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [batchDeleting, setBatchDeleting] = useState(false);
 
   // Batch selection
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
@@ -329,30 +335,38 @@ export default function VendorsPage() {
     toast.success(`${selected.length} Lieferant(en) exportiert`);
   }, [vendors, selectedIds]);
 
-  // Batch delete
-  const handleBatchDelete = useCallback(async () => {
+  // Batch delete — via AlertDialog (statt native confirm) + parallel (statt for-loop)
+  const performBatchDelete = useCallback(async () => {
     const ids = Array.from(selectedIds);
-    if (!confirm(`${ids.length} Lieferant(en) wirklich löschen?`)) return;
-    let success = 0;
-    let failed = 0;
-    for (const id of ids) {
-      try {
-        const res = await fetch(`/api/vendors/${id}`, { method: "DELETE" });
-        if (res.ok) success++;
-        else failed++;
-      } catch {
-        failed++;
+    setBatchDeleting(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/vendors/${id}`, { method: "DELETE" }).then((r) => r.ok),
+        ),
+      );
+      const success = results.filter(
+        (r) => r.status === "fulfilled" && r.value === true,
+      ).length;
+      const failed = ids.length - success;
+      if (success > 0) {
+        toast.success(`${success} Lieferant(en) gelöscht`);
+        clearSelection();
+        load();
       }
-    }
-    if (success > 0) {
-      toast.success(`${success} Lieferant(en) gelöscht`);
-      clearSelection();
-      load();
-    }
-    if (failed > 0) {
-      toast.error(`${failed} Lieferant(en) konnten nicht gelöscht werden`);
+      if (failed > 0) {
+        toast.error(`${failed} Lieferant(en) konnten nicht gelöscht werden`);
+      }
+    } finally {
+      setBatchDeleting(false);
+      setBatchDeleteOpen(false);
     }
   }, [selectedIds, clearSelection, load]);
+
+  const handleBatchDelete = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    setBatchDeleteOpen(true);
+  }, [selectedIds]);
 
   if (flagsLoading) return null;
 
@@ -547,6 +561,24 @@ export default function VendorsPage() {
             <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleting}>
               {deleting ? "Lösche..." : "Löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Batch-Delete Confirm — ersetzt window.confirm für a11y + i18n-Konsistenz */}
+      <AlertDialog open={batchDeleteOpen} onOpenChange={(v) => !batchDeleting && setBatchDeleteOpen(v)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lieferanten löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedCount} Lieferant(en) werden unwiderruflich gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchDeleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={performBatchDelete} disabled={batchDeleting}>
+              {batchDeleting ? "Lösche..." : "Löschen"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

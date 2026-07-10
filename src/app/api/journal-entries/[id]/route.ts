@@ -220,8 +220,9 @@ export async function DELETE(
       throw err;
     }
 
+    // tenantId im WHERE (TOCTOU-Schutz, consistent zur PUT-Variante).
     await prisma.journalEntry.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: { deletedAt: new Date() },
     });
 

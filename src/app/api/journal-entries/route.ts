@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -37,6 +38,20 @@ const createSchema = z.object({
             (l.creditAmount !== undefined && l.creditAmount > 0)
         ),
       "Jede Zeile muss entweder einen Soll- oder einen Haben-Betrag (> 0) haben, nicht beides"
+    )
+    // Soll=Haben-Balance (Decimal, Toleranz 0.005). Muss bereits beim
+    // DRAFT-POST greifen — konsistent zur PUT-Route.
+    .refine(
+      (lines) => {
+        let debit = new Decimal(0);
+        let credit = new Decimal(0);
+        for (const l of lines) {
+          debit = debit.plus(l.debitAmount ?? 0);
+          credit = credit.plus(l.creditAmount ?? 0);
+        }
+        return debit.minus(credit).abs().lessThan(0.005);
+      },
+      "Soll- und Habensumme müssen ausgeglichen sein"
     ),
 });
 

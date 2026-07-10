@@ -10,6 +10,7 @@ import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { Prisma } from "@prisma/client";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import { apiError } from "@/lib/api-errors";
+import { createAuditLog } from "@/lib/audit";
 
 const adminUserSchema = z
   .object({
@@ -293,6 +294,32 @@ export async function POST(request: NextRequest) {
         logger.error({ err: error }, "Failed to send invitation email");
         emailSent = false;
       }
+    }
+
+    // FIX 17: Audit-Log für Tenant-Create + optional Admin-User (Compliance).
+    await createAuditLog({
+      action: "CREATE",
+      entityType: "Tenant",
+      entityId: result.tenant.id,
+      newValues: {
+        name: result.tenant.name,
+        slug: result.tenant.slug,
+        adminUser: result.createdUser?.email ?? null,
+        invitationSent: !!result.invitationToken,
+      },
+    });
+    if (result.createdUser) {
+      await createAuditLog({
+        action: "CREATE",
+        entityType: "User",
+        entityId: result.createdUser.id,
+        newValues: {
+          email: result.createdUser.email,
+          tenantId: result.tenant.id,
+          role: "Administrator",
+          mode: result.invitationToken ? "invitation" : "password",
+        },
+      });
     }
 
     // Convert BigInt fields to Number for JSON serialization

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
+import { invalidateUser } from "@/lib/auth/permissionCache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -114,6 +115,35 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = userUpdateSchema.parse(body);
 
+    // FIX 2 (SECURITY) + FIX 14: Memberships validieren.
+    //  - Whitelist: Non-Superadmins dürfen nur Memberships zum eigenen Tenant setzen.
+    //  - Max EINE primary Membership; keine → erste wird zu primary (Fallback).
+    if (validatedData.memberships !== undefined) {
+      const callerHierarchy = await getUserHighestHierarchy(check.userId!);
+      const isCallerSuperadmin = callerHierarchy >= ROLE_HIERARCHY.SUPERADMIN;
+
+      for (const m of validatedData.memberships) {
+        if (!isCallerSuperadmin && m.tenantId !== check.tenantId) {
+          return apiError("FORBIDDEN", 403, {
+            message:
+              "Memberships zu anderen Mandanten können nur von Superadmins gesetzt werden",
+          });
+        }
+      }
+
+      const primaryCount = validatedData.memberships.filter(
+        (m) => m.isPrimary,
+      ).length;
+      if (primaryCount > 1) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: "Maximal eine primäre Mitgliedschaft erlaubt",
+        });
+      }
+      if (primaryCount === 0 && validatedData.memberships.length > 0) {
+        validatedData.memberships[0].isPrimary = true;
+      }
+    }
+
     // Prüfen ob neue E-Mail bereits existiert
     if (validatedData.email && validatedData.email !== existingUser.email) {
       const emailExists = await prisma.user.findUnique({
@@ -141,6 +171,32 @@ export async function PATCH(
     let passwordHash: string | undefined;
     if (validatedData.password) {
       passwordHash = await bcrypt.hash(validatedData.password, AUTH_CONFIG.bcryptSaltRounds);
+    }
+
+    // FIX 4: Bei tenantId-Wechsel automatisch Primary-Membership synchronisieren.
+    // Alte Primary → false, neue (upsert) → true. Vor user.update, damit im
+    // Fehlerfall kein User ohne matching Primary-Membership zurück bleibt.
+    if (
+      validatedData.tenantId &&
+      validatedData.tenantId !== existingUser.tenantId
+    ) {
+      await prisma.$transaction([
+        prisma.userTenantMembership.updateMany({
+          where: { userId: id, isPrimary: true },
+          data: { isPrimary: false },
+        }),
+        prisma.userTenantMembership.upsert({
+          where: {
+            userId_tenantId: { userId: id, tenantId: validatedData.tenantId },
+          },
+          create: {
+            userId: id,
+            tenantId: validatedData.tenantId,
+            isPrimary: true,
+          },
+          update: { isPrimary: true, status: "ACTIVE" },
+        }),
+      ]);
     }
 
     const user = await prisma.user.update({
@@ -200,6 +256,16 @@ export async function PATCH(
       });
     }
 
+    // FIX 5 (SECURITY, sekundär): Falls Status/Rollen/Tenant sich geändert haben,
+    // Permission-Cache + JWT-Version bumpen, damit alte Sessions neu authen.
+    if (
+      validatedData.status !== undefined ||
+      validatedData.tenantId !== undefined ||
+      validatedData.memberships !== undefined
+    ) {
+      await invalidateUser(id);
+    }
+
     return NextResponse.json(user);
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren des Benutzers");
@@ -237,6 +303,12 @@ export async function DELETE(
       where: { id },
       data: { status: "INACTIVE" },
     });
+
+    // FIX 5 (SECURITY): Session invalidieren — bestehende JWTs des deaktivierten
+    // Users sollen nicht mehr valide sein. invalidateUser() leert den Permission-
+    // Cache und bumpt die permissions-version, sodass beim nächsten JWT-Refresh
+    // eine Re-Auth erzwungen wird (dann greift der status=INACTIVE-Check).
+    await invalidateUser(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

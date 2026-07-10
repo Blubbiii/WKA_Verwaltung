@@ -63,6 +63,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
 
+    // FIX 16: Superadmin darf explizit einen fremden Tenant via ?tenantId=X
+    // abfragen. Ohne Query-Param bleibt es beim eigenen Session-Tenant.
+    // (Der Endpoint ist bereits durch requireSuperadmin() geschützt — jeder,
+    // der hier reinkommt, darf tenantübergreifend lesen.)
+    const requestedTenantId = searchParams.get("tenantId");
+    const effectiveTenantId = requestedTenantId ?? check.tenantId;
+
     let configs;
 
     if (category) {
@@ -74,12 +81,12 @@ export async function GET(request: NextRequest) {
 
       configs = await getConfigsByCategory(
         parsed.data as ConfigCategory,
-        check.tenantId,
+        effectiveTenantId,
         true // mask sensitive values
       );
     } else {
       // Get all configs
-      configs = await getAllConfigs(check.tenantId, true);
+      configs = await getAllConfigs(effectiveTenantId, true);
     }
 
     // Group by category for easier frontend consumption

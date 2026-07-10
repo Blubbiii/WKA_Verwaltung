@@ -389,7 +389,14 @@ export default function CrmContactsPage() {
       const ok = results.filter(
         (r) => r.status === "fulfilled" && (r.value as Response).ok,
       ).length;
-      toast.success(t("bulkAssignedSuccess", { ok, total: ids.length }));
+      const failed = ids.length - ok;
+      if (ok > 0) {
+        toast.success(t("bulkAssignedSuccess", { ok, total: ids.length }));
+      }
+      // Fehlgeschlagene Zuweisungen explizit sichtbar machen — vorher stumm.
+      if (failed > 0) {
+        toast.error(t("bulkAssignError"));
+      }
       setTagDialogOpen(false);
       setBulkTagId("");
       setSelectedIds(new Set());
@@ -428,8 +435,16 @@ export default function CrmContactsPage() {
       });
       if (res.status === HTTP_STATUS.CONFLICT) {
         const err = await res.json();
-        setDedupMatch(err.existing as ExistingMatch);
-        return;
+        // Backend envelope: { code, error, details: { existing } }.
+        // Fallback auf err.existing für Kompatibilität, falls die Route
+        // später wieder auf die flache Form umgestellt wird.
+        const existing =
+          (err.details as { existing?: ExistingMatch } | undefined)?.existing ??
+          (err.existing as ExistingMatch | undefined);
+        if (existing) {
+          setDedupMatch(existing);
+          return;
+        }
       }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { Prisma } from "@prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -77,30 +78,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Calculate running balance
-    const lastEntry = await prisma.cashBookEntry.findFirst({
-      where: { tenantId: check.tenantId! },
-      orderBy: [{ entryDate: "desc" }, { entryNumber: "desc" }],
-      select: { runningBalance: true, entryNumber: true },
-    });
+    // Serializable-Transaktion: verhindert Race (zwei parallele POSTs mit
+    // gleichem nextNumber). Decimal-Arithmetik statt Number-Cast, damit die
+    // runningBalance nicht durch Float-Drift verrutscht.
+    const entry = await prisma.$transaction(
+      async (tx) => {
+        const lastEntry = await tx.cashBookEntry.findFirst({
+          where: { tenantId: check.tenantId! },
+          orderBy: [{ entryDate: "desc" }, { entryNumber: "desc" }],
+          select: { runningBalance: true, entryNumber: true },
+        });
 
-    const prevBalance = lastEntry ? Number(lastEntry.runningBalance) : 0;
-    const nextNumber = (lastEntry?.entryNumber ?? 0) + 1;
-    const runningBalance = prevBalance + parsed.amount;
+        const prevBalance = new Decimal(lastEntry?.runningBalance ?? 0);
+        const nextNumber = (lastEntry?.entryNumber ?? 0) + 1;
+        const runningBalance = prevBalance.plus(parsed.amount);
 
-    const entry = await prisma.cashBookEntry.create({
-      data: {
-        tenantId: check.tenantId!,
-        entryDate: new Date(parsed.entryDate),
-        entryNumber: nextNumber,
-        description: parsed.description,
-        amount: parsed.amount,
-        runningBalance,
-        account: parsed.account || null,
-        receiptNumber: parsed.receiptNumber || null,
-        createdById: check.userId!,
+        return tx.cashBookEntry.create({
+          data: {
+            tenantId: check.tenantId!,
+            entryDate: new Date(parsed.entryDate),
+            entryNumber: nextNumber,
+            description: parsed.description,
+            amount: parsed.amount,
+            runningBalance,
+            account: parsed.account || null,
+            receiptNumber: parsed.receiptNumber || null,
+            createdById: check.userId!,
+          },
+        });
       },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
 
     return NextResponse.json({ data: entry }, { status: 201 });
   } catch (error) {

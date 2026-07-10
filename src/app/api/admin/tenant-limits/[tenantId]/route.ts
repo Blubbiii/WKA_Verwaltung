@@ -59,6 +59,10 @@ export async function PUT(
       },
     });
 
+    // FIX 7: Tenant-Settings-Cache invalidieren, analog Feature-Flags.
+    const { invalidateTenantSettings } = await import("@/lib/tenant-settings");
+    await invalidateTenantSettings(tenantId);
+
     return NextResponse.json({
       message: "Mandanten-Limits aktualisiert",
       limits: parsed.data,

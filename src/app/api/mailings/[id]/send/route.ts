@@ -85,6 +85,11 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     }
 
     // Update mailing status to SENDING
+    // TODO(recipient-snapshot): Empfänger-Liste beim SEND als JSON-Snapshot
+    //   auf `mailing.recipientSnapshot` festhalten, damit ein späterer
+    //   DSGVO-Nachweis unabhängig von Person-Löschungen möglich ist.
+    //   Schema-Feld existiert aktuell noch nicht — muss zuerst als
+    //   `recipientSnapshot Json?` in `Mailing` ergänzt werden.
     await prisma.mailing.update({
       where: { id },
       data: {
@@ -97,7 +102,22 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     let failedCount = 0;
     let postCount = 0;
 
+    // Timeout-Guard: verhindert SENDING-Deadlock, wenn der Provider hängt.
+    // Nach 5 Minuten wird abgebrochen und der aktuelle Fortschritt persistiert.
+    // TODO(bullmq): Job pro Empfänger in Queue schieben — separater PR.
+    const SEND_TIMEOUT_MS = 5 * 60 * 1000;
+    const sendDeadline = Date.now() + SEND_TIMEOUT_MS;
+    let timedOut = false;
+
     for (const sh of shareholders) {
+      if (Date.now() > sendDeadline) {
+        timedOut = true;
+        logger.warn(
+          { mailingId: id, processedCount: sentCount + failedCount },
+          "[Mailing Send] Timeout reached — aborting further recipients",
+        );
+        break;
+      }
       const name = sh.person.firstName && sh.person.lastName
         ? `${sh.person.firstName} ${sh.person.lastName}`
         : sh.person.companyName ?? sh.person.email ?? "Unbekannt";
@@ -186,8 +206,9 @@ export async function POST(_req: NextRequest, context: RouteContext) {
       }
     }
 
-    // Final mailing status
-    const finalStatus = failedCount === 0 ? "SENT" : "PARTIALLY_FAILED";
+    // Final mailing status — Timeout zählt als partieller Fehlversand.
+    const finalStatus =
+      timedOut || failedCount > 0 ? "PARTIALLY_FAILED" : "SENT";
 
     await prisma.mailing.update({
       where: { id, tenantId: check.tenantId!},
@@ -206,6 +227,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
       failedCount,
       postCount,
       totalRecipients: shareholders.length,
+      timedOut,
     });
   } catch (error) {
     logger.error({ err: error }, "[Mailing Send] Failed");

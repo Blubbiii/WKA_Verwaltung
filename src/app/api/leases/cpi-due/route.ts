@@ -7,6 +7,14 @@
  * Wird verwendet von:
  *  - Dashboard-Widget "Indexierung-Erinnerungen"
  *  - Optional von Cron-Job für E-Mail-Notification
+ *
+ * TODO(cpi-write): Es fehlt noch der Schreib-Endpoint (POST/PATCH), der eine
+ *   CPI-Anpassung tatsächlich anwendet:
+ *     - neue Pachthöhe berechnen (index-basiert, §9 PrKG-Regeln)
+ *     - `Lease.lastCpiAppliedAt` setzen
+ *     - AuditLog "LEASE_CPI_ADJUSTED"
+ *     - Benachrichtigung an Verpächter (Mailing)
+ *   Siehe docs/ROADMAP.md.
  */
 
 import { NextRequest, NextResponse } from "next/server";

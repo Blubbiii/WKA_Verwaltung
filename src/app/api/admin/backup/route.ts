@@ -378,29 +378,17 @@ export async function POST(request: NextRequest) {
       }
 
       case "export": {
-        const { format, tables } = parsed.data;
-
-        if (!tables || tables.length === 0) {
-          return apiError("BAD_REQUEST", undefined, { message: "Keine Tabellen ausgewaehlt" });
-        }
-
-        logger.info(
-          { format, tables },
-          "[EXPORT] Starting export"
-        );
-
-        // Generate download URL (export handler is separate)
-        const downloadUrl = `/api/admin/backup/download/export_${Date.now()}.${format}`;
-
-        logger.info(
-          { downloadUrl },
-          "[EXPORT] Export completed"
-        );
-
-        return NextResponse.json({
-          success: true,
-          downloadUrl,
-          message: "Export erfolgreich gestartet",
+        // FIX 20 (BUG): Die Export-Action war ein Placeholder — sie generierte
+        // eine "downloadUrl" auf eine nicht-existente Route und meldete Erfolg,
+        // ohne dass jemals ein Export erstellt wurde. Bis der echte Export
+        // implementiert ist, geben wir strukturiert 501 zurück, damit das
+        // Frontend das als "nicht verfügbar" erkennt und nicht auf eine
+        // 404-Download-Route zeigt.
+        // TODO(roadmap-Q3): Echten Export bauen — CSV/JSON Streaming aus Prisma
+        // mit Tenant-Scope-Enforcement, ausgelagert in BullMQ-Job.
+        return apiError("OPERATION_NOT_ALLOWED", 501, {
+          message:
+            "Datenexport ist noch nicht implementiert — vorgesehen für Roadmap Q3.",
         });
       }
 

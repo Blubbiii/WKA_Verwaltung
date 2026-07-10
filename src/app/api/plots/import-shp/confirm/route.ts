@@ -296,7 +296,17 @@ export async function POST(request: NextRequest) {
           const od = group.ownerData;
           let personId: string | null = null;
 
-          // Try to find existing person (case-insensitive)
+          // Try to find existing person (case-insensitive).
+          // WICHTIG: Namensgleichheit allein ist NICHT eindeutig — z.B.
+          // Zwillinge oder Vater/Sohn "Hans Müller". Deshalb wird der
+          // Straßenname als zusätzliches Diskriminator-Kriterium verlangt,
+          // wenn im Import eine Straße vorhanden ist. Ohne Straße im
+          // Import fällt der Match auf reine Namensgleichheit zurück (best-effort).
+          const streetMatcher =
+            od.street && od.street.trim().length > 0
+              ? { equals: od.street.trim(), mode: "insensitive" as const }
+              : undefined;
+
           if (od.firstName && od.lastName) {
             // Natural person lookup
             const existing = await tx.person.findFirst({
@@ -304,6 +314,7 @@ export async function POST(request: NextRequest) {
                 tenantId,
                 firstName: { equals: od.firstName.trim(), mode: "insensitive" },
                 lastName: { equals: od.lastName.trim(), mode: "insensitive" },
+                ...(streetMatcher ? { street: streetMatcher } : {}),
               },
               select: { id: true },
             });
@@ -317,6 +328,7 @@ export async function POST(request: NextRequest) {
               where: {
                 tenantId,
                 companyName: { equals: od.name.trim(), mode: "insensitive" },
+                ...(streetMatcher ? { street: streetMatcher } : {}),
               },
               select: { id: true },
             });

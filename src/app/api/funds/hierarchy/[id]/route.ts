@@ -205,6 +205,49 @@ export async function PATCH(
       return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datumsangabe", details: "Das Startdatum (validFrom) muss vor dem Enddatum (validTo) liegen" });
     }
 
+    // FIX 19 (DATA-INTEGRITY): Wird eine bislang beendete Kante (existing.validTo != null)
+    // durch dieses PATCH wieder "aktiv" (newValidTo === null), muss der
+    // Zyklus-Check erneut laufen — sonst könnte eine reaktivierte Kante
+    // zusammen mit inzwischen entstandenen anderen Kanten einen Zyklus bilden.
+    const wasEnded = existing.validTo != null;
+    const isNowActive = newValidTo === null;
+    if (wasEnded && isNowActive) {
+      // Inline Cycle-Check (analog zu POST-Handler), gegen den aktuellen
+      // DB-Zustand der anderen aktiven Kanten dieses Tenants.
+      const visited = new Set<string>();
+      async function hasPathTo(
+        currentFundId: string,
+        targetFundId: string,
+      ): Promise<boolean> {
+        if (currentFundId === targetFundId) return true;
+        if (visited.has(currentFundId)) return false;
+        visited.add(currentFundId);
+        const edges = await prisma.fundHierarchy.findMany({
+          where: {
+            childFundId: currentFundId,
+            validTo: null,
+            id: { not: id }, // aktuelle Kante ignorieren
+            parentFund: { tenantId: check.tenantId! },
+          },
+          select: { parentFundId: true },
+        });
+        for (const e of edges) {
+          if (await hasPathTo(e.parentFundId, targetFundId)) return true;
+        }
+        return false;
+      }
+      const isCircular =
+        existing.parentFundId === existing.childFundId ||
+        (await hasPathTo(existing.parentFundId, existing.childFundId));
+      if (isCircular) {
+        return apiError("BAD_REQUEST", undefined, {
+          message: "Zirkulaere Referenz beim Reaktivieren erkannt",
+          details:
+            "Die reaktivierte Hierarchie würde zusammen mit den aktuellen aktiven Kanten einen Zyklus bilden.",
+        });
+      }
+    }
+
     // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein (bei Änderung des Anteils)
     if (validatedData.ownershipPercentage !== undefined) {
       const otherHierarchies = await prisma.fundHierarchy.findMany({

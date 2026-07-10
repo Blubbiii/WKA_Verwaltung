@@ -160,18 +160,30 @@ export async function PATCH(
           throw new Error("Ein oder mehrere Flurstücke nicht gefunden");
         }
 
-        // Delete existing plot relations
-        await tx.leasePlot.deleteMany({
+        // Diff-update instead of delete-then-create: keeps existing
+        // (leaseId, plotId) rows (with their createdAt) intact and only
+        // touches what actually changed. Avoids audit noise and lost
+        // history for stable plot links.
+        const currentRelations = await tx.leasePlot.findMany({
           where: { leaseId: id },
+          select: { id: true, plotId: true },
         });
+        const currentPlotIds = new Set(currentRelations.map((r) => r.plotId));
+        const nextPlotIds = new Set(plotIds);
 
-        // Create new plot relations
-        await tx.leasePlot.createMany({
-          data: plotIds.map((plotId) => ({
-            leaseId: id,
-            plotId,
-          })),
-        });
+        const toRemove = currentRelations.filter((r) => !nextPlotIds.has(r.plotId));
+        const toAdd = plotIds.filter((pid) => !currentPlotIds.has(pid));
+
+        if (toRemove.length > 0) {
+          await tx.leasePlot.deleteMany({
+            where: { id: { in: toRemove.map((r) => r.id) } },
+          });
+        }
+        if (toAdd.length > 0) {
+          await tx.leasePlot.createMany({
+            data: toAdd.map((plotId) => ({ leaseId: id, plotId })),
+          });
+        }
       }
 
       // Return updated lease with relations

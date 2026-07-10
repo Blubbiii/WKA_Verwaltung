@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { TxClient } from "@/lib/invoices/numberGenerator";
 
 /**
  * Generates a formatted quote number from a format string.
@@ -30,52 +31,74 @@ export function generateQuoteNumber(
 }
 
 /**
- * Gets the next quote number atomically (with locking).
- * Uses a transaction to prevent race conditions.
+ * Internal: get and increment the next quote number using an existing
+ * Prisma transaction client. Analog zu `getNextInvoiceNumberInTx`.
  */
-export async function getNextQuoteNumber(
-  tenantId: string
+async function _getNextQuoteNumberCore(
+  tx: TxClient,
+  tenantId: string,
 ): Promise<{ number: string; sequenceId: string }> {
   const currentYear = new Date().getFullYear();
 
-  const result = await prisma.$transaction(async (tx) => {
-    let sequence = await tx.quoteNumberSequence.findUnique({
-      where: { tenantId },
-    });
-
-    if (!sequence) {
-      sequence = await tx.quoteNumberSequence.create({
-        data: {
-          tenantId,
-          format: "AN-{YEAR}-{NUMBER}",
-          currentYear,
-          nextNumber: 1,
-          digitCount: 4,
-        },
-      });
-    }
-
-    if (sequence.currentYear !== currentYear) {
-      sequence = await tx.quoteNumberSequence.update({
-        where: { id: sequence.id },
-        data: { currentYear, nextNumber: 1 },
-      });
-    }
-
-    const quoteNumber = generateQuoteNumber(
-      sequence.format,
-      sequence.nextNumber,
-      sequence.digitCount,
-      sequence.currentYear
-    );
-
-    await tx.quoteNumberSequence.update({
-      where: { id: sequence.id },
-      data: { nextNumber: sequence.nextNumber + 1 },
-    });
-
-    return { number: quoteNumber, sequenceId: sequence.id };
+  let sequence = await tx.quoteNumberSequence.findUnique({
+    where: { tenantId },
   });
 
-  return result;
+  if (!sequence) {
+    sequence = await tx.quoteNumberSequence.create({
+      data: {
+        tenantId,
+        format: "AN-{YEAR}-{NUMBER}",
+        currentYear,
+        nextNumber: 1,
+        digitCount: 4,
+      },
+    });
+  }
+
+  if (sequence.currentYear !== currentYear) {
+    sequence = await tx.quoteNumberSequence.update({
+      where: { id: sequence.id },
+      data: { currentYear, nextNumber: 1 },
+    });
+  }
+
+  const quoteNumber = generateQuoteNumber(
+    sequence.format,
+    sequence.nextNumber,
+    sequence.digitCount,
+    sequence.currentYear,
+  );
+
+  await tx.quoteNumberSequence.update({
+    where: { id: sequence.id },
+    data: { nextNumber: sequence.nextNumber + 1 },
+  });
+
+  return { number: quoteNumber, sequenceId: sequence.id };
+}
+
+/**
+ * GoBD-konforme Variante: Nummer ziehen innerhalb einer bereits laufenden
+ * Prisma-Transaktion. Wenn der Insert failt, wird auch der Sequence-Increment
+ * zurückgerollt → keine "verbrannte" Nummer.
+ */
+export async function getNextQuoteNumberInTx(
+  tx: TxClient,
+  tenantId: string,
+): Promise<{ number: string; sequenceId: string }> {
+  return _getNextQuoteNumberCore(tx, tenantId);
+}
+
+/**
+ * Gets the next quote number atomically (with locking).
+ * Uses a transaction to prevent race conditions.
+ *
+ * ⚠ Wenn der Caller den Insert AUSSERHALB einer Transaktion macht und der
+ * Insert failt, ist die Nummer "verbrannt". Bevorzuge `getNextQuoteNumberInTx`.
+ */
+export async function getNextQuoteNumber(
+  tenantId: string,
+): Promise<{ number: string; sequenceId: string }> {
+  return prisma.$transaction((tx) => _getNextQuoteNumberCore(tx, tenantId));
 }

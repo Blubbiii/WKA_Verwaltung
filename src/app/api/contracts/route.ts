@@ -210,6 +210,15 @@ async function getHandler(request: NextRequest) {
 
 export const GET = withMonitoring(getHandler);
 
+// TODO(auto-renewal): Automatischer Renewal-Handler fehlt noch (Roadmap).
+// Verträge mit `autoRenewal=true` und `renewalPeriodMonths` sollten via
+// BullMQ-Cron am `noticeDeadline` automatisch verlängert werden:
+//  - neues endDate = altes endDate + renewalPeriodMonths
+//  - neue noticeDeadline berechnet
+//  - AuditLog-Eintrag "AUTO_RENEWED"
+//  - Webhook `contract.renewed`
+// Siehe docs/ROADMAP.md.
+
 // POST /api/contracts - Create contract
 async function postHandler(request: NextRequest) {
   try {

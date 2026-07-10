@@ -8,9 +8,13 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { apiError } from "@/lib/api-errors";
 
+// Hex-Farbe (6-stellig). Alles andere könnte via inline-Style
+// Layout-Breaking oder unerwartete Werte einschleusen.
+const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+
 const createSchema = z.object({
   name: z.string().min(1).max(50),
-  color: z.string().max(20).optional().nullable(),
+  color: z.string().regex(HEX_COLOR, "Farbe muss ein Hex-Wert im Format #RRGGBB sein").optional().nullable(),
 });
 
 // GET /api/crm/tags

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { checkStorageLimit } from "@/lib/storage-tracking";
 
 const newVersionSchema = z.object({
   fileName: z.string().min(1, "Dateiname ist erforderlich"),
@@ -41,6 +42,21 @@ export async function POST(
     const body = await request.json();
     const validatedData = newVersionSchema.parse(body);
 
+    // Storage-Quota check: eine neue Version zählt gegen das Tenant-Limit.
+    // Ohne diesen Check können Nutzer das Quota via Version-Upload umgehen.
+    if (validatedData.fileSizeBytes && validatedData.fileSizeBytes > 0) {
+      const { allowed, info: storageInfo } = await checkStorageLimit(
+        check.tenantId!,
+        validatedData.fileSizeBytes,
+      );
+      if (!allowed) {
+        return apiError("QUOTA_EXCEEDED", 413, {
+          message: `Speicherlimit erreicht. Verwendet: ${storageInfo.usedFormatted} von ${storageInfo.limitFormatted}. Die neue Version (${(validatedData.fileSizeBytes / 1024 / 1024).toFixed(1)} MB) überschreitet das Limit.`,
+          details: { storageInfo },
+        });
+      }
+    }
+
     // Finde die höchste Versionsnummer aller Versionen dieses Dokuments
     // Das aktuelle Dokument könnte selbst eine Version sein (parentId != null)
     // oder das Original (parentId == null)
@@ -60,37 +76,49 @@ export async function POST(
 
     const nextVersion = (latestVersion?.version || 1) + 1;
 
-    // Erstelle die neue Version
-    const newVersion = await prisma.document.create({
-      data: {
-        // Kopiere Metadaten vom aktuellen Dokument
-        title: currentDocument.title,
-        description: validatedData.description || currentDocument.description,
-        category: currentDocument.category,
-        tags: currentDocument.tags,
-        tenantId: currentDocument.tenantId,
+    // Erstelle die neue Version + Storage-Tracking atomar in einer Transaktion.
+    const newVersion = await prisma.$transaction(async (tx) => {
+      const created = await tx.document.create({
+        data: {
+          // Kopiere Metadaten vom aktuellen Dokument
+          title: currentDocument.title,
+          description: validatedData.description || currentDocument.description,
+          category: currentDocument.category,
+          tags: currentDocument.tags,
+          tenantId: currentDocument.tenantId,
 
-        // Neue Datei-Informationen
-        fileName: validatedData.fileName,
-        fileUrl: validatedData.fileUrl,
-        fileSizeBytes: validatedData.fileSizeBytes,
-        mimeType: validatedData.mimeType,
+          // Neue Datei-Informationen
+          fileName: validatedData.fileName,
+          fileUrl: validatedData.fileUrl,
+          fileSizeBytes: validatedData.fileSizeBytes,
+          mimeType: validatedData.mimeType,
 
-        // Versionierung
-        version: nextVersion,
-        parentId: rootDocumentId,
+          // Versionierung
+          version: nextVersion,
+          parentId: rootDocumentId,
 
-        // Zuordnungen kopieren
-        parkId: currentDocument.parkId,
-        fundId: currentDocument.fundId,
-        turbineId: currentDocument.turbineId,
-        contractId: currentDocument.contractId,
-        shareholderId: currentDocument.shareholderId,
-        serviceEventId: currentDocument.serviceEventId,
+          // Zuordnungen kopieren
+          parkId: currentDocument.parkId,
+          fundId: currentDocument.fundId,
+          turbineId: currentDocument.turbineId,
+          contractId: currentDocument.contractId,
+          shareholderId: currentDocument.shareholderId,
+          serviceEventId: currentDocument.serviceEventId,
 
-        // Ersteller
-        uploadedById: check.userId,
-      },
+          // Ersteller
+          uploadedById: check.userId,
+        },
+      });
+
+      // Storage-Tracking: neue Version zählt gegen das Tenant-Quota
+      if (validatedData.fileSizeBytes && validatedData.fileSizeBytes > 0) {
+        await tx.tenant.update({
+          where: { id: currentDocument.tenantId },
+          data: { storageUsedBytes: { increment: validatedData.fileSizeBytes } },
+        });
+      }
+
+      return created;
     });
 
     return NextResponse.json({

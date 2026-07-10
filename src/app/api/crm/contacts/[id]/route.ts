@@ -21,7 +21,7 @@ const updateSchema = z.object({
   houseNumber: z.string().max(20).optional().nullable(),
   postalCode: z.string().max(10).optional().nullable(),
   city: z.string().max(100).optional().nullable(),
-  country: z.string().max(100).optional(),
+  country: z.string().max(100).nullable().optional(),
   contactType: z.string().max(50).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
@@ -101,7 +101,7 @@ export async function PUT(
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("INTERNAL_ERROR", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
     }
 
     // Build update data from all provided fields

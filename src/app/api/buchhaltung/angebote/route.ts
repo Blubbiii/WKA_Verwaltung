@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextQuoteNumber } from "@/lib/quotes/numberGenerator";
+import { getNextQuoteNumberInTx } from "@/lib/quotes/numberGenerator";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getAllTaxRates } from "@/lib/tax/tax-rates";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
+import type { TaxType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 
 const quoteItemSchema = z.object({
@@ -92,12 +94,16 @@ export async function POST(request: NextRequest) {
     }
 
     const data = parsed.data;
-    const { number: quoteNumber } = await getNextQuoteNumber(check.tenantId!);
+
+    // Steuersätze aus DB (TaxRateConfig) statt hardcoded 19/7/0.
+    const quoteDateObj = new Date(data.quoteDate);
+    const taxRatesForDate = await getAllTaxRates(check.tenantId!, quoteDateObj);
 
     // Calculate item amounts
     const items = data.items.map((item, i) => {
       const net = Math.round(item.quantity * item.unitPrice * 100) / 100;
-      const tax = calculateTaxAmounts(net, item.taxType);
+      const rateForType = taxRatesForDate[item.taxType as TaxType];
+      const tax = calculateTaxAmounts(net, item.taxType, rateForType);
       return {
         position: i + 1,
         description: item.description,
@@ -116,29 +122,35 @@ export async function POST(request: NextRequest) {
     const taxAmount = items.reduce((sum, it) => sum + it.taxAmount, 0);
     const grossAmount = items.reduce((sum, it) => sum + it.grossAmount, 0);
 
-    const quote = await prisma.quote.create({
-      data: {
-        tenantId: check.tenantId!,
-        quoteNumber,
-        quoteDate: new Date(data.quoteDate),
-        validUntil: new Date(data.validUntil),
-        recipientType: data.recipientType || null,
-        recipientName: data.recipientName || null,
-        recipientAddress: data.recipientAddress || null,
-        serviceStartDate: data.serviceStartDate ? new Date(data.serviceStartDate) : null,
-        serviceEndDate: data.serviceEndDate ? new Date(data.serviceEndDate) : null,
-        internalReference: data.internalReference || null,
-        notes: data.notes || null,
-        fundId: data.fundId || null,
-        parkId: data.parkId || null,
-        letterheadId: data.letterheadId || null,
-        createdById: check.userId || null,
-        netAmount,
-        taxAmount,
-        grossAmount,
-        items: { create: items },
-      },
-      include: { items: true },
+    // F17: Nummer + Insert in EINER Transaktion (analog Invoice-Pattern).
+    // Wenn der Insert failt, rollt der Sequence-Increment ebenfalls zurück
+    // — keine „verbrannten" Angebotsnummern.
+    const quote = await prisma.$transaction(async (tx) => {
+      const { number: quoteNumber } = await getNextQuoteNumberInTx(tx, check.tenantId!);
+      return tx.quote.create({
+        data: {
+          tenantId: check.tenantId!,
+          quoteNumber,
+          quoteDate: quoteDateObj,
+          validUntil: new Date(data.validUntil),
+          recipientType: data.recipientType || null,
+          recipientName: data.recipientName || null,
+          recipientAddress: data.recipientAddress || null,
+          serviceStartDate: data.serviceStartDate ? new Date(data.serviceStartDate) : null,
+          serviceEndDate: data.serviceEndDate ? new Date(data.serviceEndDate) : null,
+          internalReference: data.internalReference || null,
+          notes: data.notes || null,
+          fundId: data.fundId || null,
+          parkId: data.parkId || null,
+          letterheadId: data.letterheadId || null,
+          createdById: check.userId || null,
+          netAmount,
+          taxAmount,
+          grossAmount,
+          items: { create: items },
+        },
+        include: { items: true },
+      });
     });
 
     return NextResponse.json({ data: quote }, { status: 201 });

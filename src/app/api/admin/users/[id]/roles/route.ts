@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { invalidateUser } from "@/lib/auth/permissionCache";
+import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -110,6 +111,18 @@ export async function POST(
       }
     }
 
+    // FIX 1 (SECURITY): Role-Escalation verhindern.
+    // Caller darf keine Rolle zuweisen deren hierarchy >= eigener hierarchy.
+    // Ausnahme: Superadmin (hierarchy >= 100) darf jede Rolle zuweisen.
+    const callerHierarchy = await getUserHighestHierarchy(check.userId!);
+    const isCallerSuperadmin = callerHierarchy >= ROLE_HIERARCHY.SUPERADMIN;
+    if (!isCallerSuperadmin && role.hierarchy >= callerHierarchy) {
+      return apiError("FORBIDDEN", 403, {
+        message:
+          "Rolle mit gleich hoher oder höherer Berechtigung kann nicht zugewiesen werden",
+      });
+    }
+
     // Check if assignment already exists
     const existingAssignment = await prisma.userRoleAssignment.findFirst({
       where: {
@@ -201,8 +214,13 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Rollenzuweisung nicht gefunden" });
     }
 
+    // FIX 3: Schema HAT tenantId auf UserRoleAssignment (nullable). Original bleibt.
+    // TODO: Bei globalen Assignments (tenantId=null) kann die delete-Filter-
+    // Kombination trotz vorhandenem findFirst-Match P2025 werfen, wenn
+    // check.tenantId gesetzt ist. Langfristig: Filter auf id-only umstellen
+    // oder mit OR: [{tenantId: check.tenantId}, {tenantId: null}] matchen.
     await prisma.userRoleAssignment.delete({
-      where: { id: assignment.id, tenantId: check.tenantId!},
+      where: { id: assignment.id, tenantId: check.tenantId! },
     });
 
     // Cache invalidieren da sich die Permissions des Users geändert haben

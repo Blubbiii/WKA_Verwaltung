@@ -78,6 +78,19 @@ export default function KassenbuchPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   async function handleCreate() {
+    // Deutsche Komma-Norm: "1.234,56" → 1234.56. parseFloat() alleine schluckt
+    // Komma und liefert 1.234 (Tausender-Punkt) statt 1234,56 — Geld weg.
+    const normalized = form.amount
+      .toString()
+      .replace(/\s/g, "")
+      .replace(/\.(?=\d{3}(\D|$))/g, "") // Tausenderpunkte entfernen
+      .replace(",", ".");
+    const amountNum = parseFloat(normalized);
+    if (!Number.isFinite(amountNum)) {
+      toast.error(t("toastCreateError"));
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/buchhaltung/kassenbuch", {
@@ -85,7 +98,7 @@ export default function KassenbuchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          amount: parseFloat(form.amount),
+          amount: amountNum,
           account: form.account || undefined,
           receiptNumber: form.receiptNumber || undefined,
         }),

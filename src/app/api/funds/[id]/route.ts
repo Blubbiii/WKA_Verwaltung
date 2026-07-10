@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { logDeletion } from "@/lib/audit";
+import { logDeletion, createAuditLog } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
@@ -245,6 +245,27 @@ export async function PUT(
     // Invalidate dashboard caches after fund update
     invalidate.onFundChange(check.tenantId!, id, 'update').catch((err) => {
       logger.warn({ err }, '[Funds] Cache invalidation error after update');
+    });
+
+    // FIX 11: Audit-Log für Fund-Update (Compliance). Deferred nach Response.
+    const oldSnapshot = {
+      name: existingFund.name,
+      legalForm: existingFund.legalForm,
+      status: existingFund.status,
+    };
+    const newSnapshot = {
+      name: fund.name,
+      legalForm: fund.legalForm,
+      status: fund.status,
+    };
+    after(async () => {
+      await createAuditLog({
+        action: "UPDATE",
+        entityType: "Fund",
+        entityId: id,
+        oldValues: oldSnapshot,
+        newValues: newSnapshot,
+      });
     });
 
     return NextResponse.json(fund);
