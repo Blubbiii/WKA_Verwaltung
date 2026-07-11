@@ -108,15 +108,29 @@ export async function GET(
 
       const buffer = Buffer.concat(chunks);
 
+      // F+ Compliance: SVGs enthalten XML das JavaScript via <script>-Tags oder
+      // event-Handler ausführen kann. Inline-Serving eines fremden SVG entspricht
+      // Stored-XSS in unserer Origin. Erzwungener attachment-Disposition macht
+      // Browser das SVG downloaden statt rendern — kein Script-Kontext.
+      // Alternative wäre DOMPurify-Sanitizing, aber Downloads reichen für unseren
+      // Use-Case (SVG-Uploads sind primär Logos).
+      const isSvg = (document.mimeType ?? "").toLowerCase() === "image/svg+xml";
+      const disposition = isSvg ? "attachment" : "inline";
+
       // Response mit korrekten Headers
       const headers = new Headers();
       headers.set("Content-Type", document.mimeType || "application/octet-stream");
       headers.set("Content-Length", buffer.length.toString());
-      headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
+      headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
       headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
       headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
       headers.set("Access-Control-Allow-Headers", "Content-Type");
+      if (isSvg) {
+        // Defense-in-Depth: verhindert dass Browser den Content anders inter-
+        // pretiert als deklariert, falls Content-Disposition mal ignoriert wird.
+        headers.set("X-Content-Type-Options", "nosniff");
+      }
 
       return new NextResponse(buffer, {
         status: 200,
@@ -175,12 +189,19 @@ export async function GET(
           try {
             const fileBuffer = await readFile(localPath);
 
+            // F+ Compliance: gleiche SVG-XSS-Absicherung wie im S3-Pfad
+            const isSvg = (document.mimeType ?? "").toLowerCase() === "image/svg+xml";
+            const disposition = isSvg ? "attachment" : "inline";
+
             const headers = new Headers();
             headers.set("Content-Type", document.mimeType || "application/octet-stream");
             headers.set("Content-Length", fileBuffer.length.toString());
-            headers.set("Content-Disposition", `inline; filename="${encodeURIComponent(document.fileName)}"`);
+            headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
             headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
             headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+            if (isSvg) {
+              headers.set("X-Content-Type-Options", "nosniff");
+            }
 
             return new NextResponse(fileBuffer, { status: 200, headers });
           } catch (localError) {

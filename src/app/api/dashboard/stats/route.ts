@@ -107,8 +107,8 @@ async function fetchTenantStats(
     // Leases in tenant
     prisma.lease.count({ where: { tenantId } }),
 
-    // All contracts in tenant
-    prisma.contract.count({ where: { tenantId } }),
+    // All contracts in tenant (F3: soft-deleted ausblenden)
+    prisma.contract.count({ where: { tenantId, deletedAt: null } }),
 
     // Documents in tenant
     prisma.document.count({ where: { tenantId } }),
@@ -124,18 +124,20 @@ async function fetchTenantStats(
     // Votes in tenant
     prisma.vote.count({ where: { tenantId } }),
 
-    // Active contracts
+    // Active contracts (F3: soft-deleted ausblenden)
     prisma.contract.count({
       where: {
         tenantId,
+        deletedAt: null,
         status: "ACTIVE",
       },
     }),
 
-    // Expiring contracts (within next 90 days)
+    // Expiring contracts (within next 90 days; F3: soft-deleted ausblenden)
     prisma.contract.count({
       where: {
         tenantId,
+        deletedAt: null,
         status: "ACTIVE",
         endDate: {
           lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),

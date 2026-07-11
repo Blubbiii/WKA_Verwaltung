@@ -11,6 +11,7 @@ import {
   OverpaymentError,
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
+import { PeriodLockedError } from "@/lib/accounting/period-lock";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -21,7 +22,13 @@ const confirmationSchema = z.object({
     .array(
       z.object({
         invoiceId: z.string().uuid("Ungültige Rechnungs-ID"),
-        paidAt: z.string().datetime("Ungültiges Datum"),
+        // F7-Compliance: kein "Vorbuchen" — paidAt darf nicht in der Zukunft liegen.
+        paidAt: z
+          .string()
+          .datetime("Ungültiges Datum")
+          .refine((v) => new Date(v).getTime() <= Date.now(), {
+            message: "Zahlungsdatum darf nicht in der Zukunft liegen",
+          }),
         paymentReference: z.string().max(200).optional(),
       })
     )
@@ -145,7 +152,13 @@ export async function POST(request: NextRequest) {
           // Webhook errors must not fail the response
         });
       } catch (err) {
-        if (err instanceof OverpaymentError) {
+        if (err instanceof PeriodLockedError) {
+          // F7-Compliance: bezahlt-Datum liegt in gesperrter Periode → als
+          // Einzelfehler pro Rechnung berichten (Batch läuft weiter).
+          errors.push(
+            `Rechnung ${invoice.invoiceNumber}: Periode ${err.periodYear}-${String(err.periodMonth).padStart(2, "0")} gesperrt`,
+          );
+        } else if (err instanceof OverpaymentError) {
           errors.push(
             `Rechnung ${invoice.invoiceNumber}: Überzahlung — bitte als Gutschrift abwickeln`,
           );

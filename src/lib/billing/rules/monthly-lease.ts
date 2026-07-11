@@ -10,7 +10,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType, ContractStatus } from "@prisma/client";
-import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumbers, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import {
@@ -495,98 +495,135 @@ export class MonthlyLeaseHandler implements RuleHandler {
     let totalAmount = 0;
     const taxType = params.taxType || "EXEMPT"; // Pacht ist i.d.R. steuerfrei
 
+    // Pre-pass: berechne Proration + Amount pro Lease, filtere die die tatsaechlich
+    // eine Rechnung bekommen. Wir muessen die Anzahl kennen, bevor wir Nummern
+    // ziehen — sonst reservieren wir Nummern fuer Skips und verletzen die
+    // lueckenlose Nummerierung (§14 UStG).
+    // Muster wie in lease-advance.ts::generateAdvanceInvoices.
+    type ReadyLease = {
+      lease: (typeof leases)[number];
+      amount: number;
+      prorationFactor: number;
+    };
+    const readyLeases: ReadyLease[] = [];
+
     for (const lease of leases) {
+      const prorationFactor = calculateProrationFactor(
+        year,
+        month,
+        lease.startDate,
+        lease.endDate
+      );
+
+      if (prorationFactor <= 0) {
+        invoiceResults.push({
+          success: false,
+          recipientName:
+            lease.lessor.companyName ||
+            `${lease.lessor.firstName} ${lease.lessor.lastName}`,
+          amount: 0,
+          error: "Pachtvertrag nicht aktiv in diesem Monat",
+        });
+        continue;
+      }
+
+      const park = lease.leasePlots[0]?.plot?.park || null;
+      const fullMonthAmount = calculateLeaseAmount(
+        {
+          id: lease.id,
+          leasePlots: lease.leasePlots.map((lp) => ({
+            plot: {
+              id: lp.plot.id,
+              areaSqm: lp.plot.areaSqm ? Number(lp.plot.areaSqm) : null,
+              plotAreas: lp.plot.plotAreas.map((pa) => ({
+                id: pa.id,
+                areaType: pa.areaType,
+                areaSqm: pa.areaSqm ? Number(pa.areaSqm) : null,
+                lengthM: pa.lengthM ? Number(pa.lengthM) : null,
+                compensationType: pa.compensationType,
+                compensationFixedAmount: pa.compensationFixedAmount
+                  ? Number(pa.compensationFixedAmount)
+                  : null,
+                compensationPercentage: pa.compensationPercentage
+                  ? Number(pa.compensationPercentage)
+                  : null,
+              })),
+            },
+          })),
+        },
+        park
+          ? {
+              minimumRentPerTurbine: park.minimumRentPerTurbine
+                ? Number(park.minimumRentPerTurbine)
+                : null,
+              weaSharePercentage: park.weaSharePercentage
+                ? Number(park.weaSharePercentage)
+                : null,
+              poolSharePercentage: park.poolSharePercentage
+                ? Number(park.poolSharePercentage)
+                : null,
+              wegCompensationPerSqm: park.wegCompensationPerSqm
+                ? Number(park.wegCompensationPerSqm)
+                : null,
+              ausgleichCompensationPerSqm: park.ausgleichCompensationPerSqm
+                ? Number(park.ausgleichCompensationPerSqm)
+                : null,
+              kabelCompensationPerM: park.kabelCompensationPerM
+                ? Number(park.kabelCompensationPerM)
+                : null,
+            }
+          : null,
+        params.useMinimumRent ?? true
+      );
+
+      const amount = Math.round(fullMonthAmount * prorationFactor * 100) / 100;
+
+      if (amount <= 0) {
+        invoiceResults.push({
+          success: false,
+          recipientName:
+            lease.lessor.companyName ||
+            `${lease.lessor.firstName} ${lease.lessor.lastName}`,
+          amount: 0,
+          error: "Berechneter Betrag ist 0 oder negativ",
+        });
+        continue;
+      }
+
+      readyLeases.push({ lease, amount, prorationFactor });
+    }
+
+    // Batch-generate Rechnungsnummern (1 TX statt N) — sonst pro Lease ein
+    // separater $transaction-Roundtrip fuer den Sequence-Update.
+    const { numbers: invoiceNumbers } = await getNextInvoiceNumbers(
+      tenantId,
+      InvoiceType.INVOICE,
+      readyLeases.length
+    );
+
+    // Monatsname fuer Beschreibung
+    const monthNames = [
+      "Januar",
+      "Februar",
+      "Maerz",
+      "April",
+      "Mai",
+      "Juni",
+      "Juli",
+      "August",
+      "September",
+      "Oktober",
+      "November",
+      "Dezember",
+    ];
+
+    let numberIndex = 0;
+    for (const { lease, amount, prorationFactor } of readyLeases) {
       try {
-        const park = lease.leasePlots[0]?.plot?.park || null;
-
-        // Calculate proration factor for partial months (Teilmonate)
-        const prorationFactor = calculateProrationFactor(
-          year,
-          month,
-          lease.startDate,
-          lease.endDate
-        );
-
-        // Skip leases that are completely outside the billing month
-        if (prorationFactor <= 0) {
-          invoiceResults.push({
-            success: false,
-            recipientName:
-              lease.lessor.companyName ||
-              `${lease.lessor.firstName} ${lease.lessor.lastName}`,
-            amount: 0,
-            error: "Pachtvertrag nicht aktiv in diesem Monat",
-          });
-          continue;
-        }
-
-        // Berechne Betrag (full month)
-        const fullMonthAmount = calculateLeaseAmount(
-          {
-            id: lease.id,
-            leasePlots: lease.leasePlots.map((lp) => ({
-              plot: {
-                id: lp.plot.id,
-                areaSqm: lp.plot.areaSqm ? Number(lp.plot.areaSqm) : null,
-                plotAreas: lp.plot.plotAreas.map((pa) => ({
-                  id: pa.id,
-                  areaType: pa.areaType,
-                  areaSqm: pa.areaSqm ? Number(pa.areaSqm) : null,
-                  lengthM: pa.lengthM ? Number(pa.lengthM) : null,
-                  compensationType: pa.compensationType,
-                  compensationFixedAmount: pa.compensationFixedAmount
-                    ? Number(pa.compensationFixedAmount)
-                    : null,
-                  compensationPercentage: pa.compensationPercentage
-                    ? Number(pa.compensationPercentage)
-                    : null,
-                })),
-              },
-            })),
-          },
-          park
-            ? {
-                minimumRentPerTurbine: park.minimumRentPerTurbine
-                  ? Number(park.minimumRentPerTurbine)
-                  : null,
-                weaSharePercentage: park.weaSharePercentage
-                  ? Number(park.weaSharePercentage)
-                  : null,
-                poolSharePercentage: park.poolSharePercentage
-                  ? Number(park.poolSharePercentage)
-                  : null,
-                wegCompensationPerSqm: park.wegCompensationPerSqm
-                  ? Number(park.wegCompensationPerSqm)
-                  : null,
-                ausgleichCompensationPerSqm: park.ausgleichCompensationPerSqm
-                  ? Number(park.ausgleichCompensationPerSqm)
-                  : null,
-                kabelCompensationPerM: park.kabelCompensationPerM
-                  ? Number(park.kabelCompensationPerM)
-                  : null,
-              }
-            : null,
-          params.useMinimumRent ?? true
-        );
-
-        // Apply proration factor for partial months
-        const amount = Math.round(fullMonthAmount * prorationFactor * 100) / 100;
-
-        if (amount <= 0) {
-          invoiceResults.push({
-            success: false,
-            recipientName:
-              lease.lessor.companyName ||
-              `${lease.lessor.firstName} ${lease.lessor.lastName}`,
-            amount: 0,
-            error: "Berechneter Betrag ist 0 oder negativ",
-          });
-          continue;
-        }
-
+        const invoiceNumber = invoiceNumbers[numberIndex++];
         const isPartialMonth = prorationFactor < 1;
 
-        // Empfänger-Adresse formatieren
+        // Empfaenger-Adresse formatieren
         const recipientName =
           lease.lessor.companyName ||
           `${lease.lessor.firstName || ""} ${lease.lessor.lastName || ""}`.trim();
@@ -603,39 +640,19 @@ export class MonthlyLeaseHandler implements RuleHandler {
         const serviceStartDate = lease.startDate > monthFirstDay ? lease.startDate : monthFirstDay;
         const serviceEndDate = lease.endDate && lease.endDate < monthLastDay ? lease.endDate : monthLastDay;
 
-        // Rechnungsnummer generieren
-        const { number: invoiceNumber } = await getNextInvoiceNumber(
-          tenantId,
-          InvoiceType.INVOICE
-        );
-
         // Steuerberechnung
         const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(
           amount,
           taxType
         );
 
-        // Monatsname für Beschreibung
-        const monthNames = [
-          "Januar",
-          "Februar",
-          "Maerz",
-          "April",
-          "Mai",
-          "Juni",
-          "Juli",
-          "August",
-          "September",
-          "Oktober",
-          "November",
-          "Dezember",
-        ];
-
         // Build description - indicate partial month (Teilmonat) if prorated
         const baseDescription = `Pachtzahlung ${monthNames[month - 1]} ${year}`;
         const description = isPartialMonth
           ? `${baseDescription} (Teilmonat, ${Math.round(prorationFactor * 100)}%)`
           : baseDescription;
+
+        const park = lease.leasePlots[0]?.plot?.park || null;
 
         // Rechnung erstellen
         const invoice = await prisma.invoice.create({

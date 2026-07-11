@@ -129,12 +129,18 @@ export const authConfig: NextAuthConfig = {
         const cookieHeader = req?.headers?.get("cookie") ?? "";
         const cookieMatch = cookieHeader.match(/wpm-active-tenant=([^;]+)/);
         if (cookieMatch) {
-          const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+          // F+ Compliance: Kein Fallback auf "" — ein leeres HMAC-Secret ergibt
+          // eine konstante Signatur, die trivial gefälscht werden kann. Ohne
+          // gesetztes Secret ignorieren wir den Tenant-Override-Cookie
+          // (fail-secure — der Nutzer bleibt in seinem Home-Tenant).
+          const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
           const { verifyActiveTenantCookie } = await import("./active-tenant-cookie");
-          const data = await verifyActiveTenantCookie(
-            decodeURIComponent(cookieMatch[1]),
-            secret,
-          );
+          const data = secret
+            ? await verifyActiveTenantCookie(
+                decodeURIComponent(cookieMatch[1]),
+                secret,
+              )
+            : null;
           if (data) {
             session.user.tenantId = data.activeTenantId;
             session.user.tenantName = data.tenantName;

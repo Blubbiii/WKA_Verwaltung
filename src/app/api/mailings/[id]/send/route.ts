@@ -104,7 +104,22 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 
     // Timeout-Guard: verhindert SENDING-Deadlock, wenn der Provider hängt.
     // Nach 5 Minuten wird abgebrochen und der aktuelle Fortschritt persistiert.
+    //
     // TODO(bullmq): Job pro Empfänger in Queue schieben — separater PR.
+    // Scope (Umfang der Migration, gross genug fuer eigenen PR):
+    //  1. `src/lib/queue/queues/email.queue.ts::EmailJobData` mit Worker
+    //     `src/lib/queue/workers/email.worker.ts::EmailJobData` vereinheitlichen —
+    //     Queue nutzt Felder `template`+`data`, Worker liest `type`+`templateData`.
+    //     Beide Seiten muessen dasselbe Schema teilen, sonst geht der Payload verloren.
+    //  2. Neuer Job-Typ "mailing-recipient" im Worker, der schon-gerenderten HTML/Subject
+    //     entgegennimmt UND MailingRecipient.status/error updated (Worker kennt heute
+     //    das MailingRecipient-Model nicht).
+    //  3. Route hier: statt sync-Loop → MailingRecipient-Records via createMany + Bulk-
+    //     enqueue via enqueueEmailBulk. Response gibt Job-IDs zurueck.
+    //  4. Client (Mailing-Detail-View) polled Progress: sentCount / failedCount / postCount
+    //     aus der bestehenden GET /api/mailings/[id]-Route.
+    // Bis dahin: sequentiell + 5min-Timeout — funktional korrekt, aber langsam
+    // bei > ~200 Empfaengern.
     const SEND_TIMEOUT_MS = 5 * 60 * 1000;
     const sendDeadline = Date.now() + SEND_TIMEOUT_MS;
     let timedOut = false;

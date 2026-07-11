@@ -70,6 +70,10 @@ export async function GET(
       where: {
         id,
         tenantId: check.tenantId,
+        // F3-Compliance: Soft-deleted Verträge nicht mehr als aktive Kontraktdatensätze
+        // exponieren. Aufbewahrungspflicht (§147 AO, 6 Jahre) bleibt via deletedAt=null-Filter
+        // + gobd-archive erhalten — der Datensatz existiert weiter in der DB.
+        deletedAt: null,
       },
       include: {
         park: {
@@ -188,6 +192,8 @@ export async function PUT(
       where: {
         id,
         tenantId: check.tenantId,
+        // F3-Compliance: kein PUT auf soft-deleted Verträge
+        deletedAt: null,
       },
     });
 
@@ -328,6 +334,8 @@ export async function DELETE(
       where: {
         id,
         tenantId: check.tenantId,
+        // F3-Compliance: bereits soft-deleted → 404, keine Doppel-Löschung
+        deletedAt: null,
       },
     });
 
@@ -335,9 +343,13 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Vertrag nicht gefunden" });
     }
 
-    // Perform the deletion — scoped to tenantId to prevent TOCTOU
-    await prisma.contract.delete({
+    // F3-Compliance: Soft-Delete statt Hard-Delete. §147 AO Aufbewahrungspflicht
+    // (6 Jahre) verlangt dass Verträge nicht sofort aus der DB verschwinden.
+    // Der `retention`-Cron / gobd-archive kümmert sich um den finalen Purge nach Ablauf.
+    // Scope tenantId gegen TOCTOU (analog zum ursprünglichen delete).
+    await prisma.contract.update({
       where: { id, tenantId: check.tenantId! },
+      data: { deletedAt: new Date() },
     });
 
     // Log the deletion (deferred: runs after response is sent)

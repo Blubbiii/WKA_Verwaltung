@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { z } from "zod";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 
 // =============================================================================
@@ -47,6 +48,52 @@ export interface AvailableWidget {
   };
   requiredRole?: string[];
 }
+
+// =============================================================================
+// RUNTIME VALIDATION for /api/dashboard/widgets response
+// The API returns WidgetDefinition (flat defaultWidth/defaultHeight fields);
+// bad server payloads / stale caches / broken user dashboard configs are
+// filtered out here rather than crashing the grid downstream.
+// =============================================================================
+
+const WIDGET_CATEGORY_ENUM = z.enum([
+  "kpi",
+  "chart",
+  "list",
+  "admin",
+  "utility",
+  "weather",
+  "quick-actions",
+]);
+
+const AvailableWidgetRawSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string(),
+    category: WIDGET_CATEGORY_ENUM,
+    // Nested (target) shape
+    defaultSize: z
+      .object({
+        w: z.number(),
+        h: z.number(),
+        minW: z.number().optional(),
+        minH: z.number().optional(),
+        maxW: z.number().optional(),
+        maxH: z.number().optional(),
+      })
+      .optional(),
+    // Flat shape (WidgetDefinition from /api/dashboard/widgets)
+    defaultWidth: z.number().optional(),
+    defaultHeight: z.number().optional(),
+    minWidth: z.number().optional(),
+    minHeight: z.number().optional(),
+    maxWidth: z.number().optional(),
+    maxHeight: z.number().optional(),
+    requiredRole: z.array(z.string()).optional(),
+    minRole: z.string().optional(),
+  })
+  .passthrough();
 
 export interface UseDashboardConfigResult {
   config: DashboardConfig | null;
@@ -324,27 +371,39 @@ export function useDashboardConfig(): UseDashboardConfigResult {
       if (response.ok) {
         const data = await response.json();
         const rawWidgets: unknown[] = Array.isArray(data) ? data : data.widgets ?? [];
-        // API returns WidgetDefinition format (defaultWidth/defaultHeight),
-        // transform to AvailableWidget format (defaultSize: { w, h })
-        const mapped: AvailableWidget[] = rawWidgets.map((raw) => {
-          const w = raw as Record<string, unknown>;
-          return {
-            id: w.id as string,
-            name: w.name as string,
-            description: w.description as string,
-            category: w.category as AvailableWidget["category"],
-            requiredRole: (w.requiredRole ?? (w.minRole ? [w.minRole] : undefined)) as string[] | undefined,
-            defaultSize: (w.defaultSize as AvailableWidget["defaultSize"]) ?? {
-              w: (w.defaultWidth as number) ?? 3,
-              h: (w.defaultHeight as number) ?? 2,
-              minW: w.minWidth as number | undefined,
-              minH: w.minHeight as number | undefined,
-              maxW: w.maxWidth as number | undefined,
-              maxH: w.maxHeight as number | undefined,
-            },
+        // Runtime-validate each entry.  Bad entries (broken cache, stale
+        // server response, malformed user dashboard) are DROPPED rather
+        // than throwing — the whole dashboard should not blank out.
+        const mapped: AvailableWidget[] = rawWidgets.flatMap((raw) => {
+          const parsed = AvailableWidgetRawSchema.safeParse(raw);
+          if (!parsed.success) {
+            if (typeof console !== "undefined") {
+              console.warn(
+                "[useDashboardConfig] Skipping invalid widget from API:",
+                parsed.error.issues,
+              );
+            }
+            return [];
+          }
+          const w = parsed.data;
+          const defaultSize: AvailableWidget["defaultSize"] = w.defaultSize ?? {
+            w: w.defaultWidth ?? 3,
+            h: w.defaultHeight ?? 2,
+            minW: w.minWidth,
+            minH: w.minHeight,
+            maxW: w.maxWidth,
+            maxH: w.maxHeight,
           };
+          return [{
+            id: w.id,
+            name: w.name,
+            description: w.description,
+            category: w.category,
+            requiredRole: w.requiredRole ?? (w.minRole ? [w.minRole] : undefined),
+            defaultSize,
+          }];
         });
-        setAvailableWidgets(mapped);
+        setAvailableWidgets(mapped.length > 0 ? mapped : DEFAULT_AVAILABLE_WIDGETS);
       } else {
         // Use default widgets on error
         setAvailableWidgets(DEFAULT_AVAILABLE_WIDGETS);

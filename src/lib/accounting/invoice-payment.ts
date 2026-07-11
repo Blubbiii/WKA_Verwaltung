@@ -19,6 +19,7 @@ import { InvoicePaymentMethod } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { assertPeriodOpen } from "./period-lock";
 
 export class OverpaymentError extends Error {
   constructor(
@@ -74,6 +75,12 @@ export async function recordPayment(
   if (params.amount <= 0) {
     throw new Error("Zahlbetrag muss > 0 sein");
   }
+
+  // F7-Compliance (GoBD §146 AO): Zahlungen dürfen nicht in einen bereits
+  // geschlossenen Buchungsmonat wandern. Sonst könnte man nachträglich Umsätze
+  // in eine gesperrte Periode buchen und §146-"Unveränderbarkeit" verletzen.
+  // Innerhalb der TX gelesen — kein Race zwischen Lock-Anlage und Buchung.
+  await assertPeriodOpen(params.tenantId, params.paymentDate, tx);
 
   // SELECT FOR UPDATE: blockiert die Row für andere parallele TX bis Commit.
   // Wir nutzen den Lock zuerst, dann die typsichere findUnique darunter.

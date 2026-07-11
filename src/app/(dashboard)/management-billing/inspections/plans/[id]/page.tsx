@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -12,6 +13,7 @@ import {
   Loader2,
   FileText,
 } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import {
   Card,
   CardContent,
@@ -130,6 +132,7 @@ export default function InspectionPlanDetailPage({
 }) {
   const { id } = React.use(params);
   const router = useRouter();
+  const tDelete = useTranslations("common.pageDelete");
 
   const [plan, setPlan] = useState<InspectionPlanDetail | null>(null);
   const [parks, setParks] = useState<ParkOption[]>([]);
@@ -137,6 +140,7 @@ export default function InspectionPlanDetailPage({
   const [isError, setIsError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -242,8 +246,6 @@ export default function InspectionPlanDetailPage({
   }
 
   async function handleDelete() {
-    if (!confirm("Möchten Sie diesen Prüfplan wirklich löschen?")) return;
-
     try {
       setDeleting(true);
       const res = await fetch(
@@ -262,6 +264,7 @@ export default function InspectionPlanDetailPage({
       toast.error(
         error instanceof Error ? error.message : "Fehler beim Löschen"
       );
+      throw error; // keep dialog open on error
     } finally {
       setDeleting(false);
     }
@@ -355,7 +358,7 @@ export default function InspectionPlanDetailPage({
         <div className="flex gap-2">
           <Button
             variant="destructive"
-            onClick={handleDelete}
+            onClick={() => setDeleteOpen(true)}
             disabled={deleting}
           >
             {deleting ? (
@@ -553,6 +556,13 @@ export default function InspectionPlanDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDelete}
+        itemName={tDelete("inspectionPlanItemName")}
+      />
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { formatDate, LOCALE_DE } from "@/lib/format";
 import {
   BookOpen,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Loader2,
   Pencil,
@@ -16,6 +18,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -497,6 +500,13 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
 // MAIN PAGE
 // ============================================================================
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export default function JournalEntriesPage() {
   const t = useTranslations("journalEntries");
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -506,6 +516,8 @@ export default function JournalEntriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
 
   // Batch selection
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
@@ -524,22 +536,34 @@ export default function JournalEntriesPage() {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (yearFilter) params.set("year", yearFilter);
+      // Pagination-Parameter — die API kann sie auch bei "flat data"-Response ignorieren.
+      params.set("page", String(page));
+      params.set("limit", String(PAGE_SIZE_DEFAULT));
       const res = await fetch(`/api/journal-entries?${params}`, { signal: ac.signal });
       if (res.ok) {
         const json = await res.json();
-        if (!ac.signal.aborted) setEntries(json.data ?? []);
+        if (!ac.signal.aborted) {
+          setEntries(json.data ?? []);
+          // Backwards-compatible: setzt Pagination nur, wenn die API sie liefert.
+          setPagination(json.pagination ?? null);
+        }
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
     } finally {
       if (!ac.signal.aborted) setLoading(false);
     }
-  }, [statusFilter, yearFilter]);
+  }, [statusFilter, yearFilter, page]);
 
   useEffect(() => {
     load();
     return () => abortRef.current?.abort();
   }, [load]);
+
+  // Filter-Wechsel resettet Pagination
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, yearFilter]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -843,6 +867,39 @@ export default function JournalEntriesPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+          )}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between border-t p-4">
+              <p className="text-sm text-muted-foreground">
+                {t("pagination.pageOf", {
+                  page: pagination.page,
+                  totalPages: pagination.totalPages,
+                  totalCount: pagination.total,
+                })}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.page <= 1 || loading}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  {t("pagination.prev")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setPage((p) => Math.min(pagination.totalPages, p + 1))
+                  }
+                  disabled={pagination.page >= pagination.totalPages || loading}
+                >
+                  {t("pagination.next")}
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

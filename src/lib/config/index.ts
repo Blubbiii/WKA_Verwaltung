@@ -519,6 +519,27 @@ export async function getConfigBoolean(
 }
 
 /**
+ * Invalidate the cached email/paperless/weather config for a tenant.
+ * Called by `setConfig` after a write and by `deleteConfig`.
+ * Also invalidates the "global" key (tenantId=null) so shared configs
+ * re-fetch from DB after admins update global settings.
+ */
+async function invalidateConfigCache(
+  category: ConfigCategory,
+  tenantId?: string | null,
+): Promise<void> {
+  try {
+    const { cache } = await import("@/lib/cache");
+    const key = `system-config:${category}`;
+    // Tenant-specific and global bucket both need to drop.
+    await cache.del(key, tenantId || undefined);
+    await cache.del(key, undefined);
+  } catch (error) {
+    logger.warn({ err: error }, `[Config] Failed to invalidate cache for ${category}`);
+  }
+}
+
+/**
  * Set a configuration value
  *
  * @param key - The configuration key
@@ -601,6 +622,11 @@ export async function setConfig(
       }) as unknown as SystemConfigRecord;
     }
   }
+
+  // Invalidate any getEmailConfig / cached category buckets so the next
+  // request re-fetches from DB — otherwise mail-send would keep using
+  // stale SMTP creds for up to CACHE_TTL.SHORT seconds after a change.
+  await invalidateConfigCache(category, tenantId);
 
   return {
     key: config.key,
@@ -768,6 +794,14 @@ export async function deleteConfig(
         },
       },
     });
+
+    // Drop cache for the affected category so the next getEmailConfig etc.
+    // re-reads from DB immediately.
+    const meta = CONFIG_KEYS[key as ConfigKey];
+    if (meta?.category) {
+      await invalidateConfigCache(meta.category as ConfigCategory, tenantId);
+    }
+
     return true;
   } catch {
     return false;
@@ -793,6 +827,12 @@ export async function setConfigs(
 /**
  * Get email configuration as a structured object
  * Convenience function for email sending
+ *
+ * Cached in Redis (30s TTL via CACHE_TTL.SHORT) — vor dem Fix wurde bei jedem Mail-Send
+ * 7x sequentiell die systemConfig-Tabelle abgefragt (host/port/secure/user/
+ * password/fromAddress/fromName). Bei einem 1000-Empfaenger-Batch bedeutete
+ * das 7000 SQL-Roundtrips fuer denselben unveraenderten Wert.
+ * Invalidierung: `invalidateConfigCache("email", tenantId)` in setConfig/deleteConfig.
  */
 export async function getEmailConfig(tenantId?: string | null): Promise<{
   host: string;
@@ -803,27 +843,38 @@ export async function getEmailConfig(tenantId?: string | null): Promise<{
   fromAddress: string;
   fromName: string;
 } | null> {
-  const host = await getConfig("email.smtp.host", tenantId);
-  const port = await getConfigNumber("email.smtp.port", tenantId, 587);
-  const secure = await getConfigBoolean("email.smtp.secure", tenantId, true);
-  const user = await getConfig("email.smtp.user", tenantId);
-  const password = await getConfig("email.smtp.password", tenantId);
-  const fromAddress = await getConfig("email.from.address", tenantId);
-  const fromName = await getConfig("email.from.name", tenantId) || "WindparkManager";
+  const { cache, CACHE_TTL } = await import("@/lib/cache");
+  const cacheKey = "system-config:email";
+  const tenantScope = tenantId || undefined;
 
-  if (!host || !user || !password) {
-    return null;
-  }
+  return cache.getOrSet(
+    cacheKey,
+    async () => {
+      const host = await getConfig("email.smtp.host", tenantId);
+      const port = await getConfigNumber("email.smtp.port", tenantId, 587);
+      const secure = await getConfigBoolean("email.smtp.secure", tenantId, true);
+      const user = await getConfig("email.smtp.user", tenantId);
+      const password = await getConfig("email.smtp.password", tenantId);
+      const fromAddress = await getConfig("email.from.address", tenantId);
+      const fromName = await getConfig("email.from.name", tenantId) || "WindparkManager";
 
-  return {
-    host,
-    port,
-    secure,
-    user,
-    password,
-    fromAddress: fromAddress || user,
-    fromName,
-  };
+      if (!host || !user || !password) {
+        return null;
+      }
+
+      return {
+        host,
+        port,
+        secure,
+        user,
+        password,
+        fromAddress: fromAddress || user,
+        fromName,
+      };
+    },
+    CACHE_TTL.SHORT, // 30s Cache — schnelle Reaktion auf Admin-Aenderungen, weil Invalidierung greift.
+    tenantScope,
+  );
 }
 
 /**

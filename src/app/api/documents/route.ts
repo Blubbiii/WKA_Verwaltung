@@ -317,31 +317,49 @@ async function handleFileUpload(
     });
   }
 
-  // Hole Metadaten aus FormData
-  const title = formData.get("title") as string;
-  const description = (formData.get("description") as string) || undefined;
-  const category = formData.get("category") as string;
-  const tagsRaw = formData.get("tags") as string;
+  // Hole Metadaten aus FormData — formData.get() returns
+  // `FormDataEntryValue | null` (string | File | null), so type-guard
+  // required-string fields before use (a client uploading a File as
+  // "title" would otherwise silently coerce to something like
+  // "[object File]").
+  const getString = (key: string): string | null => {
+    const raw = formData.get(key);
+    return typeof raw === "string" ? raw : null;
+  };
+
+  const title = getString("title");
+  const category = getString("category");
+
+  // Validiere Pflichtfelder frühzeitig — bevor irgendwelche
+  // Type-Casts oder DB-Operationen die undefined-Semantik verstecken.
+  if (!title || !category) {
+    return apiError("MISSING_FIELD", 400, { message: "Titel und Kategorie sind erforderlich" });
+  }
+
+  const description = getString("description") || undefined;
+  const tagsRaw = getString("tags");
   let tags: string[] = [];
   if (tagsRaw) {
     try {
-      tags = JSON.parse(tagsRaw);
+      // Runtime-validate parsed JSON. `.catch([])` recovers gracefully
+      // if the payload isn't a string[] (e.g. object, number, mixed).
+      tags = z.array(z.string()).catch([]).parse(JSON.parse(tagsRaw));
     } catch {
-      // Invalid JSON for tags - fall back to empty array
+      // Invalid JSON (parse throw) — fall back to empty array.
       tags = [];
     }
   }
-  const parkId = (formData.get("parkId") as string) || null;
-  const turbineId = (formData.get("turbineId") as string) || null;
-  const fundId = (formData.get("fundId") as string) || null;
-  let contractId = (formData.get("contractId") as string) || null;
-  const shareholderId = (formData.get("shareholderId") as string) || null;
-  const serviceEventId = (formData.get("serviceEventId") as string) || null;
-  const parentId = (formData.get("parentId") as string) || null;
+  const parkId = getString("parkId") || null;
+  const turbineId = getString("turbineId") || null;
+  const fundId = getString("fundId") || null;
+  let contractId = getString("contractId") || null;
+  const shareholderId = getString("shareholderId") || null;
+  const serviceEventId = getString("serviceEventId") || null;
+  const parentId = getString("parentId") || null;
 
   // WF-4: Auto-Link zu Lease/Contract via parentEntityType + parentEntityId
-  const parentEntityType = (formData.get("parentEntityType") as string) || null;
-  const parentEntityId = (formData.get("parentEntityId") as string) || null;
+  const parentEntityType = getString("parentEntityType") || null;
+  const parentEntityId = getString("parentEntityId") || null;
   if (parentEntityType && parentEntityId) {
     if (parentEntityType === "Contract") {
       contractId = parentEntityId;
@@ -352,11 +370,6 @@ async function handleFileUpload(
         tags = [...tags, `lease:${parentEntityId}`];
       }
     }
-  }
-
-  // Validiere Pflichtfelder
-  if (!title || !category) {
-    return apiError("MISSING_FIELD", undefined, { message: "Titel und Kategorie sind erforderlich" });
   }
 
   // Validiere Kategorie

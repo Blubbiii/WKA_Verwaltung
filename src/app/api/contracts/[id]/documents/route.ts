@@ -24,10 +24,13 @@ export async function GET(
     const { id } = await params;
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
+    // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
+    // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
     const contract = await prisma.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
+        deletedAt: null,
       },
     });
 
@@ -94,10 +97,13 @@ export async function POST(
     const { id } = await params;
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
+    // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
+    // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
     const contract = await prisma.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
+        deletedAt: null,
       },
     });
 
@@ -187,10 +193,13 @@ export async function DELETE(
     }
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
+    // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
+    // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
     const contract = await prisma.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
+        deletedAt: null,
       },
     });
 

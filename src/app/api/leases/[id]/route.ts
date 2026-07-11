@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { logDeletion } from "@/lib/audit";
+import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -50,6 +52,9 @@ export async function GET(
       where: {
         id,
         tenantId: check.tenantId,
+        // F4-Compliance: Soft-deleted Pachtverträge werden nicht mehr als aktive
+        // Datensätze exponiert. Aufbewahrungspflicht bleibt via deletedAt-Filter.
+        deletedAt: null,
       },
       include: {
         leasePlots: {
@@ -113,6 +118,8 @@ export async function PATCH(
       where: {
         id,
         tenantId: check.tenantId,
+        // F4: kein PATCH auf soft-deleted Pachtverträge
+        deletedAt: null,
       },
     });
 
@@ -138,83 +145,114 @@ export async function PATCH(
       updateData.endDate = leaseData.endDate ? new Date(leaseData.endDate) : null;
     }
 
-    // Update in transaction if plots are being updated
-    const lease = await prisma.$transaction(async (tx) => {
-      // tenantId in where (TOCTOU-Schutz, consistent zur DELETE-Variante).
-      await tx.lease.update({
-        where: { id, tenantId: check.tenantId! },
-        data: updateData,
+    // F4-Compliance: PATCH auf Lease schreibt jetzt Audit-Log inkl. Diff über
+    // updateWithAudit(). Kritische Felder wie waitingMoneyAmount, billingInterval
+    // oder contractPartnerFundId sind damit vollständig rückverfolgbar (GoBD).
+    const headersList = await headers();
+    const ipAddress =
+      headersList.get("x-forwarded-for")?.split(",")[0] ??
+      headersList.get("x-real-ip") ??
+      null;
+    const userAgent = headersList.get("user-agent") ?? null;
+
+    try {
+      await updateWithAudit({
+        entityType: "Lease",
+        entityId: id,
+        userId: check.userId,
+        tenantId: check.tenantId!,
+        ipAddress,
+        userAgent,
+        description: "Pachtvertrag bearbeitet",
+        loadCurrent: (tx) =>
+          tx.lease.findFirst({
+            where: { id, tenantId: check.tenantId! },
+          }) as Promise<Record<string, unknown> | null>,
+        applyChange: async (tx) => {
+          await tx.lease.update({
+            where: { id, tenantId: check.tenantId! },
+            data: updateData,
+          });
+
+          // Update plots if provided (Plot-Änderungen laufen in derselben TX;
+          // Änderungen an LeasePlot-Rows selbst schreiben KEIN Audit — die
+          // ausschlaggebende Änderung ist die Lease selbst).
+          if (plotIds) {
+            const plots = await tx.plot.findMany({
+              where: {
+                id: { in: plotIds },
+                tenantId: check.tenantId,
+              },
+            });
+
+            if (plots.length !== plotIds.length) {
+              throw new Error("Ein oder mehrere Flurstücke nicht gefunden");
+            }
+
+            const currentRelations = await tx.leasePlot.findMany({
+              where: { leaseId: id },
+              select: { id: true, plotId: true },
+            });
+            const currentPlotIds = new Set(currentRelations.map((r) => r.plotId));
+            const nextPlotIds = new Set(plotIds);
+
+            const toRemove = currentRelations.filter((r) => !nextPlotIds.has(r.plotId));
+            const toAdd = plotIds.filter((pid) => !currentPlotIds.has(pid));
+
+            if (toRemove.length > 0) {
+              await tx.leasePlot.deleteMany({
+                where: { id: { in: toRemove.map((r) => r.id) } },
+              });
+            }
+            if (toAdd.length > 0) {
+              await tx.leasePlot.createMany({
+                data: toAdd.map((plotId) => ({ leaseId: id, plotId })),
+              });
+            }
+          }
+
+          // Rückgabe: für Diff nur die Lease-Row (relations werden nicht in
+          // Audit-Diff eingerechnet — sonst wird der oldValues-Blob riesig).
+          return (await tx.lease.findUniqueOrThrow({
+            where: { id },
+          })) as unknown as Record<string, unknown>;
+        },
       });
-
-      // Update plots if provided
-      if (plotIds) {
-        // Verify all plots belong to tenant
-        const plots = await tx.plot.findMany({
-          where: {
-            id: { in: plotIds },
-            tenantId: check.tenantId,
-          },
-        });
-
-        if (plots.length !== plotIds.length) {
-          throw new Error("Ein oder mehrere Flurstücke nicht gefunden");
-        }
-
-        // Diff-update instead of delete-then-create: keeps existing
-        // (leaseId, plotId) rows (with their createdAt) intact and only
-        // touches what actually changed. Avoids audit noise and lost
-        // history for stable plot links.
-        const currentRelations = await tx.leasePlot.findMany({
-          where: { leaseId: id },
-          select: { id: true, plotId: true },
-        });
-        const currentPlotIds = new Set(currentRelations.map((r) => r.plotId));
-        const nextPlotIds = new Set(plotIds);
-
-        const toRemove = currentRelations.filter((r) => !nextPlotIds.has(r.plotId));
-        const toAdd = plotIds.filter((pid) => !currentPlotIds.has(pid));
-
-        if (toRemove.length > 0) {
-          await tx.leasePlot.deleteMany({
-            where: { id: { in: toRemove.map((r) => r.id) } },
-          });
-        }
-        if (toAdd.length > 0) {
-          await tx.leasePlot.createMany({
-            data: toAdd.map((plotId) => ({ leaseId: id, plotId })),
-          });
-        }
+    } catch (err) {
+      if (isEntityNotFoundError(err)) {
+        return apiError("NOT_FOUND", 404, { message: "Pachtvertrag nicht gefunden" });
       }
+      throw err;
+    }
 
-      // Return updated lease with relations
-      return tx.lease.findUnique({
-        where: { id },
-        include: {
-          leasePlots: {
-            include: {
-              plot: {
-                include: {
-                  park: {
-                    select: {
-                      id: true,
-                      name: true,
-                      shortName: true,
-                    },
+    // Response: aktuellen Zustand inkl. Relations laden (nach dem TX).
+    const lease = await prisma.lease.findUnique({
+      where: { id },
+      include: {
+        leasePlots: {
+          include: {
+            plot: {
+              include: {
+                park: {
+                  select: {
+                    id: true,
+                    name: true,
+                    shortName: true,
                   },
                 },
               },
             },
           },
-          lessor: true,
-          contractPartnerFund: {
-            select: {
-              id: true,
-              name: true,
-              legalForm: true,
-            },
+        },
+        lessor: true,
+        contractPartnerFund: {
+          select: {
+            id: true,
+            name: true,
+            legalForm: true,
           },
         },
-      });
+      },
     });
 
     // Transform response
@@ -248,6 +286,8 @@ export async function DELETE(
       where: {
         id,
         tenantId: check.tenantId,
+        // F4: bereits soft-deleted → 404, keine Doppel-Löschung
+        deletedAt: null,
       },
     });
 
@@ -255,9 +295,12 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Pachtvertrag nicht gefunden" });
     }
 
-    // Perform the deletion — scoped to tenantId to prevent TOCTOU
-    await prisma.lease.delete({
+    // F4-Compliance: Soft-Delete statt Hard-Delete. Pachtverträge unterliegen
+    // §147 AO Aufbewahrungspflicht — Datensatz bleibt in der DB, wird aber aus
+    // aktiven Views durch deletedAt-Filter ausgeblendet.
+    await prisma.lease.update({
       where: { id, tenantId: check.tenantId! },
+      data: { deletedAt: new Date() },
     });
 
     // Log the deletion (deferred: runs after response is sent)

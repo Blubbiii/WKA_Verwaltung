@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -13,6 +14,7 @@ import {
   Shield,
   FileText,
 } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import {
   Card,
   CardContent,
@@ -152,12 +154,14 @@ export default function DefectDetailPage({
 }) {
   const { id } = React.use(params);
   const router = useRouter();
+  const tDelete = useTranslations("common.pageDelete");
 
   const [defect, setDefect] = useState<DefectDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -260,8 +264,6 @@ export default function DefectDetailPage({
   }
 
   async function handleDelete() {
-    if (!confirm("Möchten Sie diesen Mangel wirklich löschen?")) return;
-
     try {
       setDeleting(true);
       const res = await fetch(`/api/management-billing/defects/${id}`, {
@@ -279,6 +281,7 @@ export default function DefectDetailPage({
       toast.error(
         error instanceof Error ? error.message : "Fehler beim Löschen"
       );
+      throw error; // keep dialog open on error
     } finally {
       setDeleting(false);
     }
@@ -391,7 +394,7 @@ export default function DefectDetailPage({
         <div className="flex gap-2">
           <Button
             variant="destructive"
-            onClick={handleDelete}
+            onClick={() => setDeleteOpen(true)}
             disabled={deleting}
           >
             {deleting ? (
@@ -689,6 +692,13 @@ export default function DefectDetailPage({
           </Card>
         </div>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDelete}
+        itemName={tDelete("inspectionDefectItemName")}
+      />
     </div>
   );
 }

@@ -56,6 +56,13 @@ export async function POST(request: NextRequest) {
       "Starting batch email send"
     );
 
+    // TODO(bullmq): Pro Invoice einen Job in die email-Queue schieben —
+    // separater PR. Scope wie in src/app/api/mailings/[id]/send/route.ts
+    // beschrieben. Zusaetzlich braucht der Worker Logik zum Nachhalten
+    // von Invoice.emailedAt/emailedById/emailedTo + status: SENT.
+    // Bis dahin: sequentiell — akzeptabel bis ~50 Invoices/Batch,
+    // langsam bei mehr wegen synchronem SMTP im Request-Zyklus.
+
     const result: BatchResult = {
       sent: 0,
       failed: 0,

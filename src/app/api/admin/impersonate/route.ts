@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";
@@ -7,6 +6,11 @@ import { cookies } from "next/headers";
 import { apiLogger as logger } from "@/lib/logger";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { apiError } from "@/lib/api-errors";
+import {
+  IMPERSONATION_COOKIE_NAME,
+  signImpersonationCookie,
+  verifyImpersonationCookie,
+} from "@/lib/auth/impersonation-cookie";
 
 const impersonateSchema = z.object({
   userId: z.string().uuid().optional(),
@@ -21,74 +25,10 @@ const impersonateSchema = z.object({
  *
  * P1-5-Fix: EINE Konstante für Cookie-MaxAge UND HMAC-Payload-exp — beides
  * stammt aus AUTH_CONFIG.impersonationTtlSeconds.
+ *
+ * F2-Fix: Signier-/Verify-Logik in `@/lib/auth/impersonation-cookie` extrahiert,
+ * damit `src/lib/audit.ts` denselben Cookie lesen kann um `impersonatedById` zu setzen.
  */
-const IMPERSONATION_TTL_SECONDS = AUTH_CONFIG.impersonationTtlSeconds;
-
-function getAuthSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    throw new Error(
-      "AUTH_SECRET (oder NEXTAUTH_SECRET) muss gesetzt sein — Impersonation aus Sicherheitsgründen deaktiviert",
-    );
-  }
-  return secret;
-}
-
-interface SignedImpersonationPayload {
-  iat: number;
-  exp: number;
-  [key: string]: unknown;
-}
-
-function signCookieValue(data: Record<string, unknown>): string {
-  const secret = getAuthSecret();
-  const now = Math.floor(Date.now() / 1000);
-  const enriched: SignedImpersonationPayload = {
-    ...data,
-    iat: now,
-    exp: now + IMPERSONATION_TTL_SECONDS,
-  };
-  const payload = JSON.stringify(enriched);
-  const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return `${payload}.${signature}`;
-}
-
-function verifyCookieValue(signed: string): Record<string, unknown> | null {
-  let secret: string;
-  try {
-    secret = getAuthSecret();
-  } catch {
-    return null; // Kein Secret → Cookie kann nicht verifiziert werden
-  }
-  const lastDot = signed.lastIndexOf(".");
-  if (lastDot === -1) return null;
-  const payload = signed.substring(0, lastDot);
-  const signature = signed.substring(lastDot + 1);
-  const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  // Length-Check VOR timingSafeEqual — sonst RangeError bei Längenunterschied
-  if (signature.length !== expected.length) return null;
-  let signatureValid = false;
-  try {
-    signatureValid = crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expected),
-    );
-  } catch {
-    return null;
-  }
-  if (!signatureValid) return null;
-  try {
-    const parsed = JSON.parse(payload) as SignedImpersonationPayload;
-    // Ablauf-Check
-    const now = Math.floor(Date.now() / 1000);
-    if (typeof parsed.exp === "number" && parsed.exp < now) {
-      return null;
-    }
-    return parsed;
-  } catch {
-    return null;
-  }
-}
 
 // POST /api/admin/impersonate - Start impersonating a user
 export async function POST(request: NextRequest) {
@@ -178,7 +118,7 @@ const check = await requireSuperadmin();
 
     // Set impersonation cookie (secure, httpOnly)
     const cookieStore = await cookies();
-    cookieStore.set("impersonation", signCookieValue(impersonationData), {
+    cookieStore.set(IMPERSONATION_COOKIE_NAME, signImpersonationCookie(impersonationData), {
       httpOnly: true,
       // Sicherer Default: in Production immer secure (auch bei Edge-TLS-Termination).
       // Opt-out nur für lokale HTTP-Setups via FORCE_INSECURE_COOKIES=true.
@@ -235,7 +175,7 @@ export async function DELETE(_request: NextRequest) {
     if (!check.authorized) return check.error!;
 
     const cookieStore = await cookies();
-    const impersonationCookie = cookieStore.get("impersonation");
+    const impersonationCookie = cookieStore.get(IMPERSONATION_COOKIE_NAME);
 
     if (!impersonationCookie) {
       return apiError("BAD_REQUEST", undefined, { message: "Keine aktive Impersonation" });
@@ -244,7 +184,7 @@ export async function DELETE(_request: NextRequest) {
     // FIX 9 (Compliance): Cookie-Payload für Audit-Log lesen BEVOR er
     // gelöscht wird. Keine Fehler-Weiterreichung — bei ungültigem Cookie
     // wird trotzdem gelöscht, aber ohne Audit-Detail.
-    const cookiePayload = verifyCookieValue(impersonationCookie.value);
+    const cookiePayload = verifyImpersonationCookie(impersonationCookie.value);
     const originalUserId =
       (cookiePayload?.originalUserId as string | undefined) ?? null;
     const targetUserId =
@@ -253,7 +193,7 @@ export async function DELETE(_request: NextRequest) {
       (cookiePayload?.targetTenantId as string | undefined) ?? null;
 
     // Remove the impersonation cookie
-    cookieStore.delete("impersonation");
+    cookieStore.delete(IMPERSONATION_COOKIE_NAME);
 
     // FIX 9: Impersonation-Stop-Ereignis in AuditLog schreiben.
     // Es gibt keinen dedizierten "IMPERSONATION_STOP" Action-Type — daher
@@ -294,16 +234,16 @@ export async function GET(_request: NextRequest) {
     if (!check.authorized) return check.error!;
 
     const cookieStore = await cookies();
-    const impersonationCookie = cookieStore.get("impersonation");
+    const impersonationCookie = cookieStore.get(IMPERSONATION_COOKIE_NAME);
 
     if (!impersonationCookie) {
       return NextResponse.json({ impersonating: null });
     }
 
-    const impersonationData = verifyCookieValue(impersonationCookie.value);
+    const impersonationData = verifyImpersonationCookie(impersonationCookie.value);
     if (!impersonationData) {
       // Invalid or tampered cookie — remove it
-      cookieStore.delete("impersonation");
+      cookieStore.delete(IMPERSONATION_COOKIE_NAME);
       return NextResponse.json({ impersonating: null });
     }
 

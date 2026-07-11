@@ -7,13 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-
-// Stricter GeoJSON validation to prevent injection
-const geoJsonGeometrySchema = z.object({
-  type: z.enum(["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]),
-  coordinates: z.array(z.unknown()).optional(),
-  geometries: z.array(z.unknown()).optional(),
-});
+import { geoJsonGeometrySchema } from "@/lib/validation/geojson";
 
 const createAnnotationSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").max(200),

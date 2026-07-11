@@ -46,8 +46,11 @@ export async function GET(request: NextRequest) {
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Build where clause - now using tenantId directly on lease
+    // F4-Compliance: soft-deleted Pachtverträge nicht listen (Aufbewahrungspflicht §147 AO
+    // greift via deletedAt-Filter — Datensätze bleiben in der DB).
     const where: Prisma.LeaseWhereInput = {
       tenantId: check.tenantId,
+      deletedAt: null,
       ...(status && { status: status as "DRAFT" | "ACTIVE" | "EXPIRING" | "EXPIRED" | "TERMINATED" }),
       ...(plotId && {
         leasePlots: {

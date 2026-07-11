@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { readImpersonationCookie } from "@/lib/auth/impersonation-cookie";
 
 // Re-export types from audit-types for backward compatibility
 // Server components can import from either file
@@ -50,6 +51,19 @@ export async function createAuditLog(params: AuditLogParams) {
       // Headers might not be available in all contexts
     }
 
+    // F2-Compliance: Impersonation-Kette in AuditLog aufloesen.
+    // Der Cookie wird nur vom Superadmin-Impersonate-Flow gesetzt und HMAC-
+    // signiert. Wenn er gültig ist:
+    //   userId           = Target-User  (wessen "Aktion" ist das effektiv)
+    //   impersonatedById = Original-Admin  (wer hat die Aktion ausgelöst)
+    //   tenantId         = Target-Tenant
+    // Ohne Cookie greift der klassische Pfad (session.user.id / session.user.tenantId).
+    const impersonation = await readImpersonationCookie();
+    const effectiveUserId = impersonation?.targetUserId ?? session.user.id;
+    const effectiveTenantId =
+      impersonation?.targetTenantId ?? session.user.tenantId ?? null;
+    const impersonatedById = impersonation?.originalUserId ?? null;
+
     const auditLog = await prisma.auditLog.create({
       data: {
         action: params.action,
@@ -59,11 +73,9 @@ export async function createAuditLog(params: AuditLogParams) {
         newValues: params.newValues ? (params.newValues as Prisma.InputJsonValue) : Prisma.JsonNull,
         ipAddress,
         userAgent,
-        tenantId: session.user.tenantId || null,
-        userId: session.user.id,
-        // If user is impersonating someone, track the original user
-        // Note: impersonatedBy will be added when impersonation feature is implemented
-        impersonatedById: (session.user as { impersonatedBy?: string }).impersonatedBy || null,
+        tenantId: effectiveTenantId,
+        userId: effectiveUserId,
+        impersonatedById,
       },
     });
 

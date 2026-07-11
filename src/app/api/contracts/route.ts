@@ -66,8 +66,11 @@ async function getHandler(request: NextRequest) {
     const endDateAfter = searchParams.get("endDateAfter");
 
     // Build where clause with proper Prisma types
+    // F3-Compliance: soft-deleted Verträge nicht listen (Aufbewahrungspflicht §147 AO
+    // greift via deletedAt-Filter — Datensätze bleiben in der DB).
     const where: Prisma.ContractWhereInput = {
       tenantId: check.tenantId,
+      deletedAt: null,
     };
 
     if (search) {
@@ -144,7 +147,7 @@ async function getHandler(request: NextRequest) {
     // Get statistics
     const stats = await prisma.contract.groupBy({
       by: ["status"],
-      where: { tenantId: check.tenantId },
+      where: { tenantId: check.tenantId, deletedAt: null },
       _count: true,
     });
 
@@ -155,6 +158,7 @@ async function getHandler(request: NextRequest) {
     const expiringCount = await prisma.contract.count({
       where: {
         tenantId: check.tenantId,
+        deletedAt: null,
         status: { in: ["ACTIVE", "EXPIRING"] },
         endDate: {
           lte: thirtyDaysFromNow,

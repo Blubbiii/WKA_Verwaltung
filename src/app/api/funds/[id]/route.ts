@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { logDeletion, createAuditLog } from "@/lib/audit";
+import { logDeletion } from "@/lib/audit";
+import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
@@ -198,7 +200,20 @@ export async function GET(
       operatedTurbineCount: fund.operatedTurbines.length,
     };
 
-    return NextResponse.json({ ...fund, stats });
+    // F1-Compliance: SMTP-Passwort NIE im Klartext an den Client zurückgeben.
+    // Der Prisma-Encryption-Layer entschluesselt bei Reads transparent — hier
+    // strippen wir das Feld explizit und liefern nur ein `hasSmtpPassword`-Flag,
+    // damit das UI weiß ob eins konfiguriert ist.
+    const {
+      emailSmtpPassword: _fundSmtpPasswordPlain,
+      ...fundWithoutPassword
+    } = fund;
+    void _fundSmtpPasswordPlain;
+    const hasSmtpPassword = Boolean(
+      fund.emailSmtpPassword && fund.emailSmtpPassword.length > 0,
+    );
+
+    return NextResponse.json({ ...fundWithoutPassword, hasSmtpPassword, stats });
   } catch (error) {
     logger.error({ err: error }, "Error fetching fund");
     return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Gesellschaft" });
@@ -230,45 +245,84 @@ export async function PUT(
     const body = await request.json();
     const validatedData = fundUpdateSchema.parse(body);
 
-    const fund = await prisma.fund.update({
-      where: { id },
-      data: {
-        ...validatedData,
-        foundingDate: validatedData.foundingDate
-          ? new Date(validatedData.foundingDate)
-          : validatedData.foundingDate === null
-            ? null
-            : undefined,
-      },
-    });
+    // F1-Compliance: SMTP-Password wird ONLY überschrieben wenn ein nicht-leerer
+    // Wert übergeben wird. Empty String bedeutet "Feld nicht geändert" (Form-Reset
+    // sonst löscht das Passwort bei jedem Speichern). Explicit null löscht.
+    // Verschluesselung passiert im Prisma-Extension-Middleware auf Write.
+    const {
+      emailSmtpPassword: submittedSmtpPassword,
+      ...restValidated
+    } = validatedData;
+    const passwordUpdate: { emailSmtpPassword?: string | null } = {};
+    if (submittedSmtpPassword === null) {
+      passwordUpdate.emailSmtpPassword = null;
+    } else if (typeof submittedSmtpPassword === "string" && submittedSmtpPassword.length > 0) {
+      passwordUpdate.emailSmtpPassword = submittedSmtpPassword;
+    }
+
+    // F6-Compliance: Fund-Audit erfasst jetzt ALLE geänderten Felder (nicht nur
+    // name/legalForm/status). totalCapital, Bank-Details, SMTP-Konfig usw. sind
+    // damit vollständig auditierbar. updateWithAudit fährt Update + AuditLog in
+    // einer Transaktion und schreibt nur das echte Diff.
+    const headersList = await headers();
+    const ipAddress =
+      headersList.get("x-forwarded-for")?.split(",")[0] ??
+      headersList.get("x-real-ip") ??
+      null;
+    const userAgent = headersList.get("user-agent") ?? null;
+
+    let updatedFund;
+    try {
+      updatedFund = await updateWithAudit({
+        entityType: "Fund",
+        entityId: id,
+        userId: check.userId,
+        tenantId: check.tenantId!,
+        ipAddress,
+        userAgent,
+        description: "Gesellschaft bearbeitet",
+        loadCurrent: (tx) =>
+          tx.fund.findFirst({
+            where: { id, tenantId: check.tenantId! },
+          }) as Promise<Record<string, unknown> | null>,
+        applyChange: (tx) =>
+          tx.fund.update({
+            where: { id },
+            data: {
+              ...restValidated,
+              ...passwordUpdate,
+              foundingDate: validatedData.foundingDate
+                ? new Date(validatedData.foundingDate)
+                : validatedData.foundingDate === null
+                  ? null
+                  : undefined,
+            },
+          }) as Promise<Record<string, unknown>>,
+      });
+    } catch (err) {
+      if (isEntityNotFoundError(err)) {
+        return apiError("NOT_FOUND", 404, { message: "Gesellschaft nicht gefunden" });
+      }
+      throw err;
+    }
 
     // Invalidate dashboard caches after fund update
     invalidate.onFundChange(check.tenantId!, id, 'update').catch((err) => {
       logger.warn({ err }, '[Funds] Cache invalidation error after update');
     });
 
-    // FIX 11: Audit-Log für Fund-Update (Compliance). Deferred nach Response.
-    const oldSnapshot = {
-      name: existingFund.name,
-      legalForm: existingFund.legalForm,
-      status: existingFund.status,
-    };
-    const newSnapshot = {
-      name: fund.name,
-      legalForm: fund.legalForm,
-      status: fund.status,
-    };
-    after(async () => {
-      await createAuditLog({
-        action: "UPDATE",
-        entityType: "Fund",
-        entityId: id,
-        oldValues: oldSnapshot,
-        newValues: newSnapshot,
-      });
+    // Passwort NIE an den Client zurückschicken (auch nicht encrypted).
+    const {
+      emailSmtpPassword: _updatedSmtpPasswordPlain,
+      ...fundResponse
+    } = updatedFund as Record<string, unknown>;
+    void _updatedSmtpPasswordPlain;
+    return NextResponse.json({
+      ...fundResponse,
+      hasSmtpPassword: Boolean(
+        (updatedFund as { emailSmtpPassword?: string | null }).emailSmtpPassword,
+      ),
     });
-
-    return NextResponse.json(fund);
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren der Gesellschaft");
   }

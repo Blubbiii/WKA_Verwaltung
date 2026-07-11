@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import { Wind, Loader2, AlertCircle, CheckCircle2, Shield } from "lucide-react";
 import { AuthVersionFooter } from "@/components/layout/auth-version-footer";
 
 function LoginForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawCallbackUrl = searchParams.get("callbackUrl") || "/dashboard";
@@ -60,7 +62,7 @@ function LoginForm() {
   }, []);
   const [loginError, setLoginError] = useState(
     error === "CredentialsSignin"
-      ? "Ungültige Anmeldedaten. Bitte überprüfen Sie E-Mail und Passwort."
+      ? t("invalidCredentials")
       : ""
   );
 
@@ -81,7 +83,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setLoginError("Ungültige Anmeldedaten. Bitte überprüfen Sie E-Mail und Passwort.");
+        setLoginError(t("invalidCredentials"));
         setIsLoading(false);
         return;
       }
@@ -89,7 +91,7 @@ function LoginForm() {
       router.push(callbackUrl);
       router.refresh();
     } catch {
-      setLoginError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+      setLoginError(t("genericError"));
       setIsLoading(false);
     }
   }
@@ -102,9 +104,9 @@ function LoginForm() {
             <Wind className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold">WindparkManager</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t("appName")}</CardTitle>
         <CardDescription>
-          Melden Sie sich mit Ihren Zugangsdaten an
+          {t("loginDescription")}
         </CardDescription>
       </CardHeader>
       <form method="post" action="" onSubmit={onSubmit}>
@@ -113,7 +115,7 @@ function LoginForm() {
             <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-300">
-                Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.
+                {t("resetSuccess")}
               </AlertDescription>
             </Alert>
           )}
@@ -124,19 +126,19 @@ function LoginForm() {
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="email">E-Mail</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="name@example.com"
+              placeholder={t("emailPlaceholder")}
               autoComplete="username"
               required
               disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Passwort</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               name="password"
@@ -150,14 +152,14 @@ function LoginForm() {
         <CardFooter className="flex flex-col space-y-4">
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Anmelden
+            {t("login")}
           </Button>
 
           {ssoEnabled && (
             <>
               <div className="relative flex w-full items-center gap-3">
                 <Separator className="flex-1" />
-                <span className="text-xs text-muted-foreground">oder</span>
+                <span className="text-xs text-muted-foreground">{t("ssoOr")}</span>
                 <Separator className="flex-1" />
               </div>
               <Button
@@ -184,12 +186,12 @@ function LoginForm() {
             href="/forgot-password"
             className="text-sm text-muted-foreground hover:text-primary transition-colors"
           >
-            Passwort vergessen?
+            {t("forgotPassword")}
           </Link>
 
           <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-4">
             <Shield className="h-4 w-4" />
-            <span>Ihre Daten sind sicher — DSGVO-konform & verschlüsselt</span>
+            <span>{t("gdprNote")}</span>
           </div>
         </CardFooter>
       </form>
@@ -198,6 +200,7 @@ function LoginForm() {
 }
 
 function LoginFormFallback() {
+  const t = useTranslations("auth");
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1 text-center">
@@ -206,25 +209,25 @@ function LoginFormFallback() {
             <Wind className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold">WindparkManager</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t("appName")}</CardTitle>
         <CardDescription>
-          Melden Sie sich mit Ihren Zugangsdaten an
+          {t("loginDescription")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">E-Mail</Label>
+          <Label htmlFor="email">{t("email")}</Label>
           <Input id="email" type="email" disabled />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Passwort</Label>
+          <Label htmlFor="password">{t("password")}</Label>
           <Input id="password" type="password" disabled />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <Button className="w-full" disabled>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Laden...
+          {t("loading")}
         </Button>
       </CardFooter>
     </Card>

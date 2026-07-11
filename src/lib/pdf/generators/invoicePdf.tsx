@@ -4,6 +4,7 @@ import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../util
 import type { InvoicePdfData, SettlementPdfDetails, LetterheadCompanyInfo } from "@/types/pdf";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/format";
+import { getTenantSettings } from "@/lib/tenant-settings";
 import type { DocumentType } from "@prisma/client";
 import {
   type WatermarkType,
@@ -143,13 +144,10 @@ export async function generateInvoicePdf(
     throw new Error("Rechnung nicht gefunden");
   }
 
-  // Tenant-Einstellungen für konfigurierbare Texte laden
-  const tenantData = await prisma.tenant.findUnique({
-    where: { id: invoice.tenantId },
-    select: { settings: true },
-  });
-  const allSettings = (tenantData?.settings as Record<string, unknown>) || {};
-  const tenantSettings = (allSettings.tenantSettings as Record<string, unknown>) || {};
+  // Tenant-Einstellungen fuer konfigurierbare Texte laden.
+  // getTenantSettings() ist Redis-gecacht (10min) — vermeidet den zweiten
+  // Tenant-Roundtrip (invoice.tenant war bereits per include geladen).
+  const tenantSettings = await getTenantSettings(invoice.tenantId);
 
   // Template und Letterhead aufloesen
   const documentType = mapInvoiceTypeToDocumentType(invoice.invoiceType);
@@ -207,8 +205,8 @@ export async function generateInvoicePdf(
       const defaultCreditText = "Der Gutschriftsbetrag wird bis zum {dueDate} auf Ihr Konto überwiesen. Referenz: Gutschriftsnummer {invoiceNumber}.";
 
       const textTemplate = isCredit
-        ? (tenantSettings.creditNotePaymentText as string) || defaultCreditText
-        : (tenantSettings.invoicePaymentText as string) || defaultInvoiceText;
+        ? tenantSettings.creditNotePaymentText || defaultCreditText
+        : tenantSettings.invoicePaymentText || defaultInvoiceText;
 
       // Resolve bank details from Fund companyInfo or Tenant
       const bankInfo = {

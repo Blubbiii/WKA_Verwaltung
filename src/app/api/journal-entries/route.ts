@@ -7,6 +7,8 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { parsePaginationParams } from "@/lib/api-utils";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 
 // ============================================================================
 // VALIDATION
@@ -72,55 +74,69 @@ export async function GET(request: NextRequest) {
     const statusFilter = searchParams.get("status"); // "DRAFT" | "POSTED"
     const yearFilter = searchParams.get("year");
     const searchFilter = searchParams.get("search");
+    const { page, limit, skip } = parsePaginationParams(searchParams, {
+      defaultLimit: PAGE_SIZE_DEFAULT,
+      maxLimit: 100,
+    });
 
     const yearNum = yearFilter ? parseInt(yearFilter, 10) : null;
 
-    const entries = await prisma.journalEntry.findMany({
-      where: {
-        tenantId: check.tenantId,
-        deletedAt: null,
-        ...(statusFilter ? { status: statusFilter as "DRAFT" | "POSTED" } : {}),
-        ...(yearNum && !isNaN(yearNum)
-          ? {
-              entryDate: {
-                gte: new Date(yearNum, 0, 1),
-                lt: new Date(yearNum + 1, 0, 1),
-              },
-            }
-          : {}),
-        ...(searchFilter
-          ? {
-              OR: [
-                { description: { contains: searchFilter, mode: "insensitive" } },
-                { reference: { contains: searchFilter, mode: "insensitive" } },
-              ],
-            }
-          : {}),
-      },
-      select: {
-        id: true,
-        entryDate: true,
-        description: true,
-        reference: true,
-        status: true,
-        createdAt: true,
-        createdBy: { select: { firstName: true, lastName: true } },
-        lines: {
-          select: {
-            id: true,
-            lineNumber: true,
-            account: true,
-            accountName: true,
-            debitAmount: true,
-            creditAmount: true,
-          },
-          orderBy: { lineNumber: "asc" },
-        },
-      },
-      orderBy: { entryDate: "desc" },
-    });
+    const where = {
+      tenantId: check.tenantId,
+      deletedAt: null,
+      ...(statusFilter ? { status: statusFilter as "DRAFT" | "POSTED" } : {}),
+      ...(yearNum && !isNaN(yearNum)
+        ? {
+            entryDate: {
+              gte: new Date(yearNum, 0, 1),
+              lt: new Date(yearNum + 1, 0, 1),
+            },
+          }
+        : {}),
+      ...(searchFilter
+        ? {
+            OR: [
+              { description: { contains: searchFilter, mode: "insensitive" as const } },
+              { reference: { contains: searchFilter, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
 
-    return NextResponse.json({ data: serializePrisma(entries) });
+    const [entries, total] = await Promise.all([
+      prisma.journalEntry.findMany({
+        where,
+        select: {
+          id: true,
+          entryDate: true,
+          description: true,
+          reference: true,
+          status: true,
+          createdAt: true,
+          createdBy: { select: { firstName: true, lastName: true } },
+          lines: {
+            select: {
+              id: true,
+              lineNumber: true,
+              account: true,
+              accountName: true,
+              debitAmount: true,
+              creditAmount: true,
+            },
+            orderBy: { lineNumber: "asc" },
+          },
+        },
+        orderBy: { entryDate: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.journalEntry.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: serializePrisma(entries),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     logger.error({ err: error }, "Error fetching journal entries");
     return apiError("FETCH_FAILED", 500, { message: "Fehler beim Laden der Buchungen" });

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { logDeletion } from "@/lib/audit";
+import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -128,15 +130,47 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
       }
     }
 
-    const person = await prisma.person.update({
-      where: { id, tenantId: check.tenantId! },
-      data: {
-        ...validatedData,
-        email: validatedData.email || null,
-      },
-    });
+    // F5-Compliance: PATCH auf Person schreibt Audit-Log mit Diff (u.a. Bank-IBAN,
+    // BIC, taxId). IBAN-Änderungen sind ein häufiger Fraud-Vektor — ohne Audit-Trail
+    // ist forensische Nachverfolgung unmöglich. Der Diff enthält nur wirklich
+    // geänderte Felder (updateWithAudit filtert).
+    const headersList = await headers();
+    const ipAddress =
+      headersList.get("x-forwarded-for")?.split(",")[0] ??
+      headersList.get("x-real-ip") ??
+      null;
+    const userAgent = headersList.get("user-agent") ?? null;
 
-    return NextResponse.json(person);
+    try {
+      const person = await updateWithAudit({
+        entityType: "Person",
+        entityId: id,
+        userId: check.userId,
+        tenantId: check.tenantId!,
+        ipAddress,
+        userAgent,
+        description: "Person bearbeitet",
+        loadCurrent: (tx) =>
+          tx.person.findFirst({
+            where: { id, tenantId: check.tenantId! },
+          }) as Promise<Record<string, unknown> | null>,
+        applyChange: (tx) =>
+          tx.person.update({
+            where: { id, tenantId: check.tenantId! },
+            data: {
+              ...validatedData,
+              email: validatedData.email || null,
+            },
+          }) as Promise<Record<string, unknown>>,
+      });
+
+      return NextResponse.json(person);
+    } catch (err) {
+      if (isEntityNotFoundError(err)) {
+        return apiError("NOT_FOUND", 404, { message: "Person nicht gefunden" });
+      }
+      throw err;
+    }
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren der Person");
   }
@@ -183,7 +217,11 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
       return apiError("BAD_REQUEST", undefined, { message: `Person kann nicht gelöscht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtverträge, ${existingPerson._count.contracts} Verträge)` });
     }
 
-    // Hard-delete: Person unwiderruflich löschen
+    // F5-Kompromiss: Person hat KEIN deletedAt-Feld im Schema, daher bleibt
+    // Hard-Delete das aktuelle Pattern. Der bestehende Nutzungs-Guard
+    // (totalReferences > 0) verhindert das Löschen wenn Verträge/Leases/Shareholder
+    // noch existieren — dort greift dann die jeweilige Aufbewahrung. Bei Bedarf
+    // (Datenschutz-Wunsch nach Person-Löschung) muss das Schema erweitert werden.
     await prisma.person.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail (deferred: runs after response is sent)

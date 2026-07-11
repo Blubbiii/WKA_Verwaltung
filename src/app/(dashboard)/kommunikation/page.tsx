@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { formatDate } from "@/lib/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import {
   Table,
   TableBody,
@@ -63,11 +65,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 // =============================================================================
 
 export default function KommunikationPage() {
+  const t = useTranslations("common.pageDelete");
   const router = useRouter();
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [mailings, setMailings] = useState<Mailing[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const fetchMailings = useCallback(async () => {
     setLoading(true);
@@ -84,8 +88,9 @@ export default function KommunikationPage() {
     }
   }, []);
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (!confirm("Mailing-Entwurf wirklich löschen?")) return;
+  const handleDelete = useCallback(async () => {
+    const id = pendingDeleteId;
+    if (!id) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/mailings/${id}`, { method: "DELETE" });
@@ -100,8 +105,9 @@ export default function KommunikationPage() {
       toast.error("Fehler beim Löschen");
     } finally {
       setDeletingId(null);
+      setPendingDeleteId(null);
     }
-  }, []);
+  }, [pendingDeleteId]);
 
   useEffect(() => {
     if (flags.communication) fetchMailings();
@@ -217,7 +223,7 @@ export default function KommunikationPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => handleDelete(m.id)}
+                            onClick={() => setPendingDeleteId(m.id)}
                             disabled={deletingId === m.id}
                           >
                             {deletingId === m.id ? (
@@ -236,6 +242,15 @@ export default function KommunikationPage() {
           </Table>
         </div>
       )}
+
+      <DeleteConfirmDialog
+        open={pendingDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteId(null);
+        }}
+        onConfirm={handleDelete}
+        itemName={t("mailingItemName")}
+      />
     </div>
   );
 }

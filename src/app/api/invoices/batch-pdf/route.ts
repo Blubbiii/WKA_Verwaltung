@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
       "Starting batch PDF generation"
     );
 
+    // TODO(bullmq): Fuer > ~20 Invoices sollte die ZIP-Generierung asynchron
+    // laufen — separater PR.
+    // Scope: (1) PDF-Worker um Bulk-Job-Typ erweitern der eine ZIP baut
+    // und in MinIO/S3 ablegt; (2) neue Route gibt Job-ID zurueck; (3) Client
+    // polled Status, laed ZIP per Presigned-URL nach Fertigstellung; (4) TTL
+    // fuer die ZIP-Datei (24h reicht, danach GC).
+    // Bis dahin: sync — akzeptabel bis ~20 Invoices, danach Response-Timeout-Risiko.
+
     // Fetch invoice numbers upfront (single DB query)
     const invoices = await prisma.invoice.findMany({
       where: {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
@@ -13,6 +14,7 @@ import {
   AlertTriangle,
   Plus,
 } from "lucide-react";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import {
   Card,
   CardContent,
@@ -170,6 +172,7 @@ export default function InspectionReportDetailPage({
 }) {
   const { id } = React.use(params);
   const router = useRouter();
+  const tDelete = useTranslations("common.pageDelete");
 
   const [report, setReport] = useState<InspectionReportDetail | null>(null);
   const [parks, setParks] = useState<ParkOption[]>([]);
@@ -178,6 +181,7 @@ export default function InspectionReportDetailPage({
   const [isError, setIsError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     inspectionDate: "",
@@ -290,8 +294,6 @@ export default function InspectionReportDetailPage({
   }
 
   async function handleDelete() {
-    if (!confirm("Möchten Sie diesen Prüfbericht wirklich löschen?")) return;
-
     try {
       setDeleting(true);
       const res = await fetch(
@@ -310,6 +312,7 @@ export default function InspectionReportDetailPage({
       toast.error(
         error instanceof Error ? error.message : "Fehler beim Löschen"
       );
+      throw error; // keep dialog open on error
     } finally {
       setDeleting(false);
     }
@@ -421,7 +424,7 @@ export default function InspectionReportDetailPage({
         <div className="flex gap-2">
           <Button
             variant="destructive"
-            onClick={handleDelete}
+            onClick={() => setDeleteOpen(true)}
             disabled={deleting}
           >
             {deleting ? (
@@ -632,6 +635,13 @@ export default function InspectionReportDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDelete}
+        itemName={tDelete("inspectionReportItemName")}
+      />
     </div>
   );
 }

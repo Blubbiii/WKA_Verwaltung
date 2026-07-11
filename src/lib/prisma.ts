@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import { withEncryption } from "@/lib/encryption-middleware";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 
 // Make BigInt JSON-serializable globally (Prisma returns BigInt for BigInt columns)
  
@@ -40,9 +41,10 @@ const SOFT_DELETE_MODELS = new Set([
 ]);
 
 function createPrismaClient() {
-  // Pool as singleton — reused across hot-reloads in development
+  // Pool as singleton — reused across hot-reloads in development.
+  // DATABASE_URL is validated at boot in src/lib/env.ts (throws if missing).
   const pool = globalForPrisma.pgPool ?? new Pool({
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: env.DATABASE_URL,
   });
   globalForPrisma.pgPool = pool;
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,25 +39,13 @@ import {
 } from "lucide-react";
 import { AuthVersionFooter } from "@/components/layout/auth-version-footer";
 
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, "Passwort muss mindestens 8 Zeichen lang sein")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten"
-      ),
-    confirmPassword: z.string().min(1, "Bitte bestätigen Sie Ihr Passwort"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwörter stimmen nicht überein",
-    path: ["confirmPassword"],
-  });
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+type ResetPasswordFormData = {
+  password: string;
+  confirmPassword: string;
+};
 
 function ResetPasswordForm() {
+  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -66,6 +55,26 @@ function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const resetPasswordSchema = useMemo(
+    () =>
+      z
+        .object({
+          password: z
+            .string()
+            .min(8, t("passwordMinLength"))
+            .regex(
+              /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+              t("passwordFormat")
+            ),
+          confirmPassword: z.string().min(1, t("passwordConfirmRequired")),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+          message: t("passwordMismatch"),
+          path: ["confirmPassword"],
+        }),
+    [t]
+  );
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
@@ -85,29 +94,29 @@ function ResetPasswordForm() {
               <AlertCircle className="h-8 w-8 text-destructive" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Ungültiger Link</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t("resetInvalidTitle")}</CardTitle>
           <CardDescription>
-            Der Link zum Zurücksetzen des Passworts ist ungültig oder fehlt.
+            {t("resetInvalidDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.
+              {t("resetInvalidAlert")}
             </AlertDescription>
           </Alert>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Link href="/forgot-password" className="w-full">
-            <Button className="w-full">Neuen Link anfordern</Button>
+            <Button className="w-full">{t("requestNewLink")}</Button>
           </Link>
           <Link
             href="/login"
             className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Zurück zum Login
+            {t("backToLogin")}
           </Link>
         </CardFooter>
       </Card>
@@ -134,11 +143,11 @@ function ResetPasswordForm() {
         const errorData = await response.json().catch(() => ({}));
 
         if (response.status === HTTP_STATUS.BAD_REQUEST && errorData.code === "INVALID_TOKEN") {
-          setError("Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen. Bitte fordern Sie einen neuen Link an.");
+          setError(t("resetLinkInvalidOrExpired"));
           return;
         }
 
-        throw new Error(errorData.message || "Ein Fehler ist aufgetreten");
+        throw new Error(errorData.message || t("forgotGenericError"));
       }
 
       setIsSuccess(true);
@@ -151,7 +160,7 @@ function ResetPasswordForm() {
       setError(
         err instanceof Error
           ? err.message
-          : "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
+          : t("resetGenericError")
       );
     } finally {
       setIsLoading(false);
@@ -168,24 +177,23 @@ function ResetPasswordForm() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">
-            Passwort zurückgesetzt
+            {t("resetSuccessTitle")}
           </CardTitle>
           <CardDescription>
-            Ihr Passwort wurde erfolgreich geändert.
+            {t("resetSuccessDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20">
             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
             <AlertDescription className="text-green-800 dark:text-green-300">
-              Sie werden in wenigen Sekunden automatisch zur Login-Seite
-              weitergeleitet.
+              {t("resetAutoRedirect")}
             </AlertDescription>
           </Alert>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <Link href="/login" className="w-full">
-            <Button className="w-full">Jetzt anmelden</Button>
+            <Button className="w-full">{t("signInNow")}</Button>
           </Link>
         </CardFooter>
       </Card>
@@ -200,9 +208,9 @@ function ResetPasswordForm() {
             <Wind className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold">Neues Passwort setzen</CardTitle>
+        <CardTitle className="text-2xl font-bold">{t("resetTitle")}</CardTitle>
         <CardDescription>
-          Geben Sie Ihr neues Passwort ein
+          {t("resetDescription")}
         </CardDescription>
       </CardHeader>
       <Form {...form}>
@@ -219,14 +227,14 @@ function ResetPasswordForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Neues Passwort</FormLabel>
+                  <FormLabel>{t("newPasswordLabel")}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         {...field}
                         type={showPassword ? "text" : "password"}
-                        placeholder="Mindestens 8 Zeichen"
+                        placeholder={t("newPasswordPlaceholder")}
                         autoComplete="new-password"
                         disabled={isLoading}
                         className="pl-10 pr-10"
@@ -254,14 +262,14 @@ function ResetPasswordForm() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Passwort bestätigen</FormLabel>
+                  <FormLabel>{t("confirmPasswordLabel")}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         {...field}
                         type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Passwort wiederholen"
+                        placeholder={t("confirmPasswordPlaceholder")}
                         autoComplete="new-password"
                         disabled={isLoading}
                         className="pl-10 pr-10"
@@ -285,26 +293,26 @@ function ResetPasswordForm() {
               )}
             />
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Das Passwort muss enthalten:</p>
+              <p>{t("passwordRulesLabel")}</p>
               <ul className="list-disc list-inside space-y-0.5 ml-2">
-                <li>Mindestens 8 Zeichen</li>
-                <li>Mindestens einen Grossbuchstaben</li>
-                <li>Mindestens einen Kleinbuchstaben</li>
-                <li>Mindestens eine Zahl</li>
+                <li>{t("passwordRule1")}</li>
+                <li>{t("passwordRule2")}</li>
+                <li>{t("passwordRule3")}</li>
+                <li>{t("passwordRule4")}</li>
               </ul>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Passwort zurücksetzen
+              {t("resetPasswordButton")}
             </Button>
             <Link
               href="/login"
               className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center"
             >
               <ArrowLeft className="mr-1 h-4 w-4" />
-              Zurück zum Login
+              {t("backToLogin")}
             </Link>
           </CardFooter>
         </form>
@@ -314,6 +322,7 @@ function ResetPasswordForm() {
 }
 
 function ResetPasswordFormFallback() {
+  const t = useTranslations("auth");
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1 text-center">
@@ -322,8 +331,8 @@ function ResetPasswordFormFallback() {
             <Wind className="h-8 w-8 text-primary" />
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold">Neues Passwort setzen</CardTitle>
-        <CardDescription>Geben Sie Ihr neues Passwort ein</CardDescription>
+        <CardTitle className="text-2xl font-bold">{t("resetTitle")}</CardTitle>
+        <CardDescription>{t("resetDescription")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -338,7 +347,7 @@ function ResetPasswordFormFallback() {
       <CardFooter className="flex flex-col space-y-4">
         <Button className="w-full" disabled>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Laden...
+          {t("loading")}
         </Button>
       </CardFooter>
     </Card>

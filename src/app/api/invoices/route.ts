@@ -13,6 +13,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 
 // Schema für Invoice-Items
 const invoiceItemSchema = z.object({
@@ -29,7 +30,16 @@ const invoiceItemSchema = z.object({
 
 const invoiceCreateSchema = z.object({
   invoiceType: z.enum(["INVOICE", "CREDIT_NOTE"]),
-  invoiceDate: z.string(),
+  // F8-Compliance: invoiceDate darf nicht in der Zukunft liegen (keine Vor-Datierung
+  // von Umsätzen; wichtig für GoBD/Zeitgerechtheit §239 HGB).
+  invoiceDate: z
+    .string()
+    .refine((v) => {
+      const d = new Date(v);
+      return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
+    }, {
+      message: "Rechnungsdatum darf nicht in der Zukunft liegen",
+    }),
   dueDate: z.string().optional().nullable(),
   recipientType: z.string().optional().nullable(),
   recipientName: z.string().optional().nullable(),
@@ -146,6 +156,12 @@ async function postHandler(request: NextRequest) {
     // Steuersätze aus DB laden (TaxRateConfig), fallback auf hardcoded Defaults.
     // Wichtig für §-Wechsel wie Corona-USt-Senkung — hardcoded 19% wäre falsch.
     const invoiceDate = new Date(validatedData.invoiceDate);
+
+    // F8-Compliance (GoBD §146 AO): Rechnung darf nicht in einen bereits
+    // geschlossenen Buchungsmonat gebucht werden. Ausserhalb der Transaktion
+    // OK — der Period-Lock ändert sich innerhalb der TX nicht sinnvoll rueckwaerts.
+    await assertPeriodOpen(check.tenantId!, invoiceDate);
+
     const taxRatesForDate = await getAllTaxRates(check.tenantId!, invoiceDate);
 
     // Berechne Summen aus Items (Decimal-Arithmetik, kein Float-Drift).
@@ -283,6 +299,13 @@ async function postHandler(request: NextRequest) {
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (error) {
+    if (error instanceof PeriodLockedError) {
+      // F8-Compliance: 409 statt 500 wenn Rechnungsdatum in gesperrter Periode
+      return apiError("PERIOD_LOCKED", 409, {
+        message: error.message,
+        details: { periodYear: error.periodYear, periodMonth: error.periodMonth },
+      });
+    }
     return handleApiError(error, "Fehler beim Erstellen der Rechnung");
   }
 }

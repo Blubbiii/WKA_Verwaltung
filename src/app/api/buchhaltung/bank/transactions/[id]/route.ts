@@ -11,6 +11,7 @@ import {
   OverpaymentError,
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
+import { PeriodLockedError } from "@/lib/accounting/period-lock";
 
 const matchSchema = z.object({
   action: z.enum(["match", "ignore", "unmatch"]),
@@ -120,6 +121,13 @@ export async function PATCH(
 
         return NextResponse.json({ data: result });
       } catch (err) {
+        if (err instanceof PeriodLockedError) {
+          // F7-Compliance: Bank-Buchungsdatum in gesperrter Periode → 409.
+          return apiError("PERIOD_LOCKED", 409, {
+            message: err.message,
+            details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+          });
+        }
         if (err instanceof OverpaymentError) {
           return apiError("BAD_REQUEST", 400, { message: err.message });
         }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 import {
@@ -64,6 +65,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Textarea } from "@/components/ui/textarea";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Plus, Trash2, Users, Info } from "lucide-react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { SUPPORTED_TOKENS } from "@/lib/crm/template-renderer";
@@ -153,6 +155,7 @@ const defaultNotificationSettings: NotificationSettings = {
 // =============================================================================
 
 export default function EmailConfigPage() {
+  const tDelete = useTranslations("common.pageDelete");
   const { flags, loading: flagsLoading } = useFeatureFlags();
 
   // Notification state
@@ -170,6 +173,8 @@ export default function EmailConfigPage() {
   const [crmEditing, setCrmEditing] = useState<CrmEmailTemplate | null>(null);
   const [crmForm, setCrmForm] = useState({ name: "", subject: "", body: "" });
   const [crmSaving, setCrmSaving] = useState(false);
+  const [crmPendingDelete, setCrmPendingDelete] =
+    useState<CrmEmailTemplate | null>(null);
 
   // Test email state
   const [testEmail, setTestEmail] = useState("");
@@ -292,10 +297,11 @@ export default function EmailConfigPage() {
     }
   };
 
-  const deleteCrmTemplate = async (t: CrmEmailTemplate) => {
-    if (!confirm(`Vorlage "${t.name}" wirklich löschen?`)) return;
+  const deleteCrmTemplate = async () => {
+    const target = crmPendingDelete;
+    if (!target) return;
     try {
-      const res = await fetch(`/api/crm/email-templates/${t.id}`, {
+      const res = await fetch(`/api/crm/email-templates/${target.id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();
@@ -303,6 +309,7 @@ export default function EmailConfigPage() {
       loadCrmTemplates();
     } catch {
       toast.error("Fehler beim Löschen");
+      throw new Error("delete failed");
     }
   };
 
@@ -769,7 +776,7 @@ export default function EmailConfigPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteCrmTemplate(t)}
+                              onClick={() => setCrmPendingDelete(t)}
                               title="Löschen"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -1175,6 +1182,19 @@ export default function EmailConfigPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmDialog
+        open={crmPendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setCrmPendingDelete(null);
+        }}
+        onConfirm={deleteCrmTemplate}
+        itemName={
+          crmPendingDelete
+            ? tDelete("emailTemplateNamed", { name: crmPendingDelete.name })
+            : undefined
+        }
+      />
     </div>
   );
 }

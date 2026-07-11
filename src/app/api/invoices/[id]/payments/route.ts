@@ -19,10 +19,17 @@ import {
   OverpaymentError,
   recordPayment,
 } from "@/lib/accounting/invoice-payment";
+import { PeriodLockedError } from "@/lib/accounting/period-lock";
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
-  paymentDate: z.iso.datetime().optional(),
+  // F7-Compliance: paymentDate darf nicht in der Zukunft liegen (kein "Vorbuchen").
+  paymentDate: z
+    .iso.datetime()
+    .optional()
+    .refine((v) => !v || new Date(v).getTime() <= Date.now(), {
+      message: "Zahlungsdatum darf nicht in der Zukunft liegen",
+    }),
   paymentMethod: z.enum(["BANK", "CASH", "SEPA", "OTHER"]).optional(),
   bankTransactionId: z.string().uuid().nullable().optional(),
   notes: z.string().max(500).optional(),
@@ -68,6 +75,13 @@ export async function POST(
         });
       });
     } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        // F7-Compliance: Zahlungsdatum in gesperrter Periode → 409, kein 500.
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
       if (err instanceof OverpaymentError) {
         return apiError("CONFLICT", 409, {
           message: err.message,

@@ -6,6 +6,7 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { geoJsonGeometrySchema } from "@/lib/validation/geojson";
 
 const plotCreateSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID").optional(),
@@ -23,7 +24,9 @@ const plotCreateSchema = z.object({
   mapDocumentUrl: z.url().optional(),
   notes: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
-  geometry: z.any().optional(),
+  // Validated GeoJSON geometry — prevents `z.any()` letting arbitrary
+  // JSON hit the map layer downstream.
+  geometry: geoJsonGeometrySchema.optional(),
   plotAreas: z.array(z.object({
     areaType: z.enum(["WEA_STANDORT", "POOL", "WEG", "AUSGLEICH", "KABEL"]),
     areaSqm: z.number().positive(),

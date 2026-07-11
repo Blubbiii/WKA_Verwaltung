@@ -212,33 +212,41 @@ export async function PATCH(
     const wasEnded = existing.validTo != null;
     const isNowActive = newValidTo === null;
     if (wasEnded && isNowActive) {
-      // Inline Cycle-Check (analog zu POST-Handler), gegen den aktuellen
-      // DB-Zustand der anderen aktiven Kanten dieses Tenants.
-      const visited = new Set<string>();
-      async function hasPathTo(
-        currentFundId: string,
-        targetFundId: string,
-      ): Promise<boolean> {
-        if (currentFundId === targetFundId) return true;
-        if (visited.has(currentFundId)) return false;
-        visited.add(currentFundId);
-        const edges = await prisma.fundHierarchy.findMany({
-          where: {
-            childFundId: currentFundId,
-            validTo: null,
-            id: { not: id }, // aktuelle Kante ignorieren
-            parentFund: { tenantId: check.tenantId! },
-          },
-          select: { parentFundId: true },
-        });
-        for (const e of edges) {
-          if (await hasPathTo(e.parentFundId, targetFundId)) return true;
-        }
-        return false;
+      // Inline Cycle-Check via WITH RECURSIVE CTE — ersetzt die JS-Rekursion
+      // (pro Knoten 1 findMany) durch einen einzelnen SQL-Query. Siehe
+      // POST-Handler in ../route.ts fuer Details.
+      // Aktuelle Kante wird ueber id ≠ ${id} ignoriert (reaktivieren wuerde
+      // sonst sich selbst als Zyklus melden, sobald man sie gerade laed).
+      const isDirectSelfReference =
+        existing.parentFundId === existing.childFundId;
+
+      let isCircular = isDirectSelfReference;
+
+      if (!isCircular) {
+        const cycleRows = await prisma.$queryRaw<Array<{ ancestor_id: string }>>`
+          WITH RECURSIVE ancestors AS (
+            SELECT h."parentFundId" AS ancestor_id, 1 AS depth
+            FROM fund_hierarchies h
+            INNER JOIN funds pf ON pf.id = h."parentFundId"
+            WHERE h."childFundId" = ${existing.parentFundId}
+              AND h."validTo" IS NULL
+              AND h.id <> ${id}
+              AND pf."tenantId" = ${check.tenantId!}
+            UNION
+            SELECT h."parentFundId", a.depth + 1
+            FROM fund_hierarchies h
+            INNER JOIN ancestors a ON h."childFundId" = a.ancestor_id
+            INNER JOIN funds pf ON pf.id = h."parentFundId"
+            WHERE h."validTo" IS NULL
+              AND h.id <> ${id}
+              AND pf."tenantId" = ${check.tenantId!}
+              AND a.depth < 100
+          )
+          SELECT ancestor_id FROM ancestors WHERE ancestor_id = ${existing.childFundId} LIMIT 1;
+        `;
+        isCircular = cycleRows.length > 0;
       }
-      const isCircular =
-        existing.parentFundId === existing.childFundId ||
-        (await hasPathTo(existing.parentFundId, existing.childFundId));
+
       if (isCircular) {
         return apiError("BAD_REQUEST", undefined, {
           message: "Zirkulaere Referenz beim Reaktivieren erkannt",

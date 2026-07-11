@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency, LOCALE_DE } from "@/lib/format";
@@ -44,6 +45,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 // =============================================================================
@@ -184,6 +195,7 @@ export default function StakeholderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const tDeactivate = useTranslations("common.confirmDeactivate");
 
   const [stakeholder, setStakeholder] = useState<StakeholderDetail | null>(
     null
@@ -191,6 +203,7 @@ export default function StakeholderDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
 
   // New fee dialog state
   const [feeDialogOpen, setFeeDialogOpen] = useState(false);
@@ -236,10 +249,6 @@ export default function StakeholderDetailPage() {
 
   // Deactivate stakeholder
   async function handleDeactivate() {
-    if (!confirm("Möchten Sie diesen BF-Vertrag wirklich deaktivieren?")) {
-      return;
-    }
-
     try {
       setDeactivating(true);
       const res = await fetch(
@@ -255,6 +264,7 @@ export default function StakeholderDetailPage() {
         );
       }
       toast.success("BF-Vertrag deaktiviert");
+      setDeactivateOpen(false);
       router.push("/management-billing/stakeholders");
     } catch (error) {
       toast.error(
@@ -443,7 +453,7 @@ export default function StakeholderDetailPage() {
           {stakeholder.isActive && (
             <Button
               variant="destructive"
-              onClick={handleDeactivate}
+              onClick={() => setDeactivateOpen(true)}
               disabled={deactivating}
             >
               {deactivating ? (
@@ -848,6 +858,37 @@ export default function StakeholderDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deactivateOpen} onOpenChange={setDeactivateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Power className="h-5 w-5 text-destructive" />
+              {tDeactivate("stakeholderTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {tDeactivate("stakeholderDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deactivating}>
+              {tDeactivate("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeactivate();
+              }}
+              disabled={deactivating}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deactivating
+                ? tDeactivate("processing")
+                : tDeactivate("confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -74,70 +74,62 @@ async function checkCircularReference(
     return { isCircular: true, path: [childFundId, parentFundId] };
   }
 
-  // Rekursive Suche: Ist der Parent Fund ein Kind (direkt oder indirekt) des Child Funds?
-  // Das wuerde bedeuten: childFund -> ... -> parentFund -> childFund (Zyklus!)
-  const visited = new Set<string>();
-  const path: string[] = [childFundId];
+  // Rekursive Suche via WITH RECURSIVE CTE — ersetzt die JS-Rekursion
+  // (pro Knoten 1 findMany-Roundtrip) durch einen einzelnen SQL-Query.
+  // Frage: Ist parentFundId (Kandidat-Elternteil) bereits Nachkomme von
+  // childFundId (Kandidat-Kind)? Falls ja → neue Kante parentFundId→childFundId
+  // waere ein Zyklus.
+  //
+  // Ansatz: Wir gehen vom parentFundId aus die Besitz-Kette AUFWÄRTS
+  // (d.h. Suche in fund_hierarchies alle Zeilen wo childFundId = currentFundId,
+  //  springe auf parentFundId) und pruefen, ob childFundId (Ziel) darunter ist.
+  //
+  // Der `path`-Array traegt den Pfad fuer eine hilfreiche Fehlermeldung mit.
+  // Sicherheits-Bremse `depth < 100` schuetzt vor pathologischen Daten
+  // (bereits vorhandene Zyklen — sollte durch Serializable-TX unmoeglich sein,
+  //  aber defensiv besser haben).
+  const cycleRows = await prisma.$queryRaw<Array<{ path: string[] }>>`
+    WITH RECURSIVE ancestors AS (
+      SELECT
+        h."parentFundId" AS ancestor_id,
+        ARRAY[h."childFundId", h."parentFundId"]::text[] AS path,
+        1 AS depth
+      FROM fund_hierarchies h
+      INNER JOIN funds pf ON pf.id = h."parentFundId"
+      WHERE h."childFundId" = ${parentFundId}
+        AND h."validTo" IS NULL
+        AND pf."tenantId" = ${tenantId}
+      UNION ALL
+      SELECT
+        h."parentFundId",
+        a.path || h."parentFundId",
+        a.depth + 1
+      FROM fund_hierarchies h
+      INNER JOIN ancestors a ON h."childFundId" = a.ancestor_id
+      INNER JOIN funds pf ON pf.id = h."parentFundId"
+      WHERE h."validTo" IS NULL
+        AND pf."tenantId" = ${tenantId}
+        AND a.depth < 100
+        AND NOT (h."parentFundId" = ANY(a.path))
+    )
+    SELECT path FROM ancestors WHERE ancestor_id = ${childFundId} LIMIT 1;
+  `;
 
-  async function hasPathTo(currentFundId: string, targetFundId: string): Promise<boolean> {
-    if (currentFundId === targetFundId) {
-      return true;
-    }
-
-    if (visited.has(currentFundId)) {
-      return false;
-    }
-    visited.add(currentFundId);
-
-    // Finde alle aktiven Hierarchien wo currentFundId das Kind ist
-    // (d.h. currentFundId ist Gesellschafter von anderen Funds)
-    const hierarchies = await prisma.fundHierarchy.findMany({
-      where: {
-        childFundId: currentFundId,
-        validTo: null, // Nur aktive Beziehungen
-        parentFund: {
-          tenantId: tenantId,
-        },
-      },
-      select: {
-        parentFundId: true,
-        parentFund: {
-          select: { name: true },
-        },
-      },
-    });
-
-    for (const hierarchy of hierarchies) {
-      path.push(hierarchy.parentFundId);
-      if (await hasPathTo(hierarchy.parentFundId, targetFundId)) {
-        return true;
-      }
-      path.pop();
-    }
-
-    return false;
+  if (cycleRows.length === 0) {
+    return { isCircular: false };
   }
 
-  // Pruefe: Kann man vom Parent Fund zum Child Fund kommen?
-  // Wenn ja, dann wuerde die neue Verbindung childFund -> parentFund einen Zyklus erzeugen
-  const isCircular = await hasPathTo(parentFundId, childFundId);
+  // Path aus dem CTE enthaelt Fund-IDs — fuer die Fehlermeldung uebersetzen
+  // wir sie in Fund-Namen.
+  const pathIds = cycleRows[0].path;
+  const funds = await prisma.fund.findMany({
+    where: { id: { in: pathIds } },
+    select: { id: true, name: true },
+  });
+  const fundMap = new Map(funds.map((f) => [f.id, f.name]));
+  const namedPath = pathIds.map((id) => fundMap.get(id) || id);
 
-  if (isCircular) {
-    // Hole Fund-Namen für bessere Fehlermeldung
-    const funds = await prisma.fund.findMany({
-      where: {
-        id: { in: path },
-      },
-      select: { id: true, name: true },
-    });
-
-    const fundMap = new Map(funds.map((f) => [f.id, f.name]));
-    const namedPath: string[] = path.map((id) => fundMap.get(id) || id);
-
-    return { isCircular: true, path: namedPath };
-  }
-
-  return { isCircular: false };
+  return { isCircular: true, path: namedPath };
 }
 
 // =============================================================================

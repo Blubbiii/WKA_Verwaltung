@@ -39,7 +39,12 @@ async function getActiveTenantOverride(sessionUserId: string): Promise<string | 
 
     const payload = signed.substring(0, lastDot);
     const signature = signed.substring(lastDot + 1);
-    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
+    const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+    // F+ Compliance: Kein Fallback auf "" — ein leeres Secret ergibt eine
+    // konstante HMAC-Signatur die jeder Angreifer nachbilden koennte
+    // (analog zum impersonate-Route). Ohne konfiguriertes Secret verweigern
+    // wir jeden Cookie-basierten Tenant-Override — fail-secure statt bypass.
+    if (!secret) return null;
     const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");
 
     if (signature.length !== expected.length) return null;

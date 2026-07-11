@@ -554,6 +554,8 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
         "CREDIT_NOTE",
       );
 
+      // Invoice + Items in einem Roundtrip via nested createMany —
+      // vorher: 1 Create + N sequential Create pro Item (N+1).
       const inv = await tx.invoice.create({
         data: {
           invoiceType: "CREDIT_NOTE",
@@ -579,32 +581,29 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
           leaseId: leaseCalc.leaseId,
           parkId: period.parkId,
           settlementPeriodId: period.id,
+          items: {
+            createMany: {
+              data: itemsData.map((item) => ({
+                position: item.position,
+                description: item.description,
+                quantity: new Decimal(item.quantity.toFixed(4)),
+                unit: item.unit,
+                unitPrice: new Decimal(item.unitPrice.toFixed(4)),
+                netAmount: new Decimal(item.netAmount.toFixed(2)),
+                taxType: item.taxType,
+                taxRate: new Decimal(item.taxRate.toFixed(2)),
+                taxAmount: new Decimal(item.taxAmount.toFixed(2)),
+                grossAmount: new Decimal(item.grossAmount.toFixed(2)),
+                referenceType: item.referenceType,
+                referenceId: item.referenceId,
+                plotAreaType: item.plotAreaType as "WEA_STANDORT" | "POOL" | "WEG" | "AUSGLEICH" | "KABEL",
+                plotId: item.plotId,
+                datevKonto: item.datevKonto || undefined,
+              })),
+            },
+          },
         },
       });
-
-      // Create per-PlotArea items
-      for (const item of itemsData) {
-        await tx.invoiceItem.create({
-          data: {
-            invoiceId: inv.id,
-            position: item.position,
-            description: item.description,
-            quantity: new Decimal(item.quantity.toFixed(4)),
-            unit: item.unit,
-            unitPrice: new Decimal(item.unitPrice.toFixed(4)),
-            netAmount: new Decimal(item.netAmount.toFixed(2)),
-            taxType: item.taxType,
-            taxRate: new Decimal(item.taxRate.toFixed(2)),
-            taxAmount: new Decimal(item.taxAmount.toFixed(2)),
-            grossAmount: new Decimal(item.grossAmount.toFixed(2)),
-            referenceType: item.referenceType,
-            referenceId: item.referenceId,
-            plotAreaType: item.plotAreaType as "WEA_STANDORT" | "POOL" | "WEG" | "AUSGLEICH" | "KABEL",
-            plotId: item.plotId,
-            datevKonto: item.datevKonto || undefined,
-          },
-        });
-      }
 
       return inv;
     });
@@ -1085,6 +1084,8 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
         "CREDIT_NOTE",
       );
 
+      // Invoice + Items in einem Roundtrip via nested createMany —
+      // vorher: 1 Create + N sequential Create pro Item (N+1).
       const inv = await tx.invoice.create({
         data: {
           invoiceType: "CREDIT_NOTE",
@@ -1110,32 +1111,29 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
           leaseId: leaseCalc.leaseId,
           parkId: period.parkId,
           settlementPeriodId: period.id,
+          items: {
+            createMany: {
+              data: items.map((item) => ({
+                position: item.position,
+                description: item.description,
+                quantity: new Decimal(item.quantity.toFixed(4)),
+                unit: item.unit,
+                unitPrice: new Decimal(item.unitPrice.toFixed(4)),
+                netAmount: new Decimal(item.netAmount.toFixed(2)),
+                taxType: item.taxType,
+                taxRate: new Decimal(item.taxRate.toFixed(2)),
+                taxAmount: new Decimal(item.taxAmount.toFixed(2)),
+                grossAmount: new Decimal(item.grossAmount.toFixed(2)),
+                referenceType: item.referenceType,
+                referenceId: item.referenceId,
+                plotAreaType: item.plotAreaType as "WEA_STANDORT" | "POOL" | "WEG" | "AUSGLEICH" | "KABEL" | undefined,
+                plotId: item.plotId,
+                datevKonto: item.datevKonto || undefined,
+              })),
+            },
+          },
         },
       });
-
-      // Create per-PlotArea items
-      for (const item of items) {
-        await tx.invoiceItem.create({
-          data: {
-            invoiceId: inv.id,
-            position: item.position,
-            description: item.description,
-            quantity: new Decimal(item.quantity.toFixed(4)),
-            unit: item.unit,
-            unitPrice: new Decimal(item.unitPrice.toFixed(4)),
-            netAmount: new Decimal(item.netAmount.toFixed(2)),
-            taxType: item.taxType,
-            taxRate: new Decimal(item.taxRate.toFixed(2)),
-            taxAmount: new Decimal(item.taxAmount.toFixed(2)),
-            grossAmount: new Decimal(item.grossAmount.toFixed(2)),
-            referenceType: item.referenceType,
-            referenceId: item.referenceId,
-            plotAreaType: item.plotAreaType as "WEA_STANDORT" | "POOL" | "WEG" | "AUSGLEICH" | "KABEL" | undefined,
-            plotId: item.plotId,
-            datevKonto: item.datevKonto || undefined,
-          },
-        });
-      }
 
       return inv;
     });
