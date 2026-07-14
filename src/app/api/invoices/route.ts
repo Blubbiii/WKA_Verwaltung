@@ -121,9 +121,9 @@ async function getHandler(request: NextRequest) {
           createdBy: {
             select: { id: true, firstName: true, lastName: true },
           },
-          _count: {
-            select: { items: true },
-          },
+          // P23: `_count: { items: true }` entfernt — die Zahl wird in der
+          // Rechnungsliste (page.tsx) nicht angezeigt und kostete pro Row
+          // eine zusaetzliche COUNT-Query.
         },
         orderBy: { invoiceDate: "desc" },
         skip,

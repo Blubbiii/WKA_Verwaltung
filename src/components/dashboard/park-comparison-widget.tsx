@@ -19,43 +19,15 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LOCALE_DE } from "@/lib/format";
 
-// Recharts lazy laden (SSR off — recharts braucht window)
-const ResponsiveContainer = dynamic(
-  () => import("recharts").then((m) => m.ResponsiveContainer),
-  { ssr: false },
-);
-const LineChart = dynamic(
-  () => import("recharts").then((m) => m.LineChart),
-  { ssr: false },
-);
-const Line = dynamic(() => import("recharts").then((m) => m.Line), {
-  ssr: false,
-});
-const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), {
-  ssr: false,
-});
-const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), {
-  ssr: false,
-});
-const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), {
-  ssr: false,
-});
-const Legend = dynamic(() => import("recharts").then((m) => m.Legend), {
-  ssr: false,
-});
-const CartesianGrid = dynamic(
-  () => import("recharts").then((m) => m.CartesianGrid),
-  { ssr: false },
+// UX16: Chart-Bundle als EIN dynamic() statt 9 einzelne Recharts-Imports
+// (verhinderte sichtbares Flackern durch parallele Chunk-Requests).
+const ParkComparisonChart = dynamic(
+  () => import("./park-comparison-chart").then((m) => m.ParkComparisonChart),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
 );
 
-const COLORS = ["#335E99", "#E0792E", "#3FA34D", "#B83280", "#7C3AED"];
 const MAX_SELECTABLE = 5;
-const MONTH_LABELS = [
-  "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-  "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
-];
 
 interface ParkOption {
   id: string;
@@ -236,45 +208,10 @@ export function ParkComparisonWidget() {
               Bitte mindestens einen Park auswählen
             </p>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis
-                  dataKey="month"
-                  tickFormatter={(m: number) => MONTH_LABELS[m - 1] ?? String(m)}
-                  fontSize={12}
-                />
-                <YAxis
-                  fontSize={12}
-                  tickFormatter={(v: number) =>
-                    v >= 1000 ? `${(v / 1000).toFixed(1)} GWh` : `${v} MWh`
-                  }
-                />
-                <Tooltip
-                  formatter={(v: unknown) => {
-                    const n = typeof v === "number" ? v : Number(v);
-                    return Number.isFinite(n)
-                      ? `${n.toLocaleString(LOCALE_DE)} MWh`
-                      : String(v);
-                  }}
-                  labelFormatter={(m: unknown) => {
-                    const n = typeof m === "number" ? m : Number(m);
-                    return Number.isFinite(n) ? (MONTH_LABELS[n - 1] ?? String(n)) : String(m);
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                {data.parks.map((p, i) => (
-                  <Line
-                    key={p.id}
-                    type="monotone"
-                    dataKey={p.name}
-                    stroke={COLORS[i % COLORS.length]}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+            <ParkComparisonChart
+              chartData={chartData}
+              parks={data.parks.map((p) => ({ id: p.id, name: p.name }))}
+            />
           )}
         </div>
       </CardContent>

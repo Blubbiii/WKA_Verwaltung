@@ -18,7 +18,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
-import { checkPermission } from "@/lib/auth/permissions";
+import { getUserPermissions } from "@/lib/auth/permissions";
 import { cache } from "@/lib/cache";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -29,34 +29,26 @@ import { MS_PER_DAY } from "@/lib/constants/time";
 
 const CACHE_TTL_SECONDS = 30;
 
-async function hasPermission(userId: string, perm: string): Promise<boolean> {
-  try {
-    const res = await checkPermission(userId, perm);
-    return res.hasPermission;
-  } catch {
-    return false;
-  }
-}
-
 async function computeSidebarCounts(
   tenantId: string,
   userId: string,
 ): Promise<SidebarCounts> {
-  // Permission-Checks parallel — wir fragen für jeden Count die nötige Permission
-  // ab und überspringen den Count wenn nicht erlaubt (returns 0).
-  const [
-    canSeeApprovals,
-    canSeeInbox,
-    canSeeInvoices,
-    canSeeBank,
-    canSeeContracts,
-  ] = await Promise.all([
-    hasPermission(userId, "accounting:read"),
-    hasPermission(userId, "incoming-invoices:read"),
-    hasPermission(userId, "invoices:read"),
-    hasPermission(userId, "accounting:read"),
-    hasPermission(userId, "contracts:read"),
-  ]);
+  // P21: EIN Permission-Lookup + synchrone .includes()-Checks.
+  // Alter Weg: 5 checkPermission-Calls, jeder rief getUserPermissions() +
+  // durchlief die Rollen/Ressourcen-Schleife — hier reicht ein globaler
+  // includes() weil Sidebar-Counts keine Resource-Restriction brauchen.
+  let permissions: string[];
+  try {
+    const userPerms = await getUserPermissions(userId);
+    permissions = userPerms.permissions;
+  } catch {
+    permissions = [];
+  }
+  const canSeeApprovals = permissions.includes("accounting:read");
+  const canSeeInbox = permissions.includes("incoming-invoices:read");
+  const canSeeInvoices = permissions.includes("invoices:read");
+  const canSeeBank = canSeeApprovals; // accounting:read
+  const canSeeContracts = permissions.includes("contracts:read");
 
   // Jeden Count in einem isolierten try/catch — wenn ein DB-Query fehlschlägt
   // (Schema-Drift, Connection-Hick), liefern die anderen weiter ihren Wert.

@@ -18,17 +18,28 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { z } from "zod";
 
 const STORAGE_PREFIX = "wpm:table:";
 
 type StateRecord = Record<string, string | number | boolean | null | undefined>;
+
+// Erlaubte Primitive-Werte pro Column: str/num/bool/null/undefined — Objects
+// oder Arrays im localStorage würden hier nur Chaos anrichten.
+const StateRecordSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean(), z.null(), z.undefined()]),
+);
 
 function readFromStorage<T extends StateRecord>(key: string): Partial<T> {
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
     if (!raw) return {};
-    return JSON.parse(raw) as Partial<T>;
+    // Fremd-Payload oder abgeschriebene Feldnamen dürfen nicht die Tabelle brechen.
+    const parsed = StateRecordSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return {};
+    return parsed.data as Partial<T>;
   } catch {
     return {};
   }

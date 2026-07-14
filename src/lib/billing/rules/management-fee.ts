@@ -35,12 +35,12 @@ async function getBaseValue(
         });
         return fund?.totalCapital ? Number(fund.totalCapital) : 0;
       }
-      // Summe aller Gesellschaften des Tenants
-      const funds = await prisma.fund.findMany({
+      // P15: SUM in Postgres statt Row-Load + JS-reduce.
+      const capitalAgg = await prisma.fund.aggregate({
         where: { tenantId, status: EntityStatus.ACTIVE },
-        select: { totalCapital: true },
+        _sum: { totalCapital: true },
       });
-      return funds.reduce((sum, f) => sum + (f.totalCapital ? Number(f.totalCapital) : 0), 0);
+      return capitalAgg._sum.totalCapital ? Number(capitalAgg._sum.totalCapital) : 0;
 
     case "ANNUAL_REVENUE": {
       // Sum of EnergySettlement.netOperatorRevenueEur for the fund's parks in the last 12 months
@@ -59,7 +59,8 @@ async function getBaseValue(
 
         if (parkIds.length === 0) return 0;
 
-        const settlements = await prisma.energySettlement.findMany({
+        // P15: SUM in Postgres statt Row-Load + JS-reduce.
+        const settlementsAgg = await prisma.energySettlement.aggregate({
           where: {
             parkId: { in: parkIds },
             tenantId,
@@ -69,17 +70,16 @@ async function getBaseValue(
               { year: cutoffYear, month: null }, // Annual settlements for cutoff year
             ],
           },
-          select: { netOperatorRevenueEur: true },
+          _sum: { netOperatorRevenueEur: true },
         });
 
-        return settlements.reduce(
-          (sum, s) => sum + Number(s.netOperatorRevenueEur),
-          0
-        );
+        return settlementsAgg._sum.netOperatorRevenueEur
+          ? Number(settlementsAgg._sum.netOperatorRevenueEur)
+          : 0;
       }
 
       // No fundId: sum across all tenant settlements in last 12 months
-      const allSettlements = await prisma.energySettlement.findMany({
+      const allSettlementsAgg = await prisma.energySettlement.aggregate({
         where: {
           tenantId,
           OR: [
@@ -88,40 +88,38 @@ async function getBaseValue(
             { year: cutoffYear, month: null },
           ],
         },
-        select: { netOperatorRevenueEur: true },
+        _sum: { netOperatorRevenueEur: true },
       });
 
-      return allSettlements.reduce(
-        (sum, s) => sum + Number(s.netOperatorRevenueEur),
-        0
-      );
+      return allSettlementsAgg._sum.netOperatorRevenueEur
+        ? Number(allSettlementsAgg._sum.netOperatorRevenueEur)
+        : 0;
     }
 
     case "NET_ASSET_VALUE": {
       // Net Asset Value: sum of capitalContribution from active shareholders
       if (fundId) {
-        const shareholders = await prisma.shareholder.findMany({
+        // P15: SUM in Postgres statt Row-Load + JS-reduce.
+        const shareholdersAgg = await prisma.shareholder.aggregate({
           where: { fundId, status: EntityStatus.ACTIVE },
-          select: { capitalContribution: true },
+          _sum: { capitalContribution: true },
         });
-        return shareholders.reduce(
-          (sum, s) => sum + (s.capitalContribution ? Number(s.capitalContribution) : 0),
-          0
-        );
+        return shareholdersAgg._sum.capitalContribution
+          ? Number(shareholdersAgg._sum.capitalContribution)
+          : 0;
       }
 
       // No fundId: sum across all active shareholders of all tenant funds
-      const allShareholders = await prisma.shareholder.findMany({
+      const allShareholdersAgg = await prisma.shareholder.aggregate({
         where: {
           fund: { tenantId, status: EntityStatus.ACTIVE },
           status: EntityStatus.ACTIVE,
         },
-        select: { capitalContribution: true },
+        _sum: { capitalContribution: true },
       });
-      return allShareholders.reduce(
-        (sum, s) => sum + (s.capitalContribution ? Number(s.capitalContribution) : 0),
-        0
-      );
+      return allShareholdersAgg._sum.capitalContribution
+        ? Number(allShareholdersAgg._sum.capitalContribution)
+        : 0;
     }
 
     default:

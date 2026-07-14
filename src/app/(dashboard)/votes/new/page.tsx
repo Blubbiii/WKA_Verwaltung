@@ -82,6 +82,7 @@ export default function NewVotePage() {
   }, []);
 
   const form = useForm<VoteFormValues>({
+    mode: "onTouched",
     resolver: zodResolver(voteFormSchema) as Resolver<VoteFormValues>,
     defaultValues: {
       fundId: "",

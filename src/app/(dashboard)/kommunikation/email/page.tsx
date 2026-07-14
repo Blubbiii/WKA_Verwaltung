@@ -156,6 +156,7 @@ const defaultNotificationSettings: NotificationSettings = {
 
 export default function EmailConfigPage() {
   const tDelete = useTranslations("common.pageDelete");
+  const t = useTranslations("emailConfig");
   const { flags, loading: flagsLoading } = useFeatureFlags();
 
   // Notification state
@@ -223,11 +224,11 @@ export default function EmailConfigPage() {
         setTemplates(data.templates || []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Vorlagen");
+      toast.error(t("errorLoadingTemplates"));
     } finally {
       setTemplatesLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (flags.communication) loadTemplates();
@@ -267,7 +268,7 @@ export default function EmailConfigPage() {
 
   const saveCrmTemplate = async () => {
     if (!crmForm.name.trim() || !crmForm.subject.trim() || !crmForm.body.trim()) {
-      toast.error("Name, Betreff und Inhalt sind Pflicht");
+      toast.error(t("errorFieldsRequired"));
       return;
     }
     setCrmSaving(true);
@@ -308,7 +309,7 @@ export default function EmailConfigPage() {
       toast.success("Vorlage gelöscht");
       loadCrmTemplates();
     } catch {
-      toast.error("Fehler beim Löschen");
+      toast.error(t("errorDeleting"));
       throw new Error("delete failed");
     }
   };
@@ -324,7 +325,7 @@ export default function EmailConfigPage() {
         }
       }
     } catch {
-      toast.error("Fehler beim Laden der E-Mail-Konfiguration");
+      toast.error(t("errorLoadingConfig"));
     } finally {
       setLoading(false);
     }
@@ -385,7 +386,7 @@ export default function EmailConfigPage() {
 
   async function sendTestEmail() {
     if (!testEmail) {
-      toast.error("Bitte geben Sie eine E-Mail-Adresse ein");
+      toast.error(t("errorEmailRequired"));
       return;
     }
 

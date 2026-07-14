@@ -58,6 +58,18 @@ function getBackupConfig() {
     s3AccessKey: process.env.BACKUP_S3_ACCESS_KEY || process.env.S3_ACCESS_KEY || "",
     s3SecretKey: process.env.BACKUP_S3_SECRET_KEY || process.env.S3_SECRET_KEY || "",
     s3Region: process.env.S3_REGION || "eu-central-1",
+    // F10-Compliance: SSE-S3 (AES256) opt-in via ENV. Default "off", weil
+    // MinIO ohne KMS-Konfig den Upload sonst ablehnt. Bei AWS-S3 einfach auf
+    // "AES256" setzen. Für stärkere Kontrolle: "aws:kms" wenn KMS-Key konfiguriert.
+    s3ServerSideEncryption:
+      process.env.BACKUP_S3_SSE === "AES256" || process.env.BACKUP_S3_SSE === "aws:kms"
+        ? (process.env.BACKUP_S3_SSE as "AES256" | "aws:kms")
+        : undefined,
+
+    // F11-Compliance: DSGVO Art. 17 — S3-Backup-Retention (harter Purge).
+    // Verhindert dass Personenbezogene Daten in Backups älter als konfiguriert
+    // liegen bleiben. Default 30 Tage, per Env übersteuerbar.
+    backupPurgeAfterDays: parseInt(process.env.BACKUP_PURGE_AFTER_DAYS || "30", 10),
   };
 }
 
@@ -421,6 +433,12 @@ async function uploadToS3(localPath: string, s3Key: string): Promise<void> {
         Key: s3Key,
         Body: fileContent,
         ContentType: "application/octet-stream",
+        // F10-Compliance: SSE-S3 (AES256) für Backup-Verschlüsselung at rest.
+        // Opt-in via BACKUP_S3_SSE env — bei MinIO nur einschalten, wenn KMS
+        // konfiguriert ist. AWS-S3 akzeptiert AES256 out-of-the-box.
+        ...(config.s3ServerSideEncryption && {
+          ServerSideEncryption: config.s3ServerSideEncryption,
+        }),
         Metadata: {
           "backup-type": path.basename(path.dirname(s3Key)),
           "created-at": new Date().toISOString(),
@@ -437,6 +455,10 @@ async function uploadToS3(localPath: string, s3Key: string): Promise<void> {
           Key: `${s3Key}.meta`,
           Body: metaContent,
           ContentType: "application/json",
+          // F10: Metadata (klein, aber tenant/host-Info) auch verschlüsseln.
+          ...(config.s3ServerSideEncryption && {
+            ServerSideEncryption: config.s3ServerSideEncryption,
+          }),
         })
       );
     } catch {
@@ -666,6 +688,134 @@ export async function applyRetention(): Promise<{
   }
 
   return { deleted, kept };
+}
+
+// =============================================================================
+// F11: DSGVO Art. 17 Backup-Purge
+// =============================================================================
+
+/**
+ * F11-Compliance: DSGVO Art. 17 (Recht auf Löschung / "Right to be forgotten").
+ *
+ * Löscht Backups älter als `retentionDays` (Default 30) hart aus lokalem FS
+ * und S3. Wichtig weil pg_dump-Backups einen Snapshot der gesamten Datenbank
+ * enthalten — inkl. Person-Records, die vielleicht schon "gelöscht" wurden.
+ * Ohne Purge liegen Personendaten unbegrenzt in Backups.
+ *
+ * Hinweis zur Aufbewahrungspflicht (§147 AO / §257 HGB): Backups sind NICHT
+ * die primäre Archivierung — Rechnungsdaten liegen im Journal / DATEV-Export.
+ * Ein 30-Tage-Backup-Rolling-Window bricht die Aufbewahrungspflicht nicht.
+ *
+ * Getrennt von applyRetention(): applyRetention hält die Rotation
+ * (daily/weekly/monthly counts) ein, purgeOldBackups zieht eine harte
+ * DSGVO-Grenze in Tagen.
+ */
+export async function purgeOldBackups(retentionDays?: number): Promise<{
+  purgedLocal: string[];
+  purgedS3: string[];
+  cutoff: string;
+}> {
+  const config = getBackupConfig();
+  const days = retentionDays ?? config.backupPurgeAfterDays;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  const cutoffMs = cutoff.getTime();
+  const purgedLocal: string[] = [];
+  const purgedS3: string[] = [];
+
+  backupLogger.info(
+    { retentionDays: days, cutoff: cutoff.toISOString() },
+    "[BACKUP] Purging backups older than cutoff (DSGVO Art. 17)",
+  );
+
+  // 1. Local FS purge — walk daily/weekly/monthly + s3_download
+  const categories = ["daily", "weekly", "monthly", "s3_download"] as const;
+  for (const category of categories) {
+    const dir = path.join(config.backupDir, category);
+    try {
+      await fs.access(dir);
+    } catch {
+      continue;
+    }
+
+    try {
+      const files = await fs.readdir(dir);
+      for (const fileName of files) {
+        // .dump und .meta symmetrisch behandeln
+        if (!fileName.endsWith(".dump") && !fileName.endsWith(".meta")) continue;
+        const filePath = path.join(dir, fileName);
+        try {
+          const stat = await fs.stat(filePath);
+          if (stat.mtime.getTime() < cutoffMs) {
+            await fs.unlink(filePath);
+            purgedLocal.push(`${category}/${fileName}`);
+            backupLogger.info(
+              { fileName, category, mtime: stat.mtime.toISOString() },
+              "[BACKUP] Purged local backup file (DSGVO)",
+            );
+          }
+        } catch (err) {
+          backupLogger.warn(
+            { fileName, category, err },
+            "[BACKUP] Purge: failed to stat/unlink local file",
+          );
+        }
+      }
+    } catch (err) {
+      backupLogger.warn({ dir, err }, "[BACKUP] Purge: failed to read local dir");
+    }
+  }
+
+  // 2. S3 purge — LastModified < cutoff
+  const client = getS3Client();
+  if (client) {
+    try {
+      const result = await client.send(
+        new ListObjectsV2Command({
+          Bucket: config.s3Bucket,
+          Prefix: "",
+        })
+      );
+
+      const toDelete = (result.Contents || []).filter(
+        (obj) => obj.LastModified && obj.LastModified.getTime() < cutoffMs
+      );
+
+      for (const obj of toDelete) {
+        if (!obj.Key) continue;
+        try {
+          await client.send(
+            new DeleteObjectCommand({
+              Bucket: config.s3Bucket,
+              Key: obj.Key,
+            })
+          );
+          purgedS3.push(obj.Key);
+          backupLogger.info(
+            { s3Key: obj.Key, lastModified: obj.LastModified?.toISOString() },
+            "[BACKUP] Purged S3 backup object (DSGVO)",
+          );
+        } catch (err) {
+          backupLogger.warn(
+            { s3Key: obj.Key, err },
+            "[BACKUP] Purge: failed to delete S3 object",
+          );
+        }
+      }
+    } catch (err) {
+      backupLogger.error({ err }, "[BACKUP] Purge: failed to list S3 objects");
+    }
+  }
+
+  backupLogger.info(
+    { purgedLocalCount: purgedLocal.length, purgedS3Count: purgedS3.length },
+    "[BACKUP] Purge complete",
+  );
+
+  return {
+    purgedLocal,
+    purgedS3,
+    cutoff: cutoff.toISOString(),
+  };
 }
 
 // =============================================================================

@@ -49,29 +49,32 @@ export async function syncPermissionsCatalog(): Promise<void> {
       let created = 0;
       let updated = 0;
 
-      for (const p of PERMISSION_CATALOG) {
-        const isNew = !existingNames.has(p.name);
-        await prisma.permission.upsert({
-          where: { name: p.name },
-          create: {
-            name: p.name,
-            displayName: p.displayName,
-            module: p.module,
-            action: p.action,
-            description: p.description ?? null,
-            sortOrder: p.sortOrder,
-          },
-          update: {
-            displayName: p.displayName,
-            module: p.module,
-            action: p.action,
-            description: p.description ?? null,
-            sortOrder: p.sortOrder,
-          },
-        });
-        if (isNew) created++;
-        else updated++;
-      }
+      // P25: Upserts parallel — 90 Boot-Time-Upserts sonst sequentiell.
+      await Promise.all(
+        PERMISSION_CATALOG.map(async (p) => {
+          const isNew = !existingNames.has(p.name);
+          await prisma.permission.upsert({
+            where: { name: p.name },
+            create: {
+              name: p.name,
+              displayName: p.displayName,
+              module: p.module,
+              action: p.action,
+              description: p.description ?? null,
+              sortOrder: p.sortOrder,
+            },
+            update: {
+              displayName: p.displayName,
+              module: p.module,
+              action: p.action,
+              description: p.description ?? null,
+              sortOrder: p.sortOrder,
+            },
+          });
+          if (isNew) created++;
+          else updated++;
+        }),
+      );
 
       synced = true;
       logger.info(

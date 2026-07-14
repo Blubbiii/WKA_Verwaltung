@@ -13,17 +13,24 @@
  * nur Convenience für SSR-Render, nicht autoritativ.
  */
 
+import { z } from "zod";
+
 export const ACTIVE_TENANT_COOKIE = "wpm-active-tenant";
 
-export interface ActiveTenantData {
-  activeTenantId: string;
-  tenantName: string;
-  tenantSlug: string;
-  tenantLogoUrl: string | null;
-  roleHierarchy: number;
-  userId: string;
-  startedAt: string;
-}
+// Runtime-Shape für den entpackten Cookie-Payload. HMAC schützt vor Fälschung,
+// aber nicht vor Struktur-Drift zwischen alten und neuen Deployments — ein
+// Cookie aus einer älteren App-Version darf kein Chaos in der Session anrichten.
+const ActiveTenantDataSchema = z.object({
+  activeTenantId: z.string(),
+  tenantName: z.string(),
+  tenantSlug: z.string(),
+  tenantLogoUrl: z.string().nullable(),
+  roleHierarchy: z.number(),
+  userId: z.string(),
+  startedAt: z.string(),
+});
+
+export type ActiveTenantData = z.infer<typeof ActiveTenantDataSchema>;
 
 /**
  * Edge-Runtime-kompatible HMAC-SHA256-Verifizierung. Konstant-Zeit-Vergleich.
@@ -60,7 +67,9 @@ export async function verifyActiveTenantCookie(
     }
     if (mismatch !== 0) return null;
 
-    return JSON.parse(payload) as ActiveTenantData;
+    const parsed = ActiveTenantDataSchema.safeParse(JSON.parse(payload));
+    if (!parsed.success) return null;
+    return parsed.data;
   } catch {
     return null;
   }

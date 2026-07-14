@@ -1,17 +1,22 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { z } from "zod";
 
 const STORAGE_KEY = "wpm:recent-visits";
 const MAX_ITEMS = 10;
 
-export interface RecentVisit {
-  type: "park" | "fund" | "invoice" | "lease" | "contract";
-  id: string;
-  name: string;
-  href: string;
-  visitedAt: string;
-}
+const RecentVisitSchema = z.object({
+  type: z.enum(["park", "fund", "invoice", "lease", "contract"]),
+  id: z.string(),
+  name: z.string(),
+  href: z.string(),
+  visitedAt: z.string(),
+});
+
+const RecentVisitListSchema = z.array(RecentVisitSchema);
+
+export type RecentVisit = z.infer<typeof RecentVisitSchema>;
 
 /**
  * Track and retrieve recently visited entities via localStorage.
@@ -29,7 +34,11 @@ export function useRecentlyVisited() {
     if (typeof window === "undefined") return [];
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
+      if (!stored) return [];
+      // Alte Payloads (z.B. neue `type`-Werte nach einem App-Update) sollen
+      // still verschwinden statt Runtime-Errors zu werfen.
+      const parsed = RecentVisitListSchema.safeParse(JSON.parse(stored));
+      return parsed.success ? parsed.data : [];
     } catch {
       return [];
     }

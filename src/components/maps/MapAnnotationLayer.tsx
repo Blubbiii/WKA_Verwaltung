@@ -143,20 +143,33 @@ export function MapAnnotationLayer({
         layer.bindPopup(popupContent);
 
         if (hasActions) {
-          layer.on("popupopen", () => {
+          // UX14: refs speichern damit wir alte Listener bei jedem popupopen
+          // wieder entfernen können. Sonst häuft sich pro Öffnen ein Handler an.
+          let editBtn: HTMLElement | null = null;
+          let deleteBtn: HTMLElement | null = null;
+          const editHandler = () => {
             const annotation = annotations.find((a) => a.id === annotationId);
-            document
-              .getElementById(`anno-edit-${annotationId}`)
-              ?.addEventListener("click", () => {
-                if (annotation) onEdit?.(annotation);
-                layer.closePopup();
-              });
-            document
-              .getElementById(`anno-delete-${annotationId}`)
-              ?.addEventListener("click", () => {
-                onDelete?.(annotationId);
-                layer.closePopup();
-              });
+            if (annotation) onEdit?.(annotation);
+            layer.closePopup();
+          };
+          const deleteHandler = () => {
+            onDelete?.(annotationId);
+            layer.closePopup();
+          };
+          layer.on("popupopen", () => {
+            // Alte Handler abmelden (falls Popup schonmal geöffnet war)
+            editBtn?.removeEventListener("click", editHandler);
+            deleteBtn?.removeEventListener("click", deleteHandler);
+            editBtn = document.getElementById(`anno-edit-${annotationId}`);
+            deleteBtn = document.getElementById(`anno-delete-${annotationId}`);
+            editBtn?.addEventListener("click", editHandler);
+            deleteBtn?.addEventListener("click", deleteHandler);
+          });
+          layer.on("popupclose", () => {
+            editBtn?.removeEventListener("click", editHandler);
+            deleteBtn?.removeEventListener("click", deleteHandler);
+            editBtn = null;
+            deleteBtn = null;
           });
         }
       }}

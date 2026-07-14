@@ -22,7 +22,10 @@ const turbineUpdateSchema = z.object({
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
-  technicalData: z.record(z.string(), z.any()).optional(),
+  // Freier Schlüssel-Wert-Speicher für "Sonstiges" — nur Primitive erlaubt.
+  technicalData: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   operatorFundId: z.uuid().optional().nullable(),

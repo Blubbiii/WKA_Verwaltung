@@ -115,14 +115,16 @@ export async function GET(request: NextRequest) {
 
     const [newInvoices, newIncomingInvoices, newApprovals, newAuditEntries, recentLogs] =
       await Promise.all([
+        // F17-Compliance: Soft-deleted (deletedAt != null) NICHT mitzählen.
+        // ApprovalRequest hat kein deletedAt-Feld → nichts zu filtern.
         canReadInvoices
           ? prisma.invoice.count({
-              where: { tenantId, createdAt: { gt: since } },
+              where: { tenantId, deletedAt: null, createdAt: { gt: since } },
             })
           : Promise.resolve(0),
         canReadIncoming
           ? prisma.incomingInvoice.count({
-              where: { tenantId, createdAt: { gt: since } },
+              where: { tenantId, deletedAt: null, createdAt: { gt: since } },
             })
           : Promise.resolve(0),
         canReadApprovals

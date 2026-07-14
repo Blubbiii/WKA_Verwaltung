@@ -9,6 +9,7 @@ import { serializePrisma } from "@/lib/serialize";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
+import { withIdempotency } from "@/lib/idempotency";
 
 // ============================================================================
 // VALIDATION
@@ -26,7 +27,17 @@ const lineSchema = z.object({
 });
 
 const createSchema = z.object({
-  entryDate: z.string().datetime({ message: "Ungültiges Datum" }),
+  // F16-Compliance: Optional Idempotency-Key im Body (Alternative zu Header).
+  idempotencyKey: z.string().min(1).max(200).optional(),
+  entryDate: z
+    .string()
+    .datetime({ message: "Ungültiges Datum" })
+    // F13-Compliance: GoBD §146 AO — Buchungsdatum darf nicht in der Zukunft
+    // liegen. Verhindert Vorbuchungen (Bilanzmanipulation / falsche Periode).
+    .refine(
+      (v) => new Date(v).getTime() <= Date.now(),
+      { message: "Buchungsdatum darf nicht in der Zukunft liegen" },
+    ),
   description: z.string().min(1, "Beschreibung darf nicht leer sein").max(200),
   reference: z.string().max(100).optional(),
   lines: z
@@ -167,50 +178,60 @@ export async function POST(request: NextRequest) {
 
     const entryDateObj = new Date(entryDate);
 
-    // P9: GoBD §146 AO — keine Buchungen in gesperrte Periode.
-    // Auch DRAFT-Erfassung blockieren, damit User nicht erst beim POST stolpert.
-    try {
-      await assertPeriodOpen(check.tenantId, entryDateObj);
-    } catch (err) {
-      if (err instanceof PeriodLockedError) {
-        return apiError("PERIOD_LOCKED", 409, {
-          message: err.message,
-          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+    // F16-Compliance: Journal-Entry-Create → Idempotency-Key ehrt.
+    // Doppel-Buchungen bei Client-Retry sind hier besonders schmerzhaft
+    // (Bilanz-Integrität, GoBD-Fußspur).
+    return withIdempotency(
+      request,
+      check.tenantId!,
+      async () => {
+        // P9: GoBD §146 AO — keine Buchungen in gesperrte Periode.
+        // Auch DRAFT-Erfassung blockieren, damit User nicht erst beim POST stolpert.
+        try {
+          await assertPeriodOpen(check.tenantId!, entryDateObj);
+        } catch (err) {
+          if (err instanceof PeriodLockedError) {
+            return apiError("PERIOD_LOCKED", 409, {
+              message: err.message,
+              details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+            });
+          }
+          throw err;
+        }
+
+        const entry = await prisma.journalEntry.create({
+          data: {
+            tenantId: check.tenantId!,
+            entryDate: entryDateObj,
+            description,
+            reference: reference || null,
+            status: "DRAFT",
+            createdById: check.userId!,
+            lines: {
+              create: lines.map((l) => ({
+                lineNumber: l.lineNumber,
+                account: l.account,
+                accountName: l.accountName || null,
+                description: l.description || null,
+                debitAmount: l.debitAmount ?? null,
+                creditAmount: l.creditAmount ?? null,
+                taxKey: l.taxKey || null,
+                costCenter: l.costCenter || null,
+              })),
+            },
+          },
+          include: { lines: { orderBy: { lineNumber: "asc" } } },
         });
-      }
-      throw err;
-    }
 
-    const entry = await prisma.journalEntry.create({
-      data: {
-        tenantId: check.tenantId,
-        entryDate: entryDateObj,
-        description,
-        reference: reference || null,
-        status: "DRAFT",
-        createdById: check.userId!,
-        lines: {
-          create: lines.map((l) => ({
-            lineNumber: l.lineNumber,
-            account: l.account,
-            accountName: l.accountName || null,
-            description: l.description || null,
-            debitAmount: l.debitAmount ?? null,
-            creditAmount: l.creditAmount ?? null,
-            taxKey: l.taxKey || null,
-            costCenter: l.costCenter || null,
-          })),
-        },
+        logger.info(
+          { tenantId: check.tenantId, entryId: entry.id },
+          "Journal entry created"
+        );
+
+        return NextResponse.json(serializePrisma(entry), { status: 201 });
       },
-      include: { lines: { orderBy: { lineNumber: "asc" } } },
-    });
-
-    logger.info(
-      { tenantId: check.tenantId, entryId: entry.id },
-      "Journal entry created"
+      { parsedBody: body },
     );
-
-    return NextResponse.json(serializePrisma(entry), { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error creating journal entry");
     return apiError("CREATE_FAILED", 500, { message: "Fehler beim Erstellen der Buchung" });

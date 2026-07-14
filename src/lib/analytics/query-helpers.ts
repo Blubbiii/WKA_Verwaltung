@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import type { AnalyticsTurbineMeta } from "@/types/analytics";
 import { LOCALE_DE } from "@/lib/format";
+import { cache } from "@/lib/cache";
 
 // =============================================================================
 // Analytics Query Helpers
@@ -9,45 +10,66 @@ import { LOCALE_DE } from "@/lib/format";
 // =============================================================================
 
 /**
+ * TTL fuer den Turbines-Cache. Analytics-Endpoints laufen oft in Bursts
+ * parallel (Dashboard laedt 5-10 Module gleichzeitig — jedes ruft
+ * loadTurbines auf). 5s Cache eliminiert den Duplicate-Fetch fast
+ * vollstaendig, ohne dass Aenderungen an Turbine-Metadaten spuerbar
+ * verzoegern.
+ */
+const TURBINES_CACHE_TTL_SECONDS = 5;
+
+/**
  * Load authorized turbines for a tenant, optionally filtered by park.
  * ALWAYS filters to deviceType='WEA' (no Parkrechner/NVP in analytics).
  * Returns turbine metadata needed for KPI calculations.
+ *
+ * P13: Cached in Redis (5s TTL) — Dashboard-Bursts (5-10 Analytics-
+ * Endpoints parallel) treffen sonst pro Request diesen findMany.
+ * Invalidierung ist unnoetig — TTL genuegt fuer die Aenderungs-Frequenz.
  */
 export async function loadTurbines(
   tenantId: string,
   parkId?: string | null
 ): Promise<AnalyticsTurbineMeta[]> {
-  const where: Record<string, unknown> = {
-    park: { tenantId },
-    deviceType: "WEA",
-  };
-  if (parkId && parkId !== "all") {
-    where.parkId = parkId;
-  }
+  const cacheKey = `analytics:turbines:${parkId ?? "all"}`;
+  return cache.getOrSet<AnalyticsTurbineMeta[]>(
+    cacheKey,
+    async () => {
+      const where: Record<string, unknown> = {
+        park: { tenantId },
+        deviceType: "WEA",
+      };
+      if (parkId && parkId !== "all") {
+        where.parkId = parkId;
+      }
 
-  const turbines = await prisma.turbine.findMany({
-    where,
-    select: {
-      id: true,
-      designation: true,
-      ratedPowerKw: true,
-      park: {
+      const turbines = await prisma.turbine.findMany({
+        where,
         select: {
           id: true,
-          name: true,
+          designation: true,
+          ratedPowerKw: true,
+          park: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: [{ park: { name: "asc" } }, { designation: "asc" }],
-  });
+        orderBy: [{ park: { name: "asc" } }, { designation: "asc" }],
+      });
 
-  return turbines.map((t) => ({
-    id: t.id,
-    designation: t.designation,
-    parkId: t.park.id,
-    parkName: t.park.name,
-    ratedPowerKw: t.ratedPowerKw ? Number(t.ratedPowerKw) : 0,
-  }));
+      return turbines.map((t) => ({
+        id: t.id,
+        designation: t.designation,
+        parkId: t.park.id,
+        parkName: t.park.name,
+        ratedPowerKw: t.ratedPowerKw ? Number(t.ratedPowerKw) : 0,
+      }));
+    },
+    TURBINES_CACHE_TTL_SECONDS,
+    tenantId,
+  );
 }
 
 /**

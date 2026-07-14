@@ -14,24 +14,27 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { z } from "zod";
 
 const STORAGE_KEY = "wpm:sepa-wizard:v1";
 
-export interface SepaWizardState {
-  invoiceIds: string[];
-  bankAccountId: string | null;
-  debtorName: string;
-  debtorIban: string;
-  debtorBic: string;
-  executionDate: string;
+const SepaWizardStateSchema = z.object({
+  invoiceIds: z.array(z.string()),
+  bankAccountId: z.string().nullable(),
+  debtorName: z.string(),
+  debtorIban: z.string(),
+  debtorBic: z.string(),
+  executionDate: z.string(),
   /**
    * Timestamp of the wizard-run start (unix ms). Used to detect stale
    * localStorage from an aborted/older run — invoiceIds might reference
    * invoices that were already paid or deleted since. Steps that guard
    * against empty state should also treat wizards older than 24h as stale.
    */
-  createdAt: number | null;
-}
+  createdAt: z.number().nullable(),
+});
+
+export type SepaWizardState = z.infer<typeof SepaWizardStateSchema>;
 
 /** TTL for a wizard run before its state is considered stale. */
 export const SEPA_WIZARD_TTL_MS = 24 * 60 * 60 * 1000;
@@ -51,8 +54,11 @@ function loadFromStorage(): SepaWizardState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
-    const parsed = JSON.parse(raw) as Partial<SepaWizardState>;
-    return { ...DEFAULT_STATE, ...parsed };
+    // Alte oder korrupte Payloads dürfen nicht den Wizard unbenutzbar machen —
+    // bei jedem Struktur-Mismatch auf DEFAULT_STATE zurückfallen.
+    const parsed = SepaWizardStateSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return DEFAULT_STATE;
+    return parsed.data;
   } catch {
     return DEFAULT_STATE;
   }

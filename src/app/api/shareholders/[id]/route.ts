@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +7,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { createAuditLog } from "@/lib/audit";
 
 const shareholderUpdateSchema = z.object({
   shareholderNumber: z.string().optional().nullable(),
@@ -119,6 +120,23 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!shareholder) {
       return apiError("NOT_FOUND", undefined, { message: "Gesellschafter nicht gefunden" });
     }
+
+    // F14-Compliance: Read-Audit für sensitive Shareholder-Views. Response
+    // enthält Person-Bank-IBAN/BIC — DSGVO Art. 30 verlangt Nachvollziehbarkeit
+    // "wer hat wann welche personenbezogenen Daten eingesehen".
+    // Consider sampling if audit-log volume becomes issue.
+    after(async () => {
+      try {
+        await createAuditLog({
+          action: "VIEW",
+          entityType: "Shareholder",
+          entityId: id,
+          description: "Gesellschafter-Detail angesehen (mit Bankdaten)",
+        });
+      } catch (err) {
+        logger.warn({ err, shareholderId: id }, "[Audit] VIEW log failed");
+      }
+    });
 
     return NextResponse.json(shareholder);
   } catch (error) {

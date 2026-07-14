@@ -427,22 +427,22 @@ export default function AngebotePage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {q.status === "DRAFT" && (
-                              <Button variant="ghost" size="icon" title={t("actionSend")} onClick={() => performAction(q.id, "send", t("confirmSend"))}>
+                              <Button variant="ghost" size="icon" title={t("actionSend")} aria-label={t("actionSend")} onClick={() => performAction(q.id, "send", t("confirmSend"))}>
                                 <Send className="h-4 w-4" />
                               </Button>
                             )}
                             {q.status === "SENT" && (
                               <>
-                                <Button variant="ghost" size="icon" title={t("actionAccept")} onClick={() => performAction(q.id, "accept", t("confirmAccept"))}>
+                                <Button variant="ghost" size="icon" title={t("actionAccept")} aria-label={t("actionAccept")} onClick={() => performAction(q.id, "accept", t("confirmAccept"))}>
                                   <Check className="h-4 w-4 text-green-600" />
                                 </Button>
-                                <Button variant="ghost" size="icon" title={t("actionExpire")} onClick={() => performAction(q.id, "expire", t("confirmExpire"))}>
+                                <Button variant="ghost" size="icon" title={t("actionExpire")} aria-label={t("actionExpire")} onClick={() => performAction(q.id, "expire", t("confirmExpire"))}>
                                   <Clock className="h-4 w-4 text-orange-600" />
                                 </Button>
                               </>
                             )}
                             {q.status === "ACCEPTED" && (
-                              <Button variant="ghost" size="icon" title={t("actionConvert")} onClick={() => performAction(q.id, "convert", t("confirmConvert"))}>
+                              <Button variant="ghost" size="icon" title={t("actionConvert")} aria-label={t("actionConvert")} onClick={() => performAction(q.id, "convert", t("confirmConvert"))}>
                                 <ArrowRight className="h-4 w-4 text-purple-600" />
                               </Button>
                             )}
@@ -452,12 +452,12 @@ export default function AngebotePage() {
                               </span>
                             )}
                             {["DRAFT", "SENT", "ACCEPTED"].includes(q.status) && (
-                              <Button variant="ghost" size="icon" title={t("actionCancel")} onClick={() => performAction(q.id, "cancel", t("confirmCancel"))}>
+                              <Button variant="ghost" size="icon" title={t("actionCancel")} aria-label={t("actionCancel")} onClick={() => performAction(q.id, "cancel", t("confirmCancel"))}>
                                 <X className="h-4 w-4 text-red-600" />
                               </Button>
                             )}
                             {q.status === "DRAFT" && (
-                              <Button variant="ghost" size="icon" title={t("actionDelete")} onClick={() => deleteQuote(q.id)}>
+                              <Button variant="ghost" size="icon" title={t("actionDelete")} aria-label={t("actionDelete")} onClick={() => deleteQuote(q.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}

@@ -237,14 +237,16 @@ export async function PATCH(
     if (validatedData.memberships !== undefined) {
       const incomingTenantIds = new Set(validatedData.memberships.map((m) => m.tenantId));
 
-      // Upsert all incoming memberships
-      for (const m of validatedData.memberships) {
-        await prisma.userTenantMembership.upsert({
-          where: { userId_tenantId: { userId: id, tenantId: m.tenantId } },
-          create: { userId: id, tenantId: m.tenantId, isPrimary: m.isPrimary },
-          update: { isPrimary: m.isPrimary, status: "ACTIVE" },
-        });
-      }
+      // P24: Upserts parallel (Promise.all) statt sequentiell.
+      await Promise.all(
+        validatedData.memberships.map((m) =>
+          prisma.userTenantMembership.upsert({
+            where: { userId_tenantId: { userId: id, tenantId: m.tenantId } },
+            create: { userId: id, tenantId: m.tenantId, isPrimary: m.isPrimary },
+            update: { isPrimary: m.isPrimary, status: "ACTIVE" },
+          }),
+        ),
+      );
 
       // Remove memberships no longer in the list (but never remove the primary/home tenant)
       await prisma.userTenantMembership.deleteMany({

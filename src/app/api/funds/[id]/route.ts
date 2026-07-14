@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { logDeletion } from "@/lib/audit";
+import { createAuditLog, logDeletion } from "@/lib/audit";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -212,6 +212,26 @@ export async function GET(
     const hasSmtpPassword = Boolean(
       fund.emailSmtpPassword && fund.emailSmtpPassword.length > 0,
     );
+
+    // F14-Compliance: Read-Audit nur wenn ein SMTP-Password konfiguriert ist
+    // (dann wird `hasSmtpPassword`-Flag exponiert = sensitive Metadata). Für
+    // rein "öffentliche" Fund-Views (Name, Legal-Form etc.) kein Audit, um
+    // Log-Volumen nicht zu explodieren.
+    // Consider sampling if audit-log volume becomes issue.
+    if (hasSmtpPassword) {
+      after(async () => {
+        try {
+          await createAuditLog({
+            action: "VIEW",
+            entityType: "Fund",
+            entityId: id,
+            description: "Gesellschaft-Detail angesehen (SMTP-Konfig sichtbar)",
+          });
+        } catch (err) {
+          logger.warn({ err, fundId: id }, "[Audit] VIEW log failed");
+        }
+      });
+    }
 
     return NextResponse.json({ ...fundWithoutPassword, hasSmtpPassword, stats });
   } catch (error) {

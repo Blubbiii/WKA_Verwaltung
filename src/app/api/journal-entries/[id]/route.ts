@@ -24,7 +24,15 @@ const lineSchema = z.object({
 });
 
 const updateSchema = z.object({
-  entryDate: z.iso.datetime().optional(),
+  entryDate: z
+    .iso.datetime()
+    .optional()
+    // F13-Compliance: GoBD §146 AO — Buchungsdatum darf nicht in der Zukunft
+    // liegen. Verhindert Vorbuchungen (Bilanzmanipulation / falsche Periode).
+    .refine(
+      (v) => !v || new Date(v).getTime() <= Date.now(),
+      { message: "Buchungsdatum darf nicht in der Zukunft liegen" },
+    ),
   description: z.string().min(1).max(200).optional(),
   reference: z.string().max(100).optional().nullable(),
   lines: z

@@ -137,8 +137,10 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
 
   useEffect(() => {
     fetchStatus();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchStatus, 30 * 1000);
+    // Refresh every 30 seconds — skip when tab is hidden
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchStatus();
+    }, 30 * 1000);
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
@@ -349,7 +351,9 @@ export function AuditLogWidget({ className }: { className?: string }) {
 
   useEffect(() => {
     fetchEntries();
-    const interval = setInterval(fetchEntries, 60 * 1000);
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchEntries();
+    }, 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchEntries]);
 
@@ -453,7 +457,9 @@ export function BillingJobsWidget({ className }: { className?: string }) {
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 30 * 1000);
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchStats();
+    }, 30 * 1000);
     return () => clearInterval(interval);
   }, [fetchStats]);
 
@@ -571,8 +577,10 @@ export function WebhookStatusWidget({ className }: { className?: string }) {
 
   useEffect(() => {
     fetchStats();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchStats, 60 * 1000);
+    // Refresh every 60 seconds — skip when tab is hidden
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchStats();
+    }, 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchStats]);
 

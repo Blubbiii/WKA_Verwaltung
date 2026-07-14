@@ -110,9 +110,16 @@ export const authConfig: NextAuthConfig = {
       if (!token.id) token.id = "";
       return token;
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session(params: any) {
-      const { session, token } = params as { session: typeof params.session; token: typeof params.token };
+    async session(
+      params: Parameters<NonNullable<NonNullable<NextAuthConfig["callbacks"]>["session"]>>[0]
+        // Auth.js reicht in v5 zusätzlich `request` in den Session-Callback,
+        // ohne das aber in `@auth/core` zu typisieren. Wir intersektieren
+        // hier, statt auf `any` zurückzufallen.
+        & { request?: Request },
+    ) {
+      const { session, token } = params;
+      // `token` ist nur bei strategy: "jwt" gesetzt — hier strategisch gesichert
+      // durch `session.strategy = "jwt"` weiter unten in dieser Config.
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.roleHierarchy = (token.roleHierarchy as number) ?? 0;
@@ -125,7 +132,7 @@ export const authConfig: NextAuthConfig = {
         // aus Request-Header lesen. Bei API-Direct-Calls (außerhalb des
         // Middleware-Matchers) könnte sonst ein Angreifer mit gestohlenem
         // JWT den x-active-tenant-id-Header injizieren → Cross-Tenant-Zugriff.
-        const req = params.request as Request | undefined;
+        const req = params.request;
         const cookieHeader = req?.headers?.get("cookie") ?? "";
         const cookieMatch = cookieHeader.match(/wpm-active-tenant=([^;]+)/);
         if (cookieMatch) {

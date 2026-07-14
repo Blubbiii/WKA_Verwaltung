@@ -2,6 +2,26 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 
+// Union über die zwei Fehler-Payload-Formate, die die API zurückgeben kann:
+//  1. Neues Format aus `apiError(...)`: { code, error, details? }
+//  2. Legacy-Handler: { error: "…" } oder plain-Strings aus Reverse-Proxies.
+// Der Fallback-Chain-Reader bleibt lesbar und muss NICHT jedes neue Feld kennen.
+type ApiErrorLike =
+  | { error?: string; code?: string; details?: unknown; message?: string }
+  | string
+  | null
+  | undefined;
+
+function extractApiErrorMessage(payload: unknown): string | null {
+  if (typeof payload === "string" && payload.trim()) return payload;
+  if (payload && typeof payload === "object") {
+    const p = payload as Extract<ApiErrorLike, object>;
+    if (typeof p.error === "string" && p.error.trim()) return p.error;
+    if (typeof p.message === "string" && p.message.trim()) return p.message;
+  }
+  return null;
+}
+
 export interface FileUploadState {
   /** Whether an upload is currently in progress */
   isUploading: boolean;
@@ -111,7 +131,7 @@ export function useFileUpload(options: FileUploadOptions = {}): FileUploadResult
             resolve(responseData);
           } else {
             const errorMsg =
-              (responseData as { error?: string })?.error ||
+              extractApiErrorMessage(responseData) ||
               `Upload fehlgeschlagen (Status ${xhr.status})`;
             setError(errorMsg);
             setIsUploading(false);

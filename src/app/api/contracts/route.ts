@@ -9,6 +9,17 @@ import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { CONTRACT_REMINDER_DAYS_DEFAULT, CONTRACT_WARNING_DAYS } from "@/lib/config/business-thresholds";
 import { apiError } from "@/lib/api-errors";
+import { enumParam } from "@/lib/validation/query-params";
+
+const CONTRACT_TYPES = [
+  "LEASE",
+  "SERVICE",
+  "INSURANCE",
+  "GRID_CONNECTION",
+  "MARKETING",
+  "OTHER",
+] as const;
+const CONTRACT_STATUSES = ["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"] as const;
 
 const contractCreateSchema = z.object({
   contractType: z.enum([
@@ -57,8 +68,8 @@ async function getHandler(request: NextRequest) {
       maxLimit: 100,
     });
     const search = searchParams.get("search") || "";
-    const contractType = searchParams.get("contractType");
-    const status = searchParams.get("status");
+    const contractType = enumParam(searchParams.get("contractType"), CONTRACT_TYPES);
+    const status = enumParam(searchParams.get("status"), CONTRACT_STATUSES);
     const parkId = searchParams.get("parkId");
     const fundId = searchParams.get("fundId");
     const expiringWithinDays = searchParams.get("expiringWithinDays");
@@ -82,11 +93,11 @@ async function getHandler(request: NextRequest) {
     }
 
     if (contractType) {
-      where.contractType = contractType as Prisma.EnumContractTypeFilter["equals"];
+      where.contractType = contractType;
     }
 
     if (status) {
-      where.status = status as Prisma.EnumContractStatusFilter["equals"];
+      where.status = status;
     }
 
     if (parkId) {

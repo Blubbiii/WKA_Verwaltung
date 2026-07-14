@@ -918,6 +918,16 @@
       "next": "Weiter"
     }
   },
+  "parkDetail": {
+    "errorSaving": "Fehler beim Speichern",
+    "errorLoadingPlots": "Fehler beim Laden der Flurstücke",
+    "errorLoadingContracts": "Fehler beim Laden der Verträge",
+    "errorAssigning": "Fehler beim Zuordnen",
+    "errorRemoving": "Fehler beim Entfernen",
+    "errorAssigningPlotsCount": "{count} Flurstücke konnten nicht zugeordnet werden",
+    "plotsAssigned": "{count} Flurstücke zugeordnet",
+    "plotsAssignedFromLeases": "{plots} Flurstücke aus {leases} Verträgen zugeordnet"
+  },
   "invoices": {
     "title": "Deine Rechnungen",
     "subtitle": "Hier verwaltest du Rechnungen und Gutschriften",
@@ -3662,7 +3672,12 @@
       "createSuccess": "Kontakt erstellt",
       "createError": "Fehler beim Erstellen",
       "crmDisabled": "CRM nicht aktiviert",
-      "crmDisabledHint": "Das CRM-Modul ist für deinen Mandanten nicht freigeschaltet. Bitte wende dich an deinen Administrator."
+      "crmDisabledHint": "Das CRM-Modul ist für deinen Mandanten nicht freigeschaltet. Bitte wende dich an deinen Administrator.",
+      "pagination": {
+        "pageOf": "Seite {page} von {totalPages} ({totalCount} Kontakte)",
+        "prev": "Zurück",
+        "next": "Weiter"
+      }
     },
     "detail": {
       "backAria": "Zurück",
@@ -9715,6 +9730,7 @@
       "onlyDrafts": "Nur Entwürfe können gelöscht werden",
       "confirm": "{count} Entwurf/Entwürfe wirklich löschen?",
       "confirmWithSkipped": "{count} Entwurf/Entwürfe wirklich löschen? ({skipped} gebuchte Einträge werden übersprungen)",
+      "deleting": "{count, plural, one {# Buchung wird gelöscht…} other {# Buchungen werden gelöscht…}}",
       "deleted": "{count, plural, one {# Buchung gelöscht} other {# Buchungen gelöscht}}",
       "failed": "{count} Buchung(en) konnten nicht gelöscht werden",
       "exported": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}",
@@ -10148,7 +10164,19 @@
       "degraded": "Etwas hakt",
       "down": "Da läuft was schief",
       "lastChecked": "Geprüft {time}"
+    },
+    "skipLink": {
+      "toMainContent": "Zum Hauptinhalt springen"
     }
+  },
+  "notificationBell": {
+    "aria": "Benachrichtigungen",
+    "ariaWithCount": "Benachrichtigungen ({count} ungelesen)",
+    "title": "Benachrichtigungen",
+    "markAllRead": "Alle als gelesen markieren",
+    "empty": "Keine Benachrichtigungen",
+    "viewAll": "Alle Benachrichtigungen anzeigen",
+    "markAllFailed": "Benachrichtigungen konnten nicht aktualisiert werden"
   },
   "permissionGate": {
     "missingPermission": "Dir fehlt `{permission}` für diese Aktion."
@@ -10156,5 +10184,23 @@
   "presence": {
     "oneOther": "{name} schaut sich das gerade auch an",
     "multipleOthers": "{count} andere User schauen sich das auch an"
+  },
+  "stakeholderNew": {
+    "errorLoadingTenants": "Fehler beim Laden der Mandanten",
+    "errorLoadingParks": "Fehler beim Laden der Parks",
+    "errorLoadingData": "Fehler beim Laden der Daten",
+    "errorLoadingFunds": "Fehler beim Laden der Gesellschaften",
+    "errorSelectServiceProvider": "Bitte wählen Sie einen Dienstleister aus",
+    "errorSelectPark": "Bitte wählen Sie einen Windpark aus",
+    "errorSelectRole": "Bitte wählen Sie eine Aufgabe aus",
+    "errorInvalidFeeRate": "Bitte geben Sie einen gültigen Gebührensatz ein",
+    "errorCreatingContract": "Fehler beim Erstellen des BF-Vertrags"
+  },
+  "emailConfig": {
+    "errorLoadingTemplates": "Fehler beim Laden der Vorlagen",
+    "errorFieldsRequired": "Name, Betreff und Inhalt sind Pflicht",
+    "errorDeleting": "Fehler beim Löschen",
+    "errorLoadingConfig": "Fehler beim Laden der E-Mail-Konfiguration",
+    "errorEmailRequired": "Bitte geben Sie eine E-Mail-Adresse ein"
   }
 }

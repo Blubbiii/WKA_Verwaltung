@@ -8,6 +8,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { InvoiceType, TaxType } from "@prisma/client";
+import { z } from "zod";
 import {
   getNextInvoiceNumber,
   calculateTaxAmounts,
@@ -22,13 +23,20 @@ const logger = apiLogger.child({ component: "recurring-invoice-service" });
 // Types
 // ============================================================================
 
-export interface RecurringPosition {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  taxType: "STANDARD" | "REDUCED" | "EXEMPT";
-  unit?: string;
-}
+// Runtime-Schema für die JSON-Column `RecurringInvoice.positions`. Der DB-Wert
+// ist Prisma.JsonValue — wir müssen ihn beim Lesen validieren, sonst wandert
+// Garbage in die Invoice-Generation und fällt erst später mit NaN-Beträgen auf.
+const recurringPositionSchema = z.object({
+  description: z.string(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  taxType: z.enum(["STANDARD", "REDUCED", "EXEMPT"]),
+  unit: z.string().optional(),
+});
+
+const recurringPositionsSchema = z.array(recurringPositionSchema);
+
+export type RecurringPosition = z.infer<typeof recurringPositionSchema>;
 
 export interface ProcessResult {
   processed: number;
@@ -141,9 +149,15 @@ async function generateInvoiceFromRecurring(
     parkId: string | null;
   }
 ): Promise<string> {
-  const positions = recurringInvoice.positions as RecurringPosition[];
+  const positionsParse = recurringPositionsSchema.safeParse(recurringInvoice.positions);
+  if (!positionsParse.success) {
+    throw new Error(
+      `Ungültige Positionen in der wiederkehrenden Rechnung (${recurringInvoice.id}): ${positionsParse.error.message}`,
+    );
+  }
+  const positions = positionsParse.data;
 
-  if (!positions || !Array.isArray(positions) || positions.length === 0) {
+  if (positions.length === 0) {
     throw new Error("Keine Positionen in der wiederkehrenden Rechnung definiert");
   }
 

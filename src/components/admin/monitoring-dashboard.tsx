@@ -119,7 +119,10 @@ export function MonitoringDashboard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    // Skip polling while tab is hidden — avoids stale requests
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchData();
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
 

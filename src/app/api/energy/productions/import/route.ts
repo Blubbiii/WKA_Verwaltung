@@ -69,7 +69,13 @@ const wizardRequestSchema = z.object({
     operatingHours: z.string().nullable(),
     availabilityPct: z.string().nullable(),
   }),
-  data: z.array(z.record(z.string(), z.any())).min(1).max(5000),
+  // Rohe CSV/Excel-Zeilen: dynamische Spaltennamen (vom User beim Mapping bestimmt),
+  // Werte sind Zell-Primitive nach dem Parser. resolveRows() macht danach die typed
+  // Extraktion via mapping — hier bewusst nur Primitive zulassen (keine Nested-Objects).
+  data: z
+    .array(z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])))
+    .min(1)
+    .max(5000),
 });
 
 // Direct API request (programmatic)

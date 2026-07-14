@@ -122,8 +122,10 @@ export function TodayFocusWidget({ className }: TodayFocusWidgetProps) {
 
   useEffect(() => {
     fetchData();
-    // Refresh alle 2 Minuten — leise, ohne Spinner
-    const interval = setInterval(fetchData, 2 * 60 * 1000);
+    // Refresh alle 2 Minuten — leise, ohne Spinner, nur wenn Tab sichtbar
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchData();
+    }, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchData]);
 

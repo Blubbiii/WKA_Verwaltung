@@ -32,6 +32,12 @@ const eslintConfig = [
       "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/static-components": "off",
       "react-hooks/set-state-in-render": "off",
+
+      // ── a11y ──────────────────────────────────────────────────────────────
+      // UX18: Label-For-Association als warn — verhindert dass neue
+      // Formulare Labels ohne htmlFor/nested-Input schreiben. Warn (nicht
+      // error), um CI nicht zu blockieren.
+      "jsx-a11y/label-has-associated-control": "warn",
     },
   },
   {

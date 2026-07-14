@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Bell,
   CheckCheck,
@@ -34,6 +35,7 @@ const POLL_INTERVAL = 60_000; // 60 seconds
 
 export function NotificationBell() {
   const router = useRouter();
+  const t = useTranslations("notificationBell");
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -135,7 +137,7 @@ export function NotificationBell() {
       const res = await fetch("/api/notifications/mark-all-read", {
         method: "POST",
       });
-      if (!res.ok) throw new Error("Benachrichtigungen konnten nicht geladen werden");
+      if (!res.ok) throw new Error(t("markAllFailed"));
     } catch {
       // Revert on error
       setNotifications(prevNotifications);
@@ -143,7 +145,7 @@ export function NotificationBell() {
     } finally {
       setMarkingAll(false);
     }
-  }, [notifications, unreadCount]);
+  }, [notifications, unreadCount, t]);
 
   // -----------------------------------------------------------------------
   // Poll for unread count
@@ -180,7 +182,7 @@ export function NotificationBell() {
           variant="ghost"
           size="icon"
           className="relative"
-          aria-label={`Benachrichtigungen${hasUnread ? ` (${unreadCount} ungelesen)` : ""}`}
+          aria-label={hasUnread ? t("ariaWithCount", { count: unreadCount }) : t("aria")}
         >
           <Bell className="h-5 w-5" />
           {hasUnread && (
@@ -198,7 +200,7 @@ export function NotificationBell() {
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-sm font-semibold">Benachrichtigungen</h3>
+          <h3 className="text-sm font-semibold">{t("title")}</h3>
           {hasUnread && (
             <Button
               variant="ghost"
@@ -212,7 +214,7 @@ export function NotificationBell() {
               ) : (
                 <CheckCheck className="mr-1 h-3 w-3" />
               )}
-              Alle als gelesen markieren
+              {t("markAllRead")}
             </Button>
           )}
         </div>
@@ -226,7 +228,7 @@ export function NotificationBell() {
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <Bell className="mb-2 h-8 w-8 opacity-40" />
-              <p className="text-sm">Keine Benachrichtigungen</p>
+              <p className="text-sm">{t("empty")}</p>
             </div>
           ) : (
             <ul className="divide-y" role="list">
@@ -300,7 +302,7 @@ export function NotificationBell() {
                 router.push("/notifications");
               }}
             >
-              Alle Benachrichtigungen anzeigen
+              {t("viewAll")}
             </Button>
           </div>
         )}

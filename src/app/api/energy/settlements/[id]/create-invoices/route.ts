@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import { getNextInvoiceNumbersInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { TaxType } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -178,21 +178,31 @@ export async function POST(
       amount: number;
     }[] = [];
 
+    // P10: Anzahl der zu erzeugenden Gutschriften vorab bestimmen,
+    // damit wir Nummern in EINEM Sequence-Update ziehen (statt N).
+    const eligibleItems = settlement.items.filter((it) => it.recipientFund);
+    // P10: Item-Link-Updates sammeln fuer batched Promise.all am TX-Ende.
+    const itemLinkUpdates: { itemId: string; invoiceId: string }[] = [];
+
     await prisma.$transaction(async (tx) => {
-      for (const item of settlement.items) {
+      // Batch-Nummerngenerierung IN der Outer-TX (GoBD-konform via
+      // getNextInvoiceNumbersInTx — Sequence-Increment rollt bei Fehler
+      // zurueck, keine verbrannten Nummern).
+      const { numbers: invoiceNumbers } = await getNextInvoiceNumbersInTx(
+        tx,
+        check.tenantId!,
+        "CREDIT_NOTE",
+        eligibleItems.length,
+      );
+      let numberIndex = 0;
+
+      for (const item of eligibleItems) {
         if (!item.recipientFund) continue;
 
         const revenueEur = Number(item.revenueShareEur);
         const productionKwh = Number(item.productionShareKwh);
 
-        // Generiere Gutschriftsnummer innerhalb der äußeren TX.
-        // (GoBD §14 UStG: bei Rollback wird der Sequence-Increment
-        // ebenfalls zurückgerollt → keine verbrannte Nummer.)
-        const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
-          tx,
-          check.tenantId!,
-          "CREDIT_NOTE",
-        );
+        const invoiceNumber = invoiceNumbers[numberIndex++];
 
         // Empfängeradresse aus Fund
         const recipientAddress = item.recipientFund.address || "";
@@ -402,11 +412,8 @@ export async function POST(
           },
         });
 
-        // Verknuepfe Invoice mit EnergySettlementItem
-        await tx.energySettlementItem.update({
-          where: { id: item.id },
-          data: { invoiceId: invoice.id },
-        });
+        // Link-Update deferred → batched Promise.all am Ende der TX (P10).
+        itemLinkUpdates.push({ itemId: item.id, invoiceId: invoice.id });
 
         createdInvoices.push({
           itemId: item.id,
@@ -416,6 +423,16 @@ export async function POST(
           amount: totalGross,
         });
       }
+
+      // Batched Link-Updates (Prisma pipelined via Promise.all in einer TX).
+      await Promise.all(
+        itemLinkUpdates.map((u) =>
+          tx.energySettlementItem.update({
+            where: { id: u.itemId },
+            data: { invoiceId: u.invoiceId },
+          }),
+        ),
+      );
 
       // Update Settlement Status auf INVOICED
       await tx.energySettlement.update({
@@ -444,6 +461,10 @@ export async function POST(
           status: "INVOICED",
         },
       });
+    }, {
+      // P10: Bei grossen Settlements (viele Turbinen) kann die TX >5s laufen.
+      timeout: 60_000,
+      maxWait: 10_000,
     });
 
     // Lade aktualisiertes Settlement

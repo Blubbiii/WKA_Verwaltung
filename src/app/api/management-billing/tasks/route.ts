@@ -10,10 +10,23 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
-import { Prisma, OperationalTaskStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { enumParam } from "@/lib/validation/query-params";
 import { z } from "zod";
+
+const TASK_STATUSES = ["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"] as const;
+
+// Concrete shape for a single checklist entry attached to a task.
+// UI (management-billing/tasks/[id]/page.tsx + tasks/new/page.tsx) rendert
+// genau diese Felder — no free-form JSON, kein passthrough.
+const taskChecklistItemSchema = z.object({
+  label: z.string().min(1).max(500),
+  required: z.boolean().optional(),
+  checked: z.boolean().optional(),
+});
 
 const taskCreateSchema = z.object({
   title: z.string().min(1).max(200),
@@ -24,7 +37,7 @@ const taskCreateSchema = z.object({
   category: z.string().nullish(),
   dueDate: z.string().nullish(),
   notes: z.string().nullish(),
-  checklistData: z.any().nullish(),
+  checklistData: z.array(taskChecklistItemSchema).nullish(),
   parkId: z.string().nullish(),
   turbineId: z.string().nullish(),
   checklistId: z.string().nullish(),
@@ -59,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
+    const status = enumParam(searchParams.get("status"), TASK_STATUSES);
     const parkId = searchParams.get("parkId");
     const turbineId = searchParams.get("turbineId");
     const assignedToId = searchParams.get("assignedToId");
@@ -71,7 +84,7 @@ export async function GET(request: NextRequest) {
       tenantId: check.tenantId,
     };
 
-    if (status) where.status = status as OperationalTaskStatus;
+    if (status) where.status = status;
     if (parkId) where.parkId = parkId;
     if (turbineId) where.turbineId = turbineId;
     if (assignedToId) where.assignedToId = assignedToId;
@@ -160,7 +173,8 @@ export async function POST(request: NextRequest) {
         dueDate: dueDate ? new Date(dueDate) : null,
         completedAt: status === "DONE" ? new Date() : null,
         notes: notes || null,
-        checklistData: checklistData || null,
+        // JSON-Column: SQL NULL = Prisma.DbNull (Prisma erlaubt JS null nicht direkt).
+        checklistData: checklistData && checklistData.length > 0 ? checklistData : Prisma.DbNull,
         parkId: parkId || null,
         turbineId: turbineId || null,
         checklistId: checklistId || null,

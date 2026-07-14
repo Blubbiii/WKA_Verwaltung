@@ -13,10 +13,22 @@ import { PeriodLockedError } from "@/lib/accounting/period-lock";
 import { recordPayment } from "@/lib/accounting/invoice-payment";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { withIdempotency } from "@/lib/idempotency";
 
 const markPaidSchema = z.object({
-  paidAt: z.string().optional(), // ISO date string, defaults to now
+  // F12-Compliance: paidAt darf nicht in der Zukunft liegen (kein Vorbuchen).
+  // Der zusätzliche Guard `paidAt >= invoiceDate` erfolgt weiter unten, da
+  // invoiceDate erst nach DB-Load bekannt ist.
+  paidAt: z
+    .iso.datetime({ message: "Ungültiges paidAt-Format (ISO 8601 erwartet)" })
+    .optional()
+    .refine(
+      (v) => !v || new Date(v).getTime() <= Date.now(),
+      { message: "Zahlungsdatum darf nicht in der Zukunft liegen" },
+    ),
   applySkonto: z.boolean().optional(), // Whether to apply Skonto discount
+  // F16-Compliance: Optional Idempotency-Key im Body (Alternative zu Header).
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 // POST /api/invoices/[id]/mark-paid - Rechnung als bezahlt markieren
@@ -34,10 +46,12 @@ export async function POST(
     // ist OK (Default-Werte), syntaktisch falsches JSON aber als 400 melden.
     let paidAt = new Date();
     let applySkonto = false;
+    let parsedBody: Record<string, unknown> | null = null;
     const contentLength = request.headers.get("content-length");
     if (contentLength && contentLength !== "0") {
       try {
         const body = await request.json();
+        parsedBody = body;
         const validated = markPaidSchema.parse(body);
         if (validated.paidAt) {
           paidAt = new Date(validated.paidAt);
@@ -53,12 +67,20 @@ export async function POST(
       }
     }
 
+    // F16-Compliance: mark-paid ist money-mutating (setzt paidAmount, erzeugt
+    // InvoicePayment, ggf. §17-Korrekturbuchung). Idempotency-Key verhindert
+    // Doppel-Buchung bei Retry.
+    return withIdempotency(
+      request,
+      check.tenantId!,
+      async () => {
     const invoice = await prisma.invoice.findUnique({
       where: { id },
       select: {
         id: true,
         tenantId: true,
         status: true,
+        invoiceDate: true,
         skontoPercent: true,
         skontoDays: true,
         skontoDeadline: true,
@@ -87,6 +109,16 @@ export async function POST(
 
     if (invoice.status === "DRAFT") {
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwuerfe können nicht als bezahlt markiert werden. Bitte erst versenden." });
+    }
+
+    // F12-Compliance: paidAt darf nicht VOR dem Rechnungsdatum liegen —
+    // eine Zahlung vor dem Rechnungsdatum ist buchhalterisch nicht sinnvoll
+    // (Vorauszahlungen laufen über ein anderes Konto). Rückdatierung im
+    // gleichen Monat bleibt erlaubt.
+    if (paidAt.getTime() < invoice.invoiceDate.getTime()) {
+      return apiError("BAD_REQUEST", 400, {
+        message: "Zahlungsdatum darf nicht vor dem Rechnungsdatum liegen",
+      });
     }
 
     // Handle Skonto: auto-apply if eligible and not explicitly set
@@ -226,6 +258,9 @@ export async function POST(
     }).catch((err) => { logger.warn({ err }, "[Webhook] Dispatch failed"); });
 
     return NextResponse.json(updated);
+      },
+      { parsedBody },
+    );
   } catch (error) {
     if (error instanceof PeriodLockedError) {
       return apiError("PERIOD_LOCKED", 409, {

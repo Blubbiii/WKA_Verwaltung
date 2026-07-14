@@ -404,13 +404,20 @@ interface GISMapProps {
 function MapEventHandler() {
   const map = useMap();
   useEffect(() => {
+    // UX15: alle setTimeout-IDs sammeln, damit bei Unmount aufgeräumt wird.
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+
     const handleFlyTo = (e: Event) => {
       const { lat, lng } = (e as CustomEvent).detail;
       map.setView([lat, lng], 16);
       // Add temporary marker at searched coordinates
       const marker = L.marker([lat, lng]).addTo(map);
       marker.bindPopup(`${lat.toFixed(5)}, ${lng.toFixed(5)}`).openPopup();
-      setTimeout(() => map.removeLayer(marker), 10000);
+      const timer = setTimeout(() => {
+        map.removeLayer(marker);
+        timers.delete(timer);
+      }, 10000);
+      timers.add(timer);
     };
 
     // Copy map center coordinates to clipboard
@@ -427,6 +434,9 @@ function MapEventHandler() {
     return () => {
       window.removeEventListener("gis:flyto", handleFlyTo);
       window.removeEventListener("gis:copy-center", handleCopyCenter);
+      // UX15: alle noch offenen Timer beim Unmount canceln
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
     };
   }, [map]);
   return null;

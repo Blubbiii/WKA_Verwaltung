@@ -67,6 +67,8 @@ async function processRetentionCronJob(
 
   let invoicesAffectedTotal = 0;
   let auditLogsAffectedTotal = 0;
+  let backupsPurgedLocalTotal = 0;
+  let backupsPurgedS3Total = 0;
 
   for (const tenant of tenants) {
     try {
@@ -177,12 +179,45 @@ async function processRetentionCronJob(
     }
   }
 
+  // F11-Compliance: DSGVO Art. 17 Backup-Purge — läuft EINMAL pro Sweep
+  // (tenant-übergreifend, weil pg_dump-Backups die ganze DB umfassen und
+  // keine tenant-Trennung auf FS-Level haben). Nur im LIVE-Modus.
+  if (!dryRun) {
+    try {
+      const { purgeOldBackups } = await import("@/lib/backup");
+      const purgeResult = await purgeOldBackups();
+      backupsPurgedLocalTotal = purgeResult.purgedLocal.length;
+      backupsPurgedS3Total = purgeResult.purgedS3.length;
+      logger.info(
+        {
+          jobId,
+          backupsPurgedLocal: backupsPurgedLocalTotal,
+          backupsPurgedS3: backupsPurgedS3Total,
+          cutoff: purgeResult.cutoff,
+        },
+        `[RetentionCronWorker] DSGVO Backup-Purge complete`,
+      );
+    } catch (err) {
+      logger.error(
+        { jobId, err: err instanceof Error ? err.message : String(err) },
+        `[RetentionCronWorker] Backup purge failed`,
+      );
+    }
+  } else {
+    logger.info(
+      { jobId },
+      `[RetentionCronWorker] DRY-RUN: Backup-Purge skipped (would purge > BACKUP_PURGE_AFTER_DAYS)`,
+    );
+  }
+
   const finishedAt = new Date();
   const result: RetentionCronJobResult = {
     dryRun,
     processedTenants: tenants.length,
     invoicesAffected: invoicesAffectedTotal,
     auditLogsAffected: auditLogsAffectedTotal,
+    backupsPurgedLocal: backupsPurgedLocalTotal,
+    backupsPurgedS3: backupsPurgedS3Total,
     startedAt: startedAt.toISOString(),
     finishedAt: finishedAt.toISOString(),
   };

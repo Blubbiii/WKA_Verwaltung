@@ -143,6 +143,73 @@ export async function getNextInvoiceNumber(
 }
 
 /**
+ * **GoBD-konforme Batch-Variante:** Holt N Rechnungsnummern innerhalb einer
+ * BEREITS-laufenden Prisma-Transaktion. Der Caller wrappt sowohl die
+ * Nummerngenerierung als auch die Invoice.creates in eine $transaction —
+ * bei Rollback rollt der Sequence-Increment ebenfalls zurück (keine
+ * verbrannten Nummern).
+ *
+ * Muster wie `getNextInvoiceNumbers`, aber ohne eigene Transaktion.
+ * Ersetzt N seq. `getNextInvoiceNumberInTx`-Calls durch 1 Sequence-Update.
+ */
+export async function getNextInvoiceNumbersInTx(
+  tx: TxClient,
+  tenantId: string,
+  type: InvoiceType,
+  count: number,
+): Promise<{ numbers: string[]; sequenceId: string }> {
+  if (count <= 0) {
+    return { numbers: [], sequenceId: "" };
+  }
+
+  const currentYear = new Date().getFullYear();
+
+  let sequence = await tx.invoiceNumberSequence.findUnique({
+    where: { tenantId_type: { tenantId, type } },
+  });
+
+  if (!sequence) {
+    sequence = await tx.invoiceNumberSequence.create({
+      data: {
+        tenantId,
+        type,
+        format: type === "INVOICE" ? "RG-{YEAR}-{NUMBER}" : "GS-{YEAR}-{NUMBER}",
+        currentYear,
+        nextNumber: 1,
+        digitCount: 4,
+      },
+    });
+  }
+
+  if (sequence.currentYear !== currentYear) {
+    sequence = await tx.invoiceNumberSequence.update({
+      where: { id: sequence.id },
+      data: { currentYear, nextNumber: 1 },
+    });
+  }
+
+  const numbers: string[] = [];
+  const startNumber = sequence.nextNumber;
+  for (let i = 0; i < count; i++) {
+    numbers.push(
+      generateInvoiceNumber(
+        sequence.format,
+        startNumber + i,
+        sequence.digitCount,
+        sequence.currentYear,
+      ),
+    );
+  }
+
+  await tx.invoiceNumberSequence.update({
+    where: { id: sequence.id },
+    data: { nextNumber: startNumber + count },
+  });
+
+  return { numbers, sequenceId: sequence.id };
+}
+
+/**
  * Holt mehrere Rechnungsnummern auf einmal atomar (mit Locking)
  * Vermeidet N+1 Queries wenn viele Nummern in einer Schleife benötigt werden.
  * Inkrementiert den Zaehler einmal um `count` statt N einzelne Inkrements.

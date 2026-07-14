@@ -153,6 +153,7 @@ export function RoleManagement() {
 
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema) as Resolver<RoleFormValues>,
+    mode: "onTouched",
     defaultValues: {
       name: "",
       description: "",

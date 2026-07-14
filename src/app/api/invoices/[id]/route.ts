@@ -32,6 +32,15 @@ const invoiceUpdateSchema = z.object({
   skontoDays: z.number().int().min(1).max(365).optional().nullable(),
   // E-Invoice: Leitweg-ID for public sector recipients (XRechnung)
   leitwegId: z.string().max(46).optional().nullable(),
+  // F15-Compliance: Optimistic Locking PoC.
+  // Client sends the `updatedAt` timestamp it originally read. If the row
+  // was modified in the meantime by another user, we return 409 CONFLICT
+  // instead of silently overwriting their changes ("Lost Update").
+  // Header-Alternative `If-Unmodified-Since` wäre RFC-konformer, aber nur
+  // 1-Sekunden-Auflösung. `expectedUpdatedAt` in ms geht sicher.
+  // TODO: Nach PoC-Erfolg auf weitere PATCH-Routes ausrollen (Contract,
+  // Fund, Person, Lease, Shareholder, JournalEntry).
+  expectedUpdatedAt: z.iso.datetime().optional(),
 });
 
 // GET /api/invoices/[id] - Einzelne Rechnung mit Details
@@ -194,7 +203,14 @@ export async function PATCH(
     // Prüfe ob Rechnung existiert und DRAFT ist
     const existing = await prisma.invoice.findUnique({
       where: { id },
-      select: { id: true, tenantId: true, status: true, invoiceDate: true, grossAmount: true },
+      select: {
+        id: true,
+        tenantId: true,
+        status: true,
+        invoiceDate: true,
+        grossAmount: true,
+        updatedAt: true,
+      },
     });
 
     if (!existing) {
@@ -207,6 +223,26 @@ export async function PATCH(
 
     if (existing.status !== "DRAFT") {
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Nur Entwürfe können bearbeitet werden" });
+    }
+
+    // F15-Compliance: Optimistic Locking Check.
+    // Wenn Client `expectedUpdatedAt` mitgibt und die DB-Zeit davon abweicht,
+    // hat jemand anderes den Datensatz zwischenzeitlich verändert.
+    // Vergleich mit ms-Genauigkeit (getTime()), damit Timezone/String-Format
+    // keine False-Positives erzeugen.
+    if (validatedData.expectedUpdatedAt) {
+      const expected = new Date(validatedData.expectedUpdatedAt).getTime();
+      const actual = existing.updatedAt.getTime();
+      if (expected !== actual) {
+        return apiError("CONFLICT", 409, {
+          message:
+            "Rechnung wurde in der Zwischenzeit von einem anderen Benutzer geändert. Bitte neu laden und erneut speichern.",
+          details: {
+            expectedUpdatedAt: new Date(expected).toISOString(),
+            actualUpdatedAt: existing.updatedAt.toISOString(),
+          },
+        });
+      }
     }
 
     // Build Skonto update data if provided. Wir MERGEN mit den bestehenden
@@ -293,7 +329,17 @@ export async function PATCH(
           }) as Promise<Record<string, unknown> | null>,
         applyChange: (tx) =>
           tx.invoice.update({
-            where: { id, tenantId: check.tenantId! },
+            // F15-Compliance: `updatedAt` in WHERE macht das Update atomar.
+            // Zwischen unserem externen Check und diesem Statement könnte
+            // trotzdem eine andere Transaktion die Row aktualisiert haben
+            // (READ COMMITTED). Wenn ja, matcht where nicht → P2025.
+            where: {
+              id,
+              tenantId: check.tenantId!,
+              ...(validatedData.expectedUpdatedAt && {
+                updatedAt: new Date(validatedData.expectedUpdatedAt),
+              }),
+            },
             data: {
               ...(validatedData.invoiceDate && {
                 invoiceDate: new Date(validatedData.invoiceDate),
@@ -359,6 +405,19 @@ export async function PATCH(
 
       return NextResponse.json(serializePrisma(invoice));
     } catch (err) {
+      // F15-Compliance: P2025 = "Record to update not found." Kommt hier
+      // typischerweise vom Optimistic-Locking-Where (`updatedAt`), weil ein
+      // Concurrent-Writer die Row verändert hat.
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025" &&
+        validatedData.expectedUpdatedAt
+      ) {
+        return apiError("CONFLICT", 409, {
+          message:
+            "Rechnung wurde in der Zwischenzeit von einem anderen Benutzer geändert. Bitte neu laden und erneut speichern.",
+        });
+      }
       if (isEntityNotFoundError(err)) {
         return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden" });
       }

@@ -89,6 +89,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   const form = useForm<ParkFormValues>({
+    mode: "onTouched",
     resolver: zodResolver(parkFormSchema) as Resolver<ParkFormValues>,
     defaultValues: {
       name: initialData?.name || "",

@@ -226,6 +226,124 @@ export function validateFileContent(
 }
 
 /**
+ * F19-Compliance: Trusted extension per MIME type.
+ *
+ * After magic-byte validation we KNOW the true content type, so we should
+ * derive the filename extension from THAT — never from what the client sent.
+ * Prevents ambiguous filenames like `invoice.pdf.exe`, `logo.svg.html`, or
+ * `contract.docx.zip` from getting stored / served.
+ */
+const MIME_TO_EXTENSION: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+  "application/zip": "zip",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/msword": "doc",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.ms-powerpoint": "ppt",
+  "text/plain": "txt",
+  "text/csv": "csv",
+};
+
+/**
+ * F19-Compliance: Baut einen sicheren Dateinamen mit korrekter Extension aus
+ * Magic-Byte-validiertem MIME-Type. Verwirft die vom Client behauptete
+ * Extension und ersetzt sie durch die zum echten MIME passende Endung.
+ *
+ * Beispiele (bei detectedMime = "application/pdf"):
+ *   "invoice.pdf"          → "invoice.pdf"
+ *   "invoice.pdf.exe"      → "invoice_pdf.pdf"
+ *   "malicious.svg.pdf"    → "malicious_svg.pdf"
+ *   "no-extension"         → "no-extension.pdf"
+ *   "../etc/passwd"        → "_.._etc_passwd.pdf" (Path-Traversal-Segmente werden entschärft)
+ *
+ * Beibehaltung des ursprünglichen Basisnamens ist gewollt (User-Experience),
+ * aber ALLE Punkte im Original-Namen werden zu Underscores, damit sich keine
+ * versteckte Zweit-Extension einschleichen kann.
+ */
+export function deriveSafeFilename(
+  originalFileName: string,
+  validatedMimeType: string,
+): string {
+  const trueExt = MIME_TO_EXTENSION[validatedMimeType.toLowerCase()] ?? "bin";
+  // Basename ohne Path-Segmente
+  const basenameOnly = originalFileName.split(/[\\/]/).pop() ?? originalFileName;
+  // Letzten "." abschneiden — der Rest ist der User-gedachte Basis-Name.
+  const lastDot = basenameOnly.lastIndexOf(".");
+  const rawBase = lastDot > 0 ? basenameOnly.slice(0, lastDot) : basenameOnly;
+  // Alle verbleibenden Punkte + gefährliche Zeichen → Underscore.
+  // NUR [A-Za-z0-9._-] durchlassen, dann alle "." (die zweite Extension bilden könnten)
+  // durch "_" ersetzen — bis auf die eine, die wir jetzt selbst anfügen.
+  const safeBase = rawBase
+    .replace(/[^a-zA-Z0-9._-]/g, "_")
+    .replace(/\./g, "_")
+    .replace(/^_+|_+$/g, "") // führende/trailing "_" wegräumen
+    .slice(0, 100); // begrenzen — Postgres/S3-Key-Länge
+  const finalBase = safeBase.length > 0 ? safeBase : "file";
+  return `${finalBase}.${trueExt}`;
+}
+
+/**
+ * F9-Compliance: Sanitize SVG upload content via DOMPurify.
+ *
+ * SVG files can carry inline JavaScript in `<script>` tags, event handlers
+ * (onload, onclick, ...) and even in `href` attributes (javascript:-URI).
+ * When such an SVG is later served with `Content-Type: image/svg+xml` OR
+ * loaded via `<img src="…">` in some browsers, the payload can execute in
+ * our origin (stored XSS).
+ *
+ * Defense-in-depth:
+ *   1. Content-Disposition:attachment on serve (already applied — see
+ *      src/app/api/documents/[id]/content/route.ts).
+ *   2. This function REMOVES scripts/event handlers from the SVG source at
+ *      upload time so even a bypass of (1) can't execute anything harmful.
+ *
+ * Non-SVG buffers are returned unchanged.
+ *
+ * Uses `isomorphic-dompurify` which is already installed and used for HTML
+ * sanitization in `src/components/ui/safe-html.tsx`.
+ */
+export async function sanitizeSvgBuffer(
+  buffer: Buffer,
+  declaredMimeType: string,
+): Promise<Buffer> {
+  if (declaredMimeType.toLowerCase() !== "image/svg+xml") {
+    return buffer;
+  }
+  // Dynamic import: DOMPurify pulls in `jsdom`, which is heavy — only load
+  // it when we actually process an SVG.
+  const { default: DOMPurify } = await import("isomorphic-dompurify");
+  const svgSource = buffer.toString("utf-8");
+  // USE_PROFILES.svg enables SVG mode; svgFilters allows <filter> primitives.
+  const cleaned = DOMPurify.sanitize(svgSource, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    // Belt-and-suspenders: forbid script explicitly (SVG profile already excludes it).
+    FORBID_TAGS: ["script", "foreignObject"],
+    FORBID_ATTR: [
+      "onload",
+      "onerror",
+      "onclick",
+      "onmouseover",
+      "onmouseout",
+      "onmousedown",
+      "onmouseup",
+      "onkeydown",
+      "onkeyup",
+      "onfocus",
+      "onblur",
+    ],
+  });
+  return Buffer.from(cleaned, "utf-8");
+}
+
+/**
  * Attempts to detect the actual file type from its magic number.
  * Returns a human-readable type string or undefined if unknown.
  */

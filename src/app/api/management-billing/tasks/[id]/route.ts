@@ -12,7 +12,16 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
+
+// Concrete shape for a single checklist entry attached to a task.
+// UI rendert genau diese Felder — kein free-form JSON hier.
+const taskChecklistItemSchema = z.object({
+  label: z.string().min(1).max(500),
+  required: z.boolean().optional(),
+  checked: z.boolean().optional(),
+});
 
 const taskUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -23,7 +32,7 @@ const taskUpdateSchema = z.object({
   category: z.string().nullish(),
   dueDate: z.string().nullish(),
   notes: z.string().nullish(),
-  checklistData: z.any().nullish(),
+  checklistData: z.array(taskChecklistItemSchema).nullish(),
   parkId: z.string().nullish(),
   turbineId: z.string().nullish(),
   checklistId: z.string().nullish(),
@@ -141,7 +150,9 @@ export async function PUT(
     if (category !== undefined) data.category = category || null;
     if (dueDate !== undefined) data.dueDate = dueDate ? new Date(dueDate) : null;
     if (notes !== undefined) data.notes = notes || null;
-    if (checklistData !== undefined) data.checklistData = checklistData || null;
+    if (checklistData !== undefined)
+      // JSON-Column: leere/nullish Payload wird zu SQL NULL (Prisma.DbNull).
+      data.checklistData = checklistData && checklistData.length > 0 ? checklistData : Prisma.DbNull;
     if (parkId !== undefined) data.parkId = parkId || null;
     if (turbineId !== undefined) data.turbineId = turbineId || null;
     if (checklistId !== undefined) data.checklistId = checklistId || null;

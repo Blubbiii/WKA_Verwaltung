@@ -8,19 +8,25 @@
 import { hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { encrypt, decrypt, maskSensitive } from "@/lib/email/encryption";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
 
-// Type for SystemConfig until Prisma is regenerated
-interface SystemConfigRecord {
-  id: string;
-  key: string;
-  value: string;
-  encrypted: boolean;
-  category: string;
-  label: string | null;
-  tenantId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Type for SystemConfig until Prisma is regenerated. Zod-Schema als Runtime-
+// Guard, weil getPrismaModel() unspezifisch typisiert und wir sonst blind an
+// die unknown-Rückgabe glauben. Fail-loud, statt später mit undefined-Property
+// Zugriffen zu crashen.
+const SystemConfigRecordSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  value: z.string(),
+  encrypted: z.boolean(),
+  category: z.string(),
+  label: z.string().nullable(),
+  tenantId: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+});
+
+type SystemConfigRecord = z.infer<typeof SystemConfigRecordSchema>;
 
 // =============================================================================
 // TYPES
@@ -437,7 +443,7 @@ export async function getConfig(
     }
 
     const systemConfig = getPrismaModel("systemConfig");
-    const configs = await systemConfig.findMany({
+    const rawConfigs = await systemConfig.findMany({
       where: {
         key,
         OR: [
@@ -448,7 +454,8 @@ export async function getConfig(
       orderBy: {
         tenantId: "desc", // Tenant-specific first (not null comes before null)
       },
-    }) as unknown as SystemConfigRecord[];
+    });
+    const configs = SystemConfigRecordSchema.array().parse(rawConfigs);
 
     // Prefer tenant-specific config
     const config = configs.find((c) => c.tenantId === tenantId) || configs.find((c) => c.tenantId === null);
@@ -569,7 +576,7 @@ export async function setConfig(
   let config: SystemConfigRecord;
 
   if (tenantId) {
-    config = await systemConfig.upsert({
+    const raw = await systemConfig.upsert({
       where: {
         tenantId_key: {
           tenantId,
@@ -591,7 +598,8 @@ export async function setConfig(
         label: label || null,
         tenantId,
       },
-    }) as unknown as SystemConfigRecord;
+    });
+    config = SystemConfigRecordSchema.parse(raw);
   } else {
     // Global config (tenantId = null): manual find + create/update
     const existing = await systemConfig.findFirst({
@@ -599,7 +607,7 @@ export async function setConfig(
     });
 
     if (existing) {
-      config = await systemConfig.update({
+      const raw = await systemConfig.update({
         where: { id: existing.id },
         data: {
           value: storedValue,
@@ -608,9 +616,10 @@ export async function setConfig(
           label: label || null,
           updatedAt: new Date(),
         },
-      }) as unknown as SystemConfigRecord;
+      });
+      config = SystemConfigRecordSchema.parse(raw);
     } else {
-      config = await systemConfig.create({
+      const raw = await systemConfig.create({
         data: {
           key,
           value: storedValue,
@@ -619,7 +628,8 @@ export async function setConfig(
           label: label || null,
           tenantId: null,
         },
-      }) as unknown as SystemConfigRecord;
+      });
+      config = SystemConfigRecordSchema.parse(raw);
     }
   }
 
@@ -656,7 +666,7 @@ export async function getConfigsByCategory(
   // Check if systemConfig model exists
   if (hasPrismaModel("systemConfig")) {
     const systemConfig = getPrismaModel("systemConfig");
-    configs = await systemConfig.findMany({
+    const raw = await systemConfig.findMany({
       where: {
         category,
         OR: [
@@ -668,7 +678,8 @@ export async function getConfigsByCategory(
         { tenantId: "desc" },
         { key: "asc" },
       ],
-    }) as unknown as SystemConfigRecord[];
+    });
+    configs = SystemConfigRecordSchema.array().parse(raw);
   }
 
   // Group by key, preferring tenant-specific
@@ -757,20 +768,125 @@ export async function getConfigsByCategory(
 
 /**
  * Get all configurations (optionally filtered by tenant)
+ *
+ * P19: Ein findMany mit `category: { in: [...] }` statt 7 sequentielle
+ * Category-Queries. Encryption + Missing-Key-Auffuellung lokal.
  */
 export async function getAllConfigs(
   tenantId?: string | null,
   includeMasked: boolean = true
 ): Promise<ConfigValue[]> {
-  const categories: ConfigCategory[] = ["email", "weather", "storage", "general", "features", "paperless", "communication"];
-  const allConfigs: ConfigValue[] = [];
+  const categories: ConfigCategory[] = [
+    "email", "weather", "storage", "general", "features", "paperless", "communication",
+  ];
 
-  for (const category of categories) {
-    const configs = await getConfigsByCategory(category, tenantId, includeMasked);
-    allConfigs.push(...configs);
+  // Ein einziger DB-Roundtrip fuer ALLE Kategorien.
+  let dbConfigs: SystemConfigRecord[] = [];
+  if (hasPrismaModel("systemConfig")) {
+    const systemConfig = getPrismaModel("systemConfig");
+    dbConfigs = (await systemConfig.findMany({
+      where: {
+        category: { in: categories },
+        OR: [
+          { tenantId: tenantId || null },
+          { tenantId: null },
+        ],
+      },
+      orderBy: [
+        { tenantId: "desc" },
+        { key: "asc" },
+      ],
+    })) as unknown as SystemConfigRecord[];
   }
 
-  return allConfigs;
+  // Group by (category, key), preferring tenant-specific entries.
+  const configMap = new Map<string, SystemConfigRecord>();
+  for (const config of dbConfigs) {
+    const mapKey = `${config.category}|${config.key}`;
+    const existing = configMap.get(mapKey);
+    if (!existing || (config.tenantId && !existing.tenantId)) {
+      configMap.set(mapKey, config);
+    }
+  }
+
+  const result: ConfigValue[] = [];
+
+  for (const config of configMap.values()) {
+    let value = config.value;
+
+    if (config.encrypted && config.value) {
+      if (includeMasked) {
+        try {
+          const decrypted = decrypt(config.value);
+          value = maskSensitive(decrypted);
+        } catch {
+          value = "***";
+        }
+      } else {
+        try {
+          value = decrypt(config.value);
+        } catch {
+          value = "";
+        }
+      }
+    }
+
+    result.push({
+      key: config.key,
+      value,
+      encrypted: config.encrypted,
+      category: config.category as ConfigCategory,
+      label: config.label,
+      tenantId: config.tenantId,
+      updatedAt: config.updatedAt,
+    });
+  }
+
+  // Missing keys per category with env/default fallbacks.
+  const dbKeysByCategory = new Map<ConfigCategory, Set<string>>();
+  for (const c of result) {
+    const set = dbKeysByCategory.get(c.category) ?? new Set<string>();
+    set.add(c.key);
+    dbKeysByCategory.set(c.category, set);
+  }
+
+  for (const category of categories) {
+    const existingKeys = dbKeysByCategory.get(category) ?? new Set<string>();
+    const categoryKeys = Object.entries(CONFIG_KEYS)
+      .filter(([, meta]) => meta.category === category)
+      .map(([key]) => key);
+
+    for (const key of categoryKeys) {
+      if (existingKeys.has(key)) continue;
+      const keyConfig = CONFIG_KEYS[key as ConfigKey];
+      let value = "";
+
+      if ("envFallback" in keyConfig && keyConfig.envFallback) {
+        const envValue = process.env[keyConfig.envFallback as string];
+        if (envValue) {
+          value = keyConfig.encrypted && includeMasked
+            ? maskSensitive(envValue)
+            : envValue;
+        }
+      }
+
+      if (!value && "defaultValue" in keyConfig) {
+        value = keyConfig.defaultValue;
+      }
+
+      result.push({
+        key,
+        value,
+        encrypted: keyConfig.encrypted || false,
+        category,
+        label: keyConfig.label,
+        tenantId: null,
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 /**
@@ -810,18 +926,15 @@ export async function deleteConfig(
 
 /**
  * Bulk set configurations
+ *
+ * P20: Alle Upserts parallel (Promise.all) statt sequentiell.
  */
 export async function setConfigs(
   configs: Array<{ key: string; value: string; options: SetConfigOptions }>
 ): Promise<ConfigValue[]> {
-  const results: ConfigValue[] = [];
-
-  for (const { key, value, options } of configs) {
-    const result = await setConfig(key, value, options);
-    results.push(result);
-  }
-
-  return results;
+  return Promise.all(
+    configs.map(({ key, value, options }) => setConfig(key, value, options)),
+  );
 }
 
 /**

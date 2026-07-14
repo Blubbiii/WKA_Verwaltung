@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Header } from "@/components/layout/header";
@@ -12,11 +13,12 @@ import { PageTransition } from "@/components/providers/page-transition";
 import { AppVersionMonitor } from "@/components/providers/app-version-monitor";
 import { CommandPalette } from "@/components/global/command-palette";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = await getTranslations("layout.skipLink");
   return (
     <KeyboardProvider>
       <OnboardingProvider>
@@ -25,7 +27,7 @@ export default function DashboardLayout({
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
-          Zum Hauptinhalt springen
+          {t("toMainContent")}
         </a>
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />

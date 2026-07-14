@@ -55,6 +55,7 @@ export default function NewFundPage() {
   type FundFormValues = z.infer<typeof fundFormSchema>;
 
   const form = useForm<FundFormValues>({
+    mode: "onTouched",
     resolver: zodResolver(fundFormSchema) as Resolver<FundFormValues>,
     defaultValues: {
       name: "",

@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { enumParam } from "@/lib/validation/query-params";
+
+const TURBINE_STATUSES = ["ACTIVE", "INACTIVE", "ARCHIVED"] as const;
 
 const turbineCreateSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
@@ -23,7 +26,11 @@ const turbineCreateSchema = z.object({
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
-  technicalData: z.record(z.string(), z.any()).optional(),
+  // Freier Schlüssel-Wert-Speicher für "Sonstiges" (Gutachten-Nr., Zusatz-Notizen etc.).
+  // Bewusst nur Primitive: Nested-Objects würden UI-Rendering unklar machen.
+  technicalData: z
+    .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .optional(),
   technischeBetriebsfuehrung: z.string().optional().nullable(),
   kaufmaennischeBetriebsfuehrung: z.string().optional().nullable(),
   operatorFundId: z.uuid().optional().nullable(),
@@ -46,7 +53,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
     const search = searchParams.get("search") || "";
-    const status = searchParams.get("status") || "";
+    const status = enumParam(searchParams.get("status"), TURBINE_STATUSES);
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     const where = {
@@ -62,7 +69,7 @@ export async function GET(request: NextRequest) {
           { serialNumber: { contains: search, mode: "insensitive" as const } },
         ],
       }),
-      ...(status && { status: status as "ACTIVE" | "INACTIVE" | "ARCHIVED" }),
+      ...(status && { status }),
     };
 
     const [turbines, total] = await Promise.all([

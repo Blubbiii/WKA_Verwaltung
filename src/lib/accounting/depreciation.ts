@@ -86,6 +86,26 @@ export async function runDepreciation(
   let postingsCreated = 0;
   const warnings: string[] = [];
 
+  // P14: Cache locked-months per (year, month) — mehrere Assets teilen sich
+  // dieselben Perioden, sonst wird assertPeriodOpen N×M mal gerufen.
+  const periodLockCache = new Map<string, boolean>(); // "YYYY-MM" → locked?
+  const isMonthLocked = async (year: number, month: number): Promise<boolean> => {
+    const key = `${year}-${String(month).padStart(2, "0")}`;
+    const cached = periodLockCache.get(key);
+    if (cached !== undefined) return cached;
+    try {
+      await assertPeriodOpen(tenantId, new Date(Date.UTC(year, month - 1, 28)));
+      periodLockCache.set(key, false);
+      return false;
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        periodLockCache.set(key, true);
+        return true;
+      }
+      throw err;
+    }
+  };
+
   for (const asset of assets) {
     const acquisitionCost = Number(asset.acquisitionCost);
     const residualValue = Number(asset.residualValue);
@@ -129,17 +149,13 @@ export async function runDepreciation(
 
     // P9: Wenn Posting verlangt und IRGENDEIN Monat im Schedule gesperrt ist,
     // überspringe das ganze Asset (sonst halb-konsistenter Zustand).
+    // P14: nutze periodLockCache, sonst pro (Asset × Monat) 1 assertPeriodOpen.
     if (createPostings && asset.depAccountNumber && asset.accountNumber) {
       let anyLocked = false;
       for (const { year, month } of schedule) {
-        try {
-          await assertPeriodOpen(tenantId, new Date(Date.UTC(year, month - 1, 28)));
-        } catch (err) {
-          if (err instanceof PeriodLockedError) {
-            anyLocked = true;
-            break;
-          }
-          throw err;
+        if (await isMonthLocked(year, month)) {
+          anyLocked = true;
+          break;
         }
       }
       if (anyLocked) {

@@ -14,10 +14,16 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 
+// Same shape as in checklists/route.ts — Template-Items ohne checked.
+const checklistItemSchema = z.object({
+  label: z.string().min(1).max(500),
+  required: z.boolean().optional(),
+});
+
 const checklistUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().nullish(),
-  items: z.array(z.any()).optional(),
+  items: z.array(checklistItemSchema).optional(),
   recurrence: z.string().nullish(),
   parkId: z.string().nullish(),
   isActive: z.boolean().optional(),

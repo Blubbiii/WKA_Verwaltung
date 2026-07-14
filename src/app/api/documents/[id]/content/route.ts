@@ -96,18 +96,6 @@ export async function GET(
         return apiError("INTERNAL_ERROR", undefined, { message: "Datei konnte nicht geladen werden" });
       }
 
-      // Body zu Buffer konvertieren
-      const chunks: Uint8Array[] = [];
-      const reader = response.Body.transformToWebStream().getReader();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-      }
-
-      const buffer = Buffer.concat(chunks);
-
       // F+ Compliance: SVGs enthalten XML das JavaScript via <script>-Tags oder
       // event-Handler ausführen kann. Inline-Serving eines fremden SVG entspricht
       // Stored-XSS in unserer Origin. Erzwungener attachment-Disposition macht
@@ -117,10 +105,17 @@ export async function GET(
       const isSvg = (document.mimeType ?? "").toLowerCase() === "image/svg+xml";
       const disposition = isSvg ? "attachment" : "inline";
 
+      // P22: Direktes Streaming des S3-Body — kein Buffer.concat mehr.
+      // Grosse PDFs oder Bilder werden nicht mehr komplett in den Server-RAM
+      // geladen. Content-Length kommt aus dem S3-Head, falls vorhanden.
+      const stream = response.Body.transformToWebStream();
+
       // Response mit korrekten Headers
       const headers = new Headers();
       headers.set("Content-Type", document.mimeType || "application/octet-stream");
-      headers.set("Content-Length", buffer.length.toString());
+      if (typeof response.ContentLength === "number" && response.ContentLength > 0) {
+        headers.set("Content-Length", response.ContentLength.toString());
+      }
       headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
       headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
       headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
@@ -132,7 +127,7 @@ export async function GET(
         headers.set("X-Content-Type-Options", "nosniff");
       }
 
-      return new NextResponse(buffer, {
+      return new NextResponse(stream, {
         status: 200,
         headers,
       });

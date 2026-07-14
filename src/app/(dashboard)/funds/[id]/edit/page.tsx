@@ -102,6 +102,7 @@ export default function EditFundPage({
 
   const form = useForm<FundFormValues>({
     resolver: zodResolver(fundFormSchema) as Resolver<FundFormValues>,
+    mode: "onTouched",
     defaultValues: {
       name: "",
       legalForm: "",

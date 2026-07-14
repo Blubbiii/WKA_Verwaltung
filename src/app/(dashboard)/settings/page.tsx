@@ -328,6 +328,7 @@ function ProfileTab({
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
+    mode: "onTouched",
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -802,6 +803,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
 
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordFormSchema),
+    mode: "onTouched",
     defaultValues: {
       currentPassword: "",
       newPassword: "",

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, Loader2, Save, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,7 @@ const TAX_TYPE_OPTIONS = [
 
 export default function NewStakeholderPage() {
   const router = useRouter();
+  const t = useTranslations("stakeholderNew");
   const [saving, setSaving] = useState(false);
 
   // Available options
@@ -146,19 +148,19 @@ export default function NewStakeholderPage() {
             const tenantsJson = await tenantsRes.json();
             setTenants(tenantsJson.tenants ?? []);
           } else {
-            toast.error("Fehler beim Laden der Mandanten");
+            toast.error(t("errorLoadingTenants"));
           }
 
           if (parksRes.ok) {
             const parksJson = await parksRes.json();
             setAllParks(parksJson.parks ?? []);
           } else {
-            toast.error("Fehler beim Laden der Parks");
+            toast.error(t("errorLoadingParks"));
           }
         }
       } catch {
         if (!cancelled) {
-          toast.error("Fehler beim Laden der Daten");
+          toast.error(t("errorLoadingData"));
         }
       } finally {
         if (!cancelled) {
@@ -172,7 +174,7 @@ export default function NewStakeholderPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   // Fetch funds when park changes
   useEffect(() => {
@@ -196,7 +198,7 @@ export default function NewStakeholderPage() {
         }
       } catch {
         if (!cancelled) {
-          toast.error("Fehler beim Laden der Gesellschaften");
+          toast.error(t("errorLoadingFunds"));
         }
       } finally {
         if (!cancelled) {
@@ -209,7 +211,7 @@ export default function NewStakeholderPage() {
     return () => {
       cancelled = true;
     };
-  }, [formData.parkId, derivedParkTenantId]);
+  }, [formData.parkId, derivedParkTenantId, t]);
 
   function handleChange(field: string, value: string | boolean) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -247,19 +249,19 @@ export default function NewStakeholderPage() {
 
     // Validation
     if (!formData.stakeholderTenantId) {
-      toast.error("Bitte waehlen Sie einen Dienstleister aus");
+      toast.error(t("errorSelectServiceProvider"));
       return;
     }
     if (!formData.parkId || !derivedParkTenantId) {
-      toast.error("Bitte waehlen Sie einen Windpark aus");
+      toast.error(t("errorSelectPark"));
       return;
     }
     if (!formData.role) {
-      toast.error("Bitte waehlen Sie eine Aufgabe aus");
+      toast.error(t("errorSelectRole"));
       return;
     }
     if (!formData.feePercentage || parseFloat(formData.feePercentage) < 0) {
-      toast.error("Bitte geben Sie einen gültigen Gebührensatz ein");
+      toast.error(t("errorInvalidFeeRate"));
       return;
     }
 
@@ -303,7 +305,7 @@ export default function NewStakeholderPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Erstellen des BF-Vertrags"
+          : t("errorCreatingContract")
       );
     } finally {
       setSaving(false);

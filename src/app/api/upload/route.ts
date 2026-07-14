@@ -3,7 +3,11 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { uploadFile, getSignedUrl, ensureBucket } from "@/lib/storage";
-import { validateFileContent } from "@/lib/file-validation";
+import {
+  deriveSafeFilename,
+  sanitizeSvgBuffer,
+  validateFileContent,
+} from "@/lib/file-validation";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   rateLimit,
@@ -95,10 +99,18 @@ export async function POST(request: NextRequest) {
       return apiError("VALIDATION_FAILED", 400, { message: "Dateiinhalt-Validierung fehlgeschlagen" });
     }
 
+    // F9-Compliance: SVGs vor Upload sanitizen (Scripts/Event-Handler raus).
+    // Non-SVG-Buffers durchlaufen unverändert.
+    const sanitizedBuffer = await sanitizeSvgBuffer(buffer, file.type);
+
+    // F19-Compliance: Dateiname aus Magic-Byte-validiertem MIME-Type ableiten.
+    // Verhindert doppelte / manipulierte Extensions wie `invoice.pdf.exe`.
+    const safeFileName = deriveSafeFilename(file.name, file.type);
+
     // Upload to S3/MinIO
     const s3Key = await uploadFile(
-      buffer,
-      `${category}/${file.name}`,
+      sanitizedBuffer,
+      `${category}/${safeFileName}`,
       file.type,
       check.tenantId!
     );

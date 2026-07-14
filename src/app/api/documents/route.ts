@@ -5,7 +5,11 @@ import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { prisma } from "@/lib/prisma";
 import { DocumentCategory, DocumentApprovalStatus } from "@prisma/client";
 import { uploadFile, ensureBucket } from "@/lib/storage";
-import { validateFileContent } from "@/lib/file-validation";
+import {
+  deriveSafeFilename,
+  sanitizeSvgBuffer,
+  validateFileContent,
+} from "@/lib/file-validation";
 import { z } from "zod";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -397,10 +401,17 @@ async function handleFileUpload(
     });
   }
 
+  // F9-Compliance: SVGs vor Upload sanitizen (Scripts/Event-Handler raus).
+  const sanitizedBuffer = await sanitizeSvgBuffer(buffer, file.type);
+
+  // F19-Compliance: Dateiname aus Magic-Byte-validiertem MIME-Type ableiten.
+  // Verhindert doppelte / manipulierte Extensions wie `invoice.pdf.exe`.
+  const safeFileName = deriveSafeFilename(file.name, file.type);
+
   // Upload zu S3/MinIO
   let s3Key: string;
   try {
-    s3Key = await uploadFile(buffer, file.name, file.type, tenantId);
+    s3Key = await uploadFile(sanitizedBuffer, safeFileName, file.type, tenantId);
   } catch (uploadError) {
     logger.error({ err: uploadError }, "S3 upload failed");
     return apiError("STORAGE_FAILED", undefined, { message: "Datei-Upload fehlgeschlagen. Bitte versuchen Sie es erneut." });

@@ -86,6 +86,7 @@ export default function EditContractPage() {
 
   const form = useForm<ContractFormValues>({
     resolver: zodResolver(contractFormSchema) as Resolver<ContractFormValues>,
+    mode: "onTouched",
     defaultValues: {
       contractType: "SERVICE",
       title: "",

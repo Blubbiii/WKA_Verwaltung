@@ -273,6 +273,7 @@ export function UserManagement() {
 
   const userForm = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema) as Resolver<UserFormValues>,
+    mode: "onTouched",
     defaultValues: {
       email: "",
       firstName: "",

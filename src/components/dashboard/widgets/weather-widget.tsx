@@ -124,8 +124,10 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
 
   useEffect(() => {
     fetchWeather();
-    // Refresh every 15 minutes
-    const interval = setInterval(fetchWeather, 15 * 60 * 1000);
+    // Refresh every 15 minutes — skip when tab is hidden to save resources
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchWeather();
+    }, 15 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchWeather]);
 

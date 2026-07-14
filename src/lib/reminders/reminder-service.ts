@@ -90,6 +90,36 @@ export async function checkAndSendReminders(
     }
   }
 
+  // P12: Batch cooldown-check — 1 findMany statt N findFirst.
+  // Wir laden den maximalen Cooldown-Zeitraum aller Kategorien und filtern
+  // lokal nach dem kategorie-spezifischen Cooldown.
+  const maxCooldownDays = Math.max(
+    ...DEFAULT_REMINDER_CONFIG.map((c) => c.cooldownDays ?? 7),
+    7,
+  );
+  const recentReminders = result.items.length > 0
+    ? await prisma.reminderLog.findMany({
+        where: {
+          tenantId,
+          entityId: { in: result.items.map((it) => it.entityId) },
+          category: { in: result.items.map((it) => it.category as ReminderCategory) },
+          createdAt: {
+            gte: new Date(now.getTime() - maxCooldownDays * 24 * 60 * 60 * 1000),
+          },
+        },
+        select: { entityId: true, category: true, createdAt: true },
+      })
+    : [];
+  // Map (entityId|category) → latest createdAt
+  const lastReminderMap = new Map<string, Date>();
+  for (const r of recentReminders) {
+    const key = `${r.entityId}|${r.category}`;
+    const prev = lastReminderMap.get(key);
+    if (!prev || r.createdAt > prev) {
+      lastReminderMap.set(key, r.createdAt);
+    }
+  }
+
   // For each item, check cooldown and send email if needed
   for (const item of result.items) {
     try {
@@ -98,22 +128,14 @@ export async function checkAndSendReminders(
       );
       const cooldownDays = categoryConfig?.cooldownDays ?? 7;
 
-      // Check if a reminder was already sent recently for this entity+category
-      const recentReminder = await prisma.reminderLog.findFirst({
-        where: {
-          tenantId,
-          entityId: item.entityId,
-          category: item.category as ReminderCategory,
-          createdAt: {
-            gte: new Date(
-              now.getTime() - cooldownDays * 24 * 60 * 60 * 1000
-            ),
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (recentReminder) {
+      // Lokaler Cooldown-Check gegen batched Ergebnis.
+      const lastReminderAt = lastReminderMap.get(
+        `${item.entityId}|${item.category}`,
+      );
+      const cooldownStart = new Date(
+        now.getTime() - cooldownDays * 24 * 60 * 60 * 1000,
+      );
+      if (lastReminderAt && lastReminderAt >= cooldownStart) {
         result.skipped++;
         continue;
       }

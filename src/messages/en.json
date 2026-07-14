@@ -918,6 +918,16 @@
       "show": "Show"
     }
   },
+  "parkDetail": {
+    "errorSaving": "Error saving",
+    "errorLoadingPlots": "Error loading parcels",
+    "errorLoadingContracts": "Error loading contracts",
+    "errorAssigning": "Error assigning",
+    "errorRemoving": "Error removing",
+    "errorAssigningPlotsCount": "{count} parcels could not be assigned",
+    "plotsAssigned": "{count} parcels assigned",
+    "plotsAssignedFromLeases": "{plots} parcels from {leases} contracts assigned"
+  },
   "invoices": {
     "title": "Invoices",
     "subtitle": "Manage invoices and credit notes",
@@ -3662,7 +3672,12 @@
       "createSuccess": "Contact created",
       "createError": "Failed to create",
       "crmDisabled": "CRM not enabled",
-      "crmDisabledHint": "The CRM module is not enabled for this tenant. Please contact your administrator."
+      "crmDisabledHint": "The CRM module is not enabled for this tenant. Please contact your administrator.",
+      "pagination": {
+        "pageOf": "Page {page} of {totalPages} ({totalCount} contacts)",
+        "prev": "Previous",
+        "next": "Next"
+      }
     },
     "detail": {
       "backAria": "Back",
@@ -9715,6 +9730,7 @@
       "onlyDrafts": "Only drafts can be deleted",
       "confirm": "Really delete {count} draft(s)?",
       "confirmWithSkipped": "Really delete {count} draft(s)? ({skipped} posted entries will be skipped)",
+      "deleting": "{count, plural, one {Deleting # entry…} other {Deleting # entries…}}",
       "deleted": "{count, plural, one {# entry deleted} other {# entries deleted}}",
       "failed": "Failed to delete {count} entry/entries",
       "exported": "{count, plural, one {# entry exported} other {# entries exported}}",
@@ -10148,7 +10164,19 @@
       "degraded": "Degraded",
       "down": "Down",
       "lastChecked": "Checked {time}"
+    },
+    "skipLink": {
+      "toMainContent": "Skip to main content"
     }
+  },
+  "notificationBell": {
+    "aria": "Notifications",
+    "ariaWithCount": "Notifications ({count} unread)",
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "viewAll": "View all notifications",
+    "markAllFailed": "Could not update notifications"
   },
   "permissionGate": {
     "missingPermission": "You need the `{permission}` permission for this action."
@@ -10156,5 +10184,23 @@
   "presence": {
     "oneOther": "{name} is also viewing this",
     "multipleOthers": "{count} other users are also viewing this"
+  },
+  "stakeholderNew": {
+    "errorLoadingTenants": "Error loading tenants",
+    "errorLoadingParks": "Error loading parks",
+    "errorLoadingData": "Error loading data",
+    "errorLoadingFunds": "Error loading funds",
+    "errorSelectServiceProvider": "Please select a service provider",
+    "errorSelectPark": "Please select a wind park",
+    "errorSelectRole": "Please select a role",
+    "errorInvalidFeeRate": "Please enter a valid fee rate",
+    "errorCreatingContract": "Error creating management contract"
+  },
+  "emailConfig": {
+    "errorLoadingTemplates": "Error loading templates",
+    "errorFieldsRequired": "Name, subject and content are required",
+    "errorDeleting": "Error deleting",
+    "errorLoadingConfig": "Error loading email configuration",
+    "errorEmailRequired": "Please enter an email address"
   }
 }

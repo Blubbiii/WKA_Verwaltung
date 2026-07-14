@@ -436,6 +436,10 @@ export async function generateAdvanceInvoices(
   // Load position-to-tax-type mappings from DB
   const taxMap = await getPositionTaxMap(tenantId);
 
+  // P9: Collect item-link updates and defer them to a single batched Promise.all
+  // after all invoice creates — reduces 100×2 sequential writes to 100 + batch.
+  const itemLinkUpdates: { itemId: string; invoiceId: string; advanceEur: number }[] = [];
+
   await prisma.$transaction(async (tx) => {
     let numberIndex = 0;
 
@@ -617,18 +621,25 @@ export async function generateAdvanceInvoices(
         },
       });
 
-      // Link invoice to settlement item
-      await tx.leaseRevenueSettlementItem.update({
-        where: { id: item.id },
-        data: {
-          advanceInvoiceId: invoice.id,
-          advancePaidEur: new Decimal(advanceEur),
-        },
-      });
+      // Link-Update deferred → batched Promise.all am Ende der TX (P9).
+      itemLinkUpdates.push({ itemId: item.id, invoiceId: invoice.id, advanceEur });
 
       result.invoiceIds.push(invoice.id);
       result.created++;
     }
+
+    // Batched Link-Updates (Prisma pipelined via Promise.all in einer TX).
+    await Promise.all(
+      itemLinkUpdates.map((u) =>
+        tx.leaseRevenueSettlementItem.update({
+          where: { id: u.itemId },
+          data: {
+            advanceInvoiceId: u.invoiceId,
+            advancePaidEur: new Decimal(u.advanceEur),
+          },
+        }),
+      ),
+    );
 
     // Update settlement status
     await tx.leaseRevenueSettlement.update({
@@ -638,6 +649,10 @@ export async function generateAdvanceInvoices(
         advanceCreatedAt: new Date(),
       },
     });
+  }, {
+    // Bei grossen Settlements (100+ Items) kann die TX >5s laufen (Default).
+    timeout: 60_000,
+    maxWait: 10_000,
   });
 
   return result;
@@ -823,6 +838,13 @@ export async function generateSettlementInvoices(
     turbineProductions:
       turbineProductions.length > 0 ? turbineProductions : undefined,
   };
+
+  // P9: Collect item-link updates for a single batched Promise.all at end of TX.
+  const settlementLinkUpdates: {
+    itemId: string;
+    invoiceId: string;
+    remainderEur: number;
+  }[] = [];
 
   await prisma.$transaction(async (tx) => {
     let numberIndex = 0;
@@ -1095,18 +1117,29 @@ export async function generateSettlementInvoices(
         },
       });
 
-      // Link invoice to settlement item and update remainder
-      await tx.leaseRevenueSettlementItem.update({
-        where: { id: item.id },
-        data: {
-          settlementInvoiceId: invoice.id,
-          remainderEur: new Decimal(remainderEur),
-        },
+      // Link-Update deferred → batched Promise.all am Ende der TX (P9).
+      settlementLinkUpdates.push({
+        itemId: item.id,
+        invoiceId: invoice.id,
+        remainderEur,
       });
 
       result.invoiceIds.push(invoice.id);
       result.created++;
     }
+
+    // Batched Link-Updates (Prisma pipelined via Promise.all in einer TX).
+    await Promise.all(
+      settlementLinkUpdates.map((u) =>
+        tx.leaseRevenueSettlementItem.update({
+          where: { id: u.itemId },
+          data: {
+            settlementInvoiceId: u.invoiceId,
+            remainderEur: new Decimal(u.remainderEur),
+          },
+        }),
+      ),
+    );
 
     // Update settlement status
     await tx.leaseRevenueSettlement.update({
@@ -1116,6 +1149,10 @@ export async function generateSettlementInvoices(
         settlementCreatedAt: new Date(),
       },
     });
+  }, {
+    // Bei grossen Settlements (100+ Items) kann die TX >5s laufen (Default).
+    timeout: 60_000,
+    maxWait: 10_000,
   });
 
   return result;
@@ -1216,6 +1253,14 @@ export async function generateAllocationInvoices(
   );
 
   const invoiceDate = new Date();
+
+  // P9: Collect allocation item-link updates for batched Promise.all.
+  const allocationLinkUpdates: {
+    itemId: string;
+    invoiceId: string;
+    hasTaxable: boolean;
+    hasExempt: boolean;
+  }[] = [];
 
   await prisma.$transaction(async (tx) => {
     let numberIndex = 0;
@@ -1332,24 +1377,40 @@ export async function generateAllocationInvoices(
         },
       });
 
-      // Link invoice to allocation item (both fields point to same invoice)
-      await tx.parkCostAllocationItem.update({
-        where: { id: item.id },
-        data: {
-          ...(hasTaxable ? { vatInvoiceId: invoice.id } : {}),
-          ...(hasExempt ? { exemptInvoiceId: invoice.id } : {}),
-        },
+      // Link-Update deferred → batched Promise.all am Ende der TX (P9).
+      allocationLinkUpdates.push({
+        itemId: item.id,
+        invoiceId: invoice.id,
+        hasTaxable,
+        hasExempt,
       });
 
       result.invoiceIds.push(invoice.id);
       result.created++;
     }
 
+    // Batched Link-Updates (Prisma pipelined via Promise.all in einer TX).
+    await Promise.all(
+      allocationLinkUpdates.map((u) =>
+        tx.parkCostAllocationItem.update({
+          where: { id: u.itemId },
+          data: {
+            ...(u.hasTaxable ? { vatInvoiceId: u.invoiceId } : {}),
+            ...(u.hasExempt ? { exemptInvoiceId: u.invoiceId } : {}),
+          },
+        }),
+      ),
+    );
+
     // Update allocation status
     await tx.parkCostAllocation.update({
       where: { id: allocationId },
       data: { status: "INVOICED" },
     });
+  }, {
+    // Bei grossen Allocations (100+ Items) kann die TX >5s laufen (Default).
+    timeout: 60_000,
+    maxWait: 10_000,
   });
 
   return result;

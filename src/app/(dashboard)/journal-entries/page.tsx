@@ -619,17 +619,17 @@ export default function JournalEntriesPage() {
     }
     const skipped = selectedIds.size - draftIds.length;
     if (!confirm(skipped > 0 ? t("batch.confirmWithSkipped", { count: draftIds.length, skipped }) : t("batch.confirm", { count: draftIds.length }))) return;
+    const progressToast = toast.loading(t("batch.deleting", { count: draftIds.length }));
+    const results = await Promise.allSettled(
+      draftIds.map((id) => fetch(`/api/journal-entries/${id}`, { method: "DELETE" }))
+    );
     let success = 0;
     let failed = 0;
-    for (const id of draftIds) {
-      try {
-        const res = await fetch(`/api/journal-entries/${id}`, { method: "DELETE" });
-        if (res.ok) success++;
-        else failed++;
-      } catch {
-        failed++;
-      }
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value.ok) success++;
+      else failed++;
     }
+    toast.dismiss(progressToast);
     if (success > 0) {
       toast.success(t("batch.deleted", { count: success }));
       clearSelection();

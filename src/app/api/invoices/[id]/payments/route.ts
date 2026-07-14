@@ -20,6 +20,7 @@ import {
   recordPayment,
 } from "@/lib/accounting/invoice-payment";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { withIdempotency } from "@/lib/idempotency";
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
@@ -33,6 +34,8 @@ const paymentSchema = z.object({
   paymentMethod: z.enum(["BANK", "CASH", "SEPA", "OTHER"]).optional(),
   bankTransactionId: z.string().uuid().nullable().optional(),
   notes: z.string().max(500).optional(),
+  // F16-Compliance: Optional Idempotency-Key im Body (Alternative zu Header).
+  idempotencyKey: z.string().min(1).max(200).optional(),
 });
 
 export async function POST(
@@ -60,63 +63,74 @@ export async function POST(
       ? new Date(parsed.data.paymentDate)
       : new Date();
 
-    let result;
-    try {
-      result = await prisma.$transaction(async (tx) => {
-        return recordPayment(tx, {
-          tenantId: check.tenantId!,
-          invoiceId: id,
-          amount: parsed.data.amount,
-          paymentDate,
-          paymentMethod: parsed.data.paymentMethod,
-          bankTransactionId: parsed.data.bankTransactionId,
-          notes: parsed.data.notes,
-          userId: check.userId!,
-        });
-      });
-    } catch (err) {
-      if (err instanceof PeriodLockedError) {
-        // F7-Compliance: Zahlungsdatum in gesperrter Periode → 409, kein 500.
-        return apiError("PERIOD_LOCKED", 409, {
-          message: err.message,
-          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
-        });
-      }
-      if (err instanceof OverpaymentError) {
-        return apiError("CONFLICT", 409, {
-          message: err.message,
-          details: { grossAmount: err.grossAmount, paidAfter: err.paidAfter },
-        });
-      }
-      if (err instanceof InvoiceNotPayableError) {
-        return apiError("CONFLICT", 409, {
-          message: err.message,
-          details: { status: err.status },
-        });
-      }
-      if (err instanceof Error) {
-        if (err.name === "EntityNotFoundError") {
-          return apiError("NOT_FOUND", 404, { message: err.message });
+    // F16-Compliance: Money-Mutating Endpoint → Idempotency-Key ehrt.
+    // Falls Client `Idempotency-Key` Header ODER `idempotencyKey` Body-Feld
+    // sendet, wird die Response 24h gecacht und Duplicate-Requests kriegen
+    // den gleichen Snapshot statt einer zweiten Buchung.
+    return withIdempotency(
+      request,
+      check.tenantId!,
+      async () => {
+        let result;
+        try {
+          result = await prisma.$transaction(async (tx) => {
+            return recordPayment(tx, {
+              tenantId: check.tenantId!,
+              invoiceId: id,
+              amount: parsed.data.amount,
+              paymentDate,
+              paymentMethod: parsed.data.paymentMethod,
+              bankTransactionId: parsed.data.bankTransactionId,
+              notes: parsed.data.notes,
+              userId: check.userId!,
+            });
+          });
+        } catch (err) {
+          if (err instanceof PeriodLockedError) {
+            // F7-Compliance: Zahlungsdatum in gesperrter Periode → 409, kein 500.
+            return apiError("PERIOD_LOCKED", 409, {
+              message: err.message,
+              details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+            });
+          }
+          if (err instanceof OverpaymentError) {
+            return apiError("CONFLICT", 409, {
+              message: err.message,
+              details: { grossAmount: err.grossAmount, paidAfter: err.paidAfter },
+            });
+          }
+          if (err instanceof InvoiceNotPayableError) {
+            return apiError("CONFLICT", 409, {
+              message: err.message,
+              details: { status: err.status },
+            });
+          }
+          if (err instanceof Error) {
+            if (err.name === "EntityNotFoundError") {
+              return apiError("NOT_FOUND", 404, { message: err.message });
+            }
+            if (err.name === "TenantMismatchError") {
+              return apiError("TENANT_MISMATCH", 403, { message: err.message });
+            }
+          }
+          throw err;
         }
-        if (err.name === "TenantMismatchError") {
-          return apiError("TENANT_MISMATCH", 403, { message: err.message });
-        }
-      }
-      throw err;
-    }
 
-    logger.info(
-      {
-        tenantId: check.tenantId,
-        invoiceId: id,
-        paymentId: result.paymentId,
-        amount: parsed.data.amount,
-        newStatus: result.newStatus,
+        logger.info(
+          {
+            tenantId: check.tenantId,
+            invoiceId: id,
+            paymentId: result.paymentId,
+            amount: parsed.data.amount,
+            newStatus: result.newStatus,
+          },
+          "Invoice payment recorded",
+        );
+
+        return NextResponse.json({ data: serializePrisma(result) }, { status: 201 });
       },
-      "Invoice payment recorded",
+      { parsedBody: body },
     );
-
-    return NextResponse.json({ data: serializePrisma(result) }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, "Error recording invoice payment");
     return apiError("PROCESS_FAILED", 500, {

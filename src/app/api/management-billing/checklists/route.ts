@@ -14,10 +14,18 @@ import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 
+// Checklist templates carry a fixed shape per item — nur label + optional required.
+// checked wird erst in der abgeleiteten OperationalTask.checklistData gesetzt,
+// hier bewusst NICHT erlaubt (Template-Semantik).
+const checklistItemSchema = z.object({
+  label: z.string().min(1).max(500),
+  required: z.boolean().optional(),
+});
+
 const checklistCreateSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().nullish(),
-  items: z.array(z.any()).min(0),
+  items: z.array(checklistItemSchema).min(0),
   recurrence: z.string().nullish(),
   parkId: z.string().nullish(),
   isActive: z.boolean().optional().default(true),

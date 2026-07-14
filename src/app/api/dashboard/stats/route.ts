@@ -54,13 +54,19 @@ async function fetchTenantStats(
     buildIdFilter(userId, "FUND", PERMISSIONS.FUNDS_READ),
   ]);
 
+  // F17-Compliance: Alle Aggregate excluden Soft-Deleted-Rows (Park, Fund,
+  // Lease, Document, Invoice haben `deletedAt`). Ohne den Filter zählen KPIs
+  // gelöschte Datensätze weiter mit — irreführend fürs Business + Datenschutz-
+  // relevant (gelöschte Person darf nicht mehr in Statistik erscheinen).
   const parkWhere = {
     tenantId,
+    deletedAt: null,
     ...(parkIdFilter && { id: parkIdFilter }),
   };
 
   const fundWhere = {
     tenantId,
+    deletedAt: null,
     ...(fundIdFilter && { id: fundIdFilter }),
   };
 
@@ -97,6 +103,7 @@ async function fetchTenantStats(
     }),
 
     // Plots in tenant (scoped to accessible parks if restricted)
+    // Plot hat kein deletedAt-Feld — Hard-Delete.
     prisma.plot.count({
       where: {
         tenantId,
@@ -104,24 +111,25 @@ async function fetchTenantStats(
       },
     }),
 
-    // Leases in tenant
-    prisma.lease.count({ where: { tenantId } }),
+    // Leases in tenant (F17: soft-deleted ausblenden)
+    prisma.lease.count({ where: { tenantId, deletedAt: null } }),
 
     // All contracts in tenant (F3: soft-deleted ausblenden)
     prisma.contract.count({ where: { tenantId, deletedAt: null } }),
 
-    // Documents in tenant
-    prisma.document.count({ where: { tenantId } }),
+    // Documents in tenant (F17: soft-deleted ausblenden)
+    prisma.document.count({ where: { tenantId, deletedAt: null } }),
 
-    // Invoices in tenant (scoped to accessible funds if restricted)
+    // Invoices in tenant (F17: soft-deleted ausblenden; scoped to accessible funds if restricted)
     prisma.invoice.count({
       where: {
         tenantId,
+        deletedAt: null,
         ...(fundIdFilter && { fundId: fundIdFilter }),
       },
     }),
 
-    // Votes in tenant
+    // Votes in tenant — Vote hat kein deletedAt-Feld.
     prisma.vote.count({ where: { tenantId } }),
 
     // Active contracts (F3: soft-deleted ausblenden)

@@ -7,6 +7,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { formatCurrency, formatCapacity } from "@/lib/format";
 import { de } from "date-fns/locale";
@@ -288,6 +289,7 @@ export default function ParkDetailsPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const t = useTranslations("parkDetail");
   const [park, setPark] = useState<Park | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -569,7 +571,7 @@ export default function ParkDetailsPage({
       toast.success("Konfiguration gespeichert");
       fetchPark();
     } catch {
-      toast.error("Fehler beim Speichern");
+      toast.error(t("errorSaving"));
     } finally {
       setSavingConfig(false);
     }
@@ -686,7 +688,7 @@ export default function ParkDetailsPage({
         setUnassignedPlots(data.data ?? []);
       }
     } catch {
-      toast.error("Fehler beim Laden der Flurstücke");
+      toast.error(t("errorLoadingPlots"));
     } finally {
       setLoadingUnassigned(false);
     }
@@ -716,14 +718,14 @@ export default function ParkDetailsPage({
       );
       const failedCount = results.filter((r) => !r.ok).length;
       if (failedCount > 0) {
-        toast.error(`${failedCount} Flurstücke konnten nicht zugeordnet werden`);
+        toast.error(t("errorAssigningPlotsCount", { count: failedCount }));
       } else {
-        toast.success(`${selectedUnassignedIds.size} Flurstücke zugeordnet`);
+        toast.success(t("plotsAssigned", { count: selectedUnassignedIds.size }));
       }
       setIsAssignPlotsOpen(false);
       fetchPark(); // Refresh park data + plot features
     } catch {
-      toast.error("Fehler beim Zuordnen");
+      toast.error(t("errorAssigning"));
     } finally {
       setAssigningPlots(false);
     }
@@ -740,7 +742,7 @@ export default function ParkDetailsPage({
       toast.success("Flurstück vom Park entfernt");
       fetchPark();
     } catch {
-      toast.error("Fehler beim Entfernen");
+      toast.error(t("errorRemoving"));
     }
   }
 
@@ -785,7 +787,7 @@ export default function ParkDetailsPage({
         setAvailableLeases(filtered);
       }
     } catch {
-      toast.error("Fehler beim Laden der Verträge");
+      toast.error(t("errorLoadingContracts"));
     } finally {
       setLoadingLeases(false);
     }
@@ -824,14 +826,14 @@ export default function ParkDetailsPage({
       );
       const failedCount = results.filter((r) => !r.ok).length;
       if (failedCount > 0) {
-        toast.error(`${failedCount} Flurstücke konnten nicht zugeordnet werden`);
+        toast.error(t("errorAssigningPlotsCount", { count: failedCount }));
       } else {
-        toast.success(`${plotIds.length} Flurstücke aus ${selectedLeaseIds.size} Verträgen zugeordnet`);
+        toast.success(t("plotsAssignedFromLeases", { plots: plotIds.length, leases: selectedLeaseIds.size }));
       }
       setIsAssignLeasesOpen(false);
       fetchPark();
     } catch {
-      toast.error("Fehler beim Zuordnen");
+      toast.error(t("errorAssigning"));
     } finally {
       setAssigningLeases(false);
     }

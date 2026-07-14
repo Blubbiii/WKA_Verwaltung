@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
-import { logDeletion } from "@/lib/audit";
+import { createAuditLog, logDeletion } from "@/lib/audit";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -79,6 +79,25 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!person) {
       return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
+
+    // F14-Compliance: Read-Audit für sensitive Person-Views. Der Response
+    // enthält Bank-IBAN/BIC + taxId — DSGVO Art. 30 verlangt Nachvollzieh-
+    // barkeit "wer hat wann welche personenbezogenen Daten eingesehen".
+    // `after()` verzögert das Logging bis nach dem Response-Flush, damit die
+    // User-Response nicht auf den Audit-DB-Write wartet.
+    // Consider sampling if audit-log volume becomes issue.
+    after(async () => {
+      try {
+        await createAuditLog({
+          action: "VIEW",
+          entityType: "Person",
+          entityId: id,
+          description: "Person-Detail angesehen (Bank-/Steuerdaten)",
+        });
+      } catch (err) {
+        logger.warn({ err, personId: id }, "[Audit] VIEW log failed");
+      }
+    });
 
     return NextResponse.json(person);
   } catch (error) {

@@ -138,10 +138,10 @@ export function WeatherWidget({
     fetchWeather();
   }, [fetchWeather]);
 
-  // Auto-refresh every 30 minutes
+  // Auto-refresh every 30 minutes — skip when tab is hidden
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchWeather();
+      if (!document.hidden) fetchWeather();
     }, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchWeather]);

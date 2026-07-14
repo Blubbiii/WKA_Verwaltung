@@ -14,11 +14,13 @@ import {
   X,
   Check,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useDebounce } from "@/hooks/useDebounce";
-import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
+import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +116,13 @@ interface ExistingMatch {
   email: string | null;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface CreateForm {
   personType: "natural" | "legal";
   salutation: string;
@@ -167,6 +176,8 @@ export default function CrmContactsPage() {
 
   const [contacts, setContacts] = useState<CrmContact[]>([]);
   const [total, setTotal] = useState(0);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
@@ -218,8 +229,10 @@ export default function CrmContactsPage() {
 
     setLoading(true);
     try {
-      // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
-      const params = new URLSearchParams({ limit: String(PAGE_SIZE_BULK_LIST) });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(PAGE_SIZE_DEFAULT),
+      });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (activeLabels.length > 0) params.set("labels", activeLabels.join(","));
 
@@ -228,6 +241,7 @@ export default function CrmContactsPage() {
       const json = await res.json();
       if (signal.aborted) return;
       setContacts(json.data ?? []);
+      setPagination(json.pagination ?? null);
       setTotal(json.pagination?.total ?? 0);
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -251,7 +265,7 @@ export default function CrmContactsPage() {
     abortRef.current = controller;
     load(controller.signal);
     return () => controller.abort();
-  }, [debouncedSearch, activeLabels, flags.crm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, activeLabels, flags.crm, page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load custom labels (PersonTag table) once for the filter dropdown
   useEffect(() => {
@@ -266,6 +280,11 @@ export default function CrmContactsPage() {
   useEffect(() => {
     setSelectedIds(new Set());
   }, [search, activeLabels]);
+
+  // Reset to page 1 when filter or search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, activeLabels]);
 
   // Keep URL in sync with label filter
   useEffect(() => {
@@ -823,6 +842,39 @@ export default function CrmContactsPage() {
             </TableBody>
           </Table>
         </CardContent>
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t p-4">
+            <p className="text-sm text-muted-foreground">
+              {t("pagination.pageOf", {
+                page: pagination.page,
+                totalPages: pagination.totalPages,
+                totalCount: pagination.total,
+              })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={pagination.page <= 1 || loading}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                {t("pagination.prev")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPage((p) => Math.min(pagination.totalPages, p + 1))
+                }
+                disabled={pagination.page >= pagination.totalPages || loading}
+              >
+                {t("pagination.next")}
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Bulk action bar */}
