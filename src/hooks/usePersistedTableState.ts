@@ -65,7 +65,9 @@ function readFromUrl<T extends StateRecord>(
     const defaultVal = defaults[key];
     if (typeof defaultVal === "number") {
       const n = Number(raw);
-      if (!isNaN(n)) (result as StateRecord)[key] = n;
+      // Number.isFinite verhindert dass "Infinity" / "-Infinity" akzeptiert
+      // werden — isNaN wuerde diese durchlassen.
+      if (Number.isFinite(n)) (result as StateRecord)[key] = n;
     } else if (typeof defaultVal === "boolean") {
       (result as StateRecord)[key] = raw === "true";
     } else {

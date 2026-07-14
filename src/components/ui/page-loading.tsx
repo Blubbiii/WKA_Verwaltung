@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageLoading() {
   return (
-    <div className="space-y-6 animate-in fade-in-0 duration-300">
+    <div className="space-y-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
@@ -27,7 +27,7 @@ export function PageLoading() {
 
 export function TableLoading({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="space-y-6 animate-in fade-in-0 duration-300">
+    <div className="space-y-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />

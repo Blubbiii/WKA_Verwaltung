@@ -53,12 +53,22 @@ export async function POST(request: NextRequest) {
 
       // Anonymize person data if exists
       if (shareholder) {
+        // CP2: Bei juristischen Personen den companyName ebenfalls
+        // ueberschreiben (statt null), damit das Person-Record weiter
+        // sinnvoll anzeigbar bleibt und keine Anzeigen-Fallbacks anspringen
+        // die ggf. den echten alten Wert aus dem Cache holen wuerden.
+        const personBefore = await tx.person.findUnique({
+          where: { id: shareholder.personId },
+          select: { personType: true },
+        });
+        const isLegalEntity = personBefore?.personType === "legal";
+
         await tx.person.update({
           where: { id: shareholder.personId },
           data: {
             firstName: "Geloescht",
             lastName: "Geloescht",
-            companyName: null,
+            companyName: isLegalEntity ? "Geloescht" : null,
             email: `deleted-${userId}@anonymized.local`,
             phone: null,
             street: null,

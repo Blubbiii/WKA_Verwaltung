@@ -18,7 +18,7 @@
  */
 
 import type { XRechnungInvoiceData, XRechnungLineItem } from "./xrechnung-generator";
-import { formatAmountFixed2 as formatAmount, formatDateCII as formatDate } from "@/lib/formatters";
+import { formatAmountFixed2 as formatAmount, formatDateCII as formatDate } from "@/lib/format";
 
 // ============================================================================
 // XML HELPERS

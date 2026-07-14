@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { FullAnalyticsResponse } from "@/lib/analytics/kpis";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/format";
 
@@ -20,13 +20,23 @@ export function useAnalytics(): UseAnalyticsResult {
   const [data, setData] = useState<FullAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // FP3: AbortController pro Fetch — bricht in-flight Requests ab, wenn
+  // der Hook unmounted oder refetch schneller feuert als der Server antwortet.
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchAnalytics = useCallback(async () => {
+    // Vorherigen Request abbrechen falls noch aktiv
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch("/api/dashboard/analytics");
+      const response = await fetch("/api/dashboard/analytics", {
+        signal: controller.signal,
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -34,12 +44,18 @@ export function useAnalytics(): UseAnalyticsResult {
       }
 
       const analyticsData: FullAnalyticsResponse = await response.json();
-      setData(analyticsData);
+      if (!controller.signal.aborted) {
+        setData(analyticsData);
+      }
     } catch (err) {
+      // Abgebrochene Requests sind kein User-facing-Fehler
+      if (err instanceof Error && err.name === "AbortError") return;
       const message = err instanceof Error ? err.message : "Unbekannter Fehler";
       setError(message);
     } finally {
-      setIsLoading(false);
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -65,6 +81,9 @@ export function useAnalytics(): UseAnalyticsResult {
 
   useEffect(() => {
     fetchAnalytics();
+    return () => {
+      abortRef.current?.abort();
+    };
   }, [fetchAnalytics]);
 
   return {

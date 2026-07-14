@@ -49,6 +49,19 @@ const RETENTION_POLICY_DEFAULT = {
   CrmActivity: 6,
 } as const;
 
+/**
+ * CP6: Retention fuer operative Log-Tabellen ohne soft-delete.
+ * Diese Tabellen werden nach `createdAt` (nicht `deletedAt`) gepurged, weil
+ * sie keinen soft-delete-Flow haben und typischerweise Payloads speichern
+ * die keiner GoBD-Aufbewahrung unterliegen.
+ *
+ *   - WebhookDelivery: 90 Tage — Debug- und Retry-Historie; die Payloads
+ *     koennen sensibel sein und muessen nicht laenger aufbewahrt werden.
+ */
+const CREATED_AT_RETENTION_DAYS: Record<string, number> = {
+  WebhookDelivery: 90,
+};
+
 /** Models with 10-year retention (GoBD Buchführungs-/Aufzeichnungspflichten). */
 type InvoiceRetentionModel = "Invoice" | "IncomingInvoice" | "JournalEntry" | "Quote";
 /** Models with 6-year retention (Geschäftsbriefe + operative Verträge). */
@@ -164,6 +177,52 @@ async function purgeModel(
 }
 
 /**
+ * Purge fuer Modelle die kein deletedAt-Feld haben (WebhookDelivery et al.).
+ * Loeschung erfolgt strikt anhand `createdAt < now() - retentionDays`.
+ */
+async function purgeCreatedAtModel(
+  modelName: string,
+  retentionDays: number,
+): Promise<RetentionRunResult> {
+  const cutoffDate = new Date(Date.now() - retentionDays * MS_PER_DAY);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const delegate = (prisma as any)[
+      modelName.charAt(0).toLowerCase() + modelName.slice(1)
+    ];
+    if (!delegate || typeof delegate.deleteMany !== "function") {
+      throw new Error(`Prisma delegate not found for ${modelName}`);
+    }
+    const result = await delegate.deleteMany({
+      where: { createdAt: { lt: cutoffDate } },
+    });
+    logger.info(
+      { model: modelName, retentionDays, cutoffDate, deletedCount: result.count },
+      `Retention purge (createdAt) completed for ${modelName}`,
+    );
+    return {
+      model: modelName,
+      retentionYears: retentionDays / 365.25,
+      cutoffDate,
+      deletedCount: result.count,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(
+      { err: message, model: modelName, retentionDays, cutoffDate },
+      `Retention purge (createdAt) FAILED for ${modelName}`,
+    );
+    return {
+      model: modelName,
+      retentionYears: retentionDays / 365.25,
+      cutoffDate,
+      deletedCount: 0,
+      error: message,
+    };
+  }
+}
+
+/**
  * Führt den Retention-Purge für alle konfigurierten Modelle aus.
  * Idempotent — mehrfache Ausführung ist safe.
  *
@@ -189,6 +248,14 @@ export async function runRetentionPurge(tenantId?: string): Promise<{
   const results: RetentionRunResult[] = [];
   for (const model of Object.keys(policy) as RetentionModel[]) {
     results.push(await purgeModel(model, policy[model], tenantId));
+  }
+
+  // CP6: createdAt-basierte Retention fuer WebhookDelivery (kein deletedAt).
+  // Nicht tenant-scoped — WebhookDelivery haengt an Webhook (tenant-scoped
+  // per Cascade), aber der Purge selbst ist rein zeitbasiert und laeuft
+  // sicher auch ohne Tenant-Kontext.
+  for (const [modelName, days] of Object.entries(CREATED_AT_RETENTION_DAYS)) {
+    results.push(await purgeCreatedAtModel(modelName, days));
   }
 
   const totalDeleted = results.reduce((sum, r) => sum + r.deletedCount, 0);

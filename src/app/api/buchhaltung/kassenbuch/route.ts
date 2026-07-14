@@ -60,6 +60,39 @@ export async function POST(request: NextRequest) {
 
     // P26.2 §146 AO Festschreibung: keine Einträge in gelockte Tage
     const entryDate = new Date(parsed.entryDate);
+    if (Number.isNaN(entryDate.getTime())) {
+      return apiError("VALIDATION_FAILED", 422, {
+        message: "Ungueltiges Datum",
+      });
+    }
+
+    // CP3: entryDate clampen —
+    //  1) nicht in der Zukunft (heute inklusive erlaubt)
+    //  2) nicht vor dem juengsten locked Tag (backdating wuerde die
+    //     runningBalance-Sequenz zerreissen; separates Ticket fuer den
+    //     Recompute-Flow bei berechtigten Nachtragsbuchungen).
+    const nowEndOfDay = new Date();
+    nowEndOfDay.setUTCHours(23, 59, 59, 999);
+    if (entryDate.getTime() > nowEndOfDay.getTime()) {
+      return apiError("VALIDATION_FAILED", 422, {
+        message: "Buchungsdatum darf nicht in der Zukunft liegen",
+      });
+    }
+
+    const latestLocked = await prisma.cashBookEntry.findFirst({
+      where: {
+        tenantId: check.tenantId!,
+        lockedAt: { not: null },
+      },
+      orderBy: { entryDate: "desc" },
+      select: { entryDate: true },
+    });
+    if (latestLocked && entryDate.getTime() <= latestLocked.entryDate.getTime()) {
+      return apiError("CONFLICT", 409, {
+        message: "Buchungsdatum liegt vor oder auf letztem abgeschlossenen Tag (§146 AO Festschreibung).",
+      });
+    }
+
     const dayStart = new Date(entryDate);
     dayStart.setUTCHours(0, 0, 0, 0);
     const dayEnd = new Date(entryDate);

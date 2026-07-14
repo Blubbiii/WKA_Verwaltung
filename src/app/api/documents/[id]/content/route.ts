@@ -10,6 +10,7 @@ import path from "path";
 import { apiLogger as logger } from "@/lib/logger";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiError } from "@/lib/api-errors";
+import { getAppUrl, getAppUrlOrEmpty } from "@/lib/config/app-url";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
 
@@ -64,9 +65,10 @@ export async function GET(
       // Security: Only redirect to known/trusted hosts
       try {
         const externalUrl = new URL(document.fileUrl);
+        const appUrl = getAppUrlOrEmpty();
         const allowedHosts = [
           new URL(S3_ENDPOINT).hostname,
-          process.env.NEXT_PUBLIC_APP_URL ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname : null,
+          appUrl ? new URL(appUrl).hostname : null,
         ].filter(Boolean);
         if (!allowedHosts.includes(externalUrl.hostname)) {
           logger.warn(`Blocked redirect to untrusted host: ${externalUrl.hostname}`);
@@ -118,7 +120,7 @@ export async function GET(
       }
       headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
       headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
-      headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+      headers.set("Access-Control-Allow-Origin", getAppUrl());
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
       headers.set("Access-Control-Allow-Headers", "Content-Type");
       if (isSvg) {
@@ -193,7 +195,7 @@ export async function GET(
             headers.set("Content-Length", fileBuffer.length.toString());
             headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
             headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
-            headers.set("Access-Control-Allow-Origin", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+            headers.set("Access-Control-Allow-Origin", getAppUrl());
             if (isSvg) {
               headers.set("X-Content-Type-Options", "nosniff");
             }
@@ -224,7 +226,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      "Access-Control-Allow-Origin": getAppUrl(),
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },

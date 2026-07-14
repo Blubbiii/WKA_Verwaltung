@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getActionDisplayName, getEntityDisplayName } from "@/lib/audit-types";
 import type { AuditAction, AuditEntityType } from "@/lib/audit-types";
 
@@ -145,9 +146,14 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
   }, [fetchStatus]);
 
   if (isLoading) {
+    // FP2: Skeleton statt Spinner — matched den finalen Widget-Content-Aufbau
+    // (Overall + 3 Sub-Rows) fuer minimalen Layout-Shift.
     return (
-      <div className={cn("flex items-center justify-center h-full", className)}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className={cn("space-y-4", className)}>
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
       </div>
     );
   }
@@ -358,9 +364,13 @@ export function AuditLogWidget({ className }: { className?: string }) {
   }, [fetchEntries]);
 
   if (isLoading) {
+    // FP2: Skeleton-Zeilen fuer die Audit-Liste
     return (
-      <div className={cn("flex items-center justify-center h-full", className)}>
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className={cn("flex flex-col h-full gap-2", className)}>
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
       </div>
     );
   }

@@ -19,7 +19,7 @@
  *   B2B alle   2 Bankarbeitstage vor Fälligkeit (D-2)
  */
 
-import { formatAmountFixed2 as formatAmount } from "@/lib/formatters";
+import { formatAmountFixed2 as formatAmount } from "@/lib/format";
 import { IbanValidationError, assertValidIban } from "@/lib/iban";
 
 export type DirectDebitSequenceType = "FRST" | "RCUR" | "OOFF" | "FNAL";

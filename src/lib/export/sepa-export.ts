@@ -9,7 +9,7 @@
  * konkretem Hinweis, statt die Bank das XML später ablehnen zu lassen.
  */
 
-import { formatAmountFixed2 as formatAmount } from "@/lib/formatters";
+import { formatAmountFixed2 as formatAmount } from "@/lib/format";
 import { IbanValidationError, assertValidIban } from "@/lib/iban";
 import {
   checkAwvReportable,

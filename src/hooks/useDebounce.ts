@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Custom hook that debounces a value.
@@ -35,38 +35,7 @@ export function useDebounce<T>(value: T, delay: number = 300): T {
   return debouncedValue;
 }
 
-/**
- * Custom hook for debounced callback function.
- * Useful when you need to debounce a function call rather than a value.
- *
- * @param callback - The function to debounce
- * @param delay - The delay in milliseconds (default: 300ms)
- * @returns A debounced version of the callback
- */
-export function useDebouncedCallback<T extends (...args: Parameters<T>) => void>(
-  callback: T,
-  delay: number = 300
-): (...args: Parameters<T>) => void {
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    // Cleanup on unmount
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [timeoutId]);
-
-  return (...args: Parameters<T>) => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
-    const newTimeoutId = setTimeout(() => {
-      callback(...args);
-    }, delay);
-
-    setTimeoutId(newTimeoutId);
-  };
-}
+// FP4: `useDebouncedCallback` wurde entfernt — es hatte ein Anti-Pattern
+// (useState fuer die TimeoutID triggerte re-renders + neuen Cleanup pro
+// Callback-Call) und war codeweit ungenutzt. Bei Bedarf neu implementieren
+// mit useRef fuer die Timeout-Handle.

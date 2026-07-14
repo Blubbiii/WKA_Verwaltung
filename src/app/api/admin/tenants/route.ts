@@ -11,6 +11,7 @@ import { Prisma } from "@prisma/client";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
 import { apiError } from "@/lib/api-errors";
 import { createAuditLog } from "@/lib/audit";
+import { getAppUrl } from "@/lib/config/app-url";
 
 const adminUserSchema = z
   .object({
@@ -274,10 +275,7 @@ export async function POST(request: NextRequest) {
     let emailSent: boolean | null = null;
 
     if (result.invitationToken && result.createdUser) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ||
-        process.env.NEXTAUTH_URL ||
-        "http://localhost:3000";
+      const baseUrl = getAppUrl();
       try {
         const emailResult = await sendTemplatedEmailSync(
           "tenant-admin-invitation",

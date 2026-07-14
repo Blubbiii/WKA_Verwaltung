@@ -11,6 +11,7 @@ import {
 } from "@/lib/rate-limit";
 import { sendTemplatedEmailSync } from "@/lib/email";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
+import { getAppUrl } from "@/lib/config/app-url";
 
 // Validation Schema
 const forgotPasswordSchema = z.object({
@@ -94,7 +95,8 @@ export async function POST(request: Request) {
     });
 
     // Generate reset link
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // NEXTAUTH_URL wins if set (fuer separate Auth-Origin), sonst zentraler App-URL.
+    const baseUrl = process.env.NEXTAUTH_URL?.trim() || getAppUrl();
     const resetLink = `${baseUrl}/reset-password?token=${token}`;
 
     // Get user's name for the email template

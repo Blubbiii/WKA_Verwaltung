@@ -125,6 +125,11 @@ export async function GET() {
       : [];
 
     // Fetch audit log entries for this user
+    // CP1: Der 500er Cap ist bewusst — DSGVO Art. 15 verlangt Auskunft ueber
+    // "die verarbeiteten Daten"; die letzten 500 Events decken den Access-
+    // Kontext ab, aeltere Events sind bereits durch das Retention-Cleaning
+    // geloescht (siehe retention-service). Bei User-seitigem Wunsch auf
+    // vollstaendige Historie: manueller Export via Admin (audit_logs Table).
     const auditLogs = await prisma.auditLog.findMany({
       where: { userId },
       select: {
@@ -136,7 +141,7 @@ export async function GET() {
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
-      take: 500, // Limit to prevent massive exports
+      take: 500,
     });
 
     const exportData = {

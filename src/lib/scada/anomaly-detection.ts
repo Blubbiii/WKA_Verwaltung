@@ -13,6 +13,7 @@ import { Prisma } from "@prisma/client";
 import { logger } from "@/lib/logger";
 import { notifyAdmins } from "@/lib/notifications";
 import { sendEmailAsync } from "@/lib/email";
+import { getAppUrlOrEmpty } from "@/lib/config/app-url";
 
 // =============================================================================
 // Types
@@ -881,7 +882,7 @@ async function sendAnomalyNotifications(
               anomalyCount: anomalies.length,
               criticalCount,
               warningCount,
-              link: `${process.env.NEXT_PUBLIC_APP_URL || ""}/energy/scada/anomalies`,
+              link: `${getAppUrlOrEmpty()}/energy/scada/anomalies`,
             },
             admin.email,
             tenantId

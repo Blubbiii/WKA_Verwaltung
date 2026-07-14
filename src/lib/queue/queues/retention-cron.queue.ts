@@ -27,6 +27,9 @@ export interface RetentionCronJobResult {
   processedTenants: number;
   invoicesAffected: number;
   auditLogsAffected: number;
+  // F11: DSGVO Art. 17 Backup-Purge (tenant-übergreifend, einmal pro Sweep).
+  backupsPurgedLocal: number;
+  backupsPurgedS3: number;
   startedAt: string;
   finishedAt: string;
 }

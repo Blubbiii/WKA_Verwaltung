@@ -12,6 +12,7 @@ import { saveGeneratedReport, mapReportTypeToEnum } from "@/lib/reports/archive"
 import { generateMonthlyReportPdf } from "@/lib/pdf/generators/monthlyReportPdf";
 import { generateAnnualReportPdf } from "@/lib/pdf/generators/annualReportPdf";
 import { enqueueEmail } from "@/lib/queue";
+import { getAppUrl } from "@/lib/config/app-url";
 
 // ===========================================
 // TYPES
@@ -118,7 +119,7 @@ export async function processScheduledReports(): Promise<ProcessResult> {
 
       // Send email notifications to all recipients
       if (scheduledReport.recipients.length > 0) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const appUrl = getAppUrl();
         const downloadUrl = `${appUrl}/reports/archive?reportId=${generatedReport.id}`;
 
         for (const recipientEmail of scheduledReport.recipients) {

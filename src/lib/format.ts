@@ -127,3 +127,29 @@ export function formatDuration(ms: number | null | undefined): string {
   const remainingSeconds = seconds % 60;
   return `${minutes}m ${remainingSeconds}s`;
 }
+
+// =============================================================================
+// XML / SEPA / e-Invoice Helper — konsolidiert aus dem entfallenen
+// lib/formatters.ts. Fest-formatierte 2-Nachkommastellen bzw. ISO/CII-Datum.
+// =============================================================================
+
+/** Format amount with exactly 2 decimal places (Punkt als Dezimaltrenner). */
+export function formatAmountFixed2(amount: number): string {
+  return amount.toFixed(2);
+}
+
+/** Format date as ISO 8601 (YYYY-MM-DD) — used in XRechnung / UBL. */
+export function formatDateISO(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Format date as CII format (YYYYMMDD) — used in ZUGFeRD. */
+export function formatDateCII(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}${m}${d}`;
+}

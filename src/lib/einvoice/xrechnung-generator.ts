@@ -9,7 +9,7 @@
  * Required by German law since 2025 for B2B invoices.
  */
 
-import { formatAmountFixed2 as formatAmount, formatDateISO as formatDate } from "@/lib/formatters";
+import { formatAmountFixed2 as formatAmount, formatDateISO as formatDate } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/constants/time";
 
 // ============================================================================

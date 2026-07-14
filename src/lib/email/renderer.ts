@@ -7,6 +7,7 @@
 import { render } from '@react-email/components';
 import * as React from 'react';
 import { prisma, hasPrismaModel, getPrismaModel } from '@/lib/prisma';
+import { getAppUrlOrEmpty } from '@/lib/config/app-url';
 import type {
   EmailTemplateName,
   WelcomeEmailProps,
@@ -364,7 +365,9 @@ export async function previewTemplate(
  * Get sample data for template preview
  */
 export function getSampleData(templateName: SupportedTemplateName): Record<string, unknown> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.example.com';
+  // Sample-Preview: nutzt gesetzte App-URL, sonst neutrales example.com
+  // (kein throw hier — Preview-Route soll auch bei fehlender Config funktionieren).
+  const baseUrl = getAppUrlOrEmpty() || 'https://app.example.com';
 
   switch (templateName) {
     case 'welcome':

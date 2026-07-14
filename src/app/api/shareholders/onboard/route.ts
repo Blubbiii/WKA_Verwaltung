@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { apiError } from "@/lib/api-errors";
+import { getAppUrl } from "@/lib/config/app-url";
 
 // Validation schema for the onboarding request
 const onboardingSchema = z.object({
@@ -247,7 +248,7 @@ export async function POST(request: NextRequest) {
     // Send portal invitation email if portal access was created
     let emailSent = false;
     if (result.portalAccessCreated && temporaryPassword) {
-      const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/login`;
+      const loginUrl = `${getAppUrl()}/login`;
       const userName =
         [personalData.firstName, personalData.lastName].filter(Boolean).join(" ") ||
         "Gesellschafter";

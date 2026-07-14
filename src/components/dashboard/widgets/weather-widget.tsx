@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Cloud, Sun, CloudRain, Wind, AlertTriangle, Loader2 } from "lucide-react";
+import { Cloud, Sun, CloudRain, Wind, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // =============================================================================
 // TYPES
@@ -77,50 +78,18 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
         const data = await response.json();
         setWeatherData(data);
       } else {
-        // Use mock data if API is not available
-        setWeatherData([
-          {
-            parkId: "1",
-            parkName: "Windpark Nord",
-            temperature: 8,
-            windSpeed: 24,
-            condition: "windy",
-            humidity: 65,
-          },
-          {
-            parkId: "2",
-            parkName: "Windpark Sued",
-            temperature: 12,
-            windSpeed: 18,
-            condition: "cloudy",
-            humidity: 72,
-          },
-        ]);
+        // FP6: kein Mock-Fallback — User wuerde sonst denken die Windpark-
+        // Werte seien echt. Explizit Empty-State + Fehlermeldung.
+        setWeatherData([]);
+        setError(t("noWeatherData"));
       }
     } catch {
-      // Use mock data on error
-      setWeatherData([
-        {
-          parkId: "1",
-          parkName: "Windpark Nord",
-          temperature: 8,
-          windSpeed: 24,
-          condition: "windy",
-          humidity: 65,
-        },
-        {
-          parkId: "2",
-          parkName: "Windpark Sued",
-          temperature: 12,
-          windSpeed: 18,
-          condition: "cloudy",
-          humidity: 72,
-        },
-      ]);
+      setWeatherData([]);
+      setError(t("noWeatherData"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchWeather();
@@ -132,9 +101,12 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
   }, [fetchWeather]);
 
   if (isLoading) {
+    // FP2: Skeleton-Rows in Widget-Zielhoehe (statt Spinner) — verhindert
+    // Layout-Shift und signalisiert die kommende Datenstruktur.
     return (
-      <div className={cn("flex items-center justify-center h-full", className)}>
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className={cn("grid gap-4", className)}>
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
       </div>
     );
   }

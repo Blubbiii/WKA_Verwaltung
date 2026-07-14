@@ -16,6 +16,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 /** Alle bekannten Setting-Keys mit Default + Kategorie. */
 export const SYSTEM_SETTING_DEFAULTS = {
@@ -169,10 +170,13 @@ export async function seedSystemSettings(userId: string): Promise<number> {
   let inserted = 0;
   for (const [key, def] of Object.entries(SYSTEM_SETTING_DEFAULTS)) {
     if (existingKeys.has(key)) continue;
+    // Prisma erwartet InputJsonValue fuer das JSON-Feld; def.value ist ein
+    // Skalar (number | string) bzw. JSON-serialisierbar — der Cast auf
+    // `as unknown as object` war falsch (Skalare sind kein object).
     await prisma.systemSetting.create({
       data: {
         key,
-        value: def.value as unknown as object,
+        value: def.value as Prisma.InputJsonValue,
         category: def.category,
         description: def.description,
         updatedById: userId,

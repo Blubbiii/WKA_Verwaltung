@@ -377,9 +377,29 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
-    // Hard-Delete: Unwiderruflich löschen
-    await prisma.fund.delete({
+    // CP4: Belege-Guard — Fund darf nicht hart geloescht werden solange
+    // Rechnungen (Ausgangs- oder Eingangs-) daran haengen, weil die
+    // Invoice.fundId onDelete:SetNull ist und die Buchhaltungshistorie
+    // sonst leise ihre Fund-Zuordnung verlieren wuerde (GoBD-Bruch).
+    // Statt Hard-Delete: Soft-Delete via deletedAt.
+    const invoiceCount = await prisma.invoice.count({
+      where: {
+        fundId: id,
+        tenantId: check.tenantId!,
+        deletedAt: null,
+      },
+    });
+    if (invoiceCount > 0) {
+      return apiError("CONFLICT", 409, {
+        message: `Gesellschaft hat ${invoiceCount} aktive Rechnungen — Loeschen nicht moeglich. Bitte Rechnungen zuerst archivieren.`,
+      });
+    }
+
+    // Soft-Delete: Fund als geloescht markieren; Referenzen (Distributions,
+    // etc.) bleiben intakt, Fund verschwindet aus aktiven Listen.
+    await prisma.fund.update({
       where: { id },
+      data: { deletedAt: new Date(), status: "INACTIVE" },
     });
 
     // Log the deletion for audit trail (deferred: runs after response is sent)

@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { apiError } from "@/lib/api-errors";
+import { getAppUrl } from "@/lib/config/app-url";
 
 /**
  * Generate a cryptographically secure temporary password.
@@ -259,7 +260,7 @@ export async function POST(
     );
 
     // Send portal invitation email with credentials
-    const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/login`;
+    const loginUrl = `${getAppUrl()}/login`;
     const userName =
       [shareholder.person.firstName, shareholder.person.lastName].filter(Boolean).join(" ") ||
       shareholder.person.companyName ||
