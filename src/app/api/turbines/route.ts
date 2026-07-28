@@ -137,33 +137,58 @@ export async function POST(request: NextRequest) {
       return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
 
+    // FIX: cross-tenant Fund-IDs verhindern — netzgesellschaftFundId und operatorFundId
+    // müssen zum gleichen Mandanten wie der Park gehören.
+    const fundIdsToVerify: Array<[string, string | null | undefined]> = [
+      ["netzgesellschaftFundId", turbineData.netzgesellschaftFundId],
+      ["operatorFundId", operatorFundId],
+    ];
+    for (const [field, fundId] of fundIdsToVerify) {
+      if (!fundId) continue;
+      const fund = await prisma.fund.findFirst({
+        where: { id: fundId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!fund) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: `${field}: Fund nicht im Mandanten gefunden`,
+        });
+      }
+    }
+
     const commissioningDate = turbineData.commissioningDate
       ? new Date(turbineData.commissioningDate)
       : null;
 
-    const turbine = await prisma.turbine.create({
-      data: {
-        ...turbineData,
-        commissioningDate,
-        warrantyEndDate: turbineData.warrantyEndDate
-          ? new Date(turbineData.warrantyEndDate)
-          : null,
-        technicalData: turbineData.technicalData || {},
-      },
-    });
-
-    // If operatorFundId is provided, create a TurbineOperator record
-    if (operatorFundId) {
-      await prisma.turbineOperator.create({
+    // FIX: Turbine + TurbineOperator atomar per Transaction erstellen — vorher
+    // konnte die Turbine ohne Operator-Record existieren, wenn der zweite
+    // create fehlschlug.
+    const turbine = await prisma.$transaction(async (tx) => {
+      const created = await tx.turbine.create({
         data: {
-          turbineId: turbine.id,
-          operatorFundId,
-          validFrom: commissioningDate || new Date(),
-          status: "ACTIVE",
-          ownershipPercentage: 100.00,
+          ...turbineData,
+          commissioningDate,
+          warrantyEndDate: turbineData.warrantyEndDate
+            ? new Date(turbineData.warrantyEndDate)
+            : null,
+          technicalData: turbineData.technicalData || {},
         },
       });
-    }
+
+      if (operatorFundId) {
+        await tx.turbineOperator.create({
+          data: {
+            turbineId: created.id,
+            operatorFundId,
+            validFrom: commissioningDate || new Date(),
+            status: "ACTIVE",
+            ownershipPercentage: 100.00,
+          },
+        });
+      }
+
+      return created;
+    });
 
     return NextResponse.json(turbine, { status: 201 });
   } catch (error) {

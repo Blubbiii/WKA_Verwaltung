@@ -13,6 +13,7 @@ import { generateMonthlyReportPdf } from "@/lib/pdf/generators/monthlyReportPdf"
 import { generateAnnualReportPdf } from "@/lib/pdf/generators/annualReportPdf";
 import { enqueueEmail } from "@/lib/queue";
 import { getAppUrl } from "@/lib/config/app-url";
+import { MONTH_NAMES_DE } from "@/lib/format";
 
 // ===========================================
 // TYPES
@@ -257,14 +258,9 @@ async function generateReportByType(
         tenantId
       );
 
-      const monthNames = [
-        "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
-        "Juli", "August", "September", "Oktober", "November", "Dezember",
-      ];
-
       return {
         pdfBuffer,
-        title: `Monatsbericht ${park.name} - ${monthNames[month - 1]} ${year}`,
+        title: `Monatsbericht ${park.name} - ${MONTH_NAMES_DE[month - 1]} ${year}`,
         filename: `Monatsbericht_${park.name.replace(/\s+/g, "_")}_${year}_${String(month).padStart(2, "0")}.pdf`,
       };
     }

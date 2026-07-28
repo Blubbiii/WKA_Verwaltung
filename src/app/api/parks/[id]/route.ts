@@ -261,6 +261,25 @@ export async function PUT(
     const body = await request.json();
     const validatedData = parkUpdateSchema.parse(body);
 
+    // FIX: cross-tenant Fund-IDs verhindern — verweisende Fund-IDs müssen zum
+    // gleichen Mandanten gehören.
+    const fundIdsToVerify: Array<[string, string | null | undefined]> = [
+      ["operatorFundId", validatedData.operatorFundId],
+      ["billingEntityFundId", validatedData.billingEntityFundId],
+    ];
+    for (const [field, fundId] of fundIdsToVerify) {
+      if (!fundId) continue;
+      const fund = await prisma.fund.findFirst({
+        where: { id: fundId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!fund) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: `${field}: Fund nicht im Mandanten gefunden`,
+        });
+      }
+    }
+
     // Build update data explicitly to satisfy Prisma's Exact type
     const updateData: Record<string, unknown> = { ...validatedData };
     if (validatedData.commissioningDate !== undefined) {

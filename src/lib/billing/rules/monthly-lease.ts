@@ -13,6 +13,7 @@ import { InvoiceType, TaxType, ContractStatus } from "@prisma/client";
 import { getNextInvoiceNumbers, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { MONTH_NAMES_DE } from "@/lib/format";
 import {
   RuleHandler,
   LeasePaymentParameters,
@@ -600,23 +601,6 @@ export class MonthlyLeaseHandler implements RuleHandler {
       InvoiceType.INVOICE,
       readyLeases.length
     );
-
-    // Monatsname fuer Beschreibung
-    const monthNames = [
-      "Januar",
-      "Februar",
-      "Maerz",
-      "April",
-      "Mai",
-      "Juni",
-      "Juli",
-      "August",
-      "September",
-      "Oktober",
-      "November",
-      "Dezember",
-    ];
-
     let numberIndex = 0;
     for (const { lease, amount, prorationFactor } of readyLeases) {
       try {
@@ -647,7 +631,7 @@ export class MonthlyLeaseHandler implements RuleHandler {
         );
 
         // Build description - indicate partial month (Teilmonat) if prorated
-        const baseDescription = `Pachtzahlung ${monthNames[month - 1]} ${year}`;
+        const baseDescription = `Pachtzahlung ${MONTH_NAMES_DE[month - 1]} ${year}`;
         const description = isPartialMonth
           ? `${baseDescription} (Teilmonat, ${Math.round(prorationFactor * 100)}%)`
           : baseDescription;

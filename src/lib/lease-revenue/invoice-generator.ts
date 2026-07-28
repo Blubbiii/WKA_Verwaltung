@@ -18,6 +18,7 @@ import {
   getNextInvoiceNumbers,
   calculateTaxAmounts,
 } from "@/lib/invoices/numberGenerator";
+import { MONTH_NAMES_DE } from "@/lib/format";
 import { getTaxRate } from "@/lib/tax/tax-rates";
 import { getPositionTaxMap } from "@/lib/tax/position-tax-mapping";
 import { getTenantSettings } from "@/lib/tenant-settings";
@@ -154,11 +155,7 @@ export function getServicePeriodLabel(
     return `Quartal ${quarter} - ${year}`;
   }
   if (periodType === "ADVANCE" && advanceInterval === "MONTHLY" && month != null) {
-    const monthNames = [
-      "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
-      "Juli", "August", "September", "Oktober", "November", "Dezember",
-    ];
-    return `${monthNames[month - 1]} ${year}`;
+    return `${MONTH_NAMES_DE[month - 1]} ${year}`;
   }
   return `Jahr ${year}`;
 }

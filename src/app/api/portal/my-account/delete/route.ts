@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Prevent admin from deleting themselves
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true },
+      select: { email: true, tenantId: true },
     });
 
     if (!user) {
@@ -107,11 +107,11 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create audit log entry
-      const tenant = await tx.tenant.findFirst({ where: { status: "ACTIVE" } });
+      // Create audit log entry — DSGVO-Trail MUST land in the user's real tenant,
+      // never in a random ACTIVE tenant.
       await tx.auditLog.create({
         data: {
-          tenantId: tenant?.id,
+          tenantId: user.tenantId,
           userId,
           action: "ACCOUNT_DELETED",
           entityType: "User",

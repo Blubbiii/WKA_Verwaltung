@@ -87,8 +87,9 @@ export async function PATCH(
     }
 
     if (plantNo !== undefined) {
-      if (typeof plantNo !== "number" || !Number.isInteger(plantNo) || plantNo < 1 || plantNo > 10) {
-        return apiError("BAD_REQUEST", undefined, { message: "plantNo muss eine ganze Zahl zwischen 1 und 10 sein" });
+      // FIX: konsistent zu POST-Validierung (1..99) — vorher war PATCH auf 1..10 begrenzt.
+      if (typeof plantNo !== "number" || !Number.isInteger(plantNo) || plantNo < 1 || plantNo > 99) {
+        return apiError("BAD_REQUEST", undefined, { message: "plantNo muss eine ganze Zahl zwischen 1 und 99 sein" });
       }
       updateData.plantNo = plantNo;
     }

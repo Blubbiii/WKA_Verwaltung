@@ -32,22 +32,7 @@ import {
 } from "../types";
 import { calculateProrationFactor, calculateLeaseAmount } from "./monthly-lease";
 import { getTenantSettings } from "@/lib/tenant-settings";
-
-/** German month names for invoice descriptions */
-const MONTH_NAMES = [
-  "Januar",
-  "Februar",
-  "Maerz",
-  "April",
-  "Mai",
-  "Juni",
-  "Juli",
-  "August",
-  "September",
-  "Oktober",
-  "November",
-  "Dezember",
-];
+import { MONTH_NAMES_DE } from "@/lib/format";
 
 /** Round to 2 decimal places */
 function round2(value: number): number {
@@ -338,7 +323,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
           success: false,
           recipientName,
           amount: 0,
-          error: `Vorschuss für ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
+          error: `Vorschuss für ${MONTH_NAMES_DE[month - 1]} ${year} bereits erstellt`,
         });
         continue;
       }
@@ -418,7 +403,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
           metadata: {
             year,
             month,
-            monthName: MONTH_NAMES[month - 1],
+            monthName: MONTH_NAMES_DE[month - 1],
             isDryRun: true,
           },
         },
@@ -458,7 +443,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
       if (isDuplicate) {
         skippedLeases.push({
           lease,
-          reason: `Vorschuss für ${MONTH_NAMES[month - 1]} ${year} bereits erstellt`,
+          reason: `Vorschuss für ${MONTH_NAMES_DE[month - 1]} ${year} bereits erstellt`,
         });
         continue;
       }
@@ -493,7 +478,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
             failed: invoiceResults.filter((r) => !r.success && r.error !== undefined).length,
             skipped: invoiceResults.length,
           },
-          metadata: { year, month, monthName: MONTH_NAMES[month - 1] },
+          metadata: { year, month, monthName: MONTH_NAMES_DE[month - 1] },
         },
       };
     }
@@ -581,7 +566,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
 
           // Build description
           const plotDesc = buildPlotDescription(lease.leasePlots);
-          const baseDescription = `Pacht-Vorschuss ${MONTH_NAMES[month - 1]} ${year}`;
+          const baseDescription = `Pacht-Vorschuss ${MONTH_NAMES_DE[month - 1]} ${year}`;
           const description = isPartialMonth
             ? `${baseDescription} (Teilmonat, ${Math.round(prorationFactor * 100)}%)`
             : baseDescription;
@@ -602,7 +587,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
               recipientAddress,
               serviceStartDate,
               serviceEndDate,
-              paymentReference: `Pacht-Vorschuss ${MONTH_NAMES[month - 1]} ${year}`,
+              paymentReference: `Pacht-Vorschuss ${MONTH_NAMES_DE[month - 1]} ${year}`,
               internalReference,
               netAmount: new Decimal(amount),
               taxRate: new Decimal(taxRate),
@@ -689,7 +674,7 @@ export class LeaseAdvanceHandler implements RuleHandler {
         metadata: {
           year,
           month,
-          monthName: MONTH_NAMES[month - 1],
+          monthName: MONTH_NAMES_DE[month - 1],
         },
       },
     };

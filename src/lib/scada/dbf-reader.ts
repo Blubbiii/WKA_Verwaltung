@@ -584,8 +584,47 @@ function toDate(val: unknown): Date | null {
 }
 
 /**
+ * Returns the last Sunday of the given month for DST switch calculation.
+ * monthIdx is 0-based (0 = January, 2 = March, 9 = October).
+ * Time is set to 01:00 UTC (which is the DST switch instant for Europe/Berlin).
+ */
+function lastSundayOfMonthUtc(year: number, monthIdx: number): Date {
+  // Find the last day of the month
+  const lastDay = new Date(Date.UTC(year, monthIdx + 1, 0));
+  // Walk back to the last Sunday
+  const dayOfWeek = lastDay.getUTCDay(); // 0 = Sunday
+  const lastSundayDate = lastDay.getUTCDate() - dayOfWeek;
+  // DST switch in Europe/Berlin is at 01:00 UTC on the last Sunday
+  return new Date(Date.UTC(year, monthIdx, lastSundayDate, 1, 0, 0));
+}
+
+/**
+ * Determines if the given UTC instant is inside CEST (DST) for Europe/Berlin.
+ * DST starts last Sunday of March 01:00 UTC, ends last Sunday of October 01:00 UTC.
+ */
+function isDstEuropeBerlin(utcInstant: Date): boolean {
+  const year = utcInstant.getUTCFullYear();
+  const dstStart = lastSundayOfMonthUtc(year, 2); // March
+  const dstEnd = lastSundayOfMonthUtc(year, 9); // October
+  return utcInstant >= dstStart && utcInstant < dstEnd;
+}
+
+/**
  * Builds a UTC timestamp from a Date field plus Hour/Minute/Second fields in a DBF record.
+ * Enercon DBF files store timestamps in local time (Europe/Berlin, CET/CEST including DST),
+ * so we must convert from local wall-clock time to UTC.
  * Returns null if the date field is missing or invalid.
+ *
+ * Verification:
+ *   31.12.2025 23:50 CET  -> 22:50 UTC (winter, offset +1h)
+ *   15.07.2025 12:00 CEST -> 10:00 UTC (summer, offset +2h)
+ *
+ * TODO: cleaner would be `fromZonedTime(local, "Europe/Berlin")` from `date-fns-tz`,
+ * but that would add a dependency. The manual DST rule below matches EU tzdata for all
+ * years since 1996 (last Sunday March -> last Sunday October, 01:00 UTC).
+ * TODO: historical rows already imported using the previous UTC-labeling logic are shifted
+ * by 1-2h. A separate backfill job (subtracting the local offset from `timestamp`) is
+ * required for those rows before this fix goes live in production.
  */
 export function buildTimestamp(rec: Record<string, unknown>): Date | null {
   const dateVal = toDate(caseGet(rec, 'Date'));
@@ -595,16 +634,31 @@ export function buildTimestamp(rec: Record<string, unknown>): Date | null {
   const minute = Number(caseGet(rec, 'Minute') ?? 0);
   const second = Number(caseGet(rec, 'Second') ?? 0);
 
-  const timestamp = new Date(Date.UTC(
+  const h = isNaN(hour) ? 0 : hour;
+  const m = isNaN(minute) ? 0 : minute;
+  const s = isNaN(second) ? 0 : second;
+
+  // Step 1: build a provisional UTC instant with the local wall-clock components.
+  // This is not yet correct — it labels local time as UTC.
+  const provisional = new Date(Date.UTC(
     dateVal.getUTCFullYear(),
     dateVal.getUTCMonth(),
     dateVal.getUTCDate(),
-    isNaN(hour) ? 0 : hour,
-    isNaN(minute) ? 0 : minute,
-    isNaN(second) ? 0 : second,
+    h,
+    m,
+    s,
   ));
 
-  return isNaN(timestamp.getTime()) ? null : timestamp;
+  if (isNaN(provisional.getTime())) return null;
+
+  // Step 2: apply the DST-aware Europe/Berlin -> UTC offset.
+  // The DST check uses the provisional instant, which is close enough to the true
+  // UTC instant for boundary determination (only a ~2h window near the DST switch
+  // could be ambiguous, and Enercon timestamps do not land there in normal operation).
+  const offsetHours = isDstEuropeBerlin(provisional) ? 2 : 1;
+  const utcMs = provisional.getTime() - offsetHours * 3600 * 1000;
+
+  return new Date(utcMs);
 }
 
 /**

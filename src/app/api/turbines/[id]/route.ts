@@ -287,10 +287,20 @@ export async function DELETE(
     }
 
     // Hard-Delete: Anlage unwiderruflich löschen
-    // Zugehörige Service-Events und Dokumente werden durch Cascade-Delete entfernt
-    await prisma.turbine.delete({
-      where: { id },
+    // Zugehörige Service-Events und Dokumente werden durch Cascade-Delete entfernt.
+    // FIX: tenant-scoped delete via deleteMany. `delete` erlaubt nur einen unique-Where,
+    // deshalb deleteMany + Count-Check. Verhindert cross-tenant delete falls ein Angreifer
+    // eine fremde UUID errät.
+    const deleted = await prisma.turbine.deleteMany({
+      where: {
+        id,
+        park: { tenantId: check.tenantId! },
+      },
     });
+
+    if (deleted.count === 0) {
+      return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
+    }
 
     // Log the deletion for audit trail (deferred: runs after response is sent)
     const turbineSnapshot = existingTurbine as Record<string, unknown>;

@@ -42,18 +42,17 @@ export async function DELETE(
 
     const shareholderIds = shareholders.map((sh) => sh.id);
 
-    // Find the proxy
-    const proxy = await prisma.voteProxy.findUnique({
-      where: { id: proxyId },
+    // Find the proxy — scope by grantor to prevent ID-enumeration attacks.
+    // Attackers guessing IDs must not distinguish "not found" from "not yours".
+    const proxy = await prisma.voteProxy.findFirst({
+      where: {
+        id: proxyId,
+        grantorId: { in: shareholderIds },
+      },
     });
 
     if (!proxy) {
       return apiError("NOT_FOUND", undefined, { message: "Vollmacht nicht gefunden" });
-    }
-
-    // Check if the user is the grantor (only grantor can revoke)
-    if (!shareholderIds.includes(proxy.grantorId)) {
-      return apiError("FORBIDDEN", undefined, { message: "Sie können nur Ihre eigenen Vollmachten widerrufen" });
     }
 
     // Check if already revoked
@@ -61,13 +60,15 @@ export async function DELETE(
       return apiError("BAD_REQUEST", undefined, { message: "Vollmacht ist bereits widerrufen" });
     }
 
-    // Revoke the proxy by setting isActive to false
-    // Since the schema doesn't have revokedAt, we use isActive and validUntil
+    // Revoke the proxy — only isActive is flipped, validUntil is preserved.
+    // The original expiry stays intact; overwriting it would falsify the
+    // proxy's audit trail (issued for period X, revoked before end).
+    // TODO(schema): add `revokedAt DateTime?` to VoteProxy to record the
+    // exact revocation time. For now, use updatedAt if added later.
     const revokedProxy = await prisma.voteProxy.update({
       where: { id: proxyId },
       data: {
         isActive: false,
-        validUntil: new Date(), // Set validUntil to now to mark revocation time
       },
     });
 
@@ -77,7 +78,7 @@ export async function DELETE(
       proxy: {
         id: revokedProxy.id,
         isActive: revokedProxy.isActive,
-        revokedAt: revokedProxy.validUntil?.toISOString(),
+        validUntil: revokedProxy.validUntil?.toISOString() ?? null,
       },
     });
   } catch (error) {

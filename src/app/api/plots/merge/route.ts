@@ -83,10 +83,37 @@ export async function POST(request: NextRequest) {
         await tx.plotArea.createMany({ data: plotAreaData });
       }
 
-      // Deactivate source plots (clear geometry)
+      // Move all LeasePlot relations from source plots to the merged plot.
+      // Use raw update per row to respect the (leaseId, plotId) unique constraint:
+      // if a Lease already has a leasePlot on the merged target, drop the source
+      // duplicate instead of failing the whole transaction.
+      const sourceRelations = await tx.leasePlot.findMany({
+        where: { plotId: { in: data.plotIds } },
+        select: { id: true, leaseId: true },
+      });
+      const existingOnMerged = await tx.leasePlot.findMany({
+        where: { plotId: merged.id, leaseId: { in: sourceRelations.map((r) => r.leaseId) } },
+        select: { leaseId: true },
+      });
+      const existingLeaseIds = new Set(existingOnMerged.map((r) => r.leaseId));
+
+      for (const rel of sourceRelations) {
+        if (existingLeaseIds.has(rel.leaseId)) {
+          // Merged plot already has this lease attached — drop the duplicate
+          await tx.leasePlot.delete({ where: { id: rel.id } });
+        } else {
+          await tx.leasePlot.update({
+            where: { id: rel.id },
+            data: { plotId: merged.id },
+          });
+          existingLeaseIds.add(rel.leaseId);
+        }
+      }
+
+      // Deactivate source plots (clear geometry + mark INACTIVE)
       await tx.plot.updateMany({
         where: { id: { in: data.plotIds } },
-        data: { geometry: Prisma.DbNull },
+        data: { geometry: Prisma.DbNull, status: "INACTIVE" },
       });
 
       return merged;

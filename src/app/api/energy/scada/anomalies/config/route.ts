@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
+import { runAnomalyDetection } from "@/lib/scada/anomaly-detection";
 
 const putAnomalyConfigSchema = z.object({
   enabled: z.boolean().optional(),
@@ -122,6 +123,18 @@ export async function PUT(request: NextRequest) {
       },
       update: data,
     });
+
+    // FIX: Nach Konfig-Änderung Anomalie-Erkennung erneut ausführen,
+    // damit bestehende Fund-Menge zu den neuen Schwellwerten passt.
+    // Fire-and-forget (Response wartet nicht auf Detection-Lauf).
+    if (config.enabled) {
+      void runAnomalyDetection(tenantId).catch((err) => {
+        logger.warn(
+          { err, tenantId },
+          "[AnomalyConfig] Re-Evaluation nach Konfig-Update fehlgeschlagen",
+        );
+      });
+    }
 
     return NextResponse.json({
       config: {

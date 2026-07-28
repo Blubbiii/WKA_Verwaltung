@@ -577,10 +577,30 @@ async function writeAvailabilityRecords(
       // Calculate technical availability per IEC 61400-26-2:
       // Availability = T1 / (T1 + T5) * 100
       // T1 = Production time, T5 = Failure/downtime (unplanned)
+      // FIX: Cap bei 100% mit Warn-Log, falls Enercon-Rohdaten aus irgendeinem
+      // Grund einen Wert >100% ergeben (defektes T5, Negativ-Werte, Zeitzonen-
+      // Shift). Verhindert, dass Dashboards impossible values (z. B. 103.4%)
+      // anzeigen.
       let availabilityPct: Decimal | null = null;
       const relevantTime = t1 + t5;
       if (relevantTime > 0) {
-        availabilityPct = new Decimal((t1 / relevantTime) * 100).toDecimalPlaces(3);
+        const rawPct = (t1 / relevantTime) * 100;
+        if (rawPct > 100) {
+          scadaLogger.warn(
+            {
+              turbineId,
+              tenantId,
+              date: rec.date,
+              plantNo: rec.plantNo,
+              t1,
+              t5,
+              rawPct,
+            },
+            "availabilityPct >100%, wird auf 100 gecapped",
+          );
+        }
+        const cappedPct = Math.min(100, rawPct);
+        availabilityPct = new Decimal(cappedPct).toDecimalPlaces(3);
       }
 
       dbRecords.push({

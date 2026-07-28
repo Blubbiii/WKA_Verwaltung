@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getNextInvoiceNumber, getTaxRateByType } from "./numberGenerator";
 import type { Prisma, InvoiceItem } from "@prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
+import { round2, combineNet } from "@/lib/accounting/money";
 
 // ============================================================================
 // TYPES
@@ -55,14 +57,11 @@ export interface CorrectionHistory {
 // ============================================================================
 
 /**
- * Rounds to 2 decimal places (financial rounding)
- */
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-/**
- * Calculates net, tax, and gross amounts for a single line item
+ * Calculates net, tax, and gross amounts for a single line item.
+ *
+ * Delegiert an `combineNet` aus `@/lib/accounting/money.ts` (Single Source
+ * für Tax-Berechnungen). taxRate ist als Prozent (19 = 19%) — Konvertierung
+ * zu Fraktion (0.19) passiert hier vor dem Delegate-Call.
  */
 function calculateItemAmounts(
   quantity: number,
@@ -76,9 +75,13 @@ function calculateItemAmounts(
 } {
   const netAmount = round2(quantity * unitPrice);
   const taxRate = getTaxRateByType(taxType);
-  const taxAmount = round2(netAmount * (taxRate / 100));
-  const grossAmount = round2(netAmount + taxAmount);
-  return { netAmount, taxRate, taxAmount, grossAmount };
+  const { gross, tax } = combineNet(new Decimal(netAmount), taxRate / 100);
+  return {
+    netAmount,
+    taxRate,
+    taxAmount: tax.toNumber(),
+    grossAmount: gross.toNumber(),
+  };
 }
 
 /**

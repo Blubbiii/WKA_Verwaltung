@@ -24,6 +24,8 @@
  */
 
 import { TaxCategory } from "@prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
+import { splitGross, combineNet, round2 } from "./money";
 
 /** Eingabe-Form: Brutto in Cent-Auflösung (Integer) ODER als Decimal-Number. */
 export interface GrossAmount {
@@ -52,17 +54,16 @@ export interface SplitResult {
   isReverseCharge: boolean;
 }
 
-/** Rundet half-up auf 2 Nachkommastellen (Cent). */
-function roundCent(v: number): number {
-  return Math.round(v * 100) / 100;
-}
-
 /**
  * Splittet einen Bruttobetrag anhand des effektiven Steuersatzes.
  *
  * - Bei reverseCharge=true: tax=0, net=gross (Empfänger bucht USt selbst)
  * - Bei rate=0 (EXEMPT, IGL, EXPORT, KLEINUNTERNEHMER, NOT_TAXABLE): tax=0, net=gross
  * - Sonst: net = gross / (1+rate), tax = gross - net (so summiert sich's exakt zum Brutto)
+ *
+ * Delegiert an `splitGross` in `./money.ts` (Single Source für Tax-Split).
+ * Diese Wrapper-Fassade bewahrt die bestehende number-basierte API + das
+ * SplitResult-Format (inkl. isReverseCharge-Flag) für alle Bestandscaller.
  *
  * Beispiel STANDARD_19, gross=119€:
  *   net = 119 / 1.19 = 100.00
@@ -76,32 +77,22 @@ export function splitGrossAmount(
 
   if (spec.reverseCharge) {
     return {
-      net: roundCent(gross),
+      net: round2(gross),
       tax: 0,
-      effectiveGross: roundCent(gross),
+      effectiveGross: round2(gross),
       isReverseCharge: true,
     };
   }
 
-  if (spec.rate === 0) {
-    return {
-      net: roundCent(gross),
-      tax: 0,
-      effectiveGross: roundCent(gross),
-      isReverseCharge: false,
-    };
-  }
-
-  // Standardfall: gross = net * (1 + rate). Wir rechnen via Multiplikation
-  // mit dem Brutto-Faktor um die "1" nicht zu verlieren bei rate < 1%.
-  const grossCents = Math.round(gross * 100);
-  const netCents = Math.round(grossCents / (1 + spec.rate));
-  const taxCents = grossCents - netCents;
+  // rate=0 wird von splitGross intern behandelt (net=gross, tax=0).
+  const { net, tax } = splitGross(new Decimal(gross), spec.rate);
+  const netNum = net.toNumber();
+  const taxNum = tax.toNumber();
 
   return {
-    net: netCents / 100,
-    tax: taxCents / 100,
-    effectiveGross: (netCents + taxCents) / 100,
+    net: netNum,
+    tax: taxNum,
+    effectiveGross: round2(netNum + taxNum),
     isReverseCharge: false,
   };
 }
@@ -110,28 +101,31 @@ export function splitGrossAmount(
  * Variante: ein Netto-Betrag wird mit dem Satz zu Brutto+USt aufgesplittet.
  * Wird gebraucht wenn der Caller Netto als Basis hat (z.B. aus Rechnungsposition
  * mit explizit angegebenem Netto-Preis).
+ *
+ * Delegiert an `combineNet` in `./money.ts`.
  */
 export function splitNetAmount(
   net: number,
   spec: TaxSpec,
 ): SplitResult {
-  if (spec.reverseCharge || spec.rate === 0) {
+  if (spec.reverseCharge) {
     return {
-      net: roundCent(net),
+      net: round2(net),
       tax: 0,
-      effectiveGross: roundCent(net),
-      isReverseCharge: spec.reverseCharge,
+      effectiveGross: round2(net),
+      isReverseCharge: true,
     };
   }
 
-  const netCents = Math.round(net * 100);
-  const taxCents = Math.round(netCents * spec.rate);
-  const grossCents = netCents + taxCents;
+  const { gross, tax } = combineNet(new Decimal(net), spec.rate);
+  const netNum = round2(net);
+  const taxNum = tax.toNumber();
+  const grossNum = gross.toNumber();
 
   return {
-    net: netCents / 100,
-    tax: taxCents / 100,
-    effectiveGross: grossCents / 100,
+    net: netNum,
+    tax: taxNum,
+    effectiveGross: grossNum,
     isReverseCharge: false,
   };
 }

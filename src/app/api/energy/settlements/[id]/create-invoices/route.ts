@@ -251,7 +251,11 @@ export async function POST(
                 description: eegDesc,
                 quantity: new Decimal(eegProdShare.toFixed(3)),
                 unit: "kWh",
-                unitPrice: new Decimal((eegShare / eegProdShare).toFixed(6)),
+                // FIX: Division-durch-0-Guard — eegProdShare kann 0 sein wenn
+                // eegProduction fehlt und Fallback ebenfalls 0 liefert.
+                unitPrice: new Decimal(
+                  eegProdShare > 0 ? (eegShare / eegProdShare).toFixed(6) : "0",
+                ),
                 netAmount: new Decimal(eegShare.toFixed(2)),
                 taxType: eegTaxType,
                 taxRate: new Decimal(eegTax.taxRate),
@@ -286,7 +290,10 @@ export async function POST(
                 description: dvDesc,
                 quantity: new Decimal(dvProdShare.toFixed(3)),
                 unit: "kWh",
-                unitPrice: new Decimal((dvShare / dvProdShare).toFixed(6)),
+                // FIX: Division-durch-0-Guard, analog EEG.
+                unitPrice: new Decimal(
+                  dvProdShare > 0 ? (dvShare / dvProdShare).toFixed(6) : "0",
+                ),
                 netAmount: new Decimal(dvShare.toFixed(2)),
                 taxType: dvTaxType,
                 taxRate: new Decimal(dvTax.taxRate),
@@ -306,17 +313,22 @@ export async function POST(
           const netDiff = revenueEur - totalNet;
           if (Math.abs(netDiff) > 0.001 && invoiceItems.length > 0) {
             const firstItem = invoiceItems[0];
+            // FIX: Alten Steuer- und Netto-Wert VOR Überschreibung puffern —
+            // die vorherige Fassung hat die Deltas gegen `firstItem.taxAmount`
+            // gerechnet NACHDEM dieser bereits mit dem korrigierten Wert
+            // überschrieben war (delta wäre immer 0 gewesen).
+            const originalTaxAmount = Number(firstItem.taxAmount);
+            const originalGrossAmount = Number(firstItem.grossAmount);
             const correctedNet = Number(firstItem.netAmount) + netDiff;
             const corrTax = calculateTaxAmounts(correctedNet, firstItem.taxType);
-            const oldGross = Number(firstItem.grossAmount);
 
             firstItem.netAmount = new Decimal(correctedNet.toFixed(2));
             firstItem.taxAmount = new Decimal(corrTax.taxAmount.toFixed(2));
             firstItem.grossAmount = new Decimal(corrTax.grossAmount.toFixed(2));
 
             totalNet += netDiff;
-            totalTax += corrTax.taxAmount - (Number(firstItem.taxAmount));
-            totalGross += corrTax.grossAmount - oldGross;
+            totalTax += corrTax.taxAmount - originalTaxAmount;
+            totalGross += corrTax.grossAmount - originalGrossAmount;
           }
         } else {
           // No EEG/DV split - single position (legacy behavior)
@@ -333,7 +345,11 @@ export async function POST(
             description,
             quantity: new Decimal(productionKwh),
             unit: "kWh",
-            unitPrice: new Decimal((revenueEur / productionKwh).toFixed(6)),
+            // FIX: Division-durch-0-Guard — bei productionKwh=0 wird 0 als Einheitspreis
+            // geschrieben statt NaN/Infinity.
+            unitPrice: new Decimal(
+              productionKwh > 0 ? (revenueEur / productionKwh).toFixed(6) : "0",
+            ),
             netAmount: new Decimal(revenueEur),
             taxType,
             taxRate: new Decimal(taxRate),
@@ -441,6 +457,11 @@ export async function POST(
       });
 
       // M6: TurbineProduction Status-Transition DRAFT -> INVOICED
+      // FIX: Explizite month-Filterung — bei Monats-Settlement genau der Monat,
+      // bei Jahres-Settlement (month=null) explizit Monate 1..12 statt "kein
+      // month-Filter". So bleibt semantisch klar, dass wir NUR reguläre Monats-
+      // rows meinen (falls jemals month=0 Legacy-Daten in der DB stecken, werden
+      // die NICHT versehentlich als eingemeldet markiert).
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const productionWhere: any = {
         tenantId: check.tenantId!,
@@ -453,6 +474,9 @@ export async function POST(
 
       if (settlement.month !== null && settlement.month !== 0) {
         productionWhere.month = settlement.month;
+      } else {
+        // Jahres-Settlement: alle regulären Monate 1..12 dieses Jahres/Parks.
+        productionWhere.month = { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] };
       }
 
       await tx.turbineProduction.updateMany({

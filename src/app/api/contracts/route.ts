@@ -243,6 +243,46 @@ async function postHandler(request: NextRequest) {
     const body = await request.json();
     const validatedData = contractCreateSchema.parse(body);
 
+    // Cross-tenant FK protection: verify each referenced entity belongs to this tenant.
+    const tenantId = check.tenantId!;
+    if (validatedData.parkId) {
+      const park = await prisma.park.findFirst({
+        where: { id: validatedData.parkId, tenantId },
+        select: { id: true },
+      });
+      if (!park) {
+        return apiError("BAD_REQUEST", undefined, { message: "Park nicht gefunden oder keine Berechtigung" });
+      }
+    }
+    if (validatedData.fundId) {
+      const fund = await prisma.fund.findFirst({
+        where: { id: validatedData.fundId, tenantId },
+        select: { id: true },
+      });
+      if (!fund) {
+        return apiError("BAD_REQUEST", undefined, { message: "Fonds nicht gefunden oder keine Berechtigung" });
+      }
+    }
+    if (validatedData.turbineId) {
+      // Turbine hat kein direktes tenantId — Zugehörigkeit über park.tenantId
+      const turbine = await prisma.turbine.findFirst({
+        where: { id: validatedData.turbineId, park: { tenantId } },
+        select: { id: true },
+      });
+      if (!turbine) {
+        return apiError("BAD_REQUEST", undefined, { message: "Turbine nicht gefunden oder keine Berechtigung" });
+      }
+    }
+    if (validatedData.partnerId) {
+      const partner = await prisma.person.findFirst({
+        where: { id: validatedData.partnerId, tenantId },
+        select: { id: true },
+      });
+      if (!partner) {
+        return apiError("BAD_REQUEST", undefined, { message: "Partner nicht gefunden oder keine Berechtigung" });
+      }
+    }
+
     // Calculate notice deadline if not provided
     let noticeDeadline = validatedData.noticeDeadline;
     if (

@@ -153,3 +153,43 @@ export function formatDateCII(date: Date): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}${m}${d}`;
 }
+
+// =============================================================================
+// Deutsche Monatsnamen — zentral gegen die 15+ lokal duplizierten Kopien.
+// Grep-Audit zeigte Bugs (mehrere "Maerz" statt "März") und divergente
+// Kurzformen ("Mär" vs "Mrz"). Neuer Standard: hier importieren.
+// Beide Arrays sind 0-basiert: index 0 = Januar. Für 1-basierte Monats-
+// Nummern immer `MONTH_NAMES_DE[month - 1]` verwenden.
+// =============================================================================
+
+/** Volle deutsche Monatsnamen (Januar-Dezember). Index 0 = Januar. */
+export const MONTH_NAMES_DE: readonly string[] = [
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
+] as const;
+
+/** Kurze deutsche Monatsnamen (Jan-Dez). Index 0 = Jan. */
+export const MONTH_NAMES_DE_SHORT: readonly string[] = [
+  "Jan",
+  "Feb",
+  "Mär",
+  "Apr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Dez",
+] as const;

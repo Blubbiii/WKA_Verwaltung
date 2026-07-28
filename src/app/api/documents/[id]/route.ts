@@ -205,7 +205,7 @@ export async function PUT(
     const validatedData = documentUpdateSchema.parse(body);
 
     const document = await prisma.document.update({
-      where: { id },
+      where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
         ...(validatedData.description !== undefined && {
@@ -215,6 +215,9 @@ export async function PUT(
         ...(validatedData.tags && { tags: validatedData.tags }),
         ...(validatedData.isArchived !== undefined && {
           isArchived: validatedData.isArchived,
+        }),
+        ...(validatedData.approvalStatus !== undefined && {
+          approvalStatus: validatedData.approvalStatus,
         }),
       },
     });

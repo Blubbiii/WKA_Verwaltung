@@ -366,10 +366,31 @@ async function handleFileUpload(
   const parentEntityId = getString("parentEntityId") || null;
   if (parentEntityType && parentEntityId) {
     if (parentEntityType === "Contract") {
+      // Verify the contract exists and belongs to this tenant
+      const contract = await prisma.contract.findFirst({
+        where: { id: parentEntityId, tenantId },
+        select: { id: true },
+      });
+      if (!contract) {
+        return apiError("BAD_REQUEST", undefined, {
+          message: "Vertrag nicht gefunden oder keine Berechtigung",
+        });
+      }
       contractId = parentEntityId;
     }
     // For Lease: no direct FK on Document — use tag as bridge
     if (parentEntityType === "Lease") {
+      // Verify the lease exists and belongs to this tenant to prevent
+      // cross-tenant tag injection.
+      const lease = await prisma.lease.findFirst({
+        where: { id: parentEntityId, tenantId },
+        select: { id: true },
+      });
+      if (!lease) {
+        return apiError("BAD_REQUEST", undefined, {
+          message: "Pachtvertrag nicht gefunden oder keine Berechtigung",
+        });
+      }
       if (!tags.includes(`lease:${parentEntityId}`)) {
         tags = [...tags, `lease:${parentEntityId}`];
       }

@@ -182,16 +182,20 @@ export async function POST(request: NextRequest) {
       return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
-    // Prüfung auf Duplikat (unique constraint: parkId + year + month + tenantId)
-    const existing = await prisma.energySettlement.findUnique({
+    // Prüfung auf Duplikat (unique constraint: parkId + year + month + tenantId).
+    // WICHTIG: Postgres behandelt NULL in UNIQUE-Constraints als DISTINCT. Daher
+    // muss der Check per findFirst mit explizitem `month: null` fahren — nicht per
+    // findUnique auf den Compound-Key, weil der bei null-Werten inkorrekt matcht.
+    // Schreib-Seite (create weiter unten) verwendet `month ?? null` — deshalb hier
+    // konsistent ebenfalls `month ?? null`.
+    const existing = await prisma.energySettlement.findFirst({
       where: {
-        parkId_year_month_tenantId: {
-          parkId: validatedData.parkId,
-          year: validatedData.year,
-          month: validatedData.month ?? 0, // 0 für Jahresabrechnungen
-          tenantId: check.tenantId!,
-        },
+        parkId: validatedData.parkId,
+        year: validatedData.year,
+        month: validatedData.month ?? null,
+        tenantId: check.tenantId!,
       },
+      select: { id: true },
     });
 
     if (existing) {

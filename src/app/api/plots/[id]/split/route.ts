@@ -80,10 +80,53 @@ export async function POST(
         newPlots.push(newPlot);
       }
 
-      // Mark original as deleted (clear geometry)
+      // Move all LeasePlot relations from the original plot onto the FIRST
+      // sub-plot (conservative default) so no lease is orphaned.
+      // TODO: allow per-lease targeting via tenant config for finer control.
+      const originalLeaseRelations = await tx.leasePlot.findMany({
+        where: { plotId: id },
+        select: { id: true, leaseId: true },
+      });
+
+      if (originalLeaseRelations.length > 0) {
+        const targetPlotId = newPlots[0].id;
+        // Respect (leaseId, plotId) unique constraint on the target
+        const existingOnTarget = await tx.leasePlot.findMany({
+          where: {
+            plotId: targetPlotId,
+            leaseId: { in: originalLeaseRelations.map((r) => r.leaseId) },
+          },
+          select: { leaseId: true },
+        });
+        const existingLeaseIds = new Set(existingOnTarget.map((r) => r.leaseId));
+
+        for (const rel of originalLeaseRelations) {
+          if (existingLeaseIds.has(rel.leaseId)) {
+            await tx.leasePlot.delete({ where: { id: rel.id } });
+          } else {
+            await tx.leasePlot.update({
+              where: { id: rel.id },
+              data: { plotId: targetPlotId },
+            });
+            existingLeaseIds.add(rel.leaseId);
+          }
+        }
+
+        logger.warn(
+          {
+            action: "plot_split_lease_relations_moved",
+            originalPlotId: id,
+            targetPlotId,
+            movedCount: originalLeaseRelations.length,
+          },
+          "Plot-Split: all LeasePlot-Relations moved to first sub-plot",
+        );
+      }
+
+      // Mark original as deleted (clear geometry + set INACTIVE)
       await tx.plot.update({
         where: { id },
-        data: { geometry: Prisma.DbNull },
+        data: { geometry: Prisma.DbNull, status: "INACTIVE" },
       });
 
       return newPlots;

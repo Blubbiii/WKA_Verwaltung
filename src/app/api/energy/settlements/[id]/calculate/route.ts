@@ -334,6 +334,19 @@ export async function POST(
         return apiError("BAD_REQUEST", undefined, { message: "Unbekannter Verteilungsmodus" });
     }
 
+    // FIX: Rundungsfehler ausgleichen — die Summe der auf 2 Nachkommastellen gerundeten
+    // revenueShareEur-Werte weicht i.d.R. um bis zu N*0.005 EUR vom Netto-Betrag ab.
+    // Wir korrigieren die Differenz auf das LETZTE Item (Delta-Correction), damit die
+    // Item-Summe exakt netOperatorRevenueEur entspricht.
+    if (itemsData.length > 0) {
+      const target = new Decimal(netOperatorRevenueEur).toDecimalPlaces(2);
+      const summedExceptLast = itemsData
+        .slice(0, -1)
+        .reduce((s, it) => s.add(new Decimal(it.revenueShareEur)), new Decimal(0));
+      const lastRevenueShare = target.sub(summedExceptLast).toDecimalPlaces(2);
+      itemsData[itemsData.length - 1].revenueShareEur = lastRevenueShare.toNumber();
+    }
+
     // Berechungsdetails zusammenstellen
     const calculationDetails: CalculationDetails = {
       mode: settlement.distributionMode,
@@ -363,9 +376,17 @@ export async function POST(
           productionSharePct: new Decimal(item.productionSharePct),
           revenueShareEur: new Decimal(item.revenueShareEur),
           distributionKey: item.distributionKey,
-          averageProductionKwh: item.averageProductionKwh ? new Decimal(item.averageProductionKwh) : null,
-          deviationKwh: item.deviationKwh ? new Decimal(item.deviationKwh) : null,
-          toleranceAdjustment: item.toleranceAdjustment ? new Decimal(item.toleranceAdjustment) : null,
+          averageProductionKwh: item.averageProductionKwh !== undefined && item.averageProductionKwh !== null
+            ? new Decimal(item.averageProductionKwh)
+            : null,
+          // FIX: explizit-null-Check — truthy-Check hätte `0` fälschlich zu `null` konvertiert
+          // (relevant z. B. wenn deviationKwh oder toleranceAdjustment exakt 0 sind).
+          deviationKwh: item.deviationKwh !== undefined && item.deviationKwh !== null
+            ? new Decimal(item.deviationKwh)
+            : null,
+          toleranceAdjustment: item.toleranceAdjustment !== undefined && item.toleranceAdjustment !== null
+            ? new Decimal(item.toleranceAdjustment)
+            : null,
         })),
       });
 

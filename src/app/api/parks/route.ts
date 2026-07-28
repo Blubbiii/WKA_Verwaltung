@@ -154,6 +154,26 @@ async function postHandler(request: NextRequest) {
     const body = await request.json();
     const validatedData = parkCreateSchema.parse(body);
 
+    // FIX: cross-tenant Fund-IDs verhindern — verweisende Fund-IDs müssen zum
+    // gleichen Mandanten gehören, sonst könnte ein Angreifer beliebige Fund-UUIDs
+    // referenzieren.
+    const fundIdsToVerify: Array<[string, string | null | undefined]> = [
+      ["operatorFundId", validatedData.operatorFundId],
+      ["billingEntityFundId", validatedData.billingEntityFundId],
+    ];
+    for (const [field, fundId] of fundIdsToVerify) {
+      if (!fundId) continue;
+      const fund = await prisma.fund.findFirst({
+        where: { id: fundId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!fund) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: `${field}: Fund nicht im Mandanten gefunden`,
+        });
+      }
+    }
+
     // Create park and virtual infrastructure turbines atomically
     const park = await prisma.$transaction(async (tx) => {
       const newPark = await tx.park.create({

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { InvoiceType } from "@prisma/client";
+import { Decimal } from "@prisma/client-runtime-utils";
+import { combineNet } from "@/lib/accounting/money";
 
 /**
  * Prisma transaction client — inferred from OUR extended prisma client
@@ -323,6 +325,10 @@ export const getTaxRateByType = getDefaultTaxRateByType;
  *
  * Pass `taxRateOverride` (from DB via getTaxRate()) to avoid using the
  * hardcoded fallback. When not provided, falls back to getDefaultTaxRateByType().
+ *
+ * Delegiert an `combineNet` in `@/lib/accounting/money.ts` (Single Source
+ * für Tax-Berechnungen). Der taxRate hier ist als Prozent (19 = 19%), wird
+ * intern zu einer Fraktion (0.19) konvertiert bevor an money.ts durchgereicht.
  */
 export function calculateTaxAmounts(
   netAmount: number,
@@ -334,12 +340,11 @@ export function calculateTaxAmounts(
   grossAmount: number;
 } {
   const taxRate = taxRateOverride ?? getDefaultTaxRateByType(taxType);
-  const taxAmount = netAmount * (taxRate / 100);
-  const grossAmount = netAmount + taxAmount;
+  const { gross, tax } = combineNet(new Decimal(netAmount), taxRate / 100);
 
   return {
     taxRate,
-    taxAmount: Math.round(taxAmount * 100) / 100,
-    grossAmount: Math.round(grossAmount * 100) / 100,
+    taxAmount: tax.toNumber(),
+    grossAmount: gross.toNumber(),
   };
 }

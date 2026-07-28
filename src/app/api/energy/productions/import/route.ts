@@ -148,16 +148,10 @@ async function resolveRows(
       if (found) return found;
     }
 
-    // Try partial matching: find turbine whose designation contains the search value
-    const searchVal = (nameValue || idValue || "").toLowerCase().trim();
-    if (searchVal) {
-      for (const t of allTurbines) {
-        if (t.designation.toLowerCase().includes(searchVal) || searchVal.includes(t.designation.toLowerCase())) {
-          return t;
-        }
-      }
-    }
-
+    // FIX: partielles Substring-Matching entfernt — hat regelmäßig die
+    // falsche Turbine erwischt (z. B. "WKA-01" matcht "WKA-011") und dann
+    // Produktionsdaten falsch zugeordnet. Ab jetzt strict: nur exakte
+    // Designation- oder UUID-Treffer werden akzeptiert.
     return null;
   };
 

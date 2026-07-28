@@ -117,15 +117,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Check unique constraint (tenantId + parkId + year + periodType + month)
-    const existing = await prisma.leaseRevenueSettlement.findUnique({
+    // Use findFirst with null-match so the check aligns with Create semantics
+    // where month is stored as `null` for FINAL/YEARLY settlements.
+    const periodType = validatedData.periodType || "FINAL";
+    const monthForKey =
+      validatedData.month === undefined ? null : validatedData.month;
+    const existing = await prisma.leaseRevenueSettlement.findFirst({
       where: {
-        tenantId_parkId_year_periodType_month: {
-          tenantId: check.tenantId!,
-          parkId: validatedData.parkId,
-          year: validatedData.year,
-          periodType: "FINAL",
-          month: 0,
-        },
+        tenantId: check.tenantId!,
+        parkId: validatedData.parkId,
+        year: validatedData.year,
+        periodType,
+        month: monthForKey,
       },
     });
 
@@ -140,6 +143,8 @@ export async function POST(request: NextRequest) {
         parkId: validatedData.parkId,
         year: validatedData.year,
         status: "OPEN",
+        periodType,
+        month: monthForKey,
         advanceDueDate: validatedData.advanceDueDate
           ? new Date(validatedData.advanceDueDate)
           : null,

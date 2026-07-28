@@ -112,7 +112,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("energy:create");
+    // FIX: PATCH braucht update-Recht, nicht create-Recht.
+    const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
 
     const tenantId = check.tenantId!;
@@ -210,7 +211,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const check = await requirePermission("energy:create");
+    // FIX: DELETE braucht delete-Recht, nicht create-Recht.
+    const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
 
     const tenantId = check.tenantId!;
