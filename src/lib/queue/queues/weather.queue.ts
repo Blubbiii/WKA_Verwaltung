@@ -9,6 +9,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 /**
  * Weather job data structure
@@ -184,6 +185,7 @@ export const scheduleDailyWeatherSync = async (
   const job = await queue.add('sync-weather', jobData, {
     repeat: {
       pattern: cronExpression,
+      tz: CRON_TIMEZONE,
     },
     jobId: `weather-daily-${parkId}-${tenantId}`,
   });

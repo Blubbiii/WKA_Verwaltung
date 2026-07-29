@@ -10,7 +10,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
-import { CRON_SCHEDULES } from "@/lib/config/cron-schedules";
+import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 export type TusGcJobData = Record<string, never>;
 
@@ -53,7 +53,7 @@ export const scheduleTusGc = async () => {
     "tus-gc",
     {},
     {
-      repeat: { pattern: CRON_PATTERN },
+      repeat: { pattern: CRON_PATTERN, tz: CRON_TIMEZONE },
       jobId: REPEATABLE_JOB_ID,
     }
   );

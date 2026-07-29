@@ -5,6 +5,17 @@
 function envCron(key: string, fallback: string): string {
   return process.env[key] || fallback;
 }
+
+/**
+ * Zeitzone für ALLE BullMQ-Repeat-Jobs.
+ *
+ * F24: Ohne `tz` wertet BullMQ Cron-Patterns in Prozess-Lokalzeit aus. Die
+ * Container haben kein `TZ` gesetzt → UTC. "Täglich 08:00" liefe real um
+ * 09:00 (Winter) bzw. 10:00 (Sommer) Berliner Zeit und verschöbe sich zweimal
+ * pro Jahr. Fachlich sind alle Zeitangaben (Mahnlauf, Digest, Retention)
+ * deutsche Ortszeit — deshalb hier explizit Europe/Berlin.
+ */
+export const CRON_TIMEZONE = process.env.CRON_TIMEZONE || "Europe/Berlin";
 export const CRON_SCHEDULES = {
   /** Täglich 3:00 Uhr — DSGVO/GoBD Retention */
   RETENTION: envCron("CRON_RETENTION", "0 3 * * *"),

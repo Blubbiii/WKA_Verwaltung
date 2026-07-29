@@ -20,6 +20,7 @@ import type {
   RetentionCronJobResult,
 } from "../queues/retention-cron.queue";
 import { RETENTION_CRON_QUEUE_NAME } from "../queues/retention-cron.queue";
+import { addYearsSafe } from "@/lib/date-utils";
 
 const logger = jobLogger.child({ component: "retention-cron-worker" });
 
@@ -75,9 +76,11 @@ async function processRetentionCronJob(
       const settings = await getTenantSettings(tenant.id);
 
       // 1. Invoices: CANCELLED älter als X Jahre
-      const invoiceCutoff = new Date();
-      invoiceCutoff.setFullYear(
-        invoiceCutoff.getFullYear() - settings.gobdRetentionYearsInvoice,
+      // addYearsSafe: laeuft der Job an einem 29.02., rollt setFullYear(-n)
+      // auf den 01.03. — die Aufbewahrungsgrenze waere einen Tag zu spaet.
+      const invoiceCutoff = addYearsSafe(
+        new Date(),
+        -settings.gobdRetentionYearsInvoice,
       );
 
       const cancelledCount = await prisma.invoice.count({
@@ -107,10 +110,7 @@ async function processRetentionCronJob(
       }
 
       // 2. AuditLog älter als 10 Jahre
-      const auditCutoff = new Date();
-      auditCutoff.setFullYear(
-        auditCutoff.getFullYear() - AUDIT_LOG_RETENTION_YEARS,
-      );
+      const auditCutoff = addYearsSafe(new Date(), -AUDIT_LOG_RETENTION_YEARS);
 
       const auditCandidates = await prisma.auditLog.count({
         where: {

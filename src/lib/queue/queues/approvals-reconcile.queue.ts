@@ -15,6 +15,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 export interface ApprovalsReconcileJobData {
   /** Optional Tenant-Scope (rein für Tests/On-Demand). Standard: alle. */
@@ -73,7 +74,7 @@ export const scheduleApprovalsReconcileCheck = async () => {
     "reconcile-orphaned-approvals",
     {},
     {
-      repeat: { pattern: CRON_PATTERN },
+      repeat: { pattern: CRON_PATTERN, tz: CRON_TIMEZONE },
       jobId: REPEATABLE_JOB_ID,
     },
   );

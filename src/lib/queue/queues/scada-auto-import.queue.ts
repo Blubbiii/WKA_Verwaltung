@@ -11,6 +11,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from '@/lib/logger';
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 // ---------------------------------------------------------------
 // Types
@@ -172,6 +173,7 @@ export const scheduleScadaAutoImport = async (
   const job = await queue.add('scada-auto-import-scheduled', jobData, {
     repeat: {
       pattern: cronExpression,
+      tz: CRON_TIMEZONE,
     },
     jobId: 'scada-auto-import-daily',
   });

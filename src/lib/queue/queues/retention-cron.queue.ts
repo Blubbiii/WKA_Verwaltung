@@ -13,7 +13,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
-import { CRON_SCHEDULES } from "@/lib/config/cron-schedules";
+import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 export interface RetentionCronJobData {
   /** Optional Tenant-Scope für Tests / Ad-Hoc-Run. Standard: alle. */
@@ -76,7 +76,7 @@ export const scheduleRetentionCron = async () => {
     "retention-sweep",
     {},
     {
-      repeat: { pattern: CRON_PATTERN },
+      repeat: { pattern: CRON_PATTERN, tz: CRON_TIMEZONE },
       jobId: REPEATABLE_JOB_ID,
     },
   );

@@ -10,6 +10,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { calculateNoticeDeadline } from "@/lib/contracts/notice-deadline";
 
 const contractUpdateSchema = z.object({
   contractType: z
@@ -217,8 +218,7 @@ export async function PUT(
       (validatedData.endDate !== undefined ||
         validatedData.noticePeriodMonths !== undefined)
     ) {
-      noticeDeadline = new Date(endDate);
-      noticeDeadline.setMonth(noticeDeadline.getMonth() - noticePeriodMonths);
+      noticeDeadline = calculateNoticeDeadline(endDate, noticePeriodMonths);
     }
 
     const updateData: Prisma.ContractUncheckedUpdateInput = {};

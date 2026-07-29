@@ -14,6 +14,7 @@ import { generateAnnualReportPdf } from "@/lib/pdf/generators/annualReportPdf";
 import { enqueueEmail } from "@/lib/queue";
 import { getAppUrl } from "@/lib/config/app-url";
 import { MONTH_NAMES_DE } from "@/lib/format";
+import { addMonthsSafe, setMonthSafe } from "@/lib/date-utils";
 
 // ===========================================
 // TYPES
@@ -232,9 +233,11 @@ async function generateReportByType(
 
   switch (reportType) {
     case "MONTHLY_PRODUCTION": {
-      // Default to previous month if not specified
-      const targetDate = new Date(now);
-      targetDate.setMonth(targetDate.getMonth() - 1);
+      // Default to previous month if not specified.
+      // addMonthsSafe: on the 31st of March/May/July/October/December a plain
+      // setMonth(-1) would ask for e.g. "31 February" and roll forward into the
+      // *current* month — the report would cover March instead of February.
+      const targetDate = addMonthsSafe(now, -1);
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
 
@@ -266,9 +269,11 @@ async function generateReportByType(
     }
 
     case "QUARTERLY_FINANCIAL": {
-      // Determine previous quarter
-      const targetDate = new Date(now);
-      targetDate.setMonth(targetDate.getMonth() - 3);
+      // Determine previous quarter.
+      // addMonthsSafe: on 31 December a plain setMonth(-3) asks for
+      // "31 September" and rolls to 1 October — the report would cover the
+      // still-running Q4 instead of Q3.
+      const targetDate = addMonthsSafe(now, -3);
       const year = targetDate.getFullYear();
       const quarter = Math.floor(targetDate.getMonth() / 3) + 1;
 
@@ -338,8 +343,8 @@ async function generateReportByType(
         throw new Error("parkId is required for CUSTOM report");
       }
 
-      const targetDate = new Date(now);
-      targetDate.setMonth(targetDate.getMonth() - 1);
+      // See MONTHLY_PRODUCTION: setMonth(-1) overflows on 31-day months.
+      const targetDate = addMonthsSafe(now, -1);
       const year = targetDate.getFullYear();
       const month = targetDate.getMonth() + 1;
 
@@ -386,39 +391,39 @@ export function calculateNextRun(
   schedule: ScheduledReportSchedule,
   fromDate: Date = new Date()
 ): Date {
-  const next = new Date(fromDate);
+  let next = new Date(fromDate);
 
+  // All month arithmetic goes through the overflow-safe helpers from
+  // @/lib/date-utils. A plain `next.setMonth(m)` is evaluated while the day of
+  // the *source* month is still set, so on a 31st it asks for a day that does
+  // not exist in the target month ("31 February") and JavaScript rolls forward
+  // into the month after that. The following `setDate(1)` then lands a whole
+  // month too late. Same switch as in @/lib/billing/scheduler.ts.
   switch (schedule) {
     case "MONTHLY":
       // Run on the 1st of next month at 06:00
-      next.setMonth(next.getMonth() + 1);
-      next.setDate(1);
+      next = addMonthsSafe(next, 1, 1);
       break;
 
-    case "QUARTERLY":
+    case "QUARTERLY": {
       // Run on the 1st of the next quarter at 06:00
       const currentQuarter = Math.floor(next.getMonth() / 3);
       const nextQuarterMonth = (currentQuarter + 1) * 3;
-      if (nextQuarterMonth >= 12) {
-        next.setFullYear(next.getFullYear() + 1);
-        next.setMonth(0);
-      } else {
-        next.setMonth(nextQuarterMonth);
-      }
-      next.setDate(1);
+      next =
+        nextQuarterMonth >= 12
+          ? setMonthSafe(next, 0, 1, next.getFullYear() + 1)
+          : setMonthSafe(next, nextQuarterMonth, 1);
       break;
+    }
 
     case "ANNUALLY":
       // Run on January 1st of next year at 06:00
-      next.setFullYear(next.getFullYear() + 1);
-      next.setMonth(0);
-      next.setDate(1);
+      next = setMonthSafe(next, 0, 1, next.getFullYear() + 1);
       break;
 
     default:
       // Fallback: next month
-      next.setMonth(next.getMonth() + 1);
-      next.setDate(1);
+      next = addMonthsSafe(next, 1, 1);
       break;
   }
 

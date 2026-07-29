@@ -9,6 +9,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 /**
  * Billing job data structure
@@ -149,6 +150,7 @@ export const scheduleRecurringBilling = async (
   const job = await queue.add('process-billing', jobData, {
     repeat: {
       pattern: cronExpression,
+      tz: CRON_TIMEZONE,
     },
     jobId: `billing-recurring-${ruleId}-${tenantId}`,
   });
@@ -258,6 +260,7 @@ export const scheduleRecurringInvoiceProcessing = async (
   const job = await queue.add('process-recurring-invoices', jobData, {
     repeat: {
       pattern: cronExpression,
+      tz: CRON_TIMEZONE,
     },
     jobId: 'recurring-invoices-global',
   });

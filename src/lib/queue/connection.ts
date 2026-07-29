@@ -13,6 +13,9 @@ import { getBaseRedisOptions } from '@/lib/config/redis';
 let connection: Redis | null = null;
 let subscriberConnection: Redis | null = null;
 
+/** Upper bound for the reconnect backoff (ms). Reconnect attempts never stop. */
+const RECONNECT_MAX_DELAY_MS = 10_000;
+
 /**
  * Redis connection options for BullMQ.
  * Base URL/auth/TLS is shared; BullMQ requires specific retry semantics.
@@ -21,13 +24,20 @@ const getRedisOptions = (): RedisOptions => ({
   ...getBaseRedisOptions(),
   maxRetriesPerRequest: null, // Required for BullMQ
   enableReadyCheck: false, // Faster connection
+  // NEVER give up reconnecting. This connection is a module singleton shared
+  // by all queues and all 15 workers — returning `null` here permanently kills
+  // background processing for the whole process while the process itself keeps
+  // running (and the Docker healthcheck, which opens its own connection, keeps
+  // reporting "healthy"). A Redis restart that takes longer than the backoff
+  // budget must NOT be fatal; ioredis reconnects once Redis is back.
   retryStrategy: (times: number) => {
-    if (times > 10) {
-      logger.error('[Redis] Max retry attempts reached, giving up');
-      return null;
+    // Exponential-ish ramp, capped at RECONNECT_MAX_DELAY_MS.
+    const delay = Math.min(times * 200, RECONNECT_MAX_DELAY_MS);
+    // Log the first attempts verbosely, then throttle to avoid log floods
+    // during a long outage (one line per ~minute at the capped delay).
+    if (times <= 5 || times % 10 === 0) {
+      logger.warn(`[Redis] Connection retry #${times} in ${delay}ms`);
     }
-    const delay = Math.min(times * 100, 30000);
-    logger.warn(`[Redis] Connection retry #${times} in ${delay}ms`);
     return delay;
   },
   reconnectOnError: (err: Error) => {

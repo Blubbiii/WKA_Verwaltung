@@ -264,6 +264,18 @@ export async function stopDailyDigestWorker(): Promise<void> {
   if (!dailyDigestWorker) return;
   await dailyDigestWorker.close();
   dailyDigestWorker = null;
+  logger.info("[DailyDigestWorker] Stopped");
+}
+
+export function isDailyDigestWorkerRunning(): boolean {
+  return dailyDigestWorker !== null && !dailyDigestWorker.closing;
+}
+
+export function getDailyDigestWorker(): Worker<
+  DailyDigestJobData,
+  DailyDigestJobResult
+> | null {
+  return dailyDigestWorker;
 }
 
 export type { DailyDigestJobData, DailyDigestJobResult };

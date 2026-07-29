@@ -52,6 +52,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LOCALE_DE } from "@/lib/format";
+import { addYearsSafe } from "@/lib/date-utils";
 
 // Types
 interface Person {
@@ -1062,8 +1063,9 @@ export default function NewLeaseWizardPage() {
         toast.error(t("contract.startDateRequired"));
         return;
       }
-      const newEndDate = new Date(contractData.startDate);
-      newEndDate.setFullYear(newEndDate.getFullYear() + years);
+      // addYearsSafe: Pachtbeginn am 29.02. wuerde mit setFullYear(+n) in
+      // einem Nicht-Schaltjahr auf den 01.03. ueberlaufen.
+      const newEndDate = addYearsSafe(contractData.startDate, years);
       setContractData({ ...contractData, endDate: newEndDate });
     };
 

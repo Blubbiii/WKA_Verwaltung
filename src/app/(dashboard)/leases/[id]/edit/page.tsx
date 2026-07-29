@@ -53,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { PersonEditDialog } from "@/components/leases/PersonEditDialog";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { addYearsSafe } from "@/lib/date-utils";
 
 // Types
 interface PlotArea {
@@ -497,8 +498,9 @@ export default function EditLeasePage({
       toast.error(t("startDateFirst"));
       return;
     }
-    const newEndDate = new Date(formData.startDate);
-    newEndDate.setFullYear(newEndDate.getFullYear() + years);
+    // addYearsSafe: Pachtbeginn am 29.02. wuerde mit setFullYear(+n) in einem
+    // Nicht-Schaltjahr auf den 01.03. ueberlaufen.
+    const newEndDate = addYearsSafe(formData.startDate, years);
     setFormData({ ...formData, endDate: newEndDate });
   }
 

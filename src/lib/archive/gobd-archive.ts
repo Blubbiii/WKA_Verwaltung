@@ -21,6 +21,7 @@ import { s3Client, S3_BUCKET } from "@/lib/storage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { logger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { addYearsSafe } from "@/lib/date-utils";
 
 const archiveLogger = logger.child({ module: "gobd-archive" });
 
@@ -249,8 +250,9 @@ export async function archiveDocument(
   };
   const retentionYears =
     tenantRetentionMap[documentType] ?? DEFAULT_RETENTION_YEARS_MAP[documentType] ?? DEFAULT_RETENTION_YEARS;
-  const retentionUntil = new Date();
-  retentionUntil.setFullYear(retentionUntil.getFullYear() + retentionYears);
+  // addYearsSafe: archiving on 29 February would roll a plain setFullYear(+n)
+  // over to 1 March of the target year whenever that year is not a leap year.
+  const retentionUntil = addYearsSafe(new Date(), retentionYears);
 
   // Upload to S3 with archive prefix
   const archiveFileName = `${ARCHIVE_PREFIX}/${tenantId}/${documentType}/${referenceNumber.replace(/[^a-zA-Z0-9._-]/g, "_")}_${Date.now()}.pdf`;

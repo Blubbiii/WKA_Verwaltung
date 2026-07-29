@@ -13,6 +13,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 /**
  * Approvals-Expiry job data.
@@ -81,7 +82,7 @@ export const scheduleApprovalsExpiryCheck = async () => {
     "check-expired-approvals",
     {},
     {
-      repeat: { pattern: CRON_PATTERN },
+      repeat: { pattern: CRON_PATTERN, tz: CRON_TIMEZONE },
       jobId: REPEATABLE_JOB_ID,
     },
   );

@@ -10,6 +10,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { CONTRACT_REMINDER_DAYS_DEFAULT, CONTRACT_WARNING_DAYS } from "@/lib/config/business-thresholds";
 import { apiError } from "@/lib/api-errors";
 import { enumParam } from "@/lib/validation/query-params";
+import { calculateNoticeDeadline } from "@/lib/contracts/notice-deadline";
 
 const CONTRACT_TYPES = [
   "LEASE",
@@ -290,9 +291,9 @@ async function postHandler(request: NextRequest) {
       validatedData.endDate &&
       validatedData.noticePeriodMonths
     ) {
-      noticeDeadline = new Date(validatedData.endDate);
-      noticeDeadline.setMonth(
-        noticeDeadline.getMonth() - validatedData.noticePeriodMonths
+      noticeDeadline = calculateNoticeDeadline(
+        validatedData.endDate,
+        validatedData.noticePeriodMonths
       );
     }
 

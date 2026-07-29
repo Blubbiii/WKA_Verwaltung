@@ -8,6 +8,7 @@ import { InvoiceType, TaxType, EntityStatus } from "@prisma/client";
 import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { addMonthsSafe } from "@/lib/date-utils";
 import {
   RuleHandler,
   ManagementFeeParameters,
@@ -44,8 +45,10 @@ async function getBaseValue(
 
     case "ANNUAL_REVENUE": {
       // Sum of EnergySettlement.netOperatorRevenueEur for the fund's parks in the last 12 months
-      const twelveMonthsAgo = new Date();
-      twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+      // addMonthsSafe: am 29.02. fragt setMonth(-12) nach dem 29.02. eines
+      // Nicht-Schaltjahrs und rollt auf den 01.03. — cutoffMonth waere dann 3
+      // statt 2 und der Februar fiele aus der Erloesbasis.
+      const twelveMonthsAgo = addMonthsSafe(new Date(), -12);
       const cutoffYear = twelveMonthsAgo.getFullYear();
       const cutoffMonth = twelveMonthsAgo.getMonth() + 1; // 1-based
 

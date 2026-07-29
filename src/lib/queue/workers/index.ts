@@ -137,8 +137,16 @@ import {
 } from "./webhook.worker";
 import type { WebhookJobData, WebhookJobResult } from "../queues/webhook.queue";
 
-// Daily-Digest-Worker wird direkt in src/workers/index.ts gestartet
-// (eigener Pattern statt Registry-basiertem Wrapper hier).
+import {
+  startDailyDigestWorker,
+  stopDailyDigestWorker,
+  isDailyDigestWorkerRunning,
+  getDailyDigestWorker,
+} from "./daily-digest.worker";
+import type {
+  DailyDigestJobData,
+  DailyDigestJobResult,
+} from "../queues/daily-digest.queue";
 
 // =============================================================================
 // Types
@@ -162,6 +170,7 @@ export const WORKER_NAMES = {
   RETENTION_CRON: "retention-cron",
   TUS_GC: "tus-gc",
   WEBHOOK: "webhook",
+  DAILY_DIGEST: "daily-digest",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -315,6 +324,16 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopWebhookWorker,
     isRunning: isWebhookWorkerRunning,
     getWorker: getWebhookWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    // F17: Muss in der Registry stehen, sonst erreicht SIGTERM ihn nicht und
+    // closeConnections() reisst Redis unter einem laufenden Digest-Job weg.
+    name: WORKER_NAMES.DAILY_DIGEST,
+    displayName: "Daily Digest Worker",
+    start: startDailyDigestWorker as () => Worker<unknown, unknown>,
+    stop: stopDailyDigestWorker,
+    isRunning: isDailyDigestWorkerRunning,
+    getWorker: getDailyDigestWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -660,3 +679,12 @@ export {
   getWebhookWorker,
 };
 export type { WebhookJobData, WebhookJobResult };
+
+// Daily Digest Worker
+export {
+  startDailyDigestWorker,
+  stopDailyDigestWorker,
+  isDailyDigestWorkerRunning,
+  getDailyDigestWorker,
+};
+export type { DailyDigestJobData, DailyDigestJobResult };

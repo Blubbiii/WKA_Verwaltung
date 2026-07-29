@@ -8,6 +8,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { addMonthsSafe } from "@/lib/date-utils";
+import { calculateNoticeDeadline } from "@/lib/contracts/notice-deadline";
 
 const renewalLogger = logger.child({ module: "contract-renewal" });
 
@@ -90,15 +92,22 @@ export async function processAutoRenewals(
       newStartDate.setDate(newStartDate.getDate() + 1);
 
       const renewalMonths = contract.renewalPeriodMonths ?? 12;
-      const newEndDate = new Date(newStartDate);
-      newEndDate.setMonth(newEndDate.getMonth() + renewalMonths);
+      // addMonthsSafe clamps the target day to the length of the target month.
+      // newStartDate is oldEndDate + 1 day, so it lands on a 29th/30th/31st
+      // whenever the old contract ended on the 28th/29th/30th. A plain
+      // setMonth(+n) would then roll over ("30 February" → 2 March) and push
+      // the renewal period a few days past the intended month end.
+      const newEndDate = addMonthsSafe(newStartDate, renewalMonths);
 
-      // Calculate notice deadline from new end date
+      // Calculate notice deadline from new end date.
+      // Backwards arithmetic overflows the same way: 31 March − 1 month is
+      // "31 February" → 3 March, which would report a *later* deadline than the
+      // correct 28 February and thus a notice period that is too short.
       let newNoticeDeadline: Date | null = null;
       if (contract.noticePeriodMonths) {
-        newNoticeDeadline = new Date(newEndDate);
-        newNoticeDeadline.setMonth(
-          newNoticeDeadline.getMonth() - contract.noticePeriodMonths
+        newNoticeDeadline = calculateNoticeDeadline(
+          newEndDate,
+          contract.noticePeriodMonths
         );
       }
 

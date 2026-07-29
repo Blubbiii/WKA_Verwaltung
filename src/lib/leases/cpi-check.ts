@@ -10,6 +10,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { addMonthsSafe } from "@/lib/date-utils";
 
 export interface CpiDueLease {
   leaseId: string;
@@ -57,8 +58,11 @@ export async function findDueCpiAdjustments(
   for (const l of leases) {
     if (!l.cpiAdjustmentMonths) continue;
     const baseline = l.cpiLastAdjustedAt ?? l.startDate;
-    const nextDue = new Date(baseline);
-    nextDue.setMonth(nextDue.getMonth() + l.cpiAdjustmentMonths);
+    // addMonthsSafe statt setMonth(): Pachtbeginn am Monatsende + ungerades
+    // Intervall laeuft sonst ueber — 31.08. + 6 Monate ergaebe den
+    // "31. Februar" und damit den 03.03. statt des 28.02. Die Faelligkeit
+    // waere drei Tage zu spaet und der Vertrag kaeme zu spaet ins Widget.
+    const nextDue = addMonthsSafe(baseline, l.cpiAdjustmentMonths);
 
     // Innerhalb des Horizonts?
     const diffMs = nextDue.getTime() - asOf.getTime();

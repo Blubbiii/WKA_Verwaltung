@@ -53,13 +53,42 @@ function log(level: "info" | "warn" | "error", message: string, meta?: Record<st
 
 let healthCheckInterval: NodeJS.Timeout | null = null;
 
+/**
+ * Consecutive failed Redis health checks before the process gives up.
+ *
+ * F4: The Redis connection is a module singleton shared by every worker.
+ * If it stays dead the process keeps running but processes nothing — and the
+ * Docker healthcheck (which opens its OWN connection) still reports "healthy".
+ * Exiting non-zero is the only way to get the container restarted.
+ */
+const MAX_CONSECUTIVE_REDIS_FAILURES = 3;
+let consecutiveRedisFailures = 0;
+
 async function performHealthCheck(): Promise<void> {
   try {
     const redisHealthy = await isRedisHealthy();
     const status = getWorkersStatus();
 
     if (!redisHealthy) {
-      log("error", "Redis connection unhealthy!");
+      consecutiveRedisFailures++;
+      log("error", "Redis connection unhealthy!", {
+        consecutiveFailures: consecutiveRedisFailures,
+        maxFailures: MAX_CONSECUTIVE_REDIS_FAILURES,
+      });
+
+      if (consecutiveRedisFailures >= MAX_CONSECUTIVE_REDIS_FAILURES) {
+        log(
+          "error",
+          `Redis unreachable for ${consecutiveRedisFailures} consecutive health checks — exiting so the orchestrator restarts this container`,
+        );
+        stopHealthCheck();
+        process.exit(1);
+      }
+    } else if (consecutiveRedisFailures > 0) {
+      log("info", "Redis connection recovered", {
+        afterFailures: consecutiveRedisFailures,
+      });
+      consecutiveRedisFailures = 0;
     }
 
     if (!status.allRunning) {
@@ -273,14 +302,12 @@ async function main(): Promise<void> {
   }
 
   // Daily-Digest Cron registrieren (täglich 08:00 — Idee E)
+  // F17: Der Worker selbst wird über die Registry (startAllWorkers) gestartet —
+  // nur so erreicht ihn SIGTERM und nur so taucht er im Health-Status auf.
   try {
     const { scheduleDailyDigest } = await import(
       "@/lib/queue/queues/daily-digest.queue"
     );
-    const { startDailyDigestWorker } = await import(
-      "@/lib/queue/workers/daily-digest.worker"
-    );
-    startDailyDigestWorker();
     await scheduleDailyDigest();
     const dryRun = process.env.DIGEST_DRY_RUN !== "false";
     log(
@@ -289,6 +316,63 @@ async function main(): Promise<void> {
     );
   } catch (err) {
     log("warn", "Failed to schedule daily-digest cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // F5: Approvals-Reconcile Cron registrieren (stündlich).
+  // Ohne diesen Cron bleiben APPROVED-Approvals, deren inline-Executor starb,
+  // dauerhaft mit executedAt=null liegen — Ausfallpfad mit Geldbezug.
+  try {
+    const { scheduleApprovalsReconcileCheck } = await import(
+      "@/lib/queue/queues/approvals-reconcile.queue"
+    );
+    await scheduleApprovalsReconcileCheck();
+    log("info", "Approvals-reconcile cron scheduled (hourly)");
+  } catch (err) {
+    log("warn", "Failed to schedule approvals-reconcile cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // F7: Report-Scheduling registrieren (täglich 06:00) — ohne diesen Cron
+  // werden geplante Berichte nie erzeugt und nie versendet.
+  try {
+    const { scheduleDailyReportProcessing } = await import(
+      "@/lib/queue/queues/report.queue"
+    );
+    await scheduleDailyReportProcessing();
+    log("info", "Scheduled-report cron scheduled (daily 06:00)");
+  } catch (err) {
+    log("warn", "Failed to schedule report cron", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // F7: Weather-Scheduling initialisieren (pro Tenant/Park).
+  // Idempotent — BullMQ dedupliziert die Repeatables über stabile jobIds.
+  try {
+    const { initializeWeatherScheduling } = await import(
+      "@/lib/weather/scheduler"
+    );
+    await initializeWeatherScheduling();
+    log("info", "Weather scheduling initialized");
+  } catch (err) {
+    log("warn", "Failed to initialize weather scheduling", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // F8: SCADA-Auto-Import Cron registrieren (täglich 02:00).
+  // Die UI bestätigt "Auto-Import aktiviert" — ohne diesen Cron passierte nichts.
+  try {
+    const { scheduleScadaAutoImport } = await import(
+      "@/lib/queue/queues/scada-auto-import.queue"
+    );
+    await scheduleScadaAutoImport();
+    log("info", "SCADA auto-import cron scheduled (daily 02:00)");
+  } catch (err) {
+    log("warn", "Failed to schedule SCADA auto-import cron", {
       error: err instanceof Error ? err.message : String(err),
     });
   }

@@ -9,7 +9,7 @@ import { Queue, JobsOptions } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
-import { CRON_SCHEDULES } from "@/lib/config/cron-schedules";
+import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
 /**
  * Supported report job types
@@ -110,6 +110,7 @@ export const scheduleDailyReportProcessing = async () => {
   const job = await queue.add("process-scheduled-reports", jobData, {
     repeat: {
       pattern: CRON_SCHEDULES.REPORT, // Daily at 06:00 (default)
+      tz: CRON_TIMEZONE,
     },
     jobId: "report-daily-check",
   });
