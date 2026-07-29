@@ -272,6 +272,10 @@ export async function DELETE(
             serviceEvents: true,
             documents: true,
             contracts: true,
+            // Abrechnungsgrundlage: hängt per Cascade / SetNull am Hard-Delete
+            turbineProductions: true,
+            energySettlementItems: true,
+            scadaMeasurements: true,
           },
         },
       },
@@ -284,6 +288,31 @@ export async function DELETE(
     // Prüfe auf aktive Verknüpfungen
     if (existingTurbine._count.contracts > 0) {
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Anlage hat noch aktive Verträge und kann nicht gelöscht werden" });
+    }
+
+    // GoBD-Guard: TurbineProduction und ScadaMeasurement hängen per onDelete:Cascade,
+    // EnergySettlementItem per onDelete:SetNull an der Turbine. Ein Hard-Delete würde
+    // die Datengrundlage bereits ausgestellter Gutschriften unwiederbringlich löschen
+    // und die Settlement-Items ohne Turbinenbezug zurücklassen.
+    if (existingTurbine._count.energySettlementItems > 0) {
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: "Anlage ist Bestandteil von Stromabrechnungen und kann nicht gelöscht werden",
+        details: `${existingTurbine._count.energySettlementItems} Abrechnungspositionen verweisen auf diese Anlage. Setze die Anlage stattdessen auf einen inaktiven Status.`,
+      });
+    }
+
+    if (existingTurbine._count.turbineProductions > 0) {
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: "Anlage hat erfasste Produktionsdaten und kann nicht gelöscht werden",
+        details: `${existingTurbine._count.turbineProductions} Produktionszeitraeume${existingTurbine._count.scadaMeasurements > 0 ? ` und ${existingTurbine._count.scadaMeasurements} SCADA-Messwerte` : ""} wuerden mitgelöscht. Setze die Anlage stattdessen auf einen inaktiven Status.`,
+      });
+    }
+
+    if (existingTurbine._count.scadaMeasurements > 0) {
+      return apiError("OPERATION_NOT_ALLOWED", 400, {
+        message: "Anlage hat SCADA-Messdaten und kann nicht gelöscht werden",
+        details: `${existingTurbine._count.scadaMeasurements} Messwerte wuerden mitgelöscht. Setze die Anlage stattdessen auf einen inaktiven Status.`,
+      });
     }
 
     // Hard-Delete: Anlage unwiderruflich löschen

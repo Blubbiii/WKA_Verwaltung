@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType } from "@/lib/scada/import-service";
 import type { ScadaFileType } from "@/lib/scada/import-service";
+import { reapStaleImports } from "@/lib/scada/import-stale";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -121,6 +122,10 @@ export async function POST(request: NextRequest) {
 
     const tenantId = check.tenantId!;
 
+    // FIX P1-7: Hängengebliebene RUNNING-Logs (Prozess-Kill/Redeploy) zuerst abräumen,
+    // sonst blockieren sie jeden Folgeimport dauerhaft mit CONFLICT.
+    const reaped = await reapStaleImports(tenantId, { locationCode });
+
     // --- Bulk-Modus (fileTypes[]) ---
 
     if (Array.isArray(fileTypes)) {
@@ -172,7 +177,14 @@ export async function POST(request: NextRequest) {
         toLaunch.map((t) => launchImportForType(tenantId, locationCode, t, basePath)),
       );
 
-      return NextResponse.json({ jobs, skipped }, { status: 202 });
+      return NextResponse.json(
+        {
+          jobs,
+          skipped,
+          ...(reaped.reaped > 0 ? { staleImportsReaped: reaped.reaped } : {}),
+        },
+        { status: 202 },
+      );
     }
 
     // --- Legacy Single-Type-Modus (Backwards-Compat für n8n etc.) ---
@@ -190,13 +202,20 @@ export async function POST(request: NextRequest) {
     if (runningImport) {
       return apiError("CONFLICT", undefined, {
         message: "Import läuft bereits",
-        details: `Für ${locationCode} (${fileType}) läuft bereits ein Import (ID: ${runningImport.id})`,
+        details: `Für ${locationCode} (${fileType}) läuft seit ${runningImport.startedAt.toISOString()} ein Import (ID: ${runningImport.id}). Falls er hängt: über DELETE /api/energy/scada/import/${runningImport.id} abbrechen (automatische Bereinigung nach ${reaped.staleHours} h).`,
       });
     }
 
     const job = await launchImportForType(tenantId, locationCode, fileType, basePath);
 
-    return NextResponse.json({ id: job.id, status: job.status }, { status: 202 });
+    return NextResponse.json(
+      {
+        id: job.id,
+        status: job.status,
+        ...(reaped.reaped > 0 ? { staleImportsReaped: reaped.reaped } : {}),
+      },
+      { status: 202 },
+    );
   } catch (error) {
     logger.error({ err: error }, "Fehler beim Starten des SCADA-Imports");
     return apiError("PROCESS_FAILED", undefined, { message: "Fehler beim Starten des SCADA-Imports" });

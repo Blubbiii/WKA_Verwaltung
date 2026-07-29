@@ -36,16 +36,38 @@ function toNum(d: Decimal | number | null | undefined): number {
 
 /**
  * Findet rekursiv alle Tochter-Funds einer Mutter inkl. ownership%.
- * Hält an Zyklen-Erkennung fest (visited-Set).
+ *
+ * Randfall 18: Der Zyklen-Schutz stand VOR der Addition — `visited` wurde als
+ * globales Set über den gesamten Baum geführt, sodass jedes Kind nur beim
+ * ERSTEN Erreichen gezählt wurde. Der Kommentar "Wenn ein Kind in mehreren
+ * Ketten hängt, addieren sich die Anteile" beschrieb damit totes Verhalten.
+ *
+ * Beispiel: A hält 50 % an C und 100 % an B, B hält 50 % an C.
+ *   erwartet: 0,5 (direkt) + 1,0 × 0,5 (über B) = 1,0
+ *   vorher:   0,5 — der zweite Pfad wurde verworfen
+ *
+ * Fix: `visited` wird PFAD-bezogen geführt (nur die aktuelle Kette), nicht
+ * baumweit. Zyklen (A → B → A) sind damit weiter ausgeschlossen, echte
+ * Querbeteiligungen über getrennte Pfade addieren sich aber korrekt.
+ *
+ * Zusätzlich begrenzt maxDepth die Rekursion, damit ein Datenfehler in einer
+ * langen Kette nicht in einen Query-Sturm läuft.
  */
+const MAX_HIERARCHY_DEPTH = 32;
+
 async function resolveSubsidiaries(
   rootFundId: string,
   asOf: Date,
 ): Promise<Map<string, number>> {
   const factors = new Map<string, number>();
-  const visited = new Set<string>([rootFundId]);
 
-  async function walk(parentId: string, parentFactor: number): Promise<void> {
+  async function walk(
+    parentId: string,
+    parentFactor: number,
+    pathSoFar: ReadonlySet<string>,
+  ): Promise<void> {
+    if (pathSoFar.size > MAX_HIERARCHY_DEPTH) return;
+
     const children = await prisma.fundHierarchy.findMany({
       where: {
         parentFundId: parentId,
@@ -54,19 +76,23 @@ async function resolveSubsidiaries(
       },
       select: { childFundId: true, ownershipPercentage: true },
     });
+
     for (const c of children) {
-      if (visited.has(c.childFundId)) continue;
-      visited.add(c.childFundId);
+      // Zyklus NUR entlang des aktuellen Pfades ausschließen — ein Kind, das
+      // über einen anderen Zweig schon einmal erreicht wurde, ist kein Zyklus.
+      if (pathSoFar.has(c.childFundId)) continue;
+
       const factor = parentFactor * (toNum(c.ownershipPercentage) / 100);
-      // Wenn ein Kind in mehreren Ketten hängt, addieren sich die Anteile
-      // (Querbeteiligungen). Realistisch sehr selten, aber mathematisch korrekt.
       factors.set(c.childFundId, (factors.get(c.childFundId) ?? 0) + factor);
-      await walk(c.childFundId, factor);
+
+      const nextPath = new Set(pathSoFar);
+      nextPath.add(c.childFundId);
+      await walk(c.childFundId, factor, nextPath);
     }
   }
 
   factors.set(rootFundId, 1);
-  await walk(rootFundId, 1);
+  await walk(rootFundId, 1, new Set<string>([rootFundId]));
   return factors;
 }
 

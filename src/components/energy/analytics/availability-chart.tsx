@@ -37,7 +37,10 @@ interface AvailabilityChartProps {
   heatmap: HeatmapData[];
   pareto: ParetoItem[];
   fleet: {
+    /** Technische Verfügbarkeit T1/(T1+T5) — nicht die vertragliche Verfügbarkeit */
     avgAvailability: number;
+    /** Zeitbasierte Verfügbarkeit nach IEC 61400-26-1 (optional, neuere API) */
+    avgTimeBasedAvailability?: number;
     totalProductionHours: number;
     totalDowntimeHours: number;
     totalMaintenanceHours: number;
@@ -138,13 +141,26 @@ export function AvailabilityChart({
   }, [breakdown]);
 
   // KPI cards
+  // Kennzahlen bewusst ausgeschrieben: die technische Verfügbarkeit T1/(T1+T5) ist
+  // NICHT die Kennzahl, gegen die Verfügbarkeitsgarantien im Wartungsvertrag
+  // abgerechnet werden (dort zählen i. d. R. auch T4/T6 in den Nenner).
   const kpis = useMemo(() => [
     {
-      title: "Mittlere Verfügbarkeit",
+      title: "Technische Verfügbarkeit",
       value: dec2Fmt.format(fleet.avgAvailability) + " %",
       icon: CheckCircle,
-      description: `${breakdown.length} Anlagen`,
+      description: `T1/(T1+T5) · ${breakdown.length} Anlagen · nicht vertragliche Verfügbarkeit`,
     },
+    ...(fleet.avgTimeBasedAvailability !== undefined
+      ? [
+          {
+            title: "Zeitbasierte Verfügbarkeit",
+            value: dec2Fmt.format(fleet.avgTimeBasedAvailability) + " %",
+            icon: CheckCircle,
+            description: "IEC 61400-26-1 · ohne T4/T5",
+          },
+        ]
+      : []),
     {
       title: "Produktionszeit",
       value: numFmt.format(fleet.totalProductionHours) + " h",

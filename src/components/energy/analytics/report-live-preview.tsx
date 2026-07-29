@@ -76,6 +76,7 @@ function buildMockReportData(params: {
         ratedPowerKw: 2000,
         productionKwh: 4_200_000 - i * 100_000,
         hoursInPeriod: 8760,
+        coveredHours: 8760,
         capacityFactor: 29 - i * 1.5,
         specificYield: 2400 - i * 80,
         avgWindSpeed: 6.8 - i * 0.2,

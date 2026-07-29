@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumbersInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { Decimal } from "@prisma/client-runtime-utils";
-import { TaxType } from "@prisma/client";
+import { TaxType, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { getTaxRate } from "@/lib/tax/tax-rates";
 import { getTenantSettings } from "@/lib/tenant-settings";
@@ -456,35 +456,47 @@ export async function POST(
         data: { status: "INVOICED" },
       });
 
-      // M6: TurbineProduction Status-Transition DRAFT -> INVOICED
-      // FIX: Explizite month-Filterung — bei Monats-Settlement genau der Monat,
-      // bei Jahres-Settlement (month=null) explizit Monate 1..12 statt "kein
-      // month-Filter". So bleibt semantisch klar, dass wir NUR reguläre Monats-
-      // rows meinen (falls jemals month=0 Legacy-Daten in der DB stecken, werden
-      // die NICHT versehentlich als eingemeldet markiert).
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const productionWhere: any = {
-        tenantId: check.tenantId!,
-        year: settlement.year,
-        status: { in: ["DRAFT", "CONFIRMED"] },
-        turbine: {
-          parkId: settlement.parkId,
-        },
-      };
+      // M6: TurbineProduction Status-Transition CONFIRMED -> INVOICED
+      //
+      // FIX P1-6: Vorher wurden ALLE Produktionen des Parks im Zeitraum markiert —
+      // unabhängig davon, ob es dafür ein EnergySettlementItem gab. Eine Anlage ohne
+      // aktiven Betreiber floss nicht in die Verteilung ein, wurde aber trotzdem als
+      // abgerechnet gesperrt (keine Gutschrift, keine Bearbeitbarkeit mehr).
+      // Jetzt: nur die Turbinen, für die tatsächlich eine Abrechnungsposition existiert.
+      //
+      // FIX P1-6: Statusfilter auf CONFIRMED — DRAFT-Zeilen sind seit dem calculate-Fix
+      // gar nicht Teil der Verteilung und dürfen deshalb auch nicht gesperrt werden.
+      //
+      // Explizite month-Filterung: bei Monats-Settlement genau der Monat, bei
+      // Jahres-Settlement (month=null) explizit Monate 1..12 (schützt gegen
+      // etwaige month=0 Legacy-Rows).
+      const settledTurbineIds = Array.from(
+        new Set(
+          eligibleItems
+            .map((it) => it.turbineId)
+            .filter((tid): tid is string => tid !== null),
+        ),
+      );
 
-      if (settlement.month !== null && settlement.month !== 0) {
-        productionWhere.month = settlement.month;
-      } else {
-        // Jahres-Settlement: alle regulären Monate 1..12 dieses Jahres/Parks.
-        productionWhere.month = { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] };
+      if (settledTurbineIds.length > 0) {
+        const productionWhere: Prisma.TurbineProductionWhereInput = {
+          tenantId: check.tenantId!,
+          year: settlement.year,
+          status: "CONFIRMED",
+          turbineId: { in: settledTurbineIds },
+          month:
+            settlement.month !== null && settlement.month !== 0
+              ? settlement.month
+              : { in: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] },
+        };
+
+        await tx.turbineProduction.updateMany({
+          where: productionWhere,
+          data: {
+            status: "INVOICED",
+          },
+        });
       }
-
-      await tx.turbineProduction.updateMany({
-        where: productionWhere,
-        data: {
-          status: "INVOICED",
-        },
-      });
     }, {
       // P10: Bei grossen Settlements (viele Turbinen) kann die TX >5s laufen.
       timeout: 60_000,

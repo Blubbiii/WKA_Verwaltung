@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
+import { buildCostCenterAncestorMap } from "./cost-center-hierarchy";
 
 export interface BudgetComparisonRow {
   costCenterCode: string;
@@ -40,18 +41,40 @@ function toNum(d: Decimal | null | undefined): number {
 
 const MONTH_FIELDS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"] as const;
 
-// Map BudgetCategory to SKR03 account ranges for matching
-const CATEGORY_ACCOUNT_RANGES: Record<string, { from: string; to: string; isRevenue: boolean }[]> = {
-  REVENUE_ENERGY: [{ from: "8000", to: "8100", isRevenue: true }],
-  REVENUE_OTHER: [{ from: "8100", to: "8999", isRevenue: true }, { from: "2000", to: "2999", isRevenue: true }],
-  COST_LEASE: [{ from: "4200", to: "4300", isRevenue: false }],
-  COST_MAINTENANCE: [{ from: "4700", to: "4800", isRevenue: false }],
-  COST_INSURANCE: [{ from: "4360", to: "4400", isRevenue: false }],
-  COST_ADMIN: [{ from: "4300", to: "4360", isRevenue: false }, { from: "4900", to: "5000", isRevenue: false }],
-  COST_DEPRECIATION: [{ from: "4800", to: "4900", isRevenue: false }],
-  COST_FINANCING: [{ from: "7000", to: "7600", isRevenue: false }],
-  COST_OTHER: [{ from: "4400", to: "4500", isRevenue: false }, { from: "4600", to: "4700", isRevenue: false }, { from: "6000", to: "7000", isRevenue: false }],
+// Map BudgetCategory to SKR03 account ranges for matching.
+//
+// F23: Die Grenzen sind NUMERISCH zu vergleichen, nicht als String. Der alte
+// Code prüfte `line.account >= range.from && line.account < range.to` auf
+// Strings — damit gilt "70001" >= "7000" UND "70001" < "7600", also fielen
+// sämtliche Kreditoren-Personenkonten (70000–75999, siehe
+// TenantSettings.datevCreditorStart) in COST_FINANCING. Ein Mandant mit
+// Lieferantenkonten sah seine kompletten Verbindlichkeiten als
+// Finanzierungskosten. Deshalb: Ranges als Zahlen.
+const CATEGORY_ACCOUNT_RANGES: Record<string, { from: number; to: number; isRevenue: boolean }[]> = {
+  REVENUE_ENERGY: [{ from: 8000, to: 8100, isRevenue: true }],
+  REVENUE_OTHER: [{ from: 8100, to: 8999, isRevenue: true }, { from: 2000, to: 2999, isRevenue: true }],
+  COST_LEASE: [{ from: 4200, to: 4300, isRevenue: false }],
+  COST_MAINTENANCE: [{ from: 4700, to: 4800, isRevenue: false }],
+  COST_INSURANCE: [{ from: 4360, to: 4400, isRevenue: false }],
+  COST_ADMIN: [{ from: 4300, to: 4360, isRevenue: false }, { from: 4900, to: 5000, isRevenue: false }],
+  COST_DEPRECIATION: [{ from: 4800, to: 4900, isRevenue: false }],
+  COST_FINANCING: [{ from: 7000, to: 7600, isRevenue: false }],
+  COST_OTHER: [{ from: 4400, to: 4500, isRevenue: false }, { from: 4600, to: 4700, isRevenue: false }, { from: 6000, to: 7000, isRevenue: false }],
 };
+
+/**
+ * F23: Kontonummer numerisch parsen. Personenkonten sind 5-stellig und dürfen
+ * nicht in die 4-stelligen Sachkonten-Bereiche fallen — deshalb wird alles
+ * mit mehr Stellen als die Range-Grenzen von vornherein ausgeschlossen.
+ */
+function accountInRange(account: string, from: number, to: number): boolean {
+  const trimmed = account.trim();
+  if (!/^\d+$/.test(trimmed)) return false;
+  // Nur Konten gleicher Stellenzahl wie die Bereichsgrenzen betrachten.
+  if (trimmed.length !== String(from).length) return false;
+  const n = Number(trimmed);
+  return n >= from && n < to;
+}
 
 export async function generateBudgetComparison(
   tenantId: string,
@@ -76,9 +99,14 @@ export async function generateBudgetComparison(
   const fm = (fromMonth ?? 1) - 1; // 0-based
   const tm = (toMonth ?? 12) - 1;
 
-  // Calculate period dates for actual data query
-  const periodStart = new Date(budget.year, fm, 1);
-  const periodEnd = new Date(budget.year, tm + 1, 0, 23, 59, 59);
+  // F22: Der Zeitraum wurde mit `new Date(year, m, d)` in LOKALZEIT gebildet,
+  // gefiltert wird aber gegen JournalEntry.entryDate in UTC. In Europe/Berlin
+  // ist `new Date(2026, 11, 31, 23, 59, 59)` = 2026-12-31T22:59:59Z — die
+  // AfA-Automatik bucht Monatsenden aber auf 23:59:59Z. Ergebnis: die
+  // Dezember-Buchungen fielen aus dem Soll/Ist-Vergleich heraus.
+  // Konsequent in UTC bilden, wie überall sonst im Buchhaltungs-Modul.
+  const periodStart = new Date(Date.UTC(budget.year, fm, 1, 0, 0, 0, 0));
+  const periodEnd = new Date(Date.UTC(budget.year, tm + 1, 0, 23, 59, 59, 999));
 
   // Load actual journal lines for the period
   const journalLines = await prisma.journalEntryLine.findMany({
@@ -98,6 +126,14 @@ export async function generateBudgetComparison(
     },
   });
 
+  // F24: Kostenstellen-Hierarchie aufrollen.
+  // Budgets werden häufig auf einer Elternkostenstelle geplant, gebucht wird
+  // aber auf die Kinder. Der exakte String-Match ließ die Ist-Werte der Kinder
+  // komplett unter den Tisch fallen → Abweichung −100 % auf jeder Elternzeile.
+  // Jede Buchung wird deshalb ihrer Kostenstelle UND allen Vorfahren
+  // zugerechnet.
+  const ancestorMap = await buildCostCenterAncestorMap(tenantId);
+
   // Aggregate actuals by costCenter + category
   const actualMap = new Map<string, number>();
 
@@ -106,13 +142,18 @@ export async function generateBudgetComparison(
     const debit = toNum(line.debitAmount);
     const credit = toNum(line.creditAmount);
 
+    // Ziel-Kostenstellen: die eigene plus alle Eltern in der Kette.
+    const targets = ancestorMap.get(cc) ?? [cc];
+
     // Determine which budget category this line belongs to
     for (const [category, ranges] of Object.entries(CATEGORY_ACCOUNT_RANGES)) {
       for (const range of ranges) {
-        if (line.account >= range.from && line.account < range.to) {
-          const key = `${cc}::${category}`;
+        if (accountInRange(line.account, range.from, range.to)) {
           const amount = range.isRevenue ? (credit - debit) : (debit - credit);
-          actualMap.set(key, (actualMap.get(key) || 0) + amount);
+          for (const target of targets) {
+            const key = `${target}::${category}`;
+            actualMap.set(key, (actualMap.get(key) || 0) + amount);
+          }
         }
       }
     }

@@ -19,8 +19,12 @@ export interface TurbinePerformanceKpi {
   parkName: string;
   ratedPowerKw: number;
   productionKwh: number;
+  /** Länge des Auswertungszeitraums in Stunden (im laufenden Jahr bis "jetzt") */
   hoursInPeriod: number;
-  capacityFactor: number;   // (actualKwh / (ratedKw * hours)) * 100
+  /** Tatsächlich durch Messdaten abgedeckte Stunden (dataPoints / 6) */
+  coveredHours: number;
+  /** (actualKwh / (ratedKw * coveredHours)) * 100 — Nenner = GEMESSENE Zeit */
+  capacityFactor: number;
   specificYield: number;    // kWh / kW installed
   avgWindSpeed: number | null;
   dataPoints: number;
@@ -33,6 +37,8 @@ export interface FleetPerformanceSummary {
   avgSpecificYield: number;
   totalInstalledKw: number;
   avgWindSpeed: number | null;
+  /** Mittlere Datenvollständigkeit der Flotte in % — Kontext für avgCapacityFactor */
+  avgDataCompleteness?: number;
 }
 
 export interface PerformanceOverviewResponse {
@@ -80,7 +86,17 @@ export interface AvailabilityBreakdown {
   t5_1: number; // External: Grid
   t5_2: number; // External: Remote shutdown
   t5_3: number; // External: Other
+  /**
+   * Technische Verfügbarkeit: T1 / (T1 + T5) × 100.
+   * T2/T3/T4/T6 sind aus Zähler UND Nenner ausgeschlossen.
+   * NICHT die vertragliche Verfügbarkeit — siehe fetchAvailabilityBreakdown().
+   */
   availabilityPct: number;
+  /**
+   * Zeitbasierte Verfügbarkeit nach IEC 61400-26-1:
+   * (Gesamtzeit − T4 − T5) / Gesamtzeit × 100. Windstille zählt als verfügbar.
+   */
+  timeBasedAvailabilityPct?: number;
   totalSeconds: number;
 }
 

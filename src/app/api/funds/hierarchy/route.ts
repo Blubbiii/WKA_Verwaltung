@@ -67,7 +67,8 @@ type FundHierarchyCreateInput = z.infer<typeof fundHierarchyCreateSchema>;
 async function checkCircularReference(
   parentFundId: string,
   childFundId: string,
-  tenantId: string
+  tenantId: string,
+  asOf: Date = new Date(),
 ): Promise<{ isCircular: boolean; path?: string[] }> {
   // Fall 1: Direkte Selbstreferenz
   if (parentFundId === childFundId) {
@@ -88,6 +89,14 @@ async function checkCircularReference(
   // Sicherheits-Bremse `depth < 100` schuetzt vor pathologischen Daten
   // (bereits vorhandene Zyklen — sollte durch Serializable-TX unmoeglich sein,
   //  aber defensiv besser haben).
+  //
+  // FIX (Randfall 14): Der Filter darf NICHT `validTo IS NULL` sein. Eine
+  // Kante mit einem in der ZUKUNFT liegenden validTo (z.B. 2030-12-31) ist
+  // sehr wohl aktiv, waere mit `IS NULL` aber unsichtbar — die Gegenkante
+  // B→A wuerde committet und der Zyklus entstuende trotz Pruefung.
+  // Relevant ist jede Kante, die zum Stichtag nicht bereits abgelaufen ist
+  // (`validTo IS NULL OR validTo > asOf`). Kanten mit zukuenftigem validFrom
+  // werden bewusst MITgezaehlt: sie werden aktiv, bevor der Zyklus auffiele.
   const cycleRows = await prisma.$queryRaw<Array<{ path: string[] }>>`
     WITH RECURSIVE ancestors AS (
       SELECT
@@ -97,7 +106,7 @@ async function checkCircularReference(
       FROM fund_hierarchies h
       INNER JOIN funds pf ON pf.id = h."parentFundId"
       WHERE h."childFundId" = ${parentFundId}
-        AND h."validTo" IS NULL
+        AND (h."validTo" IS NULL OR h."validTo" > ${asOf})
         AND pf."tenantId" = ${tenantId}
       UNION ALL
       SELECT
@@ -107,7 +116,7 @@ async function checkCircularReference(
       FROM fund_hierarchies h
       INNER JOIN ancestors a ON h."childFundId" = a.ancestor_id
       INNER JOIN funds pf ON pf.id = h."parentFundId"
-      WHERE h."validTo" IS NULL
+      WHERE (h."validTo" IS NULL OR h."validTo" > ${asOf})
         AND pf."tenantId" = ${tenantId}
         AND a.depth < 100
         AND NOT (h."parentFundId" = ANY(a.path))

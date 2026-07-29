@@ -38,6 +38,50 @@ export class OverpaymentError extends Error {
   }
 }
 
+/**
+ * Finding 2.2: Summe der zu dieser Rechnung tatsächlich angemahnten
+ * Nebenforderungen (Mahngebühren, Verzugszinsen, §288-Abs.-5-Pauschale).
+ *
+ * Rechenregel:
+ *  - Mahngebühren ADDIEREN sich über die Stufen (jede Stufe hat eine eigene
+ *    Gebühr, die mit der Mahnung angefallen ist).
+ *  - Verzugszinsen tun das NICHT: jede Stufe rechnet die Zinsen erneut ab
+ *    Fälligkeit — der höchste Wert ist der aktuelle Anspruch.
+ *  - Die 40-€-Pauschale ist einmalig (§288 Abs. 5 BGB) → Maximum.
+ *
+ * Ergebnis ist eine Obergrenze für zulässige Mehrzahlung, kein gebuchter
+ * Forderungsbetrag.
+ */
+async function sumOpenDunningCharges(
+  tx: TxClient,
+  invoiceId: string,
+): Promise<Decimal> {
+  const items = await tx.dunningItem.findMany({
+    where: { invoiceId },
+    select: {
+      feeAmount: true,
+      interestAmount: true,
+      interestLumpSumEur: true,
+    },
+  });
+
+  if (items.length === 0) return new Decimal(0);
+
+  let fees = new Decimal(0);
+  let maxInterest = new Decimal(0);
+  let maxLumpSum = new Decimal(0);
+
+  for (const it of items) {
+    fees = fees.plus(new Decimal(it.feeAmount ?? 0));
+    const interest = new Decimal(it.interestAmount ?? 0);
+    if (interest.greaterThan(maxInterest)) maxInterest = interest;
+    const lump = new Decimal(it.interestLumpSumEur ?? 0);
+    if (lump.greaterThan(maxLumpSum)) maxLumpSum = lump;
+  }
+
+  return fees.plus(maxInterest).plus(maxLumpSum).toDecimalPlaces(2);
+}
+
 export class InvoiceNotPayableError extends Error {
   constructor(public readonly status: string) {
     super(`Rechnung im Status "${status}" kann keine Zahlungen entgegennehmen`);
@@ -158,7 +202,30 @@ export async function recordPayment(
   const settings = await getTenantSettings(params.tenantId);
   const toleranceDec = new Decimal(settings.bankMatchToleranceEur);
 
-  if (newPaidDec.greaterThan(grossAmount.plus(toleranceDec))) {
+  // Finding 2.2: Mahngebühren, Verzugszinsen und die §288-Abs.-5-Pauschale
+  // werden ausschließlich auf DunningItem geführt und erhöhen den
+  // Rechnungsbetrag nicht. Zahlte ein Kunde korrekt "Rechnung + Mahngebühr",
+  // lag paidAmount über grossAmount und recordPayment lehnte die vollkommen
+  // richtige Zahlung mit OverpaymentError ab — sie war schlicht nicht
+  // erfassbar.
+  //
+  // Warum kein eigener Forderungs-Beleg: eine zweite Invoice für die Gebühr
+  // bräuchte Nummernkreis, Steuerbehandlung (Mahngebühren sind
+  // nicht steuerbarer Schadensersatz, keine Leistung i.S.d. §1 UStG),
+  // Auto-Posting-Mapping und Mahn-Ausschluss für sich selbst — das geht
+  // ohne Schema- und Prozessänderung nicht sauber. Bis dahin ist die
+  // Überzahlungsgrenze um die tatsächlich angemahnten Nebenforderungen zu
+  // erweitern die minimale korrekte Lösung: die Zahlung ist erfassbar, ohne
+  // dass irgendwo ein Betrag erfunden wird.
+  //
+  // ACHTUNG: die Nebenforderung wird dadurch NICHT zur gebuchten Forderung.
+  // paidAmount kann jetzt über grossAmount liegen; die Differenz ist der
+  // vereinnahmte Gebühren-/Zinsanteil und muss weiterhin manuell auf ein
+  // Ertragskonto gebucht werden.
+  const dunningExtras = await sumOpenDunningCharges(tx, params.invoiceId);
+  const upperLimit = grossAmount.plus(toleranceDec).plus(dunningExtras);
+
+  if (newPaidDec.greaterThan(upperLimit)) {
     throw new OverpaymentError(grossAmount.toNumber(), newPaidDec.toNumber());
   }
 

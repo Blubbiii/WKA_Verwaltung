@@ -2362,6 +2362,7 @@
       "createInvoices": "Create credit notes",
       "showInvoices": "Show credit notes",
       "calculateSuccess": "Settlement calculated successfully",
+      "calculateSkippedTurbines": "Calculation completed — {count} turbine(s) were NOT included and will not receive a credit note",
       "calculateError": "Calculation error",
       "invoicesSuccess": "Credit notes created successfully",
       "invoicesError": "Failed to create credit notes",

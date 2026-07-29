@@ -143,6 +143,161 @@ export function computeDefaultInterest(
   };
 }
 
+// ---------------------------------------------------------------------------
+// F17: Segmentierte Berechnung über die Basiszinssatz-Historie
+// ---------------------------------------------------------------------------
+
+/** Ein Gültigkeitsintervall des Basiszinssatzes (§247 BGB). */
+export interface BaseRateSegment {
+  /** Gilt ab diesem Tag (inklusiv). */
+  validFrom: Date;
+  ratePercent: number;
+}
+
+export interface InterestSegmentDetail {
+  /** Erster Tag dieses Zinsabschnitts (inklusiv). */
+  from: Date;
+  /** Letzter Tag dieses Zinsabschnitts (inklusiv). */
+  to: Date;
+  days: number;
+  baseRatePercent: number;
+  effectiveRatePercent: number;
+  interestAmount: number;
+}
+
+export interface ComputeSegmentedInterestInput
+  extends Omit<ComputeInterestInput, "baseRatePercent"> {
+  /**
+   * Basiszinssatz-Historie, aufsteigend nach validFrom. Der ERSTE Eintrag gilt
+   * auch für alle Tage davor (siehe getBaseRateSegments()).
+   */
+  baseRateSegments: BaseRateSegment[];
+}
+
+export interface ComputeSegmentedInterestResult extends ComputeInterestResult {
+  /** Aufschlüsselung je Zinsperiode — für Mahnungs-Anlage und Nachvollzug. */
+  segments: InterestSegmentDetail[];
+}
+
+function utcMidnight(d: Date): number {
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/**
+ * Verzugszinsen §288 BGB mit HALBJAHRES-SEGMENTIERUNG (F17).
+ *
+ * Der Basiszinssatz nach §247 BGB wird zum 1.1. und 1.7. neu festgesetzt.
+ * Zieht sich ein Verzug über einen Stichtag, ist der Zins für jede Zinsperiode
+ * getrennt mit dem DORT geltenden Satz zu rechnen. computeDefaultInterest()
+ * nimmt dagegen EINEN Satz für den gesamten Zeitraum — bei einem Verzug über
+ * mehrere Halbjahre (z.B. 2024: 3,62 % → 2025: 1,27 %) liegt das Ergebnis
+ * deutlich daneben.
+ *
+ * Konventionen wie in computeDefaultInterest():
+ *  - Erster Verzugstag = Tag NACH Fälligkeit (§187 BGB), asOf zählt mit.
+ *  - 365-Tage-Jahr, kalendergenau.
+ *  - 40€-Pauschale (§288 Abs. 5) einmalig, unabhängig von der Segmentierung.
+ *
+ * Jedes Segment wird einzeln auf Cent gerundet, damit die ausgewiesenen
+ * Teilbeträge in der Mahnungs-Anlage exakt zur Summe addieren.
+ */
+export function computeSegmentedDefaultInterest(
+  input: ComputeSegmentedInterestInput,
+  config: VerzugszinsSystemConfig = DEFAULT_VERZUGSZINS_CONFIG,
+): ComputeSegmentedInterestResult {
+  const daysOverdue = daysSince(input.dueDate, input.asOf);
+
+  const empty: ComputeSegmentedInterestResult = {
+    daysOverdue: 0,
+    effectiveRatePercent: 0,
+    interestAmount: 0,
+    lumpSumEur: 0,
+    totalEur: 0,
+    noDefault: true,
+    segments: [],
+  };
+
+  if (daysOverdue === 0 || input.principal <= 0) return empty;
+
+  const surcharge = input.isBusinessCustomer
+    ? config.b2bSurchargePoints
+    : config.b2cSurchargePoints;
+
+  // Fallback wenn keine Historie übergeben wurde: wie bisher ein Satz von 0
+  // plus Aufschlag. Besser als eine Exception im Mahnlauf.
+  const rates =
+    input.baseRateSegments.length > 0
+      ? [...input.baseRateSegments].sort(
+          (a, b) => a.validFrom.getTime() - b.validFrom.getTime(),
+        )
+      : [{ validFrom: input.dueDate, ratePercent: 0 }];
+
+  // Verzugszeitraum in ganzen UTC-Tagen: [dueDate+1 .. asOf]
+  const firstDay = utcMidnight(input.dueDate) + MS_PER_DAY_LOCAL;
+  const lastDay = utcMidnight(input.asOf);
+
+  const segments: InterestSegmentDetail[] = [];
+  let cursor = firstDay;
+
+  while (cursor <= lastDay) {
+    // Satz, der am cursor-Tag gilt (letzter mit validFrom <= cursor;
+    // liegt cursor vor dem ersten Eintrag, gilt der erste — s. Doc oben).
+    let idx = 0;
+    for (let i = 0; i < rates.length; i++) {
+      if (utcMidnight(rates[i].validFrom) <= cursor) idx = i;
+      else break;
+    }
+    const baseRatePercent = rates[idx].ratePercent;
+
+    // Ende dieses Abschnitts = Tag vor dem nächsten Stichtag, spätestens asOf.
+    const next = rates[idx + 1];
+    const nextStart = next ? utcMidnight(next.validFrom) : Infinity;
+    const segEnd = Math.min(lastDay, nextStart - MS_PER_DAY_LOCAL);
+    const days = Math.floor((segEnd - cursor) / MS_PER_DAY_LOCAL) + 1;
+
+    const effectiveRatePercent = round3(baseRatePercent + surcharge);
+    const interestAmount = round2(
+      (input.principal * effectiveRatePercent * days) / 100 / 365,
+    );
+
+    segments.push({
+      from: new Date(cursor),
+      to: new Date(segEnd),
+      days,
+      baseRatePercent,
+      effectiveRatePercent,
+      interestAmount,
+    });
+
+    cursor = segEnd + MS_PER_DAY_LOCAL;
+  }
+
+  const interestAmount = round2(
+    segments.reduce((s, seg) => s + seg.interestAmount, 0),
+  );
+
+  // Ausgewiesener Gesamtsatz = tagesgewichteter Durchschnitt. Bei nur einem
+  // Segment identisch zum bisherigen Verhalten.
+  const weighted =
+    segments.reduce((s, seg) => s + seg.effectiveRatePercent * seg.days, 0) /
+    Math.max(1, daysOverdue);
+
+  const lumpSumEur =
+    input.isBusinessCustomer && !input.lumpSumAlreadyApplied
+      ? config.b2bLumpSumEur
+      : 0;
+
+  return {
+    daysOverdue,
+    effectiveRatePercent: round3(weighted),
+    interestAmount,
+    lumpSumEur,
+    totalEur: round2(interestAmount + lumpSumEur),
+    noDefault: false,
+    segments,
+  };
+}
+
 function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }

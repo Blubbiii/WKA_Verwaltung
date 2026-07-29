@@ -4,6 +4,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { addMonthsSafe, setMonthSafe } from "@/lib/date-utils";
 import { BillingRuleFrequency } from "./types";
 import { NextRunInfo } from "./types";
 
@@ -131,19 +132,22 @@ export function calculateNextRun(
   const day = rule.dayOfMonth || 1; // Default: 1. des Monats
   const validDay = Math.min(Math.max(day, 1), 28); // 1-28 (um Feb-Probleme zu vermeiden)
 
-  const next = new Date(now);
+  let next = new Date(now);
   next.setHours(0, 0, 0, 0);
 
+  // WICHTIG: Alle Monats-/Jahressprünge laufen über die overflow-sicheren
+  // Helper aus @/lib/date-utils. Ein direktes `next.setMonth(m)` würde am
+  // 29./30./31. eines Monats in den Folgemonat überlaufen ("31. Februar" →
+  // 03.03.); ein anschliessendes setDate() landet dann einen ganzen Monat
+  // zu spät.
   switch (rule.frequency) {
     case "MONTHLY":
-      // Nächster Monat am angegebenen Tag
-      if (now.getDate() >= validDay) {
-        next.setMonth(next.getMonth() + 1);
-      }
-      next.setDate(validDay);
+      // Nächster Monat am angegebenen Tag (oder noch dieser Monat, wenn der
+      // Tag in diesem Monat noch bevorsteht).
+      next = addMonthsSafe(next, now.getDate() >= validDay ? 1 : 0, validDay);
       break;
 
-    case "QUARTERLY":
+    case "QUARTERLY": {
       // Nächstes Quartal (Januar, April, Juli, Oktober)
       const quarterMonths = [0, 3, 6, 9]; // 0-indexed
       const currentMonth = now.getMonth();
@@ -151,17 +155,15 @@ export function calculateNextRun(
         (m) => m > currentMonth || (m === currentMonth && now.getDate() < validDay)
       );
 
-      if (nextQuarterMonth !== undefined) {
-        next.setMonth(nextQuarterMonth);
-      } else {
-        // Nächstes Jahr Januar
-        next.setFullYear(next.getFullYear() + 1);
-        next.setMonth(0);
-      }
-      next.setDate(validDay);
+      next =
+        nextQuarterMonth !== undefined
+          ? setMonthSafe(next, nextQuarterMonth, validDay)
+          : // Nächstes Jahr Januar
+            setMonthSafe(next, 0, validDay, next.getFullYear() + 1);
       break;
+    }
 
-    case "SEMI_ANNUAL":
+    case "SEMI_ANNUAL": {
       // Halbjährlich (Januar, Juli)
       const semiAnnualMonths = [0, 6];
       const currentMonth2 = now.getMonth();
@@ -169,28 +171,29 @@ export function calculateNextRun(
         (m) => m > currentMonth2 || (m === currentMonth2 && now.getDate() < validDay)
       );
 
-      if (nextSemiMonth !== undefined) {
-        next.setMonth(nextSemiMonth);
-      } else {
-        next.setFullYear(next.getFullYear() + 1);
-        next.setMonth(0);
-      }
-      next.setDate(validDay);
+      next =
+        nextSemiMonth !== undefined
+          ? setMonthSafe(next, nextSemiMonth, validDay)
+          : setMonthSafe(next, 0, validDay, next.getFullYear() + 1);
       break;
+    }
 
-    case "ANNUAL":
+    case "ANNUAL": {
       // Jährlich (Januar)
-      if (now.getMonth() > 0 || (now.getMonth() === 0 && now.getDate() >= validDay)) {
-        next.setFullYear(next.getFullYear() + 1);
-      }
-      next.setMonth(0);
-      next.setDate(validDay);
+      const rollToNextYear =
+        now.getMonth() > 0 || (now.getMonth() === 0 && now.getDate() >= validDay);
+      next = setMonthSafe(
+        next,
+        0,
+        validDay,
+        rollToNextYear ? next.getFullYear() + 1 : next.getFullYear()
+      );
       break;
+    }
 
     default:
       // Fallback: Nächster Monat
-      next.setMonth(next.getMonth() + 1);
-      next.setDate(validDay);
+      next = addMonthsSafe(next, 1, validDay);
   }
 
   return next;

@@ -26,6 +26,7 @@ import { invalidateReportsCache } from "@/lib/cache/reports";
 import {
   calculateAfaSchedule,
   DegressiveNotAllowedError,
+  GwgThresholdViolationError,
   resolveAfaMethod,
 } from "./afa";
 
@@ -142,6 +143,13 @@ export async function runDepreciation(
         warnings.push(
           `Asset ${asset.assetNumber}: degressive AfA seit 2023 unzulässig (Anschaffung ${err.acquisitionDate.toISOString().slice(0, 10)}). Bitte auf LINEAR umstellen.`,
         );
+        continue;
+      }
+      // F15: AK passen nicht zur gewählten GWG-Methode (§6 Abs. 2 / 2a EStG).
+      // Asset überspringen statt es falsch abzuschreiben — der Anwender muss
+      // die AfA-Methode am Asset korrigieren.
+      if (err instanceof GwgThresholdViolationError) {
+        warnings.push(`Asset ${asset.assetNumber}: ${err.message}`);
         continue;
       }
       throw err;

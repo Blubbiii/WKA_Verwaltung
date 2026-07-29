@@ -101,8 +101,25 @@ export default function SettlementDetailPage({
   async function handleCalculate() {
     try {
       setActionLoading("calculate");
-      await calculateEnergySettlement(id);
-      toast.success(t("calculateSuccess"));
+      const result = await calculateEnergySettlement(id);
+      // Übersprungene Anlagen (kein Betreiber zum Stichtag / unbestätigte
+      // Produktionsdaten) sichtbar machen — sie bekommen KEINE Gutschrift.
+      const skipped = result?.warnings?.skippedTurbines as
+        | Array<{ turbineDesignation: string; message: string }>
+        | undefined;
+      if (skipped && skipped.length > 0) {
+        toast.warning(
+          t("calculateSkippedTurbines", { count: skipped.length }),
+          {
+            description: skipped
+              .map((s) => `${s.turbineDesignation}: ${s.message}`)
+              .join("\n"),
+            duration: 12000,
+          }
+        );
+      } else {
+        toast.success(t("calculateSuccess"));
+      }
       mutate();
     } catch (error) {
       toast.error(

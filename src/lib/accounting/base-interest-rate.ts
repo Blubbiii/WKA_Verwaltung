@@ -59,6 +59,53 @@ export async function getBaseRateAt(
 }
 
 /**
+ * F17: Liefert die Basiszinssatz-HISTORIE für ein Intervall.
+ *
+ * §247 BGB ändert den Basiszinssatz halbjährlich (1.1. / 1.7.). Verzugszinsen
+ * sind deshalb je Zinsperiode getrennt zu rechnen. getBaseRateAt() allein
+ * reicht nicht: sie liefert einen Punktwert, der dann fälschlich für den
+ * ganzen Verzugszeitraum angewendet wurde.
+ *
+ * Rückgabe: aufsteigend nach validFrom, beginnend mit dem Satz, der am
+ * `from`-Datum gilt (dessen validFrom kann VOR `from` liegen). Liegt `from`
+ * vor dem ältesten Eintrag, wird der älteste Satz als Anfang genommen —
+ * gleiche Konvention wie getBaseRateAt().
+ *
+ * Ist die Tabelle leer, kommt ein einzelnes 0%-Segment zurück (konservativ:
+ * es bleibt nur der Aufschlag nach §288 BGB).
+ */
+export async function getBaseRateSegments(
+  from: Date,
+  to: Date,
+  tx?: TxClient,
+): Promise<Array<{ validFrom: Date; ratePercent: number }>> {
+  const client = tx ?? prisma;
+  const rows = await client.baseInterestRate.findMany({
+    where: { validFrom: { lte: to } },
+    orderBy: { validFrom: "asc" },
+    select: { validFrom: true, ratePercent: true },
+  });
+
+  if (rows.length === 0) {
+    return [{ validFrom: from, ratePercent: 0 }];
+  }
+
+  const mapped = rows.map((r: { validFrom: Date; ratePercent: unknown }) => ({
+    validFrom: r.validFrom,
+    ratePercent: Number(r.ratePercent),
+  }));
+
+  // Index des letzten Satzes, der am `from`-Datum bereits galt.
+  let startIdx = 0;
+  for (let i = 0; i < mapped.length; i++) {
+    if (mapped[i].validFrom <= from) startIdx = i;
+    else break;
+  }
+
+  return mapped.slice(startIdx);
+}
+
+/**
  * Seedet die Tabelle BaseInterestRate mit den Bundesbank-Werten, falls
  * sie leer ist. Idempotent via skipDuplicates. Wird vom Backfill-Script
  * und beim ersten API-GET aufgerufen.

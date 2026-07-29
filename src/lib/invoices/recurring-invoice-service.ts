@@ -15,6 +15,7 @@ import {
 } from "@/lib/invoices/numberGenerator";
 import { invalidate } from "@/lib/cache/invalidation";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { addMonthsSafe, addYearsSafe } from "@/lib/date-utils";
 import { apiLogger } from "@/lib/logger";
 
 const logger = apiLogger.child({ component: "recurring-invoice-service" });
@@ -61,45 +62,34 @@ export function calculateNextRunDate(
   dayOfMonth?: number | null
 ): Date {
   const day = Math.min(Math.max(dayOfMonth || 1, 1), 28);
-  const next = new Date(fromDate);
-  next.setHours(2, 0, 0, 0); // Run at 02:00 to avoid timezone edge cases
+  const base = new Date(fromDate);
+  base.setHours(2, 0, 0, 0); // Run at 02:00 to avoid timezone edge cases
 
+  // IMPORTANT: use the overflow-safe helpers from @/lib/date-utils.
+  // `base.setMonth(+1)` on a 31st asks for "February 31st", which JS rolls
+  // over into March — the following setDate() then lands a full month late
+  // (2026-01-31 + 1M with day 15 would give 2026-03-15 instead of 2026-02-15).
+  // Same for setFullYear() on a Feb 29th.
   switch (frequency) {
-    case "MONTHLY": {
-      next.setMonth(next.getMonth() + 1);
-      next.setDate(day);
-      break;
-    }
+    case "MONTHLY":
+      return addMonthsSafe(base, 1, day);
 
-    case "QUARTERLY": {
+    case "QUARTERLY":
       // Advance by 3 months
-      next.setMonth(next.getMonth() + 3);
-      next.setDate(day);
-      break;
-    }
+      return addMonthsSafe(base, 3, day);
 
-    case "SEMI_ANNUAL": {
+    case "SEMI_ANNUAL":
       // Advance by 6 months
-      next.setMonth(next.getMonth() + 6);
-      next.setDate(day);
-      break;
-    }
+      return addMonthsSafe(base, 6, day);
 
-    case "ANNUAL": {
+    case "ANNUAL":
       // Advance by 1 year
-      next.setFullYear(next.getFullYear() + 1);
-      next.setDate(day);
-      break;
-    }
+      return addYearsSafe(base, 1, day);
 
-    default: {
+    default:
       // Fallback: monthly
-      next.setMonth(next.getMonth() + 1);
-      next.setDate(day);
-    }
+      return addMonthsSafe(base, 1, day);
   }
-
-  return next;
 }
 
 /**

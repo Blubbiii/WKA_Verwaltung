@@ -207,9 +207,20 @@ describe("computeOverdueDays", () => {
     expect(computeOverdueDays(halfDayAgo, NOW)).toBe(0);
   });
 
-  it("rundet ab bei 23 Stunden überfällig (= 0 Tage)", () => {
-    const twentyThreeHoursAgo = new Date("2026-04-12T13:00:00Z");
-    expect(computeOverdueDays(twentyThreeHoursAgo, NOW)).toBe(0);
+  // F19: computeOverdueDays rechnete früher mit rohen Millisekunden, während
+  // interest.ts:daysSince auf UTC-Mitternacht normalisiert. Dadurch stand auf
+  // dem DunningItem "0 Tage überfällig", obwohl die Zinsen bereits für einen
+  // Tag berechnet wurden. Beide Funktionen zählen jetzt Kalendertage — das ist
+  // auch die fachlich richtige Sicht: fällig am 12.04., heute der 13.04. ist
+  // ein Verzugstag (§288 BGB läuft ab dem Tag nach Fälligkeit).
+  it("zählt Kalendertage: Fälligkeit gestern = 1 Verzugstag", () => {
+    const yesterday = new Date("2026-04-12T13:00:00Z");
+    expect(computeOverdueDays(yesterday, NOW)).toBe(1);
+  });
+
+  it("gibt 0 zurück, solange der Fälligkeitstag noch läuft", () => {
+    const earlierSameDay = new Date("2026-04-13T00:30:00Z");
+    expect(computeOverdueDays(earlierSameDay, NOW)).toBe(0);
   });
 
   it("gibt 30 zurück bei einem Monat Überfälligkeit", () => {

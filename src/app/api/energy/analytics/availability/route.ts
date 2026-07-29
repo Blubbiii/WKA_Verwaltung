@@ -39,13 +39,20 @@ export async function GET(request: NextRequest) {
       fetchDowntimePareto(tenantId, year, parkId),
     ]);
 
-    // Calculate fleet summary from breakdown
-    // Use IEC 61400-26-2 formula: T1 / (T1 + T5) weighted across all turbines
+    // Fleet-Summen aus dem Breakdown.
+    // Kennzahl-Definitionen: siehe fetchAvailabilityBreakdown() in module-fetchers.ts
     const totalT1 = breakdown.reduce((s, b) => s + b.t1, 0);
     const totalT4 = breakdown.reduce((s, b) => s + b.t4, 0);
     const totalT5 = breakdown.reduce((s, b) => s + b.t5, 0);
+    const totalAll = breakdown.reduce((s, b) => s + b.totalSeconds, 0);
+
+    // Technische Verfügbarkeit: T1 / (T1 + T5), zeitgewichtet über alle Anlagen
     const fleetRelevant = totalT1 + totalT5;
     const avgAvail = fleetRelevant > 0 ? (totalT1 / fleetRelevant) * 100 : 0;
+
+    // Zeitbasierte Verfügbarkeit nach IEC 61400-26-1: (Gesamt − T4 − T5) / Gesamt
+    const avgTimeBasedAvail =
+      totalAll > 0 ? ((totalAll - totalT4 - totalT5) / totalAll) * 100 : 0;
 
     return NextResponse.json({
       breakdown,
@@ -53,7 +60,10 @@ export async function GET(request: NextRequest) {
       heatmap,
       pareto,
       fleet: {
+        // Beibehalten für Bestandsclients — identisch mit avgTechnicalAvailability
         avgAvailability: Math.round(avgAvail * 100) / 100,
+        avgTechnicalAvailability: Math.round(avgAvail * 100) / 100,
+        avgTimeBasedAvailability: Math.round(avgTimeBasedAvail * 100) / 100,
         totalProductionHours: Math.round(totalT1 / 3600),
         totalDowntimeHours: Math.round(totalT5 / 3600),
         totalMaintenanceHours: Math.round(totalT4 / 3600),
@@ -61,6 +71,20 @@ export async function GET(request: NextRequest) {
       meta: {
         year,
         parkId: parkId || "all",
+        // Kennzahl explizit benennen, damit sie nicht mit der VERTRAGLICHEN
+        // Verfügbarkeit aus dem Wartungsvertrag verwechselt wird.
+        availabilityDefinitions: {
+          technical: {
+            label: "Technische Verfügbarkeit",
+            formula: "T1 / (T1 + T5)",
+            note: "T2 (Windstille), T3 (Umwelt), T4 (Wartung) und T6 (Sonstiges) sind aus Zähler und Nenner ausgeschlossen. Nicht identisch mit der vertraglichen Verfügbarkeit aus dem Wartungsvertrag.",
+          },
+          timeBased: {
+            label: "Zeitbasierte Verfügbarkeit (IEC 61400-26-1)",
+            formula: "(T1+T2+T3+T4+T5+T6 − T4 − T5) / (T1+T2+T3+T4+T5+T6)",
+            note: "Windstille zählt als verfügbar; Wartung und Störung als nicht verfügbar. Vertragliche Definitionen können abweichen (Ausschlüsse, Karenzzeiten).",
+          },
+        },
       },
     });
   } catch (error) {

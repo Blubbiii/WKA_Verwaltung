@@ -74,6 +74,10 @@ export interface TenantSettings {
   datevAccountCash: string;
   // Aufwandskonto Forderungsverluste (leer = Fallback Erlöskonto)
   datevAccountBadDebt: string;
+  // EWB/PWB (§253 HGB): Aufwand an Wertberichtigung.
+  // Leer = aus Kontenrahmen ableiten (SKR03 2400/0996, SKR04 6930/3090).
+  datevAccountValueAdjustment: string;
+  datevAccountValueAdjustmentExpense: string;
 
   // Geschaeftsjahr
   fiscalYearStartMonth: number;
@@ -352,6 +356,15 @@ const tenantSettingsSchema = z.object({
     .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
     .optional(),
   datevAccountBadDebt: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
+  // EWB/PWB (§253 HGB): Aufwandskonto + Wertberichtigungs-Gegenkonto.
+  datevAccountValueAdjustment: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
+  datevAccountValueAdjustmentExpense: z
     .string()
     .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
     .optional(),

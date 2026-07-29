@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { getCachedReport } from "@/lib/cache/reports";
+import { shiftYears } from "./date-shift";
 
 export interface GuvLine {
   /** HGB §275 position number */
@@ -187,11 +188,14 @@ async function generateGuvUncached(
 ): Promise<GuvResult> {
   const _settings = await getTenantSettings(tenantId);
 
-  // Previous year same period
-  const prevStart = new Date(periodStart);
-  prevStart.setFullYear(prevStart.getFullYear() - 1);
-  const prevEnd = new Date(periodEnd);
-  prevEnd.setFullYear(prevEnd.getFullYear() - 1);
+  // Previous year same period.
+  //
+  // Randfall 15: `setFullYear(y - 1)` rollt am 29.02. auf den 01.03. — der
+  // Vorjahresvergleich verschob sich in Schaltjahren um einen Tag und ein
+  // ganzer Buchungstag fiel raus bzw. doppelt rein. shiftYears() klemmt den
+  // Tag stattdessen auf das Monatsende des Zieljahres.
+  const prevStart = shiftYears(periodStart, -1);
+  const prevEnd = shiftYears(periodEnd, -1);
 
   const [c, p] = await Promise.all([
     aggregateByPeriod(tenantId, periodStart, periodEnd),

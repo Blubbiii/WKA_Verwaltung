@@ -44,7 +44,12 @@ import {
   readUqdFile,
   scanLocation,
 } from './dbf-reader';
-import { aggregateMonthlyProductionBulk, writeToTurbineProduction } from './aggregation';
+import {
+  aggregateMonthlyProductionBulk,
+  writeToTurbineProduction,
+  localYearMonth,
+} from './aggregation';
+import { isImportCancelled } from './import-stale';
 import type {
   WsdRecord,
   UidRecord,
@@ -92,8 +97,8 @@ export interface ImportParams {
 
 /** Ergebnis eines abgeschlossenen Imports */
 export interface ImportResult {
-  /** Status: SUCCESS, PARTIAL (einige Fehler), FAILED */
-  status: 'SUCCESS' | 'PARTIAL' | 'FAILED';
+  /** Status: SUCCESS, PARTIAL (einige Fehler), FAILED, CANCELLED (manuell abgebrochen) */
+  status: 'SUCCESS' | 'PARTIAL' | 'FAILED' | 'CANCELLED';
   /** Anzahl verarbeiteter Dateien */
   filesProcessed: number;
   /** Anzahl importierter Messwerte */
@@ -253,6 +258,41 @@ async function loadTurbineMappings(
   }
 
   return map;
+}
+
+/**
+ * Bestimmt das höchste LÜCKENLOSE Fortschritts-Datum eines Import-Laufs.
+ *
+ * Der inkrementelle Import überspringt beim nächsten Lauf alle Dateien mit
+ * `fileDate <= lastProcessedDate`. Ein Wasserzeichen, das über eine gescheiterte
+ * Datei hinausläuft, erzeugt deshalb eine dauerhafte Datenlücke.
+ *
+ * Regel: Es zählt nur das größte erfolgreiche Datum, das STRIKT VOR dem frühesten
+ * Fehlschlag liegt. Gibt es keinen Fehlschlag, ist es einfach das größte
+ * erfolgreiche Datum. Gibt es kein qualifizierendes Datum, wird `null`
+ * zurückgegeben — dann bleibt das bisherige Wasserzeichen unverändert.
+ *
+ * Exportiert für Tests.
+ */
+export function computeContiguousWatermark(
+  succeededFileDates: Date[],
+  failedFileDates: Date[],
+): Date | null {
+  if (succeededFileDates.length === 0) return null;
+
+  const earliestFailure = failedFileDates.reduce<number | null>(
+    (min, d) => (min === null || d.getTime() < min ? d.getTime() : min),
+    null,
+  );
+
+  const eligible =
+    earliestFailure === null
+      ? succeededFileDates
+      : succeededFileDates.filter((d) => d.getTime() < earliestFailure);
+
+  if (eligible.length === 0) return null;
+
+  return eligible.reduce((max, d) => (d.getTime() > max.getTime() ? d : max));
 }
 
 /**
@@ -1551,8 +1591,11 @@ function extractAffectedMonths(records: WsdRecord[]): Array<{ year: number; mont
   const monthSet = new Set<string>();
 
   for (const rec of records) {
-    const key = `${rec.timestamp.getUTCFullYear()}-${rec.timestamp.getUTCMonth() + 1}`;
-    monthSet.add(key);
+    // FIX P2-8: Monatszuordnung in Europe/Berlin, konsistent zur Aggregation und
+    // zum lokal definierten Leistungszeitraum der Gutschrift. Vorher UTC — dadurch
+    // wurde der 01.01. 00:00–01:00 Ortszeit dem Dezember zugeordnet.
+    const { year, month } = localYearMonth(rec.timestamp);
+    monthSet.add(`${year}-${month}`);
   }
 
   return Array.from(monthSet)
@@ -1771,6 +1814,16 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
   const allAffectedMonths: Array<{ year: number; month: number }> = [];
   const affectedMonthSet = new Set<string>();
 
+  // FIX (P1-7 Zusatzrisiko): `lastProcessedDate` ist ein Fortschritts-Wasserzeichen für
+  // den inkrementellen Import. Vorher wurde es NACH JEDER Datei fortgeschrieben — eine
+  // gescheiterte Datei von Tag X wurde dadurch von einer erfolgreichen Datei von Tag X+1
+  // überholt und beim nächsten Lauf für immer übersprungen (dauerhafte Datenlücke, die
+  // still als Verteilschlüssel weiterläuft).
+  // Jetzt: Datumswerte sammeln und am Ende EINMAL das höchste LÜCKENLOSE Datum schreiben —
+  // also das größte erfolgreiche Datum, das noch vor dem frühesten Fehlschlag liegt.
+  const succeededFileDates: Date[] = [];
+  const failedFileDates: Date[] = [];
+
   try {
     // 1. Dateien finden
     let filesToScan: string[];
@@ -1927,7 +1980,18 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     }
 
     // 3. Jede (neue) Datei verarbeiten
+    let cancelled = false;
     for (const filePath of filesToProcess) {
+      // FIX P1-7: Kooperativer Abbruch — DELETE /api/energy/scada/import/[id] setzt
+      // den Log auf CANCELLED, hier wird zwischen zwei Dateien abgebrochen.
+      if (await isImportCancelled(importLogId)) {
+        cancelled = true;
+        errors.push(
+          `Import nach ${filesProcessed} von ${filesToProcess.length} Dateien manuell abgebrochen`,
+        );
+        break;
+      }
+
       try {
         // For WSD: need to collect affected months for aggregation
         if (fileType === 'WSD') {
@@ -1968,12 +2032,14 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
             );
           }
 
-          // Letztes Datum für inkrementellen Import merken
-          const lastRecord = records[records.length - 1];
-          if (lastRecord) {
-            await updateImportLog(importLogId, {
-              lastProcessedDate: lastRecord.timestamp,
-            });
+          // Datum der erfolgreich verarbeiteten Datei für das Wasserzeichen merken
+          // (Dateiname bevorzugt, sonst Timestamp des letzten Records).
+          const wsdDate =
+            extractDateFromFilename(filePath) ??
+            records[records.length - 1]?.timestamp ??
+            null;
+          if (wsdDate) {
+            succeededFileDates.push(wsdDate);
           }
         } else {
           // All other file types: use the generic dispatcher
@@ -1996,12 +2062,10 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
             );
           }
 
-          // Update lastProcessedDate from filename
+          // Datum der erfolgreich verarbeiteten Datei für das Wasserzeichen merken
           const fileDate = extractDateFromFilename(filePath);
           if (fileDate) {
-            await updateImportLog(importLogId, {
-              lastProcessedDate: fileDate,
-            });
+            succeededFileDates.push(fileDate);
           }
         }
 
@@ -2022,6 +2086,16 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
         filesFailed++;
         const errorMsg = err instanceof Error ? err.message : String(err);
         errors.push(`Fehler beim Verarbeiten von ${filePath}: ${errorMsg}`);
+
+        // Wasserzeichen darf NICHT über eine gescheiterte Datei hinauslaufen,
+        // sonst wird dieser Tag künftig dauerhaft übersprungen.
+        const failedDate = extractDateFromFilename(filePath);
+        if (failedDate) {
+          failedFileDates.push(failedDate);
+        } else {
+          // Datum unbekannt → konservativ: Wasserzeichen dieses Laufs gar nicht setzen.
+          failedFileDates.push(new Date(0));
+        }
 
         await updateImportLog(importLogId, {
           filesProcessed,
@@ -2058,13 +2132,31 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
             if (!agg || agg.dataPoints === 0) continue;
 
             try {
-              await writeToTurbineProduction(
+              const writeOutcome = await writeToTurbineProduction(
                 turbineId,
                 tenantId,
                 year,
                 month,
                 agg.totalKwh,
               );
+
+              // Bereits abgerechnete Perioden werden nicht überschrieben —
+              // still ignorieren wäre gefährlich, deshalb in die Fehler-/
+              // Warnliste des Import-Logs.
+              if (writeOutcome.outcome === 'skipped_invoiced') {
+                const deltaKwh =
+                  writeOutcome.existingKwh !== undefined
+                    ? agg.totalKwh - writeOutcome.existingKwh
+                    : null;
+                errors.push(
+                  `Turbine ${turbineId}, ${year}-${String(month).padStart(2, '0')}: Produktion ist bereits abgerechnet (INVOICED) und wurde NICHT überschrieben. ` +
+                    `SCADA-Neuwert ${agg.totalKwh} kWh` +
+                    (deltaKwh !== null
+                      ? ` vs. abgerechnet ${writeOutcome.existingKwh} kWh (Abweichung ${deltaKwh > 0 ? '+' : ''}${Math.round(deltaKwh * 1000) / 1000} kWh)`
+                      : '') +
+                    '. Korrektur nur über Storno der Gutschrift.',
+                );
+              }
             } catch (err) {
               const errorMsg = err instanceof Error ? err.message : String(err);
               errors.push(
@@ -2081,12 +2173,19 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
 
     // 5. Import abschliessen
     // PARTIAL when files were processed but records were skipped (e.g. missing mappings)
-    const finalStatus =
-      errors.length === 0
+    const finalStatus = cancelled
+      ? 'CANCELLED'
+      : errors.length === 0
         ? 'SUCCESS'
         : (totalImported > 0 || totalSkipped > 0)
           ? 'PARTIAL'
           : 'FAILED';
+
+    // Lückenloses Wasserzeichen bestimmen (siehe Kommentar bei succeededFileDates).
+    const contiguousLastProcessedDate = computeContiguousWatermark(
+      succeededFileDates,
+      failedFileDates,
+    );
 
     await updateImportLog(importLogId, {
       status: finalStatus,
@@ -2096,6 +2195,9 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
       recordsSkipped: totalSkipped,
       recordsFailed: totalFailed,
       errorDetails: errors.length > 0 ? { errors } : undefined,
+      ...(contiguousLastProcessedDate
+        ? { lastProcessedDate: contiguousLastProcessedDate }
+        : {}),
     });
 
     return {

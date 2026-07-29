@@ -24,9 +24,18 @@ export async function GET() {
     const invoices = await prisma.invoice.findMany({
       where: {
         tenantId: check.tenantId,
-        status: "SENT",
+        // Finding 2.3: PARTIALLY_PAID fehlte. Eine teilbezahlte Rechnung
+        // verschwand damit aus der Mahnliste, obwohl die Restforderung
+        // offen ist. Der Mahnlauf in lib/accounting/dunning.ts schliesst
+        // den Status korrekt ein - hier fehlte er.
+        status: { in: ["SENT", "PARTIALLY_PAID"] },
         dueDate: { lt: now },
         deletedAt: null,
+        // Finding 2.5: dunningHold wurde hier ignoriert. Eine wegen
+        // Reklamation zurueckgestellte Rechnung verschwand zwar aus dem
+        // Mahnlauf, stand aber weiter in dieser Liste und liess sich
+        // einzeln anmahnen - der Hold war wirkungslos.
+        OR: [{ dunningHold: false }, { dunningHoldUntil: { lt: now } }],
       },
       select: {
         id: true,

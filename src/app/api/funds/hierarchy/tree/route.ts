@@ -76,18 +76,33 @@ interface FlatHierarchyItem {
 // HELPER FUNCTIONS (ausserhalb des Request-Handlers)
 // =============================================================================
 
+/** Sicherheits-Bremse gegen pathologisch tiefe Beteiligungsketten. */
+const MAX_TREE_DEPTH = 100;
+
 /**
  * Rekursive Funktion zum Aufbau des Baums
+ *
+ * FIX (Randfall 14): `visited` ist zwingend. Enthalten die Daten einen Zyklus
+ * (A→B und B→A — moeglich, weil der Zyklus-Check beim Anlegen befristete
+ * Kanten uebersehen konnte), lief der Aufbau vorher unendlich tief und der
+ * Request starb mit "RangeError: Maximum call stack size exceeded" → 500.
+ * Ein bereits besuchter Fund wird jetzt einmalig ausgelassen; der Baum bleibt
+ * darstellbar. Vorbild: `src/lib/accounting/consolidation.ts`.
  */
 function buildTreeNode(
   fundId: string,
   depth: number,
   fundMap: Map<string, FundData>,
   childToParent: Map<string, ParentInfo>,
-  parentToChildren: Map<string, string[]>
+  parentToChildren: Map<string, string[]>,
+  visited: Set<string> = new Set<string>()
 ): HierarchyTreeNode | null {
   const fund = fundMap.get(fundId);
   if (!fund) return null;
+
+  // Zyklus- bzw. Mehrfach-Besuch-Schutz
+  if (visited.has(fundId) || depth > MAX_TREE_DEPTH) return null;
+  visited.add(fundId);
 
   const parentInfo = childToParent.get(fundId);
   const childIds = parentToChildren.get(fundId) || [];
@@ -99,7 +114,14 @@ function buildTreeNode(
   for (const childId of childIds) {
     const childInfo = childToParent.get(childId);
     if (childInfo) {
-      const childNode = buildTreeNode(childId, depth + 1, fundMap, childToParent, parentToChildren);
+      const childNode = buildTreeNode(
+        childId,
+        depth + 1,
+        fundMap,
+        childToParent,
+        parentToChildren,
+        visited
+      );
       if (childNode) {
         children.push(childNode);
         totalChildOwnership += childInfo.ownershipPercentage;

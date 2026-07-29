@@ -9,6 +9,9 @@ import {
   buildTurbineIdFilter,
   buildTurbineMap,
   monthLabel,
+  clampPeriodEnd,
+  coveredHoursFromDataPoints,
+  SCADA_INTERVALS_PER_HOUR,
 } from "./query-helpers";
 import type {
   TurbinePerformanceKpi,
@@ -79,10 +82,12 @@ export async function fetchPerformanceKpis(
   const _turbineMap = buildTurbineMap(turbines);
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
-  const hours = hoursInPeriod(from, to);
+  // FIX F20 (a): im laufenden Jahr endet der Zeitraum JETZT, nicht am 31.12.
+  const periodEnd = clampPeriodEnd(to);
+  const hours = hoursInPeriod(from, periodEnd);
 
-  // Expected data points per turbine (10-min intervals in a year)
-  const expectedPoints = hours * 6;
+  // Expected data points per turbine (10-min intervals in the elapsed period)
+  const expectedPoints = hours * SCADA_INTERVALS_PER_HOUR;
 
   const rows = await prisma.$queryRaw<ProductionRow[]>`
     SELECT
@@ -106,8 +111,12 @@ export async function fetchPerformanceKpis(
     const row = rowMap.get(t.id);
     const productionKwh = safeNumber(row?.production_kwh);
     const dataPoints = Number(row?.data_points ?? 0);
-    const capacityFactor = t.ratedPowerKw > 0 && hours > 0
-      ? round((productionKwh / (t.ratedPowerKw * hours)) * 100, 2)
+    // FIX F20 (b): Nenner = tatsächlich gemessene Zeit statt Kalenderzeit.
+    // Eine Import-Lücke darf nicht wie Stillstand aussehen; echte Stillstände
+    // stehen als powerW=0 in den Daten und zählen weiter mit.
+    const coveredHours = coveredHoursFromDataPoints(dataPoints, hours);
+    const capacityFactor = t.ratedPowerKw > 0 && coveredHours > 0
+      ? round((productionKwh / (t.ratedPowerKw * coveredHours)) * 100, 2)
       : 0;
     const specificYield = t.ratedPowerKw > 0
       ? round(productionKwh / t.ratedPowerKw, 1)
@@ -120,6 +129,7 @@ export async function fetchPerformanceKpis(
       ratedPowerKw: t.ratedPowerKw,
       productionKwh: round(productionKwh, 1),
       hoursInPeriod: round(hours, 0),
+      coveredHours: round(coveredHours, 0),
       capacityFactor,
       specificYield,
       avgWindSpeed: row?.avg_wind_speed != null ? round(safeNumber(row.avg_wind_speed), 2) : null,
@@ -133,16 +143,30 @@ export async function fetchPerformanceKpis(
   const totalKw = turbines.reduce((s, t) => s + t.ratedPowerKw, 0);
   const windSpeeds = turbineKpis.filter((t) => t.avgWindSpeed !== null).map((t) => t.avgWindSpeed!);
 
+  // FIX F20: Flotten-Nenner ist die Summe aus (Nennleistung × gemessene Stunden)
+  // je Anlage — nicht (Summe Nennleistung × Kalenderstunden). Sonst verzerrt eine
+  // einzelne Anlage mit Datenlücke den Flottenwert nach unten.
+  const fleetRatedKwHours = turbineKpis.reduce(
+    (s, t) => s + t.ratedPowerKw * t.coveredHours,
+    0,
+  );
+
   const fleet: FleetPerformanceSummary = {
     totalProductionKwh: round(totalProd, 1),
-    avgCapacityFactor: totalKw > 0 && hours > 0
-      ? round((totalProd / (totalKw * hours)) * 100, 2)
+    avgCapacityFactor: fleetRatedKwHours > 0
+      ? round((totalProd / fleetRatedKwHours) * 100, 2)
       : 0,
     avgSpecificYield: totalKw > 0 ? round(totalProd / totalKw, 1) : 0,
     totalInstalledKw: totalKw,
     avgWindSpeed: windSpeeds.length > 0
       ? round(windSpeeds.reduce((s, v) => s + v, 0) / windSpeeds.length, 2)
       : null,
+    avgDataCompleteness: turbineKpis.length > 0
+      ? round(
+          turbineKpis.reduce((s, t) => s + t.dataCompleteness, 0) / turbineKpis.length,
+          1,
+        )
+      : 0,
   };
 
   return { turbines: turbineKpis, fleet };
@@ -298,6 +322,39 @@ interface AvailRow {
 
 /**
  * Fetch T1-T6 availability breakdown per turbine for a year.
+ *
+ * =============================================================================
+ * ZEITKATEGORIEN (Enercon SCADA, Schema analog FGW TR7 / IEC 61400-26)
+ * =============================================================================
+ *   T1  Betriebszeit — Anlage betriebsbereit, produziert oder wartet betriebsbereit
+ *   T2  Stillstand mangels Wind (Windstille / unterhalb Einschaltwindgeschwindigkeit)
+ *   T3  Umweltbedingter Stopp (Eis, Sturm, Schattenwurf-/Schallabschaltung)
+ *   T4  Geplante Wartung / Instandhaltung
+ *   T5  Technische Störung (ungeplanter Ausfall)
+ *       T5_1 Netz · T5_2 Ferneingriff/Abschaltung von außen · T5_3 sonstige externe
+ *   T6  Sonstiges / höhere Gewalt
+ *
+ * =============================================================================
+ * ZWEI KENNZAHLEN — BEWUSST UNTERSCHIEDLICH
+ * =============================================================================
+ *
+ * 1) `availabilityPct` = T1 / (T1 + T5)   ← "Technische Verfügbarkeit"
+ *    T2, T3, T4 und T6 fallen aus Zähler UND Nenner heraus. Die Kennzahl misst
+ *    ausschließlich: "Wie viel der technisch beeinflussbaren Zeit war die Anlage
+ *    betriebsbereit?" Windstille zählt weder positiv noch negativ.
+ *
+ *    ⚠️ Das ist NICHT die Kennzahl, gegen die WEA-Verfügbarkeitsgarantien
+ *    abgerechnet werden. Vertragliche Garantien beziehen üblicherweise die
+ *    geplante Wartung (T4) und je nach Vertrag auch externe Ursachen (T6/T5_x)
+ *    in den Nenner ein. Nicht als "vertragliche Verfügbarkeit" ausweisen.
+ *
+ * 2) `timeBasedAvailabilityPct` = (Gesamtzeit − T4 − T5) / Gesamtzeit
+ *    ← "Zeitbasierte Verfügbarkeit" nach IEC 61400-26-1
+ *    Gesamtzeit = T1+T2+T3+T4+T5+T6. Die Anlage gilt als verfügbar, solange sie
+ *    nicht wegen Wartung (T4) oder Störung (T5) außer Betrieb ist; Windstille (T2)
+ *    zählt als verfügbar. Diese Kennzahl liegt näher an vertraglichen Definitionen,
+ *    ersetzt sie aber nicht — die konkrete Vertragsformel ist im Wartungsvertrag
+ *    nachzulesen (Ausschlüsse, Karenzzeiten, Referenzzeiträume).
  */
 export async function fetchAvailabilityBreakdown(
   tenantId: string,
@@ -343,10 +400,15 @@ export async function fetchAvailabilityBreakdown(
     const t5 = Number(r?.t5_total ?? 0);
     const t6 = Number(r?.t6_total ?? 0);
     const total = t1 + t2 + t3 + t4 + t5 + t6;
-    // IEC 61400-26-2 Technical Availability: T1 / (T1 + T5)
-    // T1 = production time, T5 = unplanned downtime/failures
-    // T2 (no wind standstill) must NOT be counted as unavailability
+    // Technische Verfügbarkeit: T1 / (T1 + T5) — siehe Doc-Block oben.
+    // T2 (Windstille) darf nicht als Nichtverfügbarkeit zählen und ist deshalb
+    // aus Zähler UND Nenner ausgeschlossen.
     const relevantTime = t1 + t5;
+
+    // Zeitbasierte Verfügbarkeit nach IEC 61400-26-1: alles außer Wartung (T4)
+    // und Störung (T5) gilt als verfügbar.
+    const timeBasedAvailabilityPct =
+      total > 0 ? round(((total - t4 - t5) / total) * 100, 2) : 0;
 
     return {
       turbineId: t.id,
@@ -356,6 +418,7 @@ export async function fetchAvailabilityBreakdown(
       t5_2: Number(r?.t5_2_total ?? 0),
       t5_3: Number(r?.t5_3_total ?? 0),
       availabilityPct: relevantTime > 0 ? round((t1 / relevantTime) * 100, 2) : 0,
+      timeBasedAvailabilityPct,
       totalSeconds: total,
     };
   });
@@ -578,7 +641,8 @@ export async function fetchTurbineComparison(
   const turbineMap = buildTurbineMap(turbines);
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
-  const hours = hoursInPeriod(from, to);
+  // FIX F20 (a): im laufenden Jahr endet der Zeitraum JETZT, nicht am 31.12.
+  const hours = hoursInPeriod(from, clampPeriodEnd(to));
 
   // Suppress unused variable lint (turbineMap used for potential future lookups)
   void turbineMap;
@@ -607,9 +671,14 @@ export async function fetchTurbineComparison(
   const entries: TurbineComparisonEntry[] = turbines.map((t) => {
     const row = rowMap.get(t.id);
     const productionKwh = safeNumber(row?.production_kwh);
+    // FIX F20: identischer Nenner wie in fetchPerformanceKpis — gemessene Zeit.
+    // Ohne das rutscht eine Anlage mit Import-Lücke systematisch ans Ende des
+    // Rankings und verzerrt zusätzlich `deviationFromFleetPct` aller anderen.
+    const dataPoints = Number(row?.data_points ?? 0);
+    const coveredHours = coveredHoursFromDataPoints(dataPoints, hours);
     const capacityFactor =
-      t.ratedPowerKw > 0 && hours > 0
-        ? round((productionKwh / (t.ratedPowerKw * hours)) * 100, 2)
+      t.ratedPowerKw > 0 && coveredHours > 0
+        ? round((productionKwh / (t.ratedPowerKw * coveredHours)) * 100, 2)
         : 0;
     const specificYield =
       t.ratedPowerKw > 0 ? round(productionKwh / t.ratedPowerKw, 1) : 0;

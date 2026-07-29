@@ -30,6 +30,14 @@ const settlementUpdateSchema = z.object({
   smoothingFactor: z.number().min(0).max(1).optional().nullable(),
   tolerancePercentage: z.number().min(0).max(100).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
+  /**
+   * Legitimer Reset-Pfad: CALCULATED → DRAFT, damit eine berechnete Abrechnung
+   * wieder bearbeitbar wird. Nur DRAFT ist als Ziel zulässig — INVOICED wird
+   * ausschließlich von create-invoices gesetzt, CLOSED nur über die Freigabe.
+   * Blockiert, sobald ein Item bereits eine Gutschrift trägt (sonst drohen beim
+   * Neuberechnen doppelte Gutschriften).
+   */
+  status: z.literal("DRAFT").optional(),
 });
 
 // =============================================================================
@@ -126,6 +134,7 @@ export async function PATCH(
         tenantId: true,
         status: true,
         netOperatorRevenueEur: true,
+        items: { select: { invoiceId: true } },
       },
     });
 
@@ -137,13 +146,28 @@ export async function PATCH(
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
-    // Nur DRAFT-Status ist bearbeitbar
-    if (existing.status !== "DRAFT") {
-      return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können bearbeitet werden", details: `Aktuelle Status: ${existing.status}. Setze Status zurück auf DRAFT um zu bearbeiten.` });
+    // Reset-Pfad CALCULATED → DRAFT (macht die Abrechnung wieder bearbeitbar).
+    const isResetToDraft =
+      validatedData.status === "DRAFT" && existing.status === "CALCULATED";
+
+    // Nur DRAFT-Status ist bearbeitbar — Ausnahme: expliziter Reset aus CALCULATED
+    if (existing.status !== "DRAFT" && !isResetToDraft) {
+      return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können bearbeitet werden", details: `Aktuelle Status: ${existing.status}. Setze Status zurück auf DRAFT um zu bearbeiten (nur aus CALCULATED und nur solange keine Gutschriften existieren).` });
+    }
+
+    // Schutz gegen doppelte Gutschriften: sobald ein Item eine Gutschrift trägt,
+    // darf die Abrechnung nicht mehr in einen neu berechenbaren Zustand zurück.
+    if (isResetToDraft && existing.items.some((it) => it.invoiceId !== null)) {
+      return apiError("BAD_REQUEST", undefined, { message: "Zurücksetzen nicht möglich", details: "Es wurden bereits Gutschriften aus dieser Abrechnung erstellt. Bitte zuerst die Gutschriften stornieren." });
     }
 
     // Baue Update-Daten
     const updateData: Prisma.EnergySettlementUpdateInput = {};
+
+    if (isResetToDraft) {
+      updateData.status = "DRAFT";
+      updateData.calculationDetails = Prisma.DbNull;
+    }
 
     // Änderung von netOperatorRevenueEur setzt Status zurück auf DRAFT
     // (redundant da wir schon DRAFT prüfen, aber für zukuenftige Erweiterungen)

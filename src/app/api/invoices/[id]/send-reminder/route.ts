@@ -87,17 +87,47 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Rechnung nicht gefunden" });
     }
 
-    if (invoice.status !== "SENT") {
-      return apiError("BAD_REQUEST", undefined, { message: `Mahnungen können nur für versendete Rechnungen erstellt werden (Status: ${invoice.status})` });
+    // Finding 2.3: PARTIALLY_PAID war ausgeschlossen. Eine teilbezahlte
+    // Rechnung liess sich damit gar nicht mehr anmahnen, obwohl die
+    // Restforderung offen bleibt.
+    if (invoice.status !== "SENT" && invoice.status !== "PARTIALLY_PAID") {
+      return apiError("BAD_REQUEST", undefined, { message: `Mahnungen können nur für offene Rechnungen erstellt werden (Status: ${invoice.status})` });
     }
+
+    // Finding 2.5: dunningHold wurde hier nicht geprüft — eine
+    // zurückgestellte Rechnung liess sich trotzdem einzeln anmahnen.
+    const holdActive =
+      invoice.dunningHold === true &&
+      (!invoice.dunningHoldUntil || invoice.dunningHoldUntil >= new Date());
+    if (holdActive) {
+      return apiError("OPERATION_NOT_ALLOWED", undefined, {
+        message: invoice.dunningHoldUntil
+          ? `Mahnsperre aktiv bis ${invoice.dunningHoldUntil.toLocaleDateString("de-DE")}`
+          : "Für diese Rechnung ist eine Mahnsperre gesetzt",
+      });
+    }
+
+    // Finding 2.1: Es gibt zwei Mahnpfade — dieser hier über
+    // Invoice.reminderLevel und den Mahnlauf über DunningItem.level. Sie
+    // kannten einander nicht, dieselbe Stufe konnte also zweimal rausgehen.
+    // dunning.ts liest inzwischen beide Quellen; hier fehlte die Gegenrichtung.
+    const highestDunningItem = await prisma.dunningItem.findFirst({
+      where: { invoiceId: invoice.id },
+      orderBy: { level: "desc" },
+      select: { level: true },
+    });
+    const effectiveLevel = Math.max(
+      invoice.reminderLevel ?? 0,
+      highestDunningItem?.level ?? 0,
+    );
 
     // Guard verhindert auch identische Mahnstufe (Idempotenz —
     // verhindert doppelten Versand derselben Mahnung).
-    if (invoice.reminderLevel && reminderLevel <= invoice.reminderLevel) {
+    if (effectiveLevel && reminderLevel <= effectiveLevel) {
       const message =
-        reminderLevel === invoice.reminderLevel
+        reminderLevel === effectiveLevel
           ? `Mahnstufe ${reminderLevel} wurde bereits versendet`
-          : `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${invoice.reminderLevel}, neu: ${reminderLevel})`;
+          : `Mahnstufe kann nicht zurückgesetzt werden (aktuell: ${effectiveLevel}, neu: ${reminderLevel})`;
       return apiError("BAD_REQUEST", undefined, { message });
     }
 

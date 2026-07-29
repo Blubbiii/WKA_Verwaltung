@@ -9,6 +9,7 @@ import { invalidate } from "@/lib/cache/invalidation";
 import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { releaseSettlementForInvoice } from "@/lib/scada/settlement-release";
 
 const cancelSchema = z.object({
   reason: z.string().min(1, "Storno-Grund erforderlich"),
@@ -175,6 +176,16 @@ export async function POST(
           },
         });
       }
+
+      // SCADA-Audit P0-3: Das Storno gab die Energieabrechnungs-Kette bisher
+      // nicht frei. EnergySettlementItem.invoiceId zeigte weiter auf die
+      // stornierte Gutschrift, das Settlement blieb INVOICED und die
+      // Produktionsdaten blieben gesperrt — ein Sackgassen-Zustand, aus dem
+      // nur der (fehlerhafte) Batch-Reject herausführte.
+      //
+      // Kein Fehler, wenn die Rechnung keinen Energiebezug hat: die Funktion
+      // ist dann ein No-Op.
+      await releaseSettlementForInvoice(tx, id);
 
       return stornoInvoice;
     });

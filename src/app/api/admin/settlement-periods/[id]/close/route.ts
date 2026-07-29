@@ -52,21 +52,27 @@ export async function POST(
       });
     }
 
-    // Voraussetzung: Alle Invoices der Period müssen PAID oder CANCELLED sein.
-    // SENT/DRAFT bedeutet: Verarbeitung noch offen, Close würde ohne Abschluss-
-    // Ereignis zugemacht.
+    // Voraussetzung: jede Invoice der Period muss einen ENDZUSTAND erreicht
+    // haben. SENT/DRAFT/PARTIALLY_PAID bedeutet: Verarbeitung noch offen,
+    // Close würde ohne Abschluss-Ereignis zugemacht.
+    //
+    // Finding 1.7: WRITTEN_OFF fehlte hier. Eine per DIRECT_WRITEOFF
+    // abgeschriebene Forderung (write-off.ts) ist buchhalterisch abgeschlossen
+    // — Ausbuchung + ggf. §17-USt-Korrektur sind erfolgt, sie wird nie mehr
+    // bezahlt. Ohne den Ausschluss war eine Periode nach einer einzigen
+    // Forderungsabschreibung dauerhaft nicht mehr schließbar.
     const openInvoices = await prisma.invoice.count({
       where: {
         settlementPeriodId: id,
         tenantId: check.tenantId!,
         deletedAt: null,
-        status: { notIn: ["PAID", "CANCELLED"] },
+        status: { notIn: ["PAID", "CANCELLED", "WRITTEN_OFF"] },
       },
     });
 
     if (openInvoices > 0) {
       return apiError("CONFLICT", 409, {
-        message: `Periode kann nicht abgeschlossen werden: ${openInvoices} Rechnung(en) noch nicht bezahlt oder storniert.`,
+        message: `Periode kann nicht abgeschlossen werden: ${openInvoices} Rechnung(en) noch nicht bezahlt, storniert oder abgeschrieben.`,
       });
     }
 

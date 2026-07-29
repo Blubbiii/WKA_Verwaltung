@@ -89,16 +89,29 @@ export async function matchTransactions(
       return noMatch(tx);
     }
 
-    // Priority 1: high-confidence match via invoice number in reference
-    const highMatch = findByInvoiceNumber(tx, invoices, matchedInvoiceIds);
-    if (highMatch) {
-      matchedInvoiceIds.add(highMatch.id);
+    // Priority 1: match via invoice number in reference.
+    // Randfall 8: die Confidence hängt jetzt zusätzlich am Betrag — eine
+    // Rechnungsnummer allein macht eine Teilzahlung nicht zum sicheren Treffer.
+    const numberMatch = findByInvoiceNumber(tx, invoices, matchedInvoiceIds);
+    if (numberMatch) {
+      matchedInvoiceIds.add(numberMatch.id);
+      const amountFits = evaluateSkontoMatch({
+        txAmount: Math.abs(tx.amount),
+        txDate: tx.date,
+        grossAmount: numberMatch.grossAmount,
+        skontoDeadline: numberMatch.skontoDeadline,
+        skontoAmount: numberMatch.skontoAmount,
+        skontoPercent: numberMatch.skontoPercent,
+        toleranceEur,
+      }).matches;
+
       return {
         transaction: tx,
-        matchedInvoiceId: highMatch.id,
-        matchedInvoiceNumber: highMatch.invoiceNumber,
-        matchedAmount: highMatch.grossAmount,
-        confidence: "high",
+        matchedInvoiceId: numberMatch.id,
+        matchedInvoiceNumber: numberMatch.invoiceNumber,
+        // Randfall 8: der GEFLOSSENE Betrag, nicht die Rechnungssumme.
+        matchedAmount: Math.abs(tx.amount),
+        confidence: amountFits ? "high" : "medium",
       };
     }
 
@@ -110,7 +123,7 @@ export async function matchTransactions(
         transaction: tx,
         matchedInvoiceId: mediumMatch.id,
         matchedInvoiceNumber: mediumMatch.invoiceNumber,
-        matchedAmount: mediumMatch.grossAmount,
+        matchedAmount: Math.abs(tx.amount),
         confidence: "medium",
       };
     }
@@ -123,6 +136,32 @@ export async function matchTransactions(
 // MATCHING STRATEGIES
 // ============================================================================
 
+/**
+ * Randfall 8: Mindestlänge für den Substring-Match.
+ *
+ * `ref.includes(normalised)` ohne Untergrenze ließ eine Rechnungsnummer "100"
+ * auf den Verwendungszweck "Rechnung 1002" passen — und weil das ein
+ * high-confidence-Treffer ist, war der falsche Beleg im UI vorausgewählt.
+ * Unter 6 Zeichen ist ein freier Substring-Treffer nicht aussagekräftig
+ * genug; kürzere Nummern müssen über die Regex-Patterns laufen, die auf
+ * Wortgrenzen ankern.
+ */
+const MIN_SUBSTRING_MATCH_LENGTH = 6;
+
+/**
+ * Randfall 8: Betragsprüfung auch beim Nummern-Match.
+ *
+ * findByInvoiceNumber() prüfte den Betrag ÜBERHAUPT NICHT. Eine Abschlags-
+ * oder Teilzahlung mit korrekter Rechnungsnummer im Verwendungszweck wurde
+ * als "high" gemeldet und `matchedAmount` war die volle Rechnungssumme statt
+ * des tatsächlichen Zahlbetrags — im Confirm-Flow wurde damit zu viel als
+ * bezahlt verbucht.
+ *
+ * Jetzt entscheidet der Betrag über die Confidence:
+ *   passt (inkl. Toleranz/Skonto) → "high"
+ *   passt nicht                   → "medium", damit der Anwender hinschaut
+ * `matchedAmount` ist in beiden Fällen der GEFLOSSENE Betrag.
+ */
 function findByInvoiceNumber(
   tx: ParsedTransaction,
   invoices: OpenInvoice[],
@@ -142,13 +181,17 @@ function findByInvoiceNumber(
     if (candidate) return candidate;
   }
 
-  // Also try a direct substring search with the invoice number itself
-  for (const inv of invoices) {
-    if (excludeIds.has(inv.id)) continue;
-    const normalised = normaliseInvoiceNumber(inv.invoiceNumber);
-    if (normalised && ref.includes(normalised)) {
-      return inv;
-    }
+  // Also try a direct substring search with the invoice number itself.
+  // Längste Nummer zuerst prüfen, damit "2024/1002" nicht von "2024/100"
+  // verdrängt wird, wenn beide offen sind.
+  const bySpecificity = invoices
+    .filter((inv) => !excludeIds.has(inv.id))
+    .map((inv) => ({ inv, key: normaliseInvoiceNumber(inv.invoiceNumber) }))
+    .filter(({ key }) => key.length >= MIN_SUBSTRING_MATCH_LENGTH)
+    .sort((a, b) => b.key.length - a.key.length);
+
+  for (const { inv, key } of bySpecificity) {
+    if (ref.includes(key)) return inv;
   }
 
   return null;

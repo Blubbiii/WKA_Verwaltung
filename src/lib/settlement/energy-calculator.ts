@@ -401,22 +401,7 @@ export function calculateSmoothedDistribution(
   });
 
   // Korrigiere Rundungsfehler auf das letzte Element
-  const totalDistributed = distributions.reduce(
-    (sum, d) => sum + d.finalRevenueEur,
-    0
-  );
-  const roundingDifference = netOperatorRevenueEur - totalDistributed;
-
-  if (
-    distributions.length > 0 &&
-    Math.abs(roundingDifference) > 0 &&
-    Math.abs(roundingDifference) <= 0.05
-  ) {
-    // Addiere die Differenz zum letzten Element
-    distributions[distributions.length - 1].finalRevenueEur = roundToTwoDecimals(
-      distributions[distributions.length - 1].finalRevenueEur + roundingDifference
-    );
-  }
+  applyRoundingCorrection(distributions, netOperatorRevenueEur);
 
   return distributions;
 }
@@ -500,23 +485,62 @@ export function calculateToleratedDistribution(
   });
 
   // Korrigiere Rundungsfehler
+  applyRoundingCorrection(distributions, netOperatorRevenueEur);
+
+  return distributions;
+}
+
+/**
+ * Gleicht die Rundungsdifferenz zwischen der Summe der auf 2 Nachkommastellen
+ * gerundeten Einzelbeträge und dem Netzbetreiber-Erlös auf dem LETZTEN Element aus.
+ *
+ * FIX (Randfall 17): Die Obergrenze war fest auf 0,05 EUR gesetzt, der maximal
+ * mögliche Rundungsfehler wächst aber mit der Anlagenzahl (jede Rundung auf 2
+ * Nachkommastellen kann bis zu 0,005 EUR abweichen → max. n × 0,005 EUR).
+ * Ab ca. 11 WKA lag die reale Differenz regelmäßig über 0,05 EUR und die Korrektur
+ * unterblieb komplett — die Item-Summe wich dann vom Erlös ab.
+ * Die Grenze ist deshalb jetzt an n gekoppelt. Sie bleibt eine Plausibilitäts-
+ * schranke: eine Differenz jenseits des theoretischen Rundungsmaximums deutet auf
+ * einen echten Rechenfehler hin und wird bewusst NICHT stillschweigend absorbiert.
+ *
+ * @param distributions - Verteilungen (wird in-place korrigiert)
+ * @param netOperatorRevenueEur - Zielsumme
+ */
+function applyRoundingCorrection(
+  distributions: TurbineDistribution[],
+  netOperatorRevenueEur: number
+): void {
+  if (distributions.length === 0) return;
+
   const totalDistributed = distributions.reduce(
     (sum, d) => sum + d.finalRevenueEur,
     0
   );
   const roundingDifference = netOperatorRevenueEur - totalDistributed;
 
-  if (
-    distributions.length > 0 &&
-    Math.abs(roundingDifference) > 0 &&
-    Math.abs(roundingDifference) <= 0.05
-  ) {
-    distributions[distributions.length - 1].finalRevenueEur = roundToTwoDecimals(
-      distributions[distributions.length - 1].finalRevenueEur + roundingDifference
+  // Maximal erklärbare Rundungsdrift: n × 0,005 EUR.
+  // +0,005 als Puffer gegen Float-Repräsentationsrauschen bei der Summenbildung.
+  const maxRoundingDrift = distributions.length * 0.005 + 0.005;
+
+  if (Math.abs(roundingDifference) === 0) return;
+
+  if (Math.abs(roundingDifference) > maxRoundingDrift) {
+    logger.warn(
+      {
+        roundingDifference,
+        maxRoundingDrift,
+        turbineCount: distributions.length,
+        netOperatorRevenueEur,
+        totalDistributed,
+      },
+      "Verteilungsdifferenz übersteigt die maximal mögliche Rundungsdrift — keine automatische Korrektur"
     );
+    return;
   }
 
-  return distributions;
+  distributions[distributions.length - 1].finalRevenueEur = roundToTwoDecimals(
+    distributions[distributions.length - 1].finalRevenueEur + roundingDifference
+  );
 }
 
 // ===========================================

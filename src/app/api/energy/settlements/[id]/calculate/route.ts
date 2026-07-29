@@ -34,6 +34,14 @@ interface CalculationDetails {
   }[];
 }
 
+/** Turbine, die nicht in die Verteilung eingeflossen ist — wird im Response ausgewiesen */
+interface SkippedTurbine {
+  turbineId: string;
+  turbineDesignation: string;
+  reason: "NO_OPERATOR" | "UNCONFIRMED_PRODUCTION" | "NO_PRODUCTION";
+  message: string;
+}
+
 interface SettlementItemData {
   energySettlementId: string;
   recipientFundId: string;
@@ -61,34 +69,12 @@ export async function POST(
 
     const { id } = await params;
 
-    // Lade Settlement mit Park und Turbinen
+    // Lade Settlement (Park-Turbinen werden nach Bestimmung des Stichtags separat geladen,
+    // weil der Betreiber-Filter vom Abrechnungszeitraum abhängt).
     const settlement = await prisma.energySettlement.findUnique({
       where: { id },
       include: {
-        park: {
-          include: {
-            turbines: {
-              where: { status: "ACTIVE" },
-              include: {
-                operatorHistory: {
-                  where: {
-                    status: "ACTIVE",
-                    validTo: null, // Nur aktuelle Betreiber
-                  },
-                  include: {
-                    operatorFund: {
-                      select: {
-                        id: true,
-                        name: true,
-                        fundCategory: { select: { id: true, name: true, code: true, color: true } },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
+        park: { select: { id: true, name: true, shortName: true } },
         items: true,
       },
     });
@@ -107,8 +93,36 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können berechnet werden", details: `Aktuelle Status: ${settlement.status}` });
     }
 
-    // Sammle Produktionsdaten für den Abrechnungszeitraum
-    const productionWhere: Record<string, unknown> = {
+    // Defense-in-depth: Neuberechnung löscht unten ALLE Items (deleteMany). Trägt auch
+    // nur ein Item eine Gutschrift, würde der GoBD-Beleglink zerreißen und
+    // create-invoices könnte einen zweiten Satz Gutschriften erzeugen.
+    if (settlement.items.some((it) => it.invoiceId !== null)) {
+      return apiError("BAD_REQUEST", undefined, { message: "Neuberechnung nicht möglich", details: "Zu dieser Abrechnung existieren bereits Gutschriften. Bitte zuerst die Gutschriften stornieren." });
+    }
+
+    // -------------------------------------------------------------------------
+    // FIX P1-5: Betreiber STICHTAGSBEZOGEN ermitteln.
+    // Vorher: `validTo: null` → immer der HEUTIGE Betreiber. Bei einer rückwirkend
+    // berechneten Abrechnung (z. B. 01/2026, berechnet im März nach Betreiberwechsel
+    // zum 01.03.) bekam der neue Betreiber die Gutschrift für einen Zeitraum, in dem
+    // der alte Betreiber die Anlage betrieben hat.
+    // Stichtag analog energy-calculator.ts: Monatsmitte bzw. Jahresende.
+    // -------------------------------------------------------------------------
+    const referenceDate = settlement.month
+      ? new Date(settlement.year, settlement.month - 1, 15)
+      : new Date(settlement.year, 11, 31);
+
+    const operatorAtReferenceDate = {
+      status: "ACTIVE" as const,
+      validFrom: { lte: referenceDate },
+      OR: [{ validTo: null }, { validTo: { gt: referenceDate } }],
+    };
+
+    // Sammle Produktionsdaten für den Abrechnungszeitraum.
+    // FIX P1-6: Der Status wird NICHT in der Query gefiltert, sondern danach ausgewertet —
+    // so können wir ungeprüfte (DRAFT) Zeilen im Response als Warnung ausweisen statt
+    // sie still in die Verteilung einfließen zu lassen.
+    const productionWhere: Prisma.TurbineProductionWhereInput = {
       tenantId: check.tenantId!,
       year: settlement.year,
       turbine: {
@@ -128,10 +142,9 @@ export async function POST(
             id: true,
             designation: true,
             operatorHistory: {
-              where: {
-                status: "ACTIVE",
-                validTo: null,
-              },
+              where: operatorAtReferenceDate,
+              orderBy: { validFrom: "desc" },
+              take: 1,
               include: {
                 operatorFund: {
                   select: {
@@ -155,15 +168,48 @@ export async function POST(
       totalKwh: number;
     }>();
 
+    // FIX P1-6: übersprungene Turbinen werden gesammelt und im Response gemeldet —
+    // vorher nur `logger.warn`, der Aufrufer bekam "Berechnung erfolgreich" zurück.
+    const skippedTurbines: SkippedTurbine[] = [];
+    const skippedTurbineIds = new Set<string>();
+
+    const addSkipped = (t: SkippedTurbine) => {
+      if (skippedTurbineIds.has(`${t.turbineId}:${t.reason}`)) return;
+      skippedTurbineIds.add(`${t.turbineId}:${t.reason}`);
+      skippedTurbines.push(t);
+    };
+
     for (const prod of productions) {
       const turbineId = prod.turbineId;
+
+      // FIX P1-6: Nur geprüfte Produktionsdaten sind Verteilungsgrundlage
+      // (identisch zu energy-calculator.ts). DRAFT = noch nicht bestätigt.
+      if (prod.status !== "CONFIRMED" && prod.status !== "INVOICED") {
+        addSkipped({
+          turbineId,
+          turbineDesignation: prod.turbine.designation,
+          reason: "UNCONFIRMED_PRODUCTION",
+          message: `Produktionsdaten haben Status ${prod.status} und wurden nicht berücksichtigt. Bitte zuerst bestätigen.`,
+        });
+        continue;
+      }
+
       const existing = turbineProductionMap.get(turbineId);
       const productionKwh = Number(prod.productionKwh);
 
-      // Hole aktuellen Betreiber
+      // Betreiber zum Stichtag des Abrechnungszeitraums
       const currentOperator = prod.turbine.operatorHistory[0];
       if (!currentOperator) {
-        logger.warn(`Turbine ${prod.turbine.designation} hat keinen aktiven Betreiber`);
+        logger.warn(
+          { turbineId, referenceDate: referenceDate.toISOString() },
+          `Turbine ${prod.turbine.designation} hat zum Stichtag keinen aktiven Betreiber`,
+        );
+        addSkipped({
+          turbineId,
+          turbineDesignation: prod.turbine.designation,
+          reason: "NO_OPERATOR",
+          message: `Kein aktiver Betreiber zum Stichtag ${referenceDate.toLocaleDateString("de-DE")} — Anlage wurde nicht berücksichtigt.`,
+        });
         continue;
       }
 
@@ -180,8 +226,23 @@ export async function POST(
       }
     }
 
+    // Turbinen, die zwar berücksichtigt werden konnten, aber auch übersprungene
+    // Monate hatten, sind kein Fehler — nur echte Ausfälle bleiben stehen.
+    const relevantSkipped = skippedTurbines.filter(
+      (s) => !turbineProductionMap.has(s.turbineId),
+    );
+
     if (turbineProductionMap.size === 0) {
-      return apiError("BAD_REQUEST", undefined, { message: "Keine Produktionsdaten gefunden", details: `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine Produktionsdaten erfasst.` });
+      const unconfirmed = skippedTurbines.filter(
+        (s) => s.reason === "UNCONFIRMED_PRODUCTION",
+      ).length;
+      return apiError("BAD_REQUEST", undefined, {
+        message: "Keine verwertbaren Produktionsdaten gefunden",
+        details:
+          unconfirmed > 0
+            ? `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} liegen nur unbestätigte Produktionsdaten vor (${unconfirmed} Anlagen im Status DRAFT). Bitte zuerst bestätigen.`
+            : `Für den Zeitraum ${settlement.month ? `${settlement.month}/` : ""}${settlement.year} wurden keine bestätigten Produktionsdaten erfasst.`,
+      });
     }
 
     // Berechne Gesamtproduktion
@@ -430,9 +491,17 @@ export async function POST(
     });
 
     return NextResponse.json({
-      message: "Berechnung erfolgreich durchgeführt",
+      message:
+        relevantSkipped.length > 0
+          ? `Berechnung durchgeführt — ${relevantSkipped.length} Anlage(n) wurden NICHT berücksichtigt`
+          : "Berechnung erfolgreich durchgeführt",
       settlement: updatedSettlement,
       calculation: calculationDetails,
+      // FIX P1-6: übersprungene Anlagen sind Teil des Ergebnisses, nicht nur ein Logeintrag.
+      warnings: {
+        skippedTurbines: relevantSkipped,
+        skippedTurbineCount: relevantSkipped.length,
+      },
     });
   } catch (error) {
     logger.error({ err: error }, "Error calculating settlement");

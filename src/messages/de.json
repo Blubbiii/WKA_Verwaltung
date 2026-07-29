@@ -2362,6 +2362,7 @@
       "createInvoices": "Gutschriften erstellen",
       "showInvoices": "Gutschriften anzeigen",
       "calculateSuccess": "Abrechnung wurde erfolgreich berechnet",
+      "calculateSkippedTurbines": "Berechnung durchgeführt — {count} Anlage(n) wurden NICHT berücksichtigt und erhalten keine Gutschrift",
       "calculateError": "Fehler bei der Berechnung",
       "invoicesSuccess": "Gutschriften wurden erfolgreich erstellt",
       "invoicesError": "Fehler beim Erstellen der Gutschriften",

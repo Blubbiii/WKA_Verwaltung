@@ -20,7 +20,10 @@ import { Decimal } from "@prisma/client-runtime-utils";
 import { ValueAdjustmentType, PostingSource } from "@prisma/client";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
 import { createUStAdjustment } from "./ust-adjustment";
-import { getTenantSettings } from "@/lib/tenant-settings";
+import {
+  getTenantSettings,
+  resolveValueAdjustmentAccounts,
+} from "@/lib/tenant-settings";
 import { assertPeriodOpen } from "./period-lock";
 import { logger } from "@/lib/logger";
 
@@ -218,20 +221,67 @@ export async function writeOffReceivable(
     });
     journalEntryId = journal.id;
   } else if (params.type !== ValueAdjustmentType.DIRECT_WRITEOFF) {
-    // EWB/PWB sind Risikovorsorge: die Forderung bleibt offen, gebucht wird
-    // Aufwand an ein Wertberichtigungskonto (Passivposten). Dafür fehlt in den
-    // Tenant-Settings bislang ein eigenes Konto — eine Buchung auf das
-    // Bad-Debt-Konto wäre fachlich falsch, weil sie die Forderung mindern
-    // würde. Deshalb bewusst keine Buchung.
-    // TODO(wertberichtigung): eigenes Konto in TenantSettings ergänzen
-    // (SKR03 3070 / SKR04 3090) und hier Aufwand an WB-Konto buchen.
+    // EWB/PWB sind Risikovorsorge (§253 Abs. 4 HGB): die Forderung bleibt in
+    // voller Höhe offen stehen, gebucht wird Aufwand (Soll) an ein separates
+    // Wertberichtigungskonto (Haben, indirekter Passivposten). Das ist der
+    // Unterschied zum DIRECT_WRITEOFF, der die Forderung selbst ausbucht —
+    // deshalb darf hier NICHT gegen datevAccountReceivables gebucht werden.
+    //
+    // Die Konten kommen aus den (JSON-basierten) TenantSettings; ist dort
+    // nichts gepflegt, wird der DATEV-Standard des Kontenrahmens genommen
+    // (SKR03 2400/0996, SKR04 6930/3090). Die USt bleibt unberührt —
+    // §17 UStG greift erst beim endgültigen Ausfall.
+    const { expenseAccount, adjustmentAccount } =
+      resolveValueAdjustmentAccounts(settings);
+
+    const label =
+      params.type === ValueAdjustmentType.PWB
+        ? "Pauschalwertberichtigung"
+        : "Einzelwertberichtigung";
+
+    const journal = await tx.journalEntry.create({
+      data: {
+        tenantId: params.tenantId,
+        entryDate: params.effectiveDate,
+        description: `${label}: ${params.reason}`.slice(0, 200),
+        status: "POSTED",
+        source: PostingSource.AUTO,
+        referenceType: "Invoice",
+        referenceId: params.invoiceId,
+        createdById: params.userId,
+        lines: {
+          create: [
+            {
+              lineNumber: 1,
+              account: expenseAccount,
+              description: `${label} (Aufwand)`.slice(0, 200),
+              debitAmount: amountDec,
+              creditAmount: null,
+            },
+            {
+              lineNumber: 2,
+              account: adjustmentAccount,
+              description: `${label} (Wertberichtigung)`.slice(0, 200),
+              debitAmount: null,
+              creditAmount: amountDec,
+            },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    journalEntryId = journal.id;
+
     logger.info(
       {
         invoiceId: params.invoiceId,
         type: params.type,
         amount: amountDec.toNumber(),
+        journalEntryId,
+        expenseAccount,
+        adjustmentAccount,
       },
-      "[WriteOff] EWB/PWB ohne Hauptbuchbuchung - Wertberichtigungskonto nicht konfiguriert",
+      "[WriteOff] EWB/PWB gebucht: Aufwand an Wertberichtigung",
     );
   }
 

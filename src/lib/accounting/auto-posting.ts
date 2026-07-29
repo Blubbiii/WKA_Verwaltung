@@ -36,6 +36,35 @@ interface AutoPostingResult {
   periodLocked?: { year: number; month: number };
 }
 
+/**
+ * Randfall 5/6: Feldlängen der Buchungszeilen respektieren.
+ *
+ * JournalEntryLine.description ist `@db.VarChar(200)`, JournalEntry.reference
+ * ist `@db.VarChar(100)`. InvoiceItem.description ist dagegen ein
+ * unbegrenztes TEXT-Feld. Die Kopie erfolgte an mehreren Stellen ungeslict —
+ * eine Rechnungsposition mit langem Beschreibungstext ließ Prisma mit P2000
+ * abbrechen, die Rechnung war damit nicht buchbar (und ein Storno an der
+ * Feldgrenze nicht durchführbar). Die Nachbarzeilen slicen längst, hier war
+ * es schlicht vergessen worden.
+ */
+const JOURNAL_DESCRIPTION_MAX = 200;
+const JOURNAL_REFERENCE_MAX = 100;
+
+function clampDescription(value: string): string {
+  return value.slice(0, JOURNAL_DESCRIPTION_MAX);
+}
+
+function clampReference(value: string): string {
+  return value.slice(0, JOURNAL_REFERENCE_MAX);
+}
+
+function lineDescription(
+  itemDescription: string | null | undefined,
+  invoiceNumber: string | null | undefined,
+): string {
+  return clampDescription(itemDescription || invoiceNumber || "");
+}
+
 /** Build account map from tenant settings (no more hardcoded accounts) */
 function buildAccountMap(s: TenantSettings): Record<string, { debit: string; credit: string }> {
   return {
@@ -156,7 +185,7 @@ export async function createAutoPosting(
         lines.push({
           lineNumber: lineNumber++,
           account: debitAccount,
-          description: item.description || invoice.invoiceNumber || "",
+          description: lineDescription(item.description, invoice.invoiceNumber),
           debitAmount: gross,
           creditAmount: null,
           costCenter: item.datevKostenstelle || null,
@@ -166,7 +195,7 @@ export async function createAutoPosting(
         lines.push({
           lineNumber: lineNumber++,
           account: creditAccount,
-          description: item.description || invoice.invoiceNumber || "",
+          description: lineDescription(item.description, invoice.invoiceNumber),
           debitAmount: null,
           creditAmount: net,
           costCenter: item.datevKostenstelle || null,
@@ -192,7 +221,7 @@ export async function createAutoPosting(
           lines.push({
             lineNumber: lineNumber - 1,
             account: creditAccount,
-            description: item.description || invoice.invoiceNumber || "",
+            description: lineDescription(item.description, invoice.invoiceNumber),
             debitAmount: null,
             creditAmount: gross,
             costCenter: item.datevKostenstelle || null,
@@ -207,7 +236,7 @@ export async function createAutoPosting(
         lines.push({
           lineNumber: lineNumber++,
           account: debitAccount,
-          description: item.description || invoice.invoiceNumber || "",
+          description: lineDescription(item.description, invoice.invoiceNumber),
           debitAmount: gross,
           creditAmount: null,
           costCenter: item.datevKostenstelle || null,
@@ -215,7 +244,7 @@ export async function createAutoPosting(
         lines.push({
           lineNumber: lineNumber++,
           account: creditAccount,
-          description: item.description || invoice.invoiceNumber || "",
+          description: lineDescription(item.description, invoice.invoiceNumber),
           debitAmount: null,
           creditAmount: gross,
           costCenter: item.datevKostenstelle || null,
@@ -507,7 +536,9 @@ export async function reverseAutoPosting(
     const reversalLines = original.lines.map((line, idx) => ({
       lineNumber: idx + 1,
       account: line.account,
-      description: `Storno: ${line.description || ""}`,
+      // Randfall 6: ungeslict. Eine Original-Zeile mit 200 Zeichen sprengte
+      // durch das "Storno: "-Präfix die VarChar(200) → Generalumkehr unmöglich.
+      description: clampDescription(`Storno: ${line.description || ""}`),
       debitAmount: line.creditAmount,
       creditAmount: line.debitAmount,
       costCenter: line.costCenter,
@@ -535,7 +566,8 @@ export async function reverseAutoPosting(
         tenantId: original.tenantId,
         entryDate: reversalDate,
         description: `Storno: ${original.description}`.slice(0, 200),
-        reference: `ST-${original.reference || ""}`,
+        // Randfall 6: reference ist VarChar(100) — ebenfalls ungeslict.
+        reference: clampReference(`ST-${original.reference || ""}`),
         status: "POSTED",
         source: "AUTO",
         referenceType: "InvoiceReversal",

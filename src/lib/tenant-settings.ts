@@ -57,6 +57,16 @@ export interface TenantSettings {
   // datevAccountEinspeisung, damit die Ausbuchung in jedem Fall
   // ausgeglichen ins Hauptbuch geht.
   datevAccountBadDebt: string;
+  // Wertberichtigungs-Konten für EWB/PWB (§253 HGB). Anders als beim
+  // endgültigen Forderungsausfall bleibt die Forderung hier OFFEN stehen —
+  // gebucht wird Aufwand (Soll) an Wertberichtigung (Haben, Passivposten).
+  //   datevAccountValueAdjustmentExpense: Aufwandskonto
+  //     SKR03 2400 "Forderungsverluste" / SKR04 6930
+  //   datevAccountValueAdjustment: Wertberichtigungskonto (Gegenkonto)
+  //     SKR03 0996/3070 / SKR04 3090 "Wertberichtigungen auf Forderungen"
+  // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
+  datevAccountValueAdjustment: string;
+  datevAccountValueAdjustmentExpense: string;
   // Geschaeftsjahr
   fiscalYearStartMonth: number; // 1-12 (1 = January)
   // GoBD retention
@@ -163,6 +173,9 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   datevAccountBank: "",
   datevAccountCash: "",
   datevAccountBadDebt: "",
+  // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
+  datevAccountValueAdjustment: "",
+  datevAccountValueAdjustmentExpense: "",
   // Geschaeftsjahr
   fiscalYearStartMonth: 1,
   // GoBD retention (§147 AO)
@@ -272,6 +285,34 @@ export function resolvePaymentAccount(
   const isSkr03 = settings.chartOfAccountsVersion === "SKR03";
   if (kind === "CASH") return isSkr03 ? "1000" : "1600";
   return isSkr03 ? "1200" : "1800";
+}
+
+/**
+ * Konten für die Wertberichtigung (EWB/PWB, §253 Abs. 4 HGB) auflösen.
+ *
+ * Buchungssatz: Aufwand (Soll) an Wertberichtigung (Haben).
+ * Die Forderung selbst bleibt unberührt — das ist der Unterschied zum
+ * endgültigen Forderungsausfall (DIRECT_WRITEOFF), der die Forderung ausbucht.
+ *
+ * Bevorzugt die explizite Tenant-Konfiguration, sonst DATEV-Standard:
+ *   SKR03: Aufwand 2400 (Forderungsverluste) / WB-Konto 0996
+ *   SKR04: Aufwand 6930 (Forderungsverluste) / WB-Konto 3090
+ */
+export function resolveValueAdjustmentAccounts(settings: TenantSettings): {
+  expenseAccount: string;
+  adjustmentAccount: string;
+} {
+  const isSkr03 = settings.chartOfAccountsVersion === "SKR03";
+
+  const expenseConfigured =
+    settings.datevAccountValueAdjustmentExpense?.trim() ||
+    settings.datevAccountBadDebt?.trim();
+  const adjustmentConfigured = settings.datevAccountValueAdjustment?.trim();
+
+  return {
+    expenseAccount: expenseConfigured || (isSkr03 ? "2400" : "6930"),
+    adjustmentAccount: adjustmentConfigured || (isSkr03 ? "0996" : "3090"),
+  };
 }
 
 /**

@@ -38,6 +38,45 @@ interface PaymentEntry {
   }>;
 }
 
+/** Safety brake against pathological loops (max ~1 entry per month + buffer). */
+const MAX_PAYMENT_DATES = 400;
+
+/**
+ * Walks the aligned period starts and returns one due date per period.
+ *
+ * FIX (Randfall 12): The period start is aligned backwards (startOfMonth /
+ * quarter start / half-year start). The old code then required the aligned
+ * date to be >= the contract start — so a lease beginning on 15.03. lost its
+ * March instalment entirely (9 instead of 10 instalments in the start year).
+ * The first period now falls due on the contract start date itself.
+ */
+function collectPeriodDates(
+  alignedStart: Date,
+  effectiveStart: Date,
+  effectiveEnd: Date,
+  advance: (date: Date) => Date
+): Date[] {
+  const dates: Date[] = [];
+  let current = new Date(alignedStart);
+  let guard = 0;
+
+  while (!isAfter(current, effectiveEnd) && guard++ < MAX_PAYMENT_DATES) {
+    // Innerhalb der ersten (angebrochenen) Periode ist der Vertragsbeginn
+    // faellig, nicht der davor liegende Perioden-Erste.
+    const dueDate = isBefore(current, effectiveStart)
+      ? new Date(effectiveStart)
+      : new Date(current);
+
+    if (!isAfter(dueDate, effectiveEnd)) {
+      dates.push(dueDate);
+    }
+
+    current = advance(current);
+  }
+
+  return dates;
+}
+
 // Generate payment due dates based on schedule
 function generatePaymentDates(
   startDate: Date,
@@ -47,73 +86,49 @@ function generatePaymentDates(
 ): Date[] {
   const yearStart = startOfYear(new Date(year, 0, 1));
   const yearEnd = endOfYear(new Date(year, 0, 1));
-  const dates: Date[] = [];
 
   // Determine period start (either contract start or year start)
   const effectiveStart = isAfter(startDate, yearStart) ? startDate : yearStart;
   // Determine period end (either contract end or year end)
   const effectiveEnd = endDate && isBefore(endDate, yearEnd) ? endDate : yearEnd;
 
-  let currentDate = new Date(effectiveStart);
+  // Contract window does not overlap the requested year at all
+  if (isAfter(effectiveStart, effectiveEnd)) {
+    return [];
+  }
 
   // Align to payment schedule
   switch (schedule) {
     case "MONTHLY":
-      currentDate = startOfMonth(currentDate);
-      while (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime()) {
-        if (
-          (isAfter(currentDate, effectiveStart) || currentDate.getTime() === effectiveStart.getTime()) &&
-          (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime())
-        ) {
-          dates.push(new Date(currentDate));
-        }
-        currentDate = addMonths(currentDate, 1);
-      }
-      break;
+      return collectPeriodDates(startOfMonth(effectiveStart), effectiveStart, effectiveEnd, (d) =>
+        addMonths(d, 1)
+      );
 
-    case "QUARTERLY":
+    case "QUARTERLY": {
       // Align to quarter start (Jan, Apr, Jul, Oct)
-      const quarterMonth = Math.floor(currentDate.getMonth() / 3) * 3;
-      currentDate = new Date(currentDate.getFullYear(), quarterMonth, 1);
-      while (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime()) {
-        if (
-          (isAfter(currentDate, effectiveStart) || currentDate.getTime() === effectiveStart.getTime()) &&
-          (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime())
-        ) {
-          dates.push(new Date(currentDate));
-        }
-        currentDate = addQuarters(currentDate, 1);
-      }
-      break;
+      const quarterMonth = Math.floor(effectiveStart.getMonth() / 3) * 3;
+      const aligned = new Date(effectiveStart.getFullYear(), quarterMonth, 1);
+      return collectPeriodDates(aligned, effectiveStart, effectiveEnd, (d) => addQuarters(d, 1));
+    }
 
-    case "SEMI_ANNUAL":
+    case "SEMI_ANNUAL": {
       // Align to half-year (Jan, Jul)
-      const halfYearMonth = currentDate.getMonth() < 6 ? 0 : 6;
-      currentDate = new Date(currentDate.getFullYear(), halfYearMonth, 1);
-      while (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime()) {
-        if (
-          (isAfter(currentDate, effectiveStart) || currentDate.getTime() === effectiveStart.getTime()) &&
-          (isBefore(currentDate, effectiveEnd) || currentDate.getTime() === effectiveEnd.getTime())
-        ) {
-          dates.push(new Date(currentDate));
-        }
-        currentDate = addMonths(currentDate, 6);
-      }
-      break;
+      const halfYearMonth = effectiveStart.getMonth() < 6 ? 0 : 6;
+      const aligned = new Date(effectiveStart.getFullYear(), halfYearMonth, 1);
+      return collectPeriodDates(aligned, effectiveStart, effectiveEnd, (d) => addMonths(d, 6));
+    }
 
-    case "ANNUAL":
-      // Annual payment at year start
-      currentDate = new Date(year, 0, 1);
-      if (
-        (isAfter(currentDate, startDate) || currentDate.getTime() === startDate.getTime()) &&
-        (!endDate || isBefore(currentDate, endDate) || currentDate.getTime() === endDate.getTime())
-      ) {
-        dates.push(currentDate);
-      }
-      break;
+    case "ANNUAL": {
+      // FIX (Randfall 11): Annual payment at year start — but in the START
+      // year the contract only begins mid-year. The old code compared the
+      // 1st of January against the contract start, so a lease starting on
+      // 01.06.2026 produced NO payment at all in 2026.
+      // The due date is therefore the later of (year start, contract start).
+      return [new Date(effectiveStart)];
+    }
   }
 
-  return dates;
+  return [];
 }
 
 // Calculate payment amount based on schedule

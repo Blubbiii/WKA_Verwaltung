@@ -6,16 +6,17 @@ import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { validateCostCenterReferences } from "../_lib/validate-references";
 
 const updateSchema = z.object({
   code: z.string().min(1).max(50).optional(),
   name: z.string().min(1).max(200).optional(),
   type: z.enum(["PARK", "TURBINE", "FUND", "OVERHEAD", "CUSTOM"]).optional(),
   description: z.string().optional().nullable(),
-  parkId: z.string().optional().nullable(),
-  turbineId: z.string().optional().nullable(),
-  fundId: z.string().optional().nullable(),
-  parentId: z.string().optional().nullable(),
+  parkId: z.string().min(1).optional().nullable(),
+  turbineId: z.string().min(1).optional().nullable(),
+  fundId: z.string().min(1).optional().nullable(),
+  parentId: z.string().min(1).optional().nullable(),
   isActive: z.boolean().optional(),
 });
 
@@ -64,6 +65,23 @@ async function putHandler(
     const body = await request.json();
     const data = updateSchema.parse(body);
 
+    // FIX (Randfall 13): `updateMany({ where: { id, tenantId } })` schützt nur
+    // die geänderte Zeile, nicht die referenzierte. Ohne diese Prüfung liesse
+    // sich eine Kostenstelle zu ihrem eigenen Parent machen, ein Zyklus
+    // (A→B, B→A) anlegen oder eine Kostenstelle eines fremden Mandanten
+    // referenzieren (der globale FK ist dabei erfüllt).
+    const referenceError = await validateCostCenterReferences(
+      check.tenantId!,
+      data,
+      id,
+    );
+    if (referenceError) {
+      const status = referenceError.code === "NOT_FOUND" ? 404 : 400;
+      const errorCode =
+        referenceError.code === "NOT_FOUND" ? "NOT_FOUND" : "VALIDATION_FAILED";
+      return apiError(errorCode, status, { message: referenceError.message });
+    }
+
     const costCenter = await prisma.costCenter.updateMany({
       where: { id, tenantId: check.tenantId! },
       data,
@@ -78,6 +96,9 @@ async function putHandler(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return apiError("VALIDATION_FAILED", 400, { message: "Validierungsfehler", details: error.issues });
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return apiError("CONFLICT", 409, { message: "Kostenstellen-Code bereits vergeben" });
     }
     logger.error({ err: error }, "Error updating cost center");
     return apiError("UPDATE_FAILED", 500, { message: "Fehler beim Aktualisieren" });

@@ -5,12 +5,17 @@
 
 import { prisma } from "@/lib/prisma";
 import {
+  Prisma,
   InvoiceType,
   TaxType,
   EntityStatus,
   DistributionStatus,
 } from "@prisma/client";
-import { getNextInvoiceNumber, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
+import {
+  getNextInvoiceNumber,
+  calculateTaxAmounts,
+  type TxClient,
+} from "@/lib/invoices/numberGenerator";
 import { BillingRuleType } from "../types";
 import {
   RuleHandler,
@@ -22,36 +27,191 @@ import {
 } from "../types";
 
 /**
- * Generiert eine eindeutige Ausschuettungsnummer
+ * Zulaessige Abweichung der Summe aller Ausschuettungsanteile von 100%
+ * (in Prozentpunkten).
  */
-async function getNextDistributionNumber(tenantId: string): Promise<string> {
+const PERCENTAGE_TOLERANCE = 0.01;
+
+/** Anzahl Versuche bei Nummern-Kollision (paralleles execute()). */
+const NUMBER_RETRY_ATTEMPTS = 5;
+
+/**
+ * Generiert eine eindeutige Ausschuettungsnummer.
+ *
+ * Muss innerhalb der Transaktion laufen, die auch die Distribution anlegt —
+ * sonst kann zwischen "Nummer lesen" und "Distribution schreiben" ein
+ * paralleler Aufruf dieselbe Nummer abgreifen. Der `@unique`-Constraint auf
+ * `distributionNumber` faengt den Restfall ab, der Caller wiederholt dann.
+ *
+ * WICHTIG: Die Sortierung passiert NUMERISCH, nicht lexikografisch. Ein
+ * `orderBy: { distributionNumber: "desc" }` würde "AS-2026-999" vor
+ * "AS-2026-1000" einsortieren — ab der 1000. Ausschuettung wäre die naechste
+ * Nummer erneut 1000.
+ */
+async function getNextDistributionNumber(
+  client: TxClient,
+  tenantId: string
+): Promise<string> {
   const year = new Date().getFullYear();
 
-  // Finde die letzte Ausschuettungsnummer dieses Jahres
-  const lastDistribution = await prisma.distribution.findFirst({
-    where: {
-      tenantId,
-      distributionNumber: {
-        startsWith: `AS-${year}-`,
-      },
-    },
-    orderBy: {
-      distributionNumber: "desc",
-    },
-    select: {
-      distributionNumber: true,
-    },
-  });
+  const rows = await client.$queryRaw<Array<{ max_number: bigint | number | null }>>`
+    SELECT MAX((regexp_replace("distributionNumber", '^AS-[0-9]{4}-', ''))::bigint) AS max_number
+    FROM distributions
+    WHERE "tenantId" = ${tenantId}
+      AND "distributionNumber" ~ ${`^AS-${year}-[0-9]+$`}
+  `;
 
-  let nextNumber = 1;
-  if (lastDistribution) {
-    const match = lastDistribution.distributionNumber.match(/AS-\d{4}-(\d+)/);
-    if (match) {
-      nextNumber = parseInt(match[1], 10) + 1;
+  const maxNumber = rows[0]?.max_number != null ? Number(rows[0].max_number) : 0;
+  const nextNumber = maxNumber + 1;
+
+  // padStart(3) bleibt fuer Abwaertskompatibilitaet mit bestehenden Nummern;
+  // ab 1000 wird die Nummer natuerlicherweise vierstellig.
+  return `AS-${year}-${nextNumber.toString().padStart(3, "0")}`;
+}
+
+/** Cent-genaue Rundung. */
+function roundCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Verteilt `totalAmount` gemaess `percentages` auf cent-genaue Betraege und
+ * weist die Rundungsdifferenz dem letzten Empfaenger mit positivem Betrag zu.
+ *
+ * Ohne diese Restzuweisung summieren sich die Einzelbetraege nicht exakt auf
+ * `totalAmount` (Beispiel: 1.000 EUR auf 7 Gesellschafter à 14,2857% ergibt
+ * 7 × 142,86 = 1.000,02 EUR).
+ */
+function allocateByPercentage(totalAmount: number, percentages: number[]): number[] {
+  const amounts = percentages.map((p) => roundCents((totalAmount * p) / 100));
+  if (amounts.length === 0) return amounts;
+
+  const distributed = roundCents(amounts.reduce((sum, a) => sum + a, 0));
+  const difference = roundCents(totalAmount - distributed);
+
+  // Maximal moeglicher Rundungsfehler: 0,5 Cent pro Empfaenger, plus der
+  // Spielraum aus der tolerierten Abweichung der Anteilssumme von 100%.
+  const maxRoundingError =
+    0.005 * amounts.length + (Math.abs(totalAmount) * PERCENTAGE_TOLERANCE) / 100 + 0.005;
+
+  if (difference !== 0 && Math.abs(difference) <= maxRoundingError) {
+    for (let i = amounts.length - 1; i >= 0; i--) {
+      if (amounts[i] > 0) {
+        amounts[i] = roundCents(amounts[i] + difference);
+        break;
+      }
     }
   }
 
-  return `AS-${year}-${nextNumber.toString().padStart(3, "0")}`;
+  return amounts;
+}
+
+/**
+ * Prueft, ob die Summe der Anteile ~100% ergibt.
+ * @returns Fehlermeldung oder null wenn gueltig.
+ */
+function checkPercentageSum(totalPercentage: number): string | null {
+  if (Math.abs(totalPercentage - 100) > PERCENTAGE_TOLERANCE) {
+    return `Summe der Ausschuettungsanteile ist ${totalPercentage.toFixed(2)}% (erwartet: 100%)`;
+  }
+  return null;
+}
+
+/** Erkennt Unique-Constraint-Verletzung bzw. Serialisierungs-Konflikt. */
+function isDistributionNumberConflict(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2002" || error.code === "P2034")
+  );
+}
+
+/**
+ * Laedt alle aktiven Gesellschafter mit Ausschuettungsanteil.
+ * Gemeinsamer Pfad fuer preview() und execute() — beide MUESSEN denselben
+ * Datenstand und dieselben Validierungen sehen.
+ */
+async function loadDistributionShareholders(tenantId: string, fundId: string) {
+  return prisma.shareholder.findMany({
+    where: {
+      fundId,
+      // Tenant-Scoping ueber den Fund: verhindert, dass ein fremder fundId
+      // in den Parametern Gesellschafter eines anderen Mandanten zieht.
+      fund: { tenantId },
+      status: EntityStatus.ACTIVE,
+      distributionPercentage: {
+        not: null,
+        gt: 0,
+      },
+    },
+    include: {
+      person: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          companyName: true,
+          street: true,
+          postalCode: true,
+          city: true,
+          bankIban: true,
+          bankBic: true,
+          bankName: true,
+        },
+      },
+      fund: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    orderBy: { id: "asc" },
+  });
+}
+
+/**
+ * Legt den Distribution-Record an. Nummernvergabe und Insert laufen atomar
+ * in einer Serializable-Transaktion; bei Kollision auf dem `@unique`-Index
+ * wird bis zu NUMBER_RETRY_ATTEMPTS mal wiederholt.
+ */
+async function createDistributionRecord(input: {
+  tenantId: string;
+  fundId: string;
+  description: string;
+  totalAmount: number;
+  distributionDate: Date;
+}) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= NUMBER_RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const distributionNumber = await getNextDistributionNumber(tx, input.tenantId);
+
+          return tx.distribution.create({
+            data: {
+              distributionNumber,
+              description: input.description,
+              totalAmount: input.totalAmount,
+              distributionDate: input.distributionDate,
+              status: DistributionStatus.DRAFT,
+              tenantId: input.tenantId,
+              fundId: input.fundId,
+            },
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      );
+    } catch (error) {
+      lastError = error;
+      if (!isDistributionNumberConflict(error)) throw error;
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Ausschuettungsnummer konnte nicht vergeben werden");
 }
 
 /**
@@ -102,39 +262,7 @@ export class DistributionHandler implements RuleHandler {
     const params = parameters as DistributionParameters;
     const results: InvoiceCreationResult[] = [];
 
-    // Lade alle aktiven Gesellschafter der Gesellschaft
-    const shareholders = await prisma.shareholder.findMany({
-      where: {
-        fundId: params.fundId,
-        status: EntityStatus.ACTIVE,
-        distributionPercentage: {
-          not: null,
-          gt: 0,
-        },
-      },
-      include: {
-        person: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-            street: true,
-            postalCode: true,
-            city: true,
-            bankIban: true,
-            bankBic: true,
-            bankName: true,
-          },
-        },
-        fund: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    const shareholders = await loadDistributionShareholders(tenantId, params.fundId);
 
     if (shareholders.length === 0) {
       return [
@@ -146,22 +274,22 @@ export class DistributionHandler implements RuleHandler {
     }
 
     // Berechne Summe der Ausschuettungsanteile
-    const totalPercentage = shareholders.reduce(
-      (sum, s) => sum + Number(s.distributionPercentage || 0),
-      0
-    );
+    const percentages = shareholders.map((s) => Number(s.distributionPercentage) || 0);
+    const totalPercentage = percentages.reduce((sum, p) => sum + p, 0);
 
     // Validiere dass Anteile ~100% ergeben
-    if (Math.abs(totalPercentage - 100) > 0.01) {
+    const percentageError = checkPercentageSum(totalPercentage);
+    if (percentageError) {
       results.push({
         success: false,
-        error: `Warnung: Summe der Ausschuettungsanteile ist ${totalPercentage.toFixed(2)}% (erwartet: 100%)`,
+        error: `Warnung: ${percentageError}`,
       });
     }
 
-    for (const shareholder of shareholders) {
-      const percentage = Number(shareholder.distributionPercentage) || 0;
-      const amount = Math.round((params.totalAmount * percentage) / 100 * 100) / 100;
+    const amounts = allocateByPercentage(params.totalAmount, percentages);
+
+    for (const [index, shareholder] of shareholders.entries()) {
+      const amount = amounts[index];
 
       const recipientName =
         shareholder.person.companyName ||
@@ -218,38 +346,7 @@ export class DistributionHandler implements RuleHandler {
     }
 
     // Lade alle aktiven Gesellschafter
-    const shareholders = await prisma.shareholder.findMany({
-      where: {
-        fundId: params.fundId,
-        status: EntityStatus.ACTIVE,
-        distributionPercentage: {
-          not: null,
-          gt: 0,
-        },
-      },
-      include: {
-        person: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            companyName: true,
-            street: true,
-            postalCode: true,
-            city: true,
-            bankIban: true,
-            bankBic: true,
-            bankName: true,
-          },
-        },
-        fund: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    const shareholders = await loadDistributionShareholders(tenantId, params.fundId);
 
     if (shareholders.length === 0) {
       return {
@@ -269,31 +366,57 @@ export class DistributionHandler implements RuleHandler {
       };
     }
 
-    // Erstelle Distribution Record
-    const distributionNumber = await getNextDistributionNumber(tenantId);
+    // FIX (Randfall 4): Die Anteilssumme MUSS auch im Ausfuehrungspfad geprueft
+    // werden, nicht nur in preview(). Ohne diese Pruefung wuerden bei 150%
+    // Anteilssumme 150.000 EUR ausgeschuettet, waehrend Distribution.totalAmount
+    // auf 100.000 EUR stehen bliebe — Status trotzdem EXECUTED, kein Fehler.
+    const percentages = shareholders.map((s) => Number(s.distributionPercentage) || 0);
+    const totalPercentage = percentages.reduce((sum, p) => sum + p, 0);
+    const percentageError = checkPercentageSum(totalPercentage);
+
+    if (percentageError) {
+      return {
+        status: "failed",
+        invoicesCreated: 0,
+        totalAmount: 0,
+        errorMessage: `${percentageError}. Ausschuettung wurde nicht ausgefuehrt.`,
+        details: {
+          invoices: [],
+          summary: {
+            totalProcessed: 0,
+            successful: 0,
+            failed: 0,
+            skipped: shareholders.length,
+          },
+        },
+      };
+    }
+
+    // FIX (Randfall 16): Betraege inkl. Restzuweisung der Rundungsdifferenz,
+    // damit die Summe der Gutschriften exakt params.totalAmount ergibt.
+    const amounts = allocateByPercentage(params.totalAmount, percentages);
+
+    // Erstelle Distribution Record (Nummer + Insert atomar, siehe unten)
     const distributionDate = params.distributionDate
       ? new Date(params.distributionDate)
       : new Date();
 
-    const distribution = await prisma.distribution.create({
-      data: {
-        distributionNumber,
-        description: params.description || `Ausschuettung ${new Date().getFullYear()}`,
-        totalAmount: params.totalAmount,
-        distributionDate,
-        status: DistributionStatus.DRAFT,
-        tenantId,
-        fundId: params.fundId,
-      },
+    const distribution = await createDistributionRecord({
+      tenantId,
+      fundId: params.fundId,
+      description: params.description || `Ausschuettung ${new Date().getFullYear()}`,
+      totalAmount: params.totalAmount,
+      distributionDate,
     });
+    const distributionNumber = distribution.distributionNumber;
 
     let totalAmount = 0;
 
     // Erstelle Gutschriften für jeden Gesellschafter
-    for (const shareholder of shareholders) {
+    for (const [index, shareholder] of shareholders.entries()) {
       try {
-        const percentage = Number(shareholder.distributionPercentage) || 0;
-        const amount = Math.round((params.totalAmount * percentage) / 100 * 100) / 100;
+        const percentage = percentages[index];
+        const amount = amounts[index];
 
         if (amount <= 0) {
           invoiceResults.push({

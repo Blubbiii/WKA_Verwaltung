@@ -90,6 +90,43 @@ export function hoursInPeriod(from: Date, to: Date): number {
   return (to.getTime() - from.getTime()) / (1000 * 60 * 60);
 }
 
+/** SCADA-Messintervall in Minuten (WSD: 10-Minuten-Mittelwerte). */
+export const SCADA_INTERVAL_MINUTES = 10;
+/** 10-Minuten-Intervalle pro Stunde. */
+export const SCADA_INTERVALS_PER_HOUR = 60 / SCADA_INTERVAL_MINUTES;
+
+/**
+ * Begrenzt das Ende eines Auswertungszeitraums auf "jetzt".
+ *
+ * FIX F20 (a): `buildDateRange(year)` liefert immer den 1.1. des Folgejahres. Im
+ * LAUFENDEN Jahr war der Nenner des Kapazitätsfaktors dadurch immer 8.760 h, auch
+ * wenn erst sieben Monate Daten vorlagen — der Kapazitätsfaktor war systematisch um
+ * den Faktor "vergangener Anteil des Jahres" zu niedrig.
+ */
+export function clampPeriodEnd(to: Date, now: Date = new Date()): Date {
+  return to.getTime() > now.getTime() ? now : to;
+}
+
+/**
+ * Tatsächlich durch Messdaten abgedeckte Stunden eines Zeitraums.
+ *
+ * FIX F20 (b): Jeder WSD-Messpunkt repräsentiert 10 Minuten. Der Kapazitätsfaktor
+ * muss deshalb gegen die GEMESSENE Zeit gerechnet werden, nicht gegen die
+ * Kalenderzeit — sonst bestraft eine Import-Lücke die Anlage so, als hätte sie in
+ * dieser Zeit nichts produziert. Stillstände sind davon NICHT betroffen: die
+ * SCADA-Zeilen existieren dann mit `powerW = 0` und zählen weiter mit.
+ *
+ * Die abgedeckte Zeit wird auf die Zeitraumlänge gedeckelt (Doppelmessungen /
+ * Sommerzeit-Überlappungen dürfen den Nenner nicht aufblähen).
+ */
+export function coveredHoursFromDataPoints(
+  dataPoints: number,
+  periodHours: number
+): number {
+  const covered = dataPoints / SCADA_INTERVALS_PER_HOUR;
+  return periodHours > 0 ? Math.min(covered, periodHours) : covered;
+}
+
 /**
  * Safely convert Prisma Decimal or bigint to number.
  * Returns 0 for null/undefined values.

@@ -6,16 +6,17 @@ import { prisma } from "@/lib/prisma";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
+import { validateCostCenterReferences } from "./_lib/validate-references";
 
 const createSchema = z.object({
   code: z.string().min(1).max(50),
   name: z.string().min(1).max(200),
   type: z.enum(["PARK", "TURBINE", "FUND", "OVERHEAD", "CUSTOM"]),
   description: z.string().optional(),
-  parkId: z.string().optional().nullable(),
-  turbineId: z.string().optional().nullable(),
-  fundId: z.string().optional().nullable(),
-  parentId: z.string().optional().nullable(),
+  parkId: z.string().min(1).optional().nullable(),
+  turbineId: z.string().min(1).optional().nullable(),
+  fundId: z.string().min(1).optional().nullable(),
+  parentId: z.string().min(1).optional().nullable(),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -60,6 +61,15 @@ async function postHandler(request: NextRequest) {
 
     const body = await request.json();
     const data = createSchema.parse(body);
+
+    // Gleiche Cross-Tenant-Lücke wie im PUT: der globale Foreign-Key würde
+    // eine Referenz auf park/turbine/fund/parent eines FREMDEN Mandanten
+    // klaglos akzeptieren. (Zyklus-/Selbstreferenz-Prüfung entfällt hier, die
+    // neue Kostenstelle hat noch keine ID und keine Kinder.)
+    const referenceError = await validateCostCenterReferences(check.tenantId!, data);
+    if (referenceError) {
+      return apiError("NOT_FOUND", 404, { message: referenceError.message });
+    }
 
     const costCenter = await prisma.costCenter.create({
       data: {

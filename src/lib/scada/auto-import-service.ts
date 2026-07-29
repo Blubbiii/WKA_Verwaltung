@@ -16,6 +16,7 @@ import * as fs from 'fs/promises';
 import { prisma } from '@/lib/prisma';
 import { startImport, scanAllFileTypes } from './import-service';
 import type { ScadaFileType } from './import-service';
+import { reapStaleImports } from './import-stale';
 import { logger } from '@/lib/logger';
 
 const autoImportLogger = logger.child({ module: 'scada-auto-import' });
@@ -266,6 +267,16 @@ export async function runAutoImport(
   };
 
   try {
+    // FIX P1-7: Step 0 — hängengebliebene RUNNING-Logs abräumen. Ohne das überspringt
+    // der Auto-Import den betroffenen Dateityp bei jedem Lauf stillschweigend
+    // (siehe "Import already running, skipping file type" weiter unten).
+    const reaped = await reapStaleImports(tenantId);
+    if (reaped.reaped > 0) {
+      result.errors.push(
+        `${reaped.reaped} hängengebliebene Import(e) (älter als ${reaped.staleHours} h) wurden als abgebrochen markiert`,
+      );
+    }
+
     // Step 1: Check for new files
     const newFiles = await checkForNewFiles(tenantId);
     result.locationsChecked = newFiles.length;

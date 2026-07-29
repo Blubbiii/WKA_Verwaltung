@@ -50,7 +50,12 @@ export {
 
 export type {
   MonthlyAggregationResult,
+  WriteProductionResult,
 } from './aggregation';
+
+// Settlement-Release: gibt Abrechnung + Produktion nach Gutschrift-Storno frei
+export { releaseSettlementForInvoice } from './settlement-release';
+export type { SettlementReleaseResult } from './settlement-release';
 
 // Import Service: Orchestrierung des Import-Prozesses
 export {

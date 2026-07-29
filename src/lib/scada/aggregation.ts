@@ -18,6 +18,23 @@ import { Prisma } from '@prisma/client';
 // Types
 // ---------------------------------------------------------------
 
+/** Ergebnis eines Schreibvorgangs in TurbineProduction */
+export interface WriteProductionResult {
+  /**
+   * `created`          – Zeile neu angelegt
+   * `updated`          – bestehende Zeile überschrieben
+   * `skipped_invoiced` – Zeile ist bereits abgerechnet und wurde NICHT angefasst
+   */
+  outcome: 'created' | 'updated' | 'skipped_invoiced';
+  turbineId: string;
+  year: number;
+  month: number;
+  /** kWh-Wert, der geschrieben wurde bzw. geschrieben worden wäre */
+  kwhValue: number;
+  /** Bestehender kWh-Wert bei `skipped_invoiced` (für die Abweichungs-Warnung) */
+  existingKwh?: number;
+}
+
 /** Ergebnis einer monatlichen Aggregation */
 export interface MonthlyAggregationResult {
   /** Gesamtproduktion in kWh */
@@ -40,6 +57,31 @@ const INTERVAL_MINUTES = 10;
 /** Anzahl 10-Min-Intervalle pro Stunde */
 const INTERVALS_PER_HOUR = 60 / INTERVAL_MINUTES; // 6
 
+/**
+ * Zeitzone der Abrechnungsperiode.
+ *
+ * FIX P2-8: SCADA-Timestamps liegen in UTC (dbf-reader rechnet die Enercon-Wanduhr-
+ * zeit korrekt nach UTC um). Die Abrechnungsperiode einer Gutschrift ist dagegen
+ * LOKAL definiert (`new Date(year, month-1, 1)` in create-invoices). Eine UTC-basierte
+ * Monatsgruppierung schiebt deshalb die Produktion vom 01.01. 00:00–01:00 Ortszeit
+ * (bzw. 00:00–02:00 in der Sommerzeit) in den Dezember.
+ * Monatsgrenzen werden daher konsequent in Europe/Berlin gebildet.
+ *
+ * ⚠️ TODO BACKFILL (NICHT automatisch ausführen):
+ * Diese Umstellung ändert bestehende Aggregate. `TurbineProduction`-Zeilen, die vor
+ * dieser Änderung erzeugt wurden, enthalten UTC-gebuckete Monatswerte — die erste
+ * bzw. letzte Stunde jedes Monats liegt dort im falschen Monat.
+ * Ein Backfill müsste:
+ *   1. je Turbine/Monat mit `aggregateMonthlyProduction` neu rechnen,
+ *   2. Zeilen mit `status = INVOICED` ÜBERSPRINGEN (bereits abgerechnet — eine
+ *      nachträgliche Korrektur würde von der ausgestellten Gutschrift abweichen),
+ *   3. die Abweichungen als Report ausgeben, bevor etwas geschrieben wird.
+ * Bewusst nicht implementiert: der Eingriff braucht eine fachliche Freigabe.
+ * Zusammenhängender TODO in dbf-reader.ts (`buildTimestamp`) für historisch
+ * falsch gelabelte Rohdaten-Zeilen.
+ */
+export const SETTLEMENT_TIME_ZONE = 'Europe/Berlin';
+
 // ---------------------------------------------------------------
 // Helper Functions
 // ---------------------------------------------------------------
@@ -52,6 +94,67 @@ function daysInMonth(year: number, month: number): number {
   // month ist 1-basiert (1=Januar, 12=Dezember)
   // new Date(year, month, 0) gibt den letzten Tag des Vormonats zurück
   return new Date(year, month, 0).getDate();
+}
+
+/**
+ * UTC-Offset einer Zeitzone zum gegebenen Zeitpunkt, in Millisekunden.
+ * (Positiv östlich von Greenwich: Berlin = +1 h im Winter, +2 h im Sommer.)
+ */
+function timeZoneOffsetMs(instant: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const parts = dtf.formatToParts(instant);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? '0');
+  // Intl liefert Stunde 24 statt 0 für Mitternacht in einigen Runtimes
+  const hour = get('hour') % 24;
+  const asUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    hour,
+    get('minute'),
+    get('second'),
+  );
+  return asUtc - instant.getTime();
+}
+
+/**
+ * UTC-Zeitpunkt, der dem lokalen Monatsanfang (00:00 Ortszeit) entspricht.
+ *
+ * FIX P2-8: Monatsgrenzen der Abrechnungsperiode liegen in Europe/Berlin, die
+ * gespeicherten SCADA-Timestamps in UTC.
+ */
+export function localMonthStartUtc(
+  year: number,
+  month: number,
+  timeZone: string = SETTLEMENT_TIME_ZONE,
+): Date {
+  // month ist 1-basiert; month = 13 ist zulässig (= Januar des Folgejahres)
+  const naive = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+  // Zwei Durchläufe: der Offset am geschätzten Zeitpunkt kann bei einem
+  // DST-Wechsel am Monatsersten vom Offset am korrigierten Zeitpunkt abweichen.
+  const firstPass = new Date(naive.getTime() - timeZoneOffsetMs(naive, timeZone));
+  return new Date(naive.getTime() - timeZoneOffsetMs(firstPass, timeZone));
+}
+
+/**
+ * Jahr/Monat eines UTC-Zeitpunkts in der Abrechnungs-Zeitzone.
+ * Gegenstück zu {@link localMonthStartUtc}.
+ */
+export function localYearMonth(
+  instant: Date,
+  timeZone: string = SETTLEMENT_TIME_ZONE,
+): { year: number; month: number } {
+  const shifted = new Date(instant.getTime() + timeZoneOffsetMs(instant, timeZone));
+  return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1 };
 }
 
 // ---------------------------------------------------------------
@@ -79,9 +182,10 @@ export async function aggregateMonthlyProduction(
   month: number,
   tenantId: string,
 ): Promise<MonthlyAggregationResult> {
-  // Zeitraum: erster bis letzter Tag des Monats
-  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
-  const endDate = new Date(Date.UTC(year, month, 1, 0, 0, 0)); // Exklusiv
+  // Zeitraum: Monatsanfang bis Monatsanfang des Folgemonats — LOKALE Grenzen
+  // (Europe/Berlin), in UTC-Zeitpunkte umgerechnet. Siehe SETTLEMENT_TIME_ZONE.
+  const startDate = localMonthStartUtc(year, month);
+  const endDate = localMonthStartUtc(year, month + 1); // Exklusiv
 
   // Alle WSD-Messwerte mit gültigem Leistungswert für den Monat laden.
   // tenantId-Filter verhindert Cross-Tenant-Aggregation falls Caller mit
@@ -163,24 +267,33 @@ export async function aggregateMonthlyProductionBulk(
     return new Map();
   }
 
-  // Berechne den Gesamt-Zeitbereich für die Query (alle Monate)
+  // Berechne den Gesamt-Zeitbereich für die Query (alle Monate).
+  // FIX P2-8: Monatsgrenzen in Europe/Berlin, als UTC-Zeitpunkte.
   const earliestStart = months.reduce(
     (min, { year, month }) => {
-      const d = new Date(Date.UTC(year, month - 1, 1));
+      const d = localMonthStartUtc(year, month);
       return d < min ? d : min;
     },
-    new Date(Date.UTC(months[0].year, months[0].month - 1, 1)),
+    localMonthStartUtc(months[0].year, months[0].month),
   );
   const latestEnd = months.reduce(
     (max, { year, month }) => {
-      const d = new Date(Date.UTC(year, month, 1));
+      const d = localMonthStartUtc(year, month + 1);
       return d > max ? d : max;
     },
-    new Date(Date.UTC(months[0].year, months[0].month, 1)),
+    localMonthStartUtc(months[0].year, months[0].month + 1),
   );
 
-  // GROUP BY turbineId + date_trunc('month', timestamp).
+  // GROUP BY turbineId + Monat in Europe/Berlin.
+  //
+  // FIX P2-8: `EXTRACT(... FROM "timestamp")` gruppierte nach UTC-Monat, während der
+  // Leistungszeitraum der Gutschrift lokal definiert ist. Die Spalte ist
+  // `timestamp WITHOUT TIME ZONE` und enthält UTC — deshalb erst `AT TIME ZONE 'UTC'`
+  // (naive → timestamptz), dann `AT TIME ZONE 'Europe/Berlin'` (→ lokale Wanduhrzeit).
+  //
   // tenantId-Filter ist Pflicht (Multi-Tenancy + Index-Nutzung).
+  const localTs = Prisma.sql`(("timestamp" AT TIME ZONE 'UTC') AT TIME ZONE ${SETTLEMENT_TIME_ZONE})`;
+
   const rows = await prisma.$queryRaw<
     Array<{
       turbine_id: string;
@@ -192,8 +305,8 @@ export async function aggregateMonthlyProductionBulk(
   >(Prisma.sql`
     SELECT
       "turbineId" AS turbine_id,
-      EXTRACT(YEAR FROM "timestamp")::int AS year,
-      EXTRACT(MONTH FROM "timestamp")::int AS month,
+      EXTRACT(YEAR FROM ${localTs})::int AS year,
+      EXTRACT(MONTH FROM ${localTs})::int AS month,
       SUM("powerW")::float AS total_power_w,
       COUNT(*) AS data_points
     FROM scada_measurements
@@ -204,7 +317,7 @@ export async function aggregateMonthlyProductionBulk(
       AND "powerW" >= 0
       AND "timestamp" >= ${earliestStart}
       AND "timestamp" < ${latestEnd}
-    GROUP BY "turbineId", EXTRACT(YEAR FROM "timestamp"), EXTRACT(MONTH FROM "timestamp")
+    GROUP BY "turbineId", EXTRACT(YEAR FROM ${localTs}), EXTRACT(MONTH FROM ${localTs})
   `);
 
   // Ergebnis als Map aufbereiten + nur die angeforderten Monate behalten
@@ -245,12 +358,19 @@ export async function aggregateMonthlyProductionBulk(
  * Setzt source="SCADA" und status="DRAFT", damit der Wert
  * vom Benutzer noch geprüft/bestätigt werden kann.
  *
+ * WICHTIG: Bereits abgerechnete Zeilen (`status = INVOICED`) werden NICHT
+ * überschrieben. Eine verschickte Gutschrift nennt einen konkreten kWh-Wert —
+ * ein SCADA-Nachimport darf die Datenbasis dahinter nicht still verändern.
+ * Der Aufrufer erhält `outcome: 'skipped_invoiced'` und muss das in der
+ * Import-Warnliste ausweisen (gleiches Verhalten wie CSV-Import und PATCH,
+ * siehe api/energy/productions/import + productions/[id]).
+ *
  * @param turbineId - UUID der Turbine
  * @param tenantId - UUID des Mandanten (Multi-Tenancy)
  * @param year - Jahr (z.B. 2025)
  * @param month - Monat (1-12)
  * @param kwhValue - Berechnete Produktion in kWh
- * @returns Der erstellte oder aktualisierte TurbineProduction-Eintrag
+ * @returns Ergebnis des Schreibvorgangs (created / updated / skipped_invoiced)
  */
 export async function writeToTurbineProduction(
   turbineId: string,
@@ -258,7 +378,26 @@ export async function writeToTurbineProduction(
   year: number,
   month: number,
   kwhValue: number,
-) {
+): Promise<WriteProductionResult> {
+  // Guard: bereits abgerechnete Perioden bleiben unangetastet.
+  const existing = await prisma.turbineProduction.findUnique({
+    where: {
+      turbineId_year_month_tenantId: { turbineId, year, month, tenantId },
+    },
+    select: { status: true, productionKwh: true },
+  });
+
+  if (existing?.status === 'INVOICED') {
+    return {
+      outcome: 'skipped_invoiced',
+      turbineId,
+      year,
+      month,
+      kwhValue,
+      existingKwh: Number(existing.productionKwh),
+    };
+  }
+
   // Fetch SCADA availability for this turbine+month to enrich production record
   const monthStart = new Date(Date.UTC(year, month - 1, 1));
   const monthEnd = new Date(Date.UTC(year, month, 0)); // last day of month
@@ -279,7 +418,7 @@ export async function writeToTurbineProduction(
     ? new Decimal((scadaAvail.t1 / 3600).toFixed(2))
     : undefined;
 
-  const result = await prisma.turbineProduction.upsert({
+  await prisma.turbineProduction.upsert({
     where: {
       turbineId_year_month_tenantId: {
         turbineId,
@@ -311,5 +450,11 @@ export async function writeToTurbineProduction(
     },
   });
 
-  return result;
+  return {
+    outcome: existing ? 'updated' : 'created',
+    turbineId,
+    year,
+    month,
+    kwhValue,
+  };
 }

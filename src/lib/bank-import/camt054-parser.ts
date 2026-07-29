@@ -81,12 +81,25 @@ function parseEntry(
   const direction = String(entry?.CdtDbtInd || "CRDT");
   const amount = direction === "DBIT" ? -rawAmount : rawAmount;
 
-  // Booking date
+  // Booking date.
+  //
+  // Randfall 7: es wurde ausschließlich <Dt> gelesen. BookgDt/ValDt sind aber
+  // vom Typ DateAndDateTime2Choice — sie enthalten ENTWEDER <Dt> (Datum)
+  // ODER <DtTm> (Datum+Uhrzeit). Zahlreiche Banken liefern <DtTm>. Der Parser
+  // fiel dann still auf `new Date()` zurück und stempelte ALLE Transaktionen
+  // eines Imports auf das Importdatum — Zahlungseingänge landeten im falschen
+  // Monat, das Bank-Matching über Fälligkeitsnähe lief ins Leere und in einer
+  // festgeschriebenen Periode war die Buchung gar nicht mehr korrigierbar.
+  //
+  // Ohne verwertbares Datum wird die Transaktion jetzt VERWORFEN statt
+  // stillschweigend falsch datiert: ein fehlender Datensatz fällt im Import-
+  // Review auf, ein falsch datierter nicht.
   const bookgDt = entry?.BookgDt as Record<string, unknown> | undefined;
   const valDt = entry?.ValDt as Record<string, unknown> | undefined;
-  const dateStr =
-    (bookgDt?.Dt as string) || (valDt?.Dt as string) || "";
-  const date = dateStr ? new Date(dateStr) : new Date();
+  const dateStr = pickDateValue(bookgDt) ?? pickDateValue(valDt);
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
 
   // Reference text (Verwendungszweck)
   const ntryDtls = entry?.NtryDtls as Record<string, unknown> | undefined;
@@ -130,6 +143,27 @@ function parseEntry(
     counterpartIban,
     bankReference,
   };
+}
+
+/**
+ * Randfall 7: DateAndDateTime2Choice auflösen — <Dt> ODER <DtTm>.
+ * Manche Parser-Konfigurationen liefern den Knoten direkt als String,
+ * deshalb wird auch dieser Fall akzeptiert.
+ */
+function pickDateValue(node: unknown): string | undefined {
+  if (node === undefined || node === null) return undefined;
+  if (typeof node === "string") return node.trim() || undefined;
+  if (typeof node !== "object") return undefined;
+
+  const rec = node as Record<string, unknown>;
+  const dt = rec.Dt;
+  if (typeof dt === "string" && dt.trim()) return dt.trim();
+  const dtTm = rec.DtTm;
+  if (typeof dtTm === "string" && dtTm.trim()) return dtTm.trim();
+  // fast-xml-parser legt bei Attributen den Textwert unter "#text" ab.
+  const text = rec["#text"];
+  if (typeof text === "string" && text.trim()) return text.trim();
+  return undefined;
 }
 
 function extractPartyName(party: Record<string, unknown> | undefined): string | undefined {

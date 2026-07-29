@@ -40,12 +40,19 @@ export interface MatchResult {
   matchedInvoiceId: string | null;
   /** The matched invoice number for display */
   matchedInvoiceNumber: string | null;
-  /** The gross amount of the matched invoice */
+  /**
+   * Randfall 8: der TATSÄCHLICH geflossene Betrag der Transaktion, nicht
+   * die Rechnungssumme. Vorher stand hier die Bruttosumme der Rechnung —
+   * bei einer Teil-/Abschlagszahlung mit korrekter Rechnungsnummer im
+   * Verwendungszweck wurde damit zu viel als bezahlt vorgeschlagen.
+   */
   matchedAmount: number | null;
   /**
    * Match confidence:
-   * - "high"   — invoice number found in reference text
-   * - "medium" — exact amount match + due date within ±30 days
+   * - "high"   — Rechnungsnummer im Verwendungszweck UND Betrag passt
+   *              (inkl. Toleranz / gültigem Skonto-Abzug)
+   * - "medium" — nur eins von beidem: Nummer ohne passenden Betrag, oder
+   *              Betrag + Fälligkeitsnähe ohne Nummer → Anwender prüft
    * - "none"   — no match found
    */
   confidence: "high" | "medium" | "none";
