@@ -180,6 +180,17 @@ export const startInboxOcrWorker = (): Worker => {
     {
       connection,
       concurrency: 2, // OCR is CPU-intensive, limit concurrency
+      // F15: Ohne lockDuration greift BullMQs Default von 30 s — bei
+      // Tesseract auf dem Main-Thread reicht das nicht. Ein 12-seitiges PDF
+      // braucht ~90 s, der Lock lief ab, der Job galt als "stalled" und wurde
+      // erneut zugestellt: ZWEI parallele OCR-Laeufe auf demselben Datensatz.
+      // 10 Minuten, analog zum Billing-Worker.
+      lockDuration: 600_000,
+      stalledInterval: 60_000,
+      // Nach einem stalled-Event gilt der Job als failed statt erneut
+      // zugestellt zu werden — doppelte OCR-Laeufe sind schlimmer als ein
+      // Fehlschlag, den ein Mensch sieht.
+      maxStalledCount: 1,
     }
   );
 
@@ -195,6 +206,35 @@ export const startInboxOcrWorker = (): Worker => {
       { jobId: job?.id, err },
       `[Worker:${INBOX_OCR_QUEUE_NAME}] Job failed`
     );
+
+    // F15: Der Handler liess `ocrStatus` auf PROCESSING stehen. Bei einem
+    // verlorenen Lock oder einem stalled-Fail laeuft unser Prozessor-Code gar
+    // nicht mehr — die Rechnung hing dauerhaft auf PROCESSING und war nur per
+    // DB-Korrektur zu retten. Hier ist der einzige Pfad, der auch das abdeckt.
+    //
+    // `attemptsMade` ist im failed-Event bereits hochgezaehlt (siehe
+    // dead-letter.ts) — deshalb ohne "+ 1".
+    const invoiceId = job?.data?.invoiceId;
+    if (!invoiceId) return;
+    const maxAttempts = job?.opts?.attempts ?? 1;
+    if ((job?.attemptsMade ?? 0) < maxAttempts) return;
+
+    void (async () => {
+      try {
+        const { prisma } = await import("@/lib/prisma");
+        await prisma.incomingInvoice.updateMany({
+          // Nur den haengenden Zustand anfassen — falls der Prozessor den
+          // Status schon korrekt gesetzt hat, nicht ueberschreiben.
+          where: { id: invoiceId, ocrStatus: "PROCESSING" },
+          data: { ocrStatus: "FAILED", status: "REVIEW" },
+        });
+      } catch (updateErr) {
+        logger.error(
+          { jobId: job?.id, invoiceId, err: updateErr },
+          `[Worker:${INBOX_OCR_QUEUE_NAME}] Konnte haengenden OCR-Status nicht zuruecksetzen`
+        );
+      }
+    })();
   });
 
   logger.info(`[Worker:${INBOX_OCR_QUEUE_NAME}] Started`);

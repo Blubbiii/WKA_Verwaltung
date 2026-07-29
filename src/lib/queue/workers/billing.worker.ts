@@ -214,20 +214,62 @@ async function processGenerateInvoice(data: GenerateInvoiceJobData): Promise<Bil
     };
   });
 
-  // 3. Generate invoice number atomically
+  // 3. F12: Idempotenz VOR der Nummernvergabe.
+  //
+  // Vorher zog dieser Pfad direkt eine Nummer und legte die Rechnung an — ohne
+  // jede Dedup-Pruefung, im Gegensatz zum Bulk-Pfad. Committet der Create und
+  // geht die Antwort verloren (Lock-Verlust, Deploy, Netzwerk), retryt BullMQ
+  // und es entstand eine ZWEITE Rechnung mit einer zweiten Nummer.
+  //
+  // Der Marker haengt an der Job-ID: sie ist Teil des Job-Vertrags, wird vom
+  // Producer stabil gesetzt und dient BullMQ selbst als Dedup-Schluessel.
+  // Die Pruefung liegt vor getNextInvoiceNumber, damit ein Retry keine Nummer
+  // verbrennt (gleiche Ursache wie F13 im Bulk-Pfad).
+  const idempotencyMarker = `SINGLE:${data.jobId}`;
+  const existingInvoice = await prisma.invoice.findFirst({
+    where: {
+      tenantId: data.tenantId,
+      internalReference: idempotencyMarker,
+      deletedAt: null,
+    },
+    select: { id: true, invoiceNumber: true, grossAmount: true },
+  });
+
+  if (existingInvoice) {
+    log("info", data.jobId, "Invoice already exists — idempotent skip", {
+      invoiceId: existingInvoice.id,
+      invoiceNumber: existingInvoice.invoiceNumber,
+      idempotencyMarker,
+    });
+    return {
+      success: true,
+      invoiceIds: [existingInvoice.id],
+      processedCount: 1,
+      details: {
+        invoiceNumber: existingInvoice.invoiceNumber,
+        recipientName,
+        grossAmount: Number(existingInvoice.grossAmount),
+        skipped: true,
+        reason: "Rechnung wurde von einem vorherigen Lauf bereits erzeugt",
+      },
+      processedAt: new Date(),
+    };
+  }
+
+  // 4. Generate invoice number atomically
   const { number: invoiceNumber } = await getNextInvoiceNumber(
     data.tenantId,
     InvoiceType.INVOICE
   );
 
-  // 4. Calculate due date from tenant settings
+  // 5. Calculate due date from tenant settings
   const tenantSettings = await getTenantSettings(data.tenantId);
   const paymentTermDays = tenantSettings.paymentTermDays;
   const dueDate = data.dueDate
     ? new Date(data.dueDate)
     : new Date(Date.now() + paymentTermDays * 24 * 60 * 60 * 1000);
 
-  // 5. Create Invoice with items in database
+  // 6. Create Invoice with items in database
   const invoice = await prisma.invoice.create({
     data: {
       invoiceType: InvoiceType.INVOICE,
@@ -238,7 +280,10 @@ async function processGenerateInvoice(data: GenerateInvoiceJobData): Promise<Bil
       recipientName,
       recipientAddress,
       paymentReference: data.reference || invoiceNumber,
-      internalReference: data.reference,
+      // internalReference traegt den Idempotenz-Marker (F12). Die Referenz des
+      // Aufrufers bleibt in paymentReference erhalten — sie wurde hier vorher
+      // nur doppelt gefuehrt.
+      internalReference: idempotencyMarker,
       netAmount: totalNet,
       taxRate: 0, // Mixed rates across items
       taxAmount: totalTax,
@@ -617,6 +662,15 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
   const reminderLabel = reminderLabels[data.reminderLevel] || `Mahnstufe ${data.reminderLevel}`;
 
+  // F19 (Rechenkorrektheit) galt auch hier: gemahnt wurde der Bruttobetrag.
+  // Nach einer Teilzahlung ist das mehr als geschuldet — rechtlich angreifbar.
+  // lib/accounting/dunning.ts rechnet seit Welle 2 korrekt mit dem offenen
+  // Betrag; dieser zweite Mahnpfad tat es nicht.
+  const openAmount = Math.max(
+    0,
+    Number(invoice.grossAmount) - Number(invoice.paidAmount ?? 0),
+  );
+
   // F10: Die Notiz "... versendet" stand hier — VOR dem Versandversuch. Sie
   // wurde also auch dann geschrieben, wenn nie eine Mail rausging, und die
   // Rechnung behauptete dauerhaft, gemahnt worden zu sein. Der Eintrag erfolgt
@@ -664,7 +718,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
         data: {
           invoiceNumber: invoice.invoiceNumber,
           recipientName: invoice.recipientName || "Empfänger",
-          amount: formatCurrency(Number(invoice.grossAmount)),
+          amount: formatCurrency(openAmount),
           dueDate: invoice.dueDate ? formatDate(invoice.dueDate) : "n/a",
           daysOverdue,
           reminderLevel: data.reminderLevel,
@@ -725,11 +779,60 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     lateFee > 0 ? ` - Mahngebühr: ${lateFee.toFixed(2)} EUR` : ""
   }`;
 
-  await prisma.invoice.update({
-    where: { id: data.invoiceId },
-    data: {
-      notes: (invoice.notes || "") + reminderNote,
-    },
+  // F9: Bisher landete die Mahnung AUSSCHLIESSLICH im Freitext — kein
+  // reminderLevel, keine Gebuehr in strukturierter Form. Folgen:
+  //   1. Die Mahnstufe war nur aus einem Notiz-String rekonstruierbar, also
+  //      konnte dieselbe Stufe beliebig oft erneut versendet werden.
+  //   2. `sumOpenDunningCharges()` liest DunningItem. Ohne Eintrag kannte das
+  //      System die Gebuehr nicht: der Kunde zahlt Rechnung + Gebuehr und
+  //      bekommt einen OverpaymentError.
+  // Beides in einer Transaktion, damit Notiz, Stufe und Gebuehr nicht
+  // auseinanderlaufen koennen.
+  await prisma.$transaction(async (tx) => {
+    await tx.invoice.update({
+      where: { id: data.invoiceId },
+      data: {
+        notes: (invoice.notes || "") + reminderNote,
+        // Nur vorwaerts: ein spaeterer Lauf mit niedrigerer Stufe darf die
+        // erreichte Mahnstufe nicht zurueckdrehen (gleiche Regel wie in
+        // lib/accounting/dunning.ts).
+        ...(invoice.reminderLevel === null || invoice.reminderLevel < data.reminderLevel
+          ? { reminderLevel: data.reminderLevel }
+          : {}),
+        reminderSentAt: now,
+      },
+    });
+
+    // DunningRun + Item: der strukturierte Ort fuer Stufe und Gebuehr. Der Run
+    // ist bewusst einzelpositionig — dieser Pfad mahnt eine einzelne Rechnung,
+    // im Gegensatz zum Sammellauf in lib/accounting/dunning.ts.
+    await tx.dunningRun.create({
+      data: {
+        tenantId: data.tenantId,
+        createdById: data.triggeredById,
+        status: "EXECUTED",
+        notes: `Einzelmahnung ${reminderLabel} für Rechnung ${invoice.invoiceNumber}`,
+        items: {
+          create: [
+            {
+              invoiceId: data.invoiceId,
+              level: data.reminderLevel,
+              overdueDays: daysOverdue,
+              // Offener Betrag, nicht brutto (siehe openAmount oben).
+              amount: openAmount,
+              // TODO(F9-Rest): Die Gebuehr ist damit bekannt und bei der
+              // Zahlung zulaessig, aber NICHT ins Hauptbuch gebucht — es gibt
+              // keine Forderung darauf. Dafuer braucht es ein Ertragskonto in
+              // den TenantSettings (analog zu den Wertberichtigungskonten aus
+              // Welle 2) und eine Entscheidung zur Umsatzsteuer: Mahngebuehren
+              // nach §288 BGB sind Verzugsschaden und damit nicht steuerbar.
+              // Beides fachliche Entscheidungen, deshalb hier nicht gesetzt.
+              feeAmount: lateFee,
+            },
+          ],
+        },
+      },
+    });
   });
 
   // 8. For level 3: log escalation warning
@@ -1074,61 +1177,107 @@ async function processBulkInvoice(
     };
   }
 
-  // 3. Generate all invoice numbers at once (atomic, prevents N+1)
-  const { numbers: invoiceNumbers } = await getNextInvoiceNumbers(
-    data.tenantId,
-    InvoiceType.CREDIT_NOTE,
-    shareholders.length
-  );
-
-  // 4. Create invoices in a transaction for atomicity
   const allInvoiceIds: string[] = [];
   let successCount = 0;
   let failCount = 0;
   const errors: Array<{ entityId: string; message: string }> = [];
 
-  for (let i = 0; i < shareholders.length; i++) {
-    const { shareholder: sh, fundId, fundName } = shareholders[i];
+  // 3. F13: ZUERST feststellen, wer ueberhaupt eine Rechnung braucht.
+  //
+  // Vorher wurden `shareholders.length` Nummern VORAB reserviert und der
+  // Idempotenz-Check lief erst in der Schleife. Jede uebersprungene Position
+  // liess ihre Nummer verfallen: ein Retry fuer 300 Gesellschafter, von denen
+  // 298 schon existierten, verbrannte 298 Nummern. Der Nummernkreis muss nach
+  // GoBD luecken los sein.
+  //
+  // Der Existenz-Check laeuft jetzt als EIN findMany statt N findFirst.
+  const markerFor = (shareholderId: string) =>
+    `BULK:${data.parkId}:${data.period}:${shareholderId}`;
+
+  const existingInvoices = await prisma.invoice.findMany({
+    where: {
+      tenantId: data.tenantId,
+      internalReference: { in: shareholders.map((s) => markerFor(s.shareholder.id)) },
+      deletedAt: null,
+    },
+    select: { id: true, invoiceNumber: true, internalReference: true },
+  });
+  const existingByMarker = new Map(
+    existingInvoices
+      .filter((inv) => inv.internalReference !== null)
+      .map((inv) => [inv.internalReference as string, inv]),
+  );
+
+  /** Nur die Positionen, fuer die tatsaechlich eine Nummer gezogen wird. */
+  const toCreate: typeof shareholders = [];
+
+  for (const entry of shareholders) {
+    const sh = entry.shareholder;
+    const idempotencyMarker = markerFor(sh.id);
+
+    const existing = existingByMarker.get(idempotencyMarker);
+    if (existing) {
+      log("info", data.jobId, "Bulk invoice skipped — already exists (idempotent)", {
+        shareholderId: sh.id,
+        existingInvoiceId: existing.id,
+        existingInvoiceNumber: existing.invoiceNumber,
+        idempotencyMarker,
+      });
+      allInvoiceIds.push(existing.id);
+      successCount++;
+      continue;
+    }
+
+    if (Number(sh.distributionPercentage || 0) <= 0) {
+      errors.push({
+        entityId: sh.id,
+        message: "Kein Ausschuettungsanteil definiert",
+      });
+      failCount++;
+      continue;
+    }
+
+    toCreate.push(entry);
+  }
+
+  if (toCreate.length === 0) {
+    log("info", data.jobId, "Bulk invoice: nothing left to create", {
+      parkId: data.parkId,
+      period: data.period,
+      alreadyExisting: successCount,
+      invalid: failCount,
+    });
+    return {
+      success: failCount === 0,
+      error: failCount > 0 ? `${failCount} Gesellschafter ohne Ausschuettungsanteil` : undefined,
+      invoiceIds: allInvoiceIds,
+      processedCount: successCount,
+      details: {
+        parkId: data.parkId,
+        parkName: park.name,
+        period: data.period,
+        skippedExisting: successCount,
+        invalid: failCount,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+      processedAt: new Date(),
+    };
+  }
+
+  // 4. Jetzt exakt so viele Nummern ziehen, wie auch verwendet werden.
+  const { numbers: invoiceNumbers } = await getNextInvoiceNumbers(
+    data.tenantId,
+    InvoiceType.CREDIT_NOTE,
+    toCreate.length
+  );
+
+  for (let i = 0; i < toCreate.length; i++) {
+    const { shareholder: sh, fundId, fundName } = toCreate[i];
     const invoiceNumber = invoiceNumbers[i];
+    const idempotencyMarker = markerFor(sh.id);
 
     try {
       const distributionPct = Number(sh.distributionPercentage || 0);
-      if (distributionPct <= 0) {
-        errors.push({
-          entityId: sh.id,
-          message: "Kein Ausschuettungsanteil definiert",
-        });
-        failCount++;
-        continue;
-      }
-
-      // Idempotenz — wenn für (parkId, period, shareholder) bereits eine
-      // Bulk-Rechnung existiert (gleicher internalReference-Marker), überspringen.
-      // Verhindert Doppel-Erstellung bei Retry oder erneuter Job-Ausführung.
-      const idempotencyMarker = `BULK:${data.parkId}:${data.period}:${sh.id}`;
-      const existing = await prisma.invoice.findFirst({
-        where: {
-          tenantId: data.tenantId,
-          internalReference: idempotencyMarker,
-          deletedAt: null,
-        },
-        select: { id: true, invoiceNumber: true },
-      });
-      if (existing) {
-        log("info", data.jobId, "Bulk invoice skipped — already exists (idempotent)", {
-          shareholderId: sh.id,
-          existingInvoiceId: existing.id,
-          existingInvoiceNumber: existing.invoiceNumber,
-          idempotencyMarker,
-        });
-        allInvoiceIds.push(existing.id);
-        successCount++;
-        if (job) {
-          const progress = Math.round(((i + 1) / shareholders.length) * 100);
-          await job.updateProgress(progress);
-        }
-        continue;
-      }
 
       const recipientName =
         sh.person.companyName ||
@@ -1219,9 +1368,10 @@ async function processBulkInvoice(
       });
     }
 
-    // Report progress for UI feedback
+    // Report progress for UI feedback. Bezug ist toCreate, nicht shareholders
+    // — sonst bliebe der Balken bei uebersprungenen Positionen unter 100 %.
     if (job) {
-      const progress = Math.round(((i + 1) / shareholders.length) * 100);
+      const progress = Math.round(((i + 1) / toCreate.length) * 100);
       await job.updateProgress(progress);
     }
   }

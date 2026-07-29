@@ -103,6 +103,17 @@ export interface SendReminderJobData extends BaseBillingJobData {
   invoiceId: string;
   /** Mahnstufe */
   reminderLevel: 1 | 2 | 3;
+  /**
+   * User, auf dessen Veranlassung gemahnt wird.
+   *
+   * F9: Die Mahngebühr wurde berechnet und nur in `invoice.notes` geschrieben.
+   * Damit war sie für `sumOpenDunningCharges()` unsichtbar — der Kunde zahlt
+   * Rechnung + Gebühr und bekommt einen OverpaymentError, weil das System die
+   * Gebühr nicht kennt. Die Gebühr wird jetzt als DunningItem festgehalten,
+   * und dessen DunningRun verlangt einen Verursacher (wie in
+   * lib/accounting/dunning.ts, das denselben Parameter fordert).
+   */
+  triggeredById: string;
 }
 
 /** Job-Daten für Gebührenberechnung */
