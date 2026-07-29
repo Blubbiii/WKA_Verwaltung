@@ -67,10 +67,44 @@ async function processInboxOcrJob(
 
   let rawText = "";
 
-  try {
-    // Load file from storage
-    const fileBuffer = await getFileBuffer(fileUrl);
+  // F16: Die Fehlerklassifikation war invertiert — JEDER Fehler, auch ein
+  // S3-Timeout beim Laden, fuehrte zu `return {success:false}` und damit zu
+  // KEINEM Retry, plus ocrStatus hart auf FAILED. Ein Netzwerkschluckauf
+  // machte die Rechnung dauerhaft unlesbar.
+  //
+  // Deshalb getrennt: eine Datei, die sich nicht LADEN laesst, ist ein
+  // Infrastrukturproblem (transient -> throw, BullMQ wiederholt). Eine Datei,
+  // die sich nicht PARSEN laesst, ist ein Datenproblem (permanent -> FAILED).
+  // ACHTUNG, bewusst anders gezaehlt als in lib/queue/dead-letter.ts:
+  // hier laufen wir INNERHALB des Prozessors, `attemptsMade` ist fuer den
+  // laufenden Versuch noch nicht hochgezaehlt (BullMQ macht das erst in
+  // moveToFailed) — deshalb `+ 1`. Im `failed`-Event ist es bereits gezaehlt.
+  const isFinalAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
 
+  let fileBuffer: Buffer;
+  try {
+    fileBuffer = await getFileBuffer(fileUrl);
+  } catch (err) {
+    logger.error(
+      { err, invoiceId, attempt: job.attemptsMade + 1, isFinalAttempt },
+      "[InboxOcr Worker] Datei konnte nicht geladen werden (transient)",
+    );
+
+    // Erst wenn kein Versuch mehr folgt, den Datensatz festschreiben — sonst
+    // bliebe er bei PROCESSING haengen, wenn alle Versuche scheitern.
+    if (isFinalAttempt) {
+      await prisma.incomingInvoice.update({
+        where: { id: invoiceId },
+        data: { ocrStatus: "FAILED", status: "REVIEW" },
+      });
+    }
+
+    // Werfen statt zurueckgeben: nur so retryt BullMQ und nur so landet der
+    // endgueltige Fehlschlag in der Dead-Letter-Queue.
+    throw err instanceof Error ? err : new Error(String(err));
+  }
+
+  try {
     // Stage 1: Try pdfjs-dist for digital text
     rawText = await extractTextFromPdf(fileBuffer);
 
@@ -84,6 +118,8 @@ async function processInboxOcrJob(
       rawText = await extractTextWithTesseract(fileBuffer);
     }
   } catch (err) {
+    // Parse-Fehler sind dateibezogen und permanent — ein Retry liest dieselben
+    // Bytes noch dreimal. Zur manuellen Sichtung in REVIEW geben.
     logger.error({ err, invoiceId }, "[InboxOcr Worker] Text extraction failed");
 
     await prisma.incomingInvoice.update({

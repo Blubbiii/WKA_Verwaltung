@@ -25,8 +25,14 @@ export interface ApprovalsReconcileJobData {
 export interface ApprovalsReconcileJobResult {
   /** Anzahl reconciled Approvals (= erfolgreich ausgeführt). */
   reconciledCount: number;
-  /** Anzahl Failures beim Re-Execute. */
+  /** Anzahl Failures beim Re-Execute (inkl. der Versuche, die erneut laufen). */
   failedCount: number;
+  /**
+   * Anzahl Approvals, die nach MAX_RECONCILE_ATTEMPTS endgueltig aufgegeben
+   * wurden. F6: dieser Fall existierte vorher nicht — jeder Fehlschlag galt
+   * sofort als abgeschlossen.
+   */
+  gaveUpCount: number;
   cutoff: string;
 }
 

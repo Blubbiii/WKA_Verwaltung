@@ -555,10 +555,17 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
     log("warn", data.jobId, "Invoice is still in DRAFT status, skipping reminder", {
       invoiceId: data.invoiceId,
     });
+    // F11: Ein Ueberspringen ist kein Fehlschlag. Vorher lief das als
+    // success:false und landet mit dem neuen Gate unten in der DLQ, obwohl
+    // nichts kaputt ist. Gleiches Muster wie PAID/CANCELLED oben.
     return {
-      success: false,
-      error: "Rechnung ist noch im Entwurf-Status und wurde nicht versendet",
+      success: true,
       processedCount: 0,
+      details: {
+        skipped: true,
+        reason: "Rechnung ist noch im Entwurf-Status und wurde nicht versendet",
+        invoiceId: data.invoiceId,
+      },
       processedAt: new Date(),
     };
   }
@@ -570,10 +577,15 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
       invoiceId: data.invoiceId,
       dueDate: invoice.dueDate.toISOString(),
     });
+    // F11: ebenfalls ein Ueberspringen, kein Fehlschlag.
     return {
-      success: false,
-      error: `Rechnung ist noch nicht fällig (Fälligkeit: ${formatDate(invoice.dueDate)})`,
+      success: true,
       processedCount: 0,
+      details: {
+        skipped: true,
+        reason: `Rechnung ist noch nicht fällig (Fälligkeit: ${formatDate(invoice.dueDate)})`,
+        invoiceId: data.invoiceId,
+      },
       processedAt: new Date(),
     };
   }
@@ -605,23 +617,16 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
   const reminderLabel = reminderLabels[data.reminderLevel] || `Mahnstufe ${data.reminderLevel}`;
 
-  // 5. Update invoice notes with reminder history
+  // F10: Die Notiz "... versendet" stand hier — VOR dem Versandversuch. Sie
+  // wurde also auch dann geschrieben, wenn nie eine Mail rausging, und die
+  // Rechnung behauptete dauerhaft, gemahnt worden zu sein. Der Eintrag erfolgt
+  // jetzt erst nach erfolgreichem Einreihen (siehe Schritt 7).
   const reminderTimestamp = now.toLocaleString(LOCALE_DE);
-  const reminderNote = `\n[${reminderTimestamp}] ${reminderLabel} versendet (${daysOverdue} Tage überfällig)${
-    lateFee > 0 ? ` - Mahngebühr: ${lateFee.toFixed(2)} EUR` : ""
-  }`;
-
-  const updatedNotes = (invoice.notes || "") + reminderNote;
-
-  await prisma.invoice.update({
-    where: { id: data.invoiceId },
-    data: {
-      notes: updatedNotes,
-    },
-  });
 
   // 6. Send reminder email via email queue
   let emailSent = false;
+  /** Grund, falls der Versand nicht zustande kam (F10). */
+  let emailFailure: { message: string; retryable: boolean } | null = null;
   try {
     const { enqueueEmail } = await import("@/lib/queue/queues/email.queue");
 
@@ -680,15 +685,54 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
         invoiceId: data.invoiceId,
         recipientName: invoice.recipientName,
       });
+      // Fehlende Adresse ist ein Datenproblem — ein Retry aendert daran nichts.
+      emailFailure = {
+        message: `Keine E-Mail-Adresse für den Empfänger der Rechnung ${invoice.invoiceNumber} hinterlegt`,
+        retryable: false,
+      };
     }
   } catch (emailError) {
-    // Email sending is non-critical - log and continue
-    log("warn", data.jobId, "Failed to enqueue reminder email", {
-      error: emailError instanceof Error ? emailError.message : "Unknown error",
-    });
+    const message = emailError instanceof Error ? emailError.message : "Unknown error";
+    log("error", data.jobId, "Failed to enqueue reminder email", { error: message });
+    // Das Einreihen scheitert an Redis, nicht an den Daten — das darf wiederholt
+    // werden. Vorher wurde der Fehler als "non-critical" geschluckt und der Job
+    // meldete trotzdem Erfolg.
+    emailFailure = {
+      message: `Mahnung konnte nicht in den Versand gegeben werden: ${message}`,
+      retryable: true,
+    };
   }
 
-  // 7. For level 3: log escalation warning
+  // F10: Ohne tatsaechlichen Versand gibt es keinen Erfolg und keine Notiz.
+  if (!emailSent) {
+    return {
+      success: false,
+      error: emailFailure?.message ?? "Mahnung wurde nicht versendet",
+      retryable: emailFailure?.retryable ?? false,
+      processedCount: 0,
+      details: {
+        invoiceId: data.invoiceId,
+        invoiceNumber: invoice.invoiceNumber,
+        reminderLevel: data.reminderLevel,
+        daysOverdue,
+      },
+      processedAt: new Date(),
+    };
+  }
+
+  // 7. Mahnhistorie erst jetzt fortschreiben — die Mail ist eingereiht.
+  const reminderNote = `\n[${reminderTimestamp}] ${reminderLabel} in den Versand gegeben (${daysOverdue} Tage überfällig)${
+    lateFee > 0 ? ` - Mahngebühr: ${lateFee.toFixed(2)} EUR` : ""
+  }`;
+
+  await prisma.invoice.update({
+    where: { id: data.invoiceId },
+    data: {
+      notes: (invoice.notes || "") + reminderNote,
+    },
+  });
+
+  // 8. For level 3: log escalation warning
   if (data.reminderLevel >= 3) {
     log("warn", data.jobId, "ESCALATION: Level 3 reminder sent - requires management attention", {
       invoiceId: data.invoiceId,
@@ -1387,9 +1431,37 @@ async function processBillingJobInner(job: Job<BillingJobData, BillingJobResult>
       }
     }
 
+    // F11: Ein fachlicher Fehlschlag MUSS als gescheiterter Job sichtbar
+    // werden. Vorher wurde `result` unveraendert zurueckgegeben — BullMQ
+    // zaehlte den Job als completed, der failed-Handler (und damit die
+    // Dead-Letter-Queue) griff nie, und die Statistik zeigte 0 Fehler.
+    //
+    // Kein blindes `throw`: ohne discard() wuerde BullMQ retryen und bei einem
+    // Teil-Lauf die bereits erzeugten Rechnungen ein zweites Mal anlegen.
+    // Nur explizit als transient markierte Fehler werden wiederholt.
+    if (!result.success) {
+      const failureMessage =
+        result.error ?? `Billing job "${data.type}" ist fachlich fehlgeschlagen`;
+
+      log("error", jobId, "Billing job failed (business failure)", {
+        type: data.type,
+        processedCount: result.processedCount,
+        retryable: result.retryable ?? false,
+        error: failureMessage,
+      });
+
+      if (!result.retryable) {
+        // Markiert den Job als endgueltig — kein weiterer Versuch.
+        job.discard();
+      }
+
+      throw new Error(failureMessage);
+    }
+
     log("info", jobId, `Billing job completed successfully`, {
       type: data.type,
       processedCount: result.processedCount,
+      skipped: result.details?.skipped === true,
     });
 
     return result;

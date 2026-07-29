@@ -18,6 +18,24 @@ import type {
 import { WEBHOOK_QUEUE_NAME } from "../queues/webhook.queue";
 import type { Prisma } from "@prisma/client";
 
+/**
+ * Lohnt sich bei diesem HTTP-Status ein weiterer Versuch?
+ *
+ * F16: Vorher wurde jeder Non-2xx-Status wiederholt. Ein 401 (falsches
+ * Secret), 404/410 (Endpunkt existiert nicht mehr) oder 400 (Payload passt
+ * nicht) wird beim zweiten und dritten Mal genauso scheitern.
+ *
+ * Wiederholt werden nur:
+ * - 408 Request Timeout und 429 Too Many Requests
+ * - alle 5xx (Serverfehler beim Empfaenger)
+ * Netzwerkfehler ohne Status (fetch wirft) bleiben ebenfalls wiederholbar —
+ * sie laufen nicht durch diese Funktion.
+ */
+export function isRetryableHttpStatus(status: number): boolean {
+  if (status === 408 || status === 429) return true;
+  return status >= 500;
+}
+
 async function processWebhookJob(
   job: Job<WebhookJobData, WebhookJobResult>
 ): Promise<WebhookJobResult> {
@@ -74,15 +92,29 @@ async function processWebhookJob(
     });
 
     if (!response.ok) {
+      // F16: Vorher wurde JEDER Non-2xx-Status gleich behandelt und dreimal
+      // wiederholt — auch ein 401 (falsches Secret), 404/410 (Endpunkt weg)
+      // oder 400 (Payload passt nicht). Dort aendert ein Retry nichts, er
+      // kostet nur Zeit und verzoegert die uebrigen Zustellungen.
+      const retryable = isRetryableHttpStatus(response.status);
+
       logger.warn(
         {
           jobId: job.id,
           statusCode: response.status,
           url,
           duration,
+          retryable,
         },
         "[Webhook Worker] Non-2xx response"
       );
+
+      if (!retryable) {
+        // Als endgueltig markieren: der Job gilt als failed (und landet damit
+        // in der Dead-Letter-Queue), wird aber nicht erneut versucht.
+        job.discard();
+      }
+
       throw new Error(
         `HTTP ${response.status}: ${responseBody.substring(0, 200)}`
       );

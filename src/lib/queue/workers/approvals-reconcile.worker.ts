@@ -23,6 +23,31 @@ const logger = jobLogger.child({ component: "approvals-reconcile-worker" });
 /** Threshold: Approvals jünger als 5 min werden ausgelassen (Executor läuft evtl. noch). */
 const RECONCILE_DELAY_MS = 5 * 60 * 1000;
 
+/**
+ * Wie oft ein verwaistes Approval erneut ausgeführt wird, bevor aufgegeben wird.
+ *
+ * F6: Vorher wurde `executedAt` in JEDEM Fall gesetzt — auch bei
+ * `result.success === false` und wenn der Executor geworfen hat. Der Datensatz
+ * fiel damit sofort aus dem Suchfilter (`executedAt: null`) und wurde nie
+ * wieder aufgegriffen: ein transienter Fehler (DB-Timeout, Deploy mitten im
+ * Lauf) wurde zu permanentem Datenverlust bei einer bereits GENEHMIGTEN,
+ * geldrelevanten Aktion. Der Kommentar "damit nicht endlos versucht wird"
+ * verwechselte Retry-Begrenzung mit Aufgabe.
+ *
+ * Die Wiederholungen throtteln sich selbst: ein Fehlversuch aktualisiert
+ * `updatedAt`, und der Filter greift nur Requests älter als RECONCILE_DELAY_MS.
+ */
+const MAX_RECONCILE_ATTEMPTS = 5;
+
+/** Liest den Versuchszähler aus `executionResult` (kein eigenes Schema-Feld). */
+function readAttempts(executionResult: unknown): number {
+  if (executionResult && typeof executionResult === "object") {
+    const value = (executionResult as Record<string, unknown>).reconcileAttempts;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
 let approvalsReconcileWorker: Worker<
   ApprovalsReconcileJobData,
   ApprovalsReconcileJobResult
@@ -59,6 +84,7 @@ async function processApprovalsReconcileJob(
 
   let reconciledCount = 0;
   let failedCount = 0;
+  let gaveUpCount = 0;
 
   for (const request of orphaned) {
     if (!request.decidedById) {
@@ -69,42 +95,90 @@ async function processApprovalsReconcileJob(
       );
       continue;
     }
-    try {
-      const result = await executeApprovedAction(request, request.decidedById);
+    const attemptsSoFar = readAttempts(request.executionResult);
+
+    /**
+     * Fehlschlag verbuchen. `executedAt` bleibt NULL, solange noch Versuche
+     * offen sind — nur so bleibt der Request im Suchfilter und wird beim
+     * nächsten Sweep erneut angefasst (F6).
+     */
+    const recordFailure = async (errorMsg: string) => {
+      failedCount++;
+      const attempts = attemptsSoFar + 1;
+      const giveUp = attempts >= MAX_RECONCILE_ATTEMPTS;
+
       await prisma.approvalRequest.update({
         where: { id: request.id },
         data: {
-          executionResult: result.resultData
-            ? (result.resultData as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          executionError: result.error ?? null,
-          executedAt: new Date(),
+          executionError: errorMsg.slice(0, 500),
+          executionResult: {
+            reconcileAttempts: attempts,
+            reconcileGaveUp: giveUp,
+          } as Prisma.InputJsonValue,
+          // Erst nach MAX_RECONCILE_ATTEMPTS aus dem Filter nehmen, damit der
+          // Sweep nicht endlos an derselben Aktion haengt.
+          executedAt: giveUp ? new Date() : null,
         },
       });
-      if (result.success) {
-        reconciledCount++;
+
+      if (giveUp) {
+        gaveUpCount++;
+        logger.error(
+          { approvalId: request.id, attempts, error: errorMsg },
+          "[ApprovalsReconcileWorker] Aufgegeben nach maximaler Versuchszahl",
+        );
+        // Nicht still verschwinden lassen: eine genehmigte, aber dauerhaft
+        // nicht ausfuehrbare Aktion braucht einen Menschen.
+        try {
+          const { notifyAdmins } = await import("@/lib/notifications");
+          await notifyAdmins({
+            tenantId: request.tenantId,
+            type: "SYSTEM",
+            title: "Genehmigte Aktion konnte nicht ausgeführt werden",
+            message:
+              `${request.action} für ${request.entityType} ${request.entityId} ist nach ` +
+              `${attempts} Versuchen endgültig fehlgeschlagen: ${errorMsg.slice(0, 200)}`,
+            link: "/approvals/history",
+          });
+        } catch (notifyErr) {
+          logger.warn(
+            { approvalId: request.id, err: notifyErr },
+            "[ApprovalsReconcileWorker] Admin-Benachrichtigung fehlgeschlagen",
+          );
+        }
       } else {
-        failedCount++;
         logger.warn(
-          { approvalId: request.id, error: result.error },
-          "[ApprovalsReconcileWorker] Re-Execute fehlgeschlagen",
+          { approvalId: request.id, attempts, maxAttempts: MAX_RECONCILE_ATTEMPTS, error: errorMsg },
+          "[ApprovalsReconcileWorker] Re-Execute fehlgeschlagen — wird erneut versucht",
         );
       }
+    };
+
+    try {
+      const result = await executeApprovedAction(request, request.decidedById);
+
+      if (result.success) {
+        await prisma.approvalRequest.update({
+          where: { id: request.id },
+          data: {
+            executionResult: result.resultData
+              ? (result.resultData as Prisma.InputJsonValue)
+              : Prisma.JsonNull,
+            executionError: null,
+            executedAt: new Date(),
+          },
+        });
+        reconciledCount++;
+      } else {
+        await recordFailure(result.error ?? "Re-Execute ohne Fehlermeldung fehlgeschlagen");
+      }
     } catch (err) {
-      failedCount++;
       const errorMsg = err instanceof Error ? err.message : String(err);
       logger.error(
         { approvalId: request.id, err: errorMsg },
         "[ApprovalsReconcileWorker] Re-Execute threw",
       );
-      // Errorstring in execResult schreiben damit nicht endlos versucht wird.
-      await prisma.approvalRequest.update({
-        where: { id: request.id },
-        data: {
-          executionError: errorMsg.slice(0, 500),
-          executedAt: new Date(),
-        },
-      });
+      await recordFailure(errorMsg);
     }
   }
 
@@ -113,6 +187,7 @@ async function processApprovalsReconcileJob(
       jobId,
       reconciledCount,
       failedCount,
+      gaveUpCount,
       totalFound: orphaned.length,
     },
     `[ApprovalsReconcileWorker] Reconciled ${reconciledCount}/${orphaned.length}`,
@@ -121,6 +196,7 @@ async function processApprovalsReconcileJob(
   return {
     reconciledCount,
     failedCount,
+    gaveUpCount,
     cutoff: cutoff.toISOString(),
   };
 }

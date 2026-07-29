@@ -41,7 +41,12 @@ export interface PersistFailedJobInput {
  * dreifach ueberzeichnet.
  *
  * `attemptsMade` wird nach dem Fehlschlag hochgezaehlt und entspricht beim
- * letzten Versuch genau `opts.attempts`.
+ * letzten Versuch genau `opts.attempts`. Verifiziert in bullmq 5.79:
+ * worker.js awaitet `job.moveToFailed()` (dort `attemptsMade += 1`) und
+ * emittiert `failed` erst danach.
+ *
+ * ACHTUNG: INNERHALB eines Prozessors ist der Zaehler noch nicht erhoeht —
+ * dort braucht es `attemptsMade + 1` (siehe inbox-ocr.worker.ts).
  */
 function isFinalAttempt(job: Job): boolean {
   const maxAttempts = job.opts?.attempts ?? 1;

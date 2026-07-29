@@ -164,6 +164,20 @@ export interface BillingJobResult {
   details?: Record<string, unknown>;
   /** Zeitpunkt der Verarbeitung */
   processedAt?: Date;
+  /**
+   * Nur relevant, wenn `success === false`.
+   *
+   * `true`  → transienter Fehler, BullMQ soll es erneut versuchen.
+   * `false` (Default) → fachlich endgueltig. Der Job wird als gescheitert
+   *          markiert, aber NICHT wiederholt: ein Retry wuerde bei einem
+   *          Teil-Lauf die bereits erzeugten Rechnungen doppelt anlegen.
+   *
+   * F11: Vorher wurde `success: false` einfach zurueckgegeben. BullMQ zaehlte
+   * den Job als erfolgreich, der failed-Handler und damit die DLQ griffen
+   * nicht, und die Queue-Statistik zeigte 0 Fehler — ein Bulk-Lauf mit 200 von
+   * 300 gescheiterten Gutschriften war in der Admin-UI gruen.
+   */
+  retryable?: boolean;
 }
 
 /**
