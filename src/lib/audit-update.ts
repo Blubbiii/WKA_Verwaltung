@@ -31,6 +31,14 @@ import { prisma } from "@/lib/prisma";
 import type { AuditAction, AuditEntityType } from "./audit-types";
 import { logger } from "@/lib/logger";
 import type { TxClient } from "./invoices/numberGenerator";
+import { getEncryptedFields } from "@/lib/encryption-middleware";
+
+/**
+ * Placeholder written to the audit log instead of the real value of an
+ * encrypted field. Chosen so the log still proves THAT the field changed
+ * (GoBD §147 traceability) without persisting the secret in plaintext.
+ */
+export const REDACTED_VALUE = "***";
 
 export interface UpdateWithAuditOpts<T extends Record<string, unknown>> {
   entityType: AuditEntityType;
@@ -53,6 +61,15 @@ export interface UpdateWithAuditOpts<T extends Record<string, unknown>> {
    * Defaults to ["updatedAt"].
    */
   ignoreFields?: string[];
+  /**
+   * Extra fields whose VALUE must not reach the audit log — the field still
+   * shows up in the diff (as "***") so the change stays traceable.
+   *
+   * The encrypted-at-rest fields of `entityType` are added automatically
+   * (derived from ENCRYPTED_FIELDS_BY_MODEL); use this only for additional
+   * sensitive fields that are not covered by the encryption extension.
+   */
+  redactFields?: string[];
 }
 
 /**
@@ -63,6 +80,7 @@ function diffRecords<T extends Record<string, unknown>>(
   before: T,
   after: T,
   ignoreFields: Set<string>,
+  redactFields: Set<string>,
 ): { oldValues: Record<string, unknown>; newValues: Record<string, unknown> } | null {
   const oldValues: Record<string, unknown> = {};
   const newValues: Record<string, unknown> = {};
@@ -75,8 +93,19 @@ function diffRecords<T extends Record<string, unknown>>(
     // Use JSON.stringify for deep-equality of Decimal/Date/Json values.
     // Cheap and correct enough for audit purposes.
     if (JSON.stringify(a) !== JSON.stringify(b)) {
-      oldValues[key] = a;
-      newValues[key] = b;
+      if (redactFields.has(key)) {
+        // Encrypted-at-rest field (IBAN, BIC, SMTP password …). The Prisma
+        // encryption extension decrypted it on read, so `a`/`b` are plaintext.
+        // auditLog.oldValues/newValues is a plain JSON column — writing the
+        // value there would defeat the column encryption entirely.
+        // Keep the fact of the change, drop the value. null stays null so the
+        // log distinguishes "value set" from "value cleared".
+        oldValues[key] = a === null || a === undefined ? a : REDACTED_VALUE;
+        newValues[key] = b === null || b === undefined ? b : REDACTED_VALUE;
+      } else {
+        oldValues[key] = a;
+        newValues[key] = b;
+      }
       changedCount++;
     }
   }
@@ -94,6 +123,15 @@ export async function updateWithAudit<T extends Record<string, unknown>>(
   const ignoreFields = new Set(opts.ignoreFields ?? ["updatedAt"]);
   const action = opts.action ?? "UPDATE";
 
+  // REG-F4: loadCurrent/applyChange run on the EXTENDED prisma client, whose
+  // encryption extension decrypts on read and on the update's return value.
+  // Without masking, Person.bankIban/bankBic/bankName and Fund.emailSmtpPassword
+  // would be persisted in cleartext in the unencrypted auditLog JSON columns.
+  const redactFields = new Set([
+    ...getEncryptedFields(opts.entityType),
+    ...(opts.redactFields ?? []),
+  ]);
+
   return prisma.$transaction(async (tx) => {
     const before = await opts.loadCurrent(tx);
     if (!before) {
@@ -106,7 +144,7 @@ export async function updateWithAudit<T extends Record<string, unknown>>(
 
     const after = await opts.applyChange(tx, before);
 
-    const diff = diffRecords(before, after, ignoreFields);
+    const diff = diffRecords(before, after, ignoreFields, redactFields);
 
     // Only write an audit-log entry if something actually changed.
     if (diff) {

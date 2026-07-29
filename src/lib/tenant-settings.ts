@@ -45,6 +45,18 @@ export interface TenantSettings {
   datevAccountOutputTax7: string;
   datevAccountInputTax19: string;
   datevAccountInputTax7: string;
+  // Zahlungsverkehrs-Konten für die Zahlungsbuchung (Bank an Forderung).
+  // Leerstring = "nicht konfiguriert" → resolvePaymentAccount() leitet den
+  // Standard aus chartOfAccountsVersion ab (SKR03 Bank 1200 / Kasse 1000,
+  // SKR04 Bank 1800 / Kasse 1600). Tenants mit mehreren Bankkonten sollten
+  // hier ihr Haupt-Geldkonto eintragen.
+  datevAccountBank: string;
+  datevAccountCash: string;
+  // Aufwandskonto für endgültige Forderungsausfälle (SKR03 2400 /
+  // SKR04 6930 "Forderungsverluste"). Leer = Fallback auf
+  // datevAccountEinspeisung, damit die Ausbuchung in jedem Fall
+  // ausgeglichen ins Hauptbuch geht.
+  datevAccountBadDebt: string;
   // Geschaeftsjahr
   fiscalYearStartMonth: number; // 1-12 (1 = January)
   // GoBD retention
@@ -144,6 +156,13 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   datevAccountOutputTax7: "1771",
   datevAccountInputTax19: "1576",
   datevAccountInputTax7: "1571",
+  // Leer = aus chartOfAccountsVersion ableiten (siehe resolvePaymentAccount).
+  // Kein hartkodierter Default, weil "1200" je nach Kontenrahmen entweder
+  // Bank (SKR03) oder Forderungen (SKR04) bedeutet — ein falscher Default
+  // würde Bank an Bank buchen.
+  datevAccountBank: "",
+  datevAccountCash: "",
+  datevAccountBadDebt: "",
   // Geschaeftsjahr
   fiscalYearStartMonth: 1,
   // GoBD retention (§147 AO)
@@ -231,6 +250,28 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
 export async function invalidateTenantSettings(tenantId: string): Promise<void> {
   const { cache } = await import("@/lib/cache");
   await cache.del("tenant-settings", tenantId);
+}
+
+/**
+ * Geldkonto (Bank / Kasse) für Zahlungsbuchungen auflösen.
+ *
+ * Bevorzugt die explizite Tenant-Konfiguration. Ist sie leer, wird der
+ * DATEV-Standard des jeweiligen Kontenrahmens genommen:
+ *   SKR03: Bank 1200, Kasse 1000
+ *   SKR04: Bank 1800, Kasse 1600
+ *
+ * @param kind "BANK" für Bank-/SEPA-Zahlungen, "CASH" für Barzahlungen.
+ */
+export function resolvePaymentAccount(
+  settings: TenantSettings,
+  kind: "BANK" | "CASH",
+): string {
+  const configured = kind === "CASH" ? settings.datevAccountCash : settings.datevAccountBank;
+  if (configured && configured.trim().length > 0) return configured.trim();
+
+  const isSkr03 = settings.chartOfAccountsVersion === "SKR03";
+  if (kind === "CASH") return isSkr03 ? "1000" : "1600";
+  return isSkr03 ? "1200" : "1800";
 }
 
 /**

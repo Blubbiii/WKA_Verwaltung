@@ -413,13 +413,33 @@ export interface SettlementCalculationInput {
   minimumRentPerTurbine: number;
   weaSharePercentage: number;
   poolSharePercentage: number;
+  /**
+   * Anzahl aktiver Turbinen-Records im Park. Basis für die
+   * Mindestpacht-Garantie (minimumRentPerTurbine * totalWEACount).
+   */
   totalWEACount: number;
+  /**
+   * Nenner für die Verteilung des WEA-Standort-Topfes.
+   *
+   * Bewusst getrennt von `totalWEACount`: der Zähler (`lease.standortShareUnits`)
+   * stammt aus WEA_STANDORT-PlotAreas, nicht aus Turbine-Records. Werden beide
+   * Basen gemischt, ist der Topf nicht auf 100 % normiert (Audit F3).
+   * Fallback auf `totalWEACount` wenn nicht gesetzt.
+   */
+  totalStandortShareUnits?: number;
   totalPoolAreaSqm: number;
   leases: {
     leaseId: string;
     lessorPersonId: string;
     poolAreaSqm: number;
+    /** Ganzzahlige Anzahl WEA-Standorte auf den Flurstücken dieses Vertrags (Anzeige). */
     turbineCount: number;
+    /**
+     * Verteilschlüssel für den Standort-Topf. Kann gebrochen sein, wenn ein
+     * Flurstück an mehrere Pachtgeber verpachtet ist (z.B. 0,5). Fallback auf
+     * `turbineCount` wenn nicht gesetzt.
+     */
+    standortShareUnits?: number;
     sealedAreaSqm: number;
     sealedAreaRate: number;
     roadUsageFeeEur: number;

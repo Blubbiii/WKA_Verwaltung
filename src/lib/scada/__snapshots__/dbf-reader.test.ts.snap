@@ -33,7 +33,7 @@ exports[`read84dFile — Operating State A0-A39 > Snapshot: erster 84D-Record 1`
     "A8": 16,
     "A9": 28,
   },
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
 }
 `;
 
@@ -51,7 +51,7 @@ exports[`read85dFile — Operating State A48+ > Snapshot: erster 85D-Record 1`] 
     "A84": 21,
     "A93": 20,
   },
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
 }
 `;
 
@@ -78,7 +78,7 @@ exports[`readPesFile — Power/State Events Monthly > Snapshot: erster PES-Recor
   "plantNo": 1,
   "state": 0,
   "subState": 5,
-  "timestamp": "2026-01-01T08:13:22.000Z",
+  "timestamp": "2026-01-01T07:13:22.000Z",
   "windSpeedAtEvent": 15.9,
 }
 `;
@@ -166,7 +166,7 @@ exports[`readUidFile — Electrical Daily (P/Q/S/cos φ/U/I) > Snapshot: erster 
     20416,
   ],
   "plantNo": 2,
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
 }
 `;
 
@@ -192,7 +192,7 @@ exports[`readUqdFile — Reactive per-Phase Daily > Snapshot: erster UQD-Record 
   "peakQ2": 18,
   "peakQ3": 20,
   "plantNo": 2,
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
 }
 `;
 
@@ -204,7 +204,7 @@ exports[`readWddFile — Shadow Casting Daily > Snapshot: erster WDD-Record 1`] 
   "peakShadow": 100,
   "plantNo": 1,
   "setCumShadowH": 36,
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
 }
 `;
 
@@ -228,7 +228,7 @@ exports[`readWsdFile — Wind Speed Daily > Snapshot: erster Record aus WSD-Fixt
   "rainIndex": null,
   "reactivePowerVar": 160000,
   "rotorRpm": 16.2,
-  "timestamp": "2026-01-01T00:00:00.000Z",
+  "timestamp": "2025-12-31T23:00:00.000Z",
   "visibilityRange": 17.1,
   "windDirection": 607,
   "windSpeedMs": 9.9,

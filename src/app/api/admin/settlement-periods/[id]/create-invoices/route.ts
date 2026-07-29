@@ -405,6 +405,11 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
       leaseId: { in: allValidLeases.map((l) => l.leaseId) },
       invoiceType: "CREDIT_NOTE",
       status: { not: "CANCELLED" },
+      // Audit 3.2: Die Storno-Gutschrift zu einer stornierten Rechnung hat
+      // Status SENT und dieselbe leaseId + settlementPeriodId. Ohne diesen
+      // Filter blockiert sie den Korrektur-Workflow dauerhaft — für den
+      // Pachtvertrag würde nie wieder eine Gutschrift erzeugt.
+      cancelledInvoiceId: null,
       deletedAt: null,
     },
     select: { leaseId: true, status: true, invoiceNumber: true },
@@ -670,7 +675,13 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
       parkId: period.parkId,
       tenantId,
       invoiceType: "CREDIT_NOTE",
-      status: { in: ["DRAFT", "SENT", "PAID"] },
+      // Audit 3.1: InvoiceStatus hat 6 Werte — PARTIALLY_PAID und WRITTEN_OFF
+      // fehlten, dadurch wurden teilbezahlte/ausgebuchte Vorschüsse nicht
+      // verrechnet. Korrekt ist "alles außer storniert".
+      status: { not: "CANCELLED" },
+      // Storno-Belege spiegeln ein bereits ausgeschlossenes Original.
+      cancelledInvoiceId: null,
+      deletedAt: null,
       settlementPeriod: {
         year: period.year,
         periodType: "ADVANCE",
@@ -883,6 +894,9 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
       leaseId: { in: finalLeaseIds },
       invoiceType: "CREDIT_NOTE",
       status: { not: "CANCELLED" },
+      // Audit 3.2: Storno-Belege (Status SENT, gleiche leaseId + Period)
+      // dürfen den Idempotenz-Check nicht dauerhaft blockieren.
+      cancelledInvoiceId: null,
       deletedAt: null,
     },
     select: { leaseId: true },

@@ -9,6 +9,7 @@ import {
   calculateSettlement,
   calculateMonthlyAdvance,
 } from "@/lib/settlement";
+import type { SettlementWarning } from "@/lib/settlement/calculator";
 import { apiError } from "@/lib/api-errors";
 
 const calculateSchema = z.object({
@@ -45,6 +46,8 @@ interface FinalCalculationResult {
     totalAdvancesPaid: number;
     totalFinalPayment: number;
   };
+  /** Hinweise die manuelle Nacharbeit erfordern können (Audit 3.4) */
+  warnings: SettlementWarning[];
 }
 
 // POST /api/admin/settlement-periods/[id]/calculate - Berechne Abrechnungsbetraege
@@ -234,23 +237,33 @@ async function calculateFinalSettlement(
     },
     include: {
       invoices: {
-        where: { status: { in: ["SENT", "PAID"] } },
+        where: {
+          // Audit 3.1: PARTIALLY_PAID fehlte — teilbezahlte Vorschüsse
+          // wurden nicht verrechnet.
+          status: { in: ["SENT", "PAID", "PARTIALLY_PAID"] },
+          // Storno-Belege spiegeln ein bereits ausgeschlossenes Original.
+          cancelledInvoiceId: null,
+          deletedAt: null,
+        },
         select: {
           id: true,
           leaseId: true,
-          grossAmount: true,
+          netAmount: true,
         },
       },
     },
   });
 
-  // Berechne bereits gezahlte Vorschüsse pro Lease
+  // Berechne bereits gezahlte Vorschüsse pro Lease.
+  // Audit F8: NETTO gegen NETTO. `lease.totalPayment` aus dem Calculator ist
+  // ein Nettobetrag (Park-Entschädigungssätze ohne USt). Wurde hier brutto
+  // abgezogen, fiel die Nachzahlung um die enthaltene USt zu niedrig aus.
   const advancesPaidByLease = new Map<string, number>();
   for (const period of advancePeriods) {
     for (const invoice of period.invoices) {
       if (invoice.leaseId) {
         const current = advancesPaidByLease.get(invoice.leaseId) || 0;
-        advancesPaidByLease.set(invoice.leaseId, current + Number(invoice.grossAmount));
+        advancesPaidByLease.set(invoice.leaseId, current + Number(invoice.netAmount));
       }
     }
   }
@@ -291,6 +304,7 @@ async function calculateFinalSettlement(
       totalAdvancesPaid: leases.reduce((sum, l) => sum + l.alreadyPaidAdvances, 0),
       totalFinalPayment: leases.reduce((sum, l) => sum + l.finalPayment, 0),
     },
+    warnings: baseCalculation.warnings,
   };
 }
 

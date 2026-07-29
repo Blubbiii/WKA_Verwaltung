@@ -52,11 +52,39 @@ export async function POST(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Entwürfe können nicht storniert werden. Bitte löschen Sie den Entwurf." });
     }
 
-    // GoBD §146 AO: Storno erzeugt eine Buchung ins ORIGINAL-Monat der
-    // Rechnung — dieser muss offen sein. (Die Storno-Rechnung selbst hat
-    // invoiceDate=jetzt; wir prüfen zusätzlich, dass beide Perioden offen sind.)
+    // Finding 1.5: Storno einer bereits (teil-)bezahlten Rechnung wurde
+    // ungeprüft durchgelassen. Ergebnis: Original CANCELLED mit paidAmount>0,
+    // InvoicePayment und Zahlungsbuchung bleiben verwaist, und die
+    // Storno-Gutschrift steht dauerhaft als offener Posten (recordPayment
+    // akzeptiert keine negativen Beträge, sie ist also nie schließbar).
+    //
+    // Bewusst KEINE automatische Rückabwicklung: ob die Zahlung zurücküberwiesen,
+    // auf eine andere Rechnung umgebucht oder als Guthaben stehen bleibt, ist
+    // eine fachliche Entscheidung, die der Storno-Code nicht treffen kann.
+    // Der Anwender storniert erst die Zahlung (Bank-Unmatch bzw.
+    // Zahlungs-Rückabwicklung) und danach die Rechnung.
+    if (Number(original.paidAmount) !== 0) {
+      return apiError("OPERATION_NOT_ALLOWED", 409, {
+        message:
+          `Rechnung ${original.invoiceNumber} hat bereits Zahlungen über ` +
+          `${Number(original.paidAmount).toFixed(2)} €. Bitte zuerst die Zahlung ` +
+          `stornieren (Bank-Zuordnung aufheben), danach die Rechnung stornieren.`,
+        details: {
+          paidAmount: Number(original.paidAmount),
+          grossAmount: Number(original.grossAmount),
+        },
+      });
+    }
+
+    // GoBD §146 AO: Finding 1.4 — geprüft wurde bisher zusätzlich der Monat
+    // von original.invoiceDate. Dorthin bucht aber NICHTS: reverseAutoPosting()
+    // setzt entryDate bewusst auf den aktuellen Monat (auto-posting.ts), und
+    // die Storno-Rechnung bekommt invoiceDate = jetzt. Die Prüfung gegen den
+    // Original-Monat hat damit nur legitime Stornos blockiert und den Anwender
+    // gezwungen, eine geschlossene Periode zu entsperren — genau das, was
+    // §146 AO verhindern soll. Geprüft wird jetzt das tatsächliche
+    // Buchungsdatum.
     try {
-      await assertPeriodOpen(check.tenantId!, original.invoiceDate);
       await assertPeriodOpen(check.tenantId!, new Date());
     } catch (err) {
       if (err instanceof PeriodLockedError) {

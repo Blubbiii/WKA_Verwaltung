@@ -18,6 +18,7 @@
 import { Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import type {
   SettlementCalculationInput,
   SettlementCalculationResult,
@@ -79,6 +80,13 @@ export function calculateSettlementFees(
     leases,
   } = input;
 
+  // Nenner für den Standort-Topf: WEA_STANDORT-Anteilseinheiten, NICHT die
+  // Anzahl Turbine-Records. Beide Basen zu mischen überzahlt den Topf (F3).
+  const totalStandortShareUnits =
+    input.totalStandortShareUnits ?? totalWEACount;
+
+  assertShareSplit(weaSharePercentage, poolSharePercentage);
+
   // Step 1: Revenue-based fee
   const calculatedFeeEur = round2(
     (totalParkRevenueEur * revenueSharePercent) / 100
@@ -110,10 +118,11 @@ export function calculateSettlementFees(
       (poolAreaTotalEur * poolAreaSharePercent) / 100
     );
 
-    // WEA-Standort share (proportional to turbine count)
+    // WEA-Standort share (proportional to WEA_STANDORT share units)
+    const standortShareUnits = lease.standortShareUnits ?? lease.turbineCount;
     const standortFeeEur =
-      totalWEACount > 0
-        ? round2((weaStandortTotalEur * lease.turbineCount) / totalWEACount)
+      totalStandortShareUnits > 0
+        ? round2((weaStandortTotalEur * standortShareUnits) / totalStandortShareUnits)
         : 0;
 
     // Surcharges
@@ -187,6 +196,11 @@ export function calculateAdvanceFees(
     leases,
   } = input;
 
+  const totalStandortShareUnits =
+    input.totalStandortShareUnits ?? totalWEACount;
+
+  assertShareSplit(weaSharePercentage, poolSharePercentage);
+
   const divisor = getIntervalDivisor(advanceInterval);
 
   // Advance is based purely on minimum guarantee
@@ -211,9 +225,10 @@ export function calculateAdvanceFees(
       (poolAreaTotalEur * poolAreaSharePercent) / 100
     );
 
+    const standortShareUnits = lease.standortShareUnits ?? lease.turbineCount;
     const standortFeeEur =
-      totalWEACount > 0
-        ? round2((weaStandortTotalEur * lease.turbineCount) / totalWEACount)
+      totalStandortShareUnits > 0
+        ? round2((weaStandortTotalEur * standortShareUnits) / totalStandortShareUnits)
         : 0;
 
     // Surcharges also divided by interval
@@ -347,7 +362,10 @@ export async function loadSettlementData(
       plots: {
         where: { status: "ACTIVE" },
         include: {
-          plotAreas: true,
+          // Nur jährlich wiederkehrende Entschädigungen. ONE_TIME-Flächen
+          // (Einmalentschädigungen) dürfen nicht jedes Jahr erneut fließen
+          // (Audit F4) — settlement/calculator.ts filtert identisch.
+          plotAreas: { where: { compensationType: "ANNUAL" } },
           leasePlots: {
             include: {
               lease: {
@@ -389,6 +407,14 @@ export async function loadSettlementData(
 
   // Load total park revenue for the year from EnergySettlements
   // If a specific EnergySettlement is linked, use that; otherwise aggregate all
+  //
+  // WICHTIG (Audit F12): Das Schema erlaubt für dasselbe park+year SOWOHL ein
+  // Jahres-Settlement (month = null) ALS AUCH zwölf Monats-Settlements
+  // (@@unique([parkId, year, month, tenantId]) mit nullable month). Ein
+  // Aggregat ohne month-Filter summiert dann beide Ebenen und verdoppelt die
+  // Erlösbasis. Deshalb: erst das Jahres-Settlement suchen, nur wenn keines
+  // existiert die Monats-Settlements summieren.
+  const RELEVANT_ENERGY_STATUS = ["CALCULATED", "INVOICED", "CLOSED"] as const;
   let totalParkRevenueEur = 0;
   if (linkedEnergySettlementId) {
     const linked = await prisma.energySettlement.findUnique({
@@ -397,18 +423,34 @@ export async function loadSettlementData(
     });
     totalParkRevenueEur = Number(linked?.netOperatorRevenueEur ?? 0);
   } else {
-    const revenueResult = await prisma.energySettlement.aggregate({
+    const yearlySettlement = await prisma.energySettlement.findFirst({
       where: {
         parkId,
         tenantId,
         year,
-        status: { in: ["CALCULATED", "INVOICED", "CLOSED"] },
+        month: null,
+        status: { in: [...RELEVANT_ENERGY_STATUS] },
       },
-      _sum: { netOperatorRevenueEur: true },
+      select: { netOperatorRevenueEur: true },
     });
-    totalParkRevenueEur = Number(
-      revenueResult._sum.netOperatorRevenueEur ?? 0
-    );
+
+    if (yearlySettlement) {
+      totalParkRevenueEur = Number(yearlySettlement.netOperatorRevenueEur ?? 0);
+    } else {
+      const revenueResult = await prisma.energySettlement.aggregate({
+        where: {
+          parkId,
+          tenantId,
+          year,
+          month: { not: null },
+          status: { in: [...RELEVANT_ENERGY_STATUS] },
+        },
+        _sum: { netOperatorRevenueEur: true },
+      });
+      totalParkRevenueEur = Number(
+        revenueResult._sum.netOperatorRevenueEur ?? 0
+      );
+    }
   }
 
   // Aggregate plot data per lease
@@ -420,6 +462,7 @@ export async function loadSettlementData(
       lessorPersonId: string;
       poolAreaSqm: number;
       turbineCount: number;
+      standortShareUnits: number;
       sealedAreaSqm: number;
       sealedAreaRate: number;
       roadUsageFeeEur: number;
@@ -430,6 +473,7 @@ export async function loadSettlementData(
   >();
 
   let totalPoolAreaSqm = 0;
+  let totalStandortShareUnits = 0;
   const totalWEACount = park.turbines.length;
 
   // Default surcharge rates from park configuration
@@ -437,17 +481,51 @@ export async function loadSettlementData(
   const defaultKabelRate = Number(park.kabelCompensationPerM ?? 0);
 
   for (const plot of park.plots) {
-    for (const leasePlot of plot.leasePlots) {
-      const lease = leasePlot.lease;
-      if (!lease || lease.status !== "ACTIVE") continue;
+    // Ein Flurstück kann an MEHRERE Pachtgeber verpachtet sein (Miteigentum).
+    // Vorher wurde die Fläche pro Pachtvertrag komplett neu addiert — sowohl
+    // auf den Vertrag als auch auf die Park-Summe (Audit F1). Dadurch wurden
+    // Miteigentümer bevorzugt und Alleineigentümer verwässert.
+    //
+    // Ohne Anteilsschlüssel in der DB (LeasePlot hat keine Quote) ist die
+    // einzig vertretbare Annahme: gleichmäßige Teilung nach Kopfzahl.
+    // TODO(schema): `LeasePlot.sharePercent Decimal?` würde abweichende
+    // Miteigentumsquoten (z.B. 2/3 zu 1/3) ermöglichen. Erfordert Migration.
+    const activeLeasePlots = plot.leasePlots.filter(
+      (lp) => lp.lease && lp.lease.status === "ACTIVE"
+    );
+    if (activeLeasePlots.length === 0) continue;
+    const shareFactor = 1 / activeLeasePlots.length;
+
+    if (activeLeasePlots.length > 1) {
+      logger.info(
+        {
+          plotId: plot.id,
+          parkId,
+          year,
+          leaseCount: activeLeasePlots.length,
+          leaseIds: activeLeasePlots.map((lp) => lp.lease!.id),
+        },
+        "Plot has multiple active leases - areas split equally (no share key in schema)"
+      );
+    }
+
+    for (const leasePlot of activeLeasePlots) {
+      const lease = leasePlot.lease!;
 
       const existing = leaseDataMap.get(lease.id) ?? {
         leaseId: lease.id,
         lessorPersonId: lease.lessorId,
         poolAreaSqm: 0,
         turbineCount: 0,
+        standortShareUnits: 0,
         sealedAreaSqm: 0,
-        sealedAreaRate: defaultWegRate,
+        // Es gibt keinen PlotAreaType für versiegelte Fläche (Audit F7),
+        // deshalb bleibt sowohl Fläche als auch Satz strukturell 0. Vorher
+        // war hier fälschlich der Wege-Satz vorbelegt, was auf Belegen einen
+        // Satz ohne Bezugsgröße ausgewiesen hätte.
+        // TODO(schema): PlotAreaType.VERSIEGELT + PlotArea-Rate ergänzen,
+        // falls versiegelte Flächen gesondert vergütet werden sollen.
+        sealedAreaRate: 0,
         roadUsageFeeEur: 0,
         cableLengthM: 0,
         cableRate: defaultKabelRate,
@@ -456,7 +534,7 @@ export async function loadSettlementData(
 
       // Sum up areas by type from plotAreas
       for (const area of plot.plotAreas) {
-        const areaSqm = Number(area.areaSqm ?? 0);
+        const areaSqm = Number(area.areaSqm ?? 0) * shareFactor;
 
         switch (area.areaType) {
           case "POOL":
@@ -464,26 +542,53 @@ export async function loadSettlementData(
             totalPoolAreaSqm += areaSqm;
             break;
           case "WEA_STANDORT":
-            existing.turbineCount += 1; // count WEA locations
+            existing.turbineCount += 1; // Anzeige: WEA-Standorte auf dem Flurstück
+            existing.standortShareUnits += shareFactor; // Verteilschlüssel
+            totalStandortShareUnits += shareFactor;
             break;
           case "WEG":
             // Road usage: area * rate
             existing.roadUsageFeeEur += round2(areaSqm * defaultWegRate);
             break;
           case "AUSGLEICH":
-            // Compensation area counts towards pool area for distribution
+            // Compensation area counts towards pool area for distribution.
+            // TODO(divergenz): settlement/calculator.ts vergütet AUSGLEICH
+            // gesondert mit park.ausgleichCompensationPerSqm. Dieser Pfad
+            // nutzt bewusst das Pool-Modell; eine Vereinheitlichung braucht
+            // eine eigene Betrags-Spalte auf LeaseRevenueSettlementItem
+            // (Schema-Migration) — siehe Audit F5.
             existing.poolAreaSqm += areaSqm;
             totalPoolAreaSqm += areaSqm;
             break;
           case "KABEL":
-            // Cable: use lengthM if available, otherwise areaSqm as proxy
-            existing.cableLengthM += Number(area.lengthM ?? areaSqm);
+            // Cable compensation is €/m. areaSqm als Länge zu interpretieren
+            // (früherer Fallback) hat die Vergütung vervielfacht (Audit F6).
+            existing.cableLengthM += Number(area.lengthM ?? 0) * shareFactor;
             break;
         }
       }
 
       leaseDataMap.set(lease.id, existing);
     }
+  }
+
+  // Audit F5: Der Park hat einen Ausgleichsflächen-Satz konfiguriert, dieser
+  // Abrechnungspfad nutzt aber das Pool-Modell. Sichtbar machen statt still
+  // zu ignorieren.
+  if (
+    park.ausgleichCompensationPerSqm != null &&
+    Number(park.ausgleichCompensationPerSqm) > 0 &&
+    park.plots.some((p) => p.plotAreas.some((a) => a.areaType === "AUSGLEICH"))
+  ) {
+    logger.warn(
+      {
+        parkId,
+        year,
+        ausgleichCompensationPerSqm: Number(park.ausgleichCompensationPerSqm),
+      },
+      "Park has ausgleichCompensationPerSqm configured but lease-revenue settlement " +
+        "distributes AUSGLEICH areas via the pool model - the rate is not applied here"
+    );
   }
 
   // Calculate effective values considering per-turbine overrides
@@ -514,6 +619,7 @@ export async function loadSettlementData(
     weaSharePercentage: effectiveWeaShare,
     poolSharePercentage: effectivePoolShare,
     totalWEACount,
+    totalStandortShareUnits: round4(totalStandortShareUnits),
     totalPoolAreaSqm: round2(totalPoolAreaSqm),
     leases: Array.from(leaseDataMap.values()),
   };
@@ -643,8 +749,11 @@ export async function executeSettlementCalculation(
       const advancePaidEur = !isAdvance
         ? round2(advancePerLease.get(item.leaseId) ?? 0)
         : 0;
+      // Audit F9: KEIN Math.max(0, ...). Übersteigen die gezahlten Vorschüsse
+      // den Jahresanspruch, muss der negative Restbetrag (Rückforderung)
+      // sichtbar bleiben statt still auf 0 gekappt zu werden.
       const remainderEur = !isAdvance
-        ? round2(Math.max(0, item.subtotalEur - advancePaidEur))
+        ? round2(item.subtotalEur - advancePaidEur)
         : 0;
 
       await tx.leaseRevenueSettlementItem.create({
@@ -682,6 +791,24 @@ export async function executeSettlementCalculation(
 // ============================================================
 // Helper Functions
 // ============================================================
+
+/**
+ * Verteilschlüssel-Plausibilität (Audit F10).
+ *
+ * WEA-Standort-Anteil und Pool-Anteil müssen zusammen 100 % ergeben, sonst
+ * wird entweder ein Teil des Topfes nie verteilt oder mehr ausgezahlt als
+ * eingenommen. Toleranz 0,01 Prozentpunkte für Rundung/Turbinen-Mittelwerte.
+ */
+function assertShareSplit(weaShare: number, poolShare: number): void {
+  const sum = weaShare + poolShare;
+  if (Math.abs(sum - 100) > 0.01) {
+    throw new Error(
+      `Verteilschlüssel inkonsistent: WEA-Standort-Anteil (${weaShare} %) + ` +
+        `Pool-Anteil (${poolShare} %) = ${round4(sum)} %, erwartet 100 %. ` +
+        `Bitte Park- bzw. Turbinen-Konfiguration korrigieren.`
+    );
+  }
+}
 
 /** Round to 2 decimal places (cent precision) */
 function round2(value: number): number {

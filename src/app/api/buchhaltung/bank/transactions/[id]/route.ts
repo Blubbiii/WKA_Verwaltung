@@ -8,10 +8,12 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import {
   recordPayment,
+  revertPaymentsForBankTransaction,
   OverpaymentError,
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const matchSchema = z.object({
   action: z.enum(["match", "ignore", "unmatch"]),
@@ -39,6 +41,7 @@ export async function PATCH(
         return apiError("BAD_REQUEST", 400, { message: "invoiceId erforderlich" });
       }
 
+      let postedJournalEntry = false;
       try {
         const result = await prisma.$transaction(async (tx) => {
           const bt = await tx.bankTransaction.findFirst({
@@ -84,10 +87,12 @@ export async function PATCH(
           }
 
           // recordPayment schreibt InvoicePayment + setzt paidAmount +
-          // Status (PARTIALLY_PAID / PAID) korrekt. Bei negativem Bank-TX
-          // (z.B. Rücklastschrift) überspringen wir die Zahlung.
+          // Status (PARTIALLY_PAID / PAID) korrekt UND erzeugt seit Fix 1.1
+          // die Zahlungsbuchung (Bank an Forderung) in derselben Transaktion.
+          // Bei negativem Bank-TX (z.B. Rücklastschrift) überspringen wir die
+          // Zahlung.
           if (amountDec.greaterThan(0)) {
-            await recordPayment(tx, {
+            const paymentResult = await recordPayment(tx, {
               tenantId: check.tenantId!,
               invoiceId,
               amount: amountDec.toNumber(),
@@ -97,13 +102,11 @@ export async function PATCH(
               userId: check.userId!,
               notes: `Bank-Match ${bt.bankReference ?? bt.id}`,
             });
+            postedJournalEntry = paymentResult.journalEntryId !== null;
           }
 
           // GoBD: matchSource=MANUAL + matchedBy/At dokumentieren die
-          // User-Zuordnung. TODO: Auto-Journal (Bank an Forderung) via
-          // separatem Buchungs-Service — recordPayment schreibt bereits die
-          // InvoicePayment-Row; die Bank-Konto-Gegenbuchung folgt beim
-          // nächsten Auto-Posting-Lauf.
+          // User-Zuordnung.
           const updated = await tx.bankTransaction.update({
             where: { id, tenantId: check.tenantId! },
             data: {
@@ -118,6 +121,16 @@ export async function PATCH(
 
           return updated;
         });
+
+        // Zahlungsbuchung ist POSTED → Report-Saldi neu berechnen lassen.
+        if (postedJournalEntry) {
+          invalidateReportsCache(check.tenantId!).catch((e) => {
+            logger.warn(
+              { err: e, bankTxId: id },
+              "[Reports-Cache] Invalidation failed after bank match posting",
+            );
+          });
+        }
 
         return NextResponse.json({ data: result });
       } catch (err) {
@@ -141,13 +154,16 @@ export async function PATCH(
       }
     }
 
-    // ignore / unmatch: reine Status-Änderung auf Bank-TX. TODO: wenn schon
-    // ein InvoicePayment für diesen Bank-TX existiert, bleibt der aktuell
-    // stehen. Sauber wäre: bei unmatch InvoicePayment mit dieser
-    // bankTransactionId ebenfalls löschen + paidAmount zurückrechnen.
+    // ignore / unmatch: Status-Änderung auf der Bank-Zeile — beim `unmatch`
+    // PLUS vollständige Rückabwicklung der daraus entstandenen Zahlung.
+    //
+    // Vorher wurde nur matchStatus/matchedInvoiceId zurückgesetzt. InvoicePayment,
+    // Invoice.paidAmount und Invoice.status blieben stehen, sodass sich dieselbe
+    // Bank-Zeile auf eine zweite Rechnung matchen ließ — ein Geldeingang tilgte
+    // zwei Forderungen, ohne Korrekturmöglichkeit über die UI.
     const bt = await prisma.bankTransaction.findFirst({
       where: { id, tenantId: check.tenantId! },
-      select: { id: true },
+      select: { id: true, bankReference: true },
     });
     if (!bt) {
       return apiError("NOT_FOUND", 404, { message: "Transaktion nicht gefunden" });
@@ -158,12 +174,89 @@ export async function PATCH(
         ? { matchStatus: "IGNORED", matchedInvoiceId: null, matchConfidence: null }
         : { matchStatus: "UNMATCHED", matchedInvoiceId: null, matchConfidence: null };
 
-    const updated = await prisma.bankTransaction.update({
-      where: { id, tenantId: check.tenantId! },
-      data: updateData,
-    });
+    try {
+      const { updated, reverted } = await prisma.$transaction(async (tx) => {
+        let reverted = null as Awaited<
+          ReturnType<typeof revertPaymentsForBankTransaction>
+        > | null;
 
-    return NextResponse.json({ data: updated });
+        if (action === "unmatch") {
+          reverted = await revertPaymentsForBankTransaction(tx, {
+            tenantId: check.tenantId!,
+            bankTransactionId: id,
+            userId: check.userId!,
+            reason: `Bank-Match aufgehoben (${bt.bankReference ?? id})`,
+          });
+
+          // GoBD: die gelöschten Nebenbuch-Zeilen bleiben über den AuditLog
+          // nachvollziehbar (InvoicePayment hat kein deletedAt-Feld).
+          if (reverted.revertedCount > 0) {
+            await tx.auditLog.create({
+              data: {
+                action: "DELETE",
+                entityType: "BankTransaction",
+                entityId: id,
+                oldValues: {
+                  revertedPayments: reverted.revertedCount,
+                  invoices: reverted.invoices,
+                },
+                newValues: {
+                  reversalJournalEntryIds: reverted.reversalJournalEntryIds,
+                  _description: "Zahlungen durch Unmatch zurückgerollt",
+                },
+                tenantId: check.tenantId!,
+                userId: check.userId ?? null,
+              },
+            });
+          }
+        }
+
+        const updated = await tx.bankTransaction.update({
+          where: { id, tenantId: check.tenantId! },
+          data: {
+            ...updateData,
+            // Match-Diagnostik gehört zum aufgehobenen Match.
+            ...(action === "unmatch"
+              ? { matchedSkontoAmount: null, matchVariance: null }
+              : {}),
+          },
+        });
+
+        return { updated, reverted };
+      });
+
+      if (reverted && reverted.reversalJournalEntryIds.length > 0) {
+        logger.info(
+          {
+            bankTxId: id,
+            revertedPayments: reverted.revertedCount,
+            reversals: reverted.reversalJournalEntryIds.length,
+          },
+          "Bank-Unmatch: Zahlungen zurückgerollt",
+        );
+        invalidateReportsCache(check.tenantId!).catch((e) => {
+          logger.warn(
+            { err: e, bankTxId: id },
+            "[Reports-Cache] Invalidation failed after unmatch reversal",
+          );
+        });
+      }
+
+      return NextResponse.json({
+        data: updated,
+        revertedPayments: reverted?.revertedCount ?? 0,
+      });
+    } catch (err) {
+      if (err instanceof PeriodLockedError) {
+        // Der Storno der Zahlungsbuchung landet im AKTUELLEN Monat. Ist der
+        // gesperrt, kann nicht zurückgerollt werden.
+        return apiError("PERIOD_LOCKED", 409, {
+          message: err.message,
+          details: { periodYear: err.periodYear, periodMonth: err.periodMonth },
+        });
+      }
+      throw err;
+    }
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren der Banktransaktion");
   }

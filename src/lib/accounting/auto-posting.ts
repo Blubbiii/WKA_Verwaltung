@@ -17,8 +17,14 @@
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
+import {
+  getTenantSettings,
+  resolvePaymentAccount,
+  type TenantSettings,
+} from "@/lib/tenant-settings";
 import type { Prisma } from "@prisma/client";
+import type { Decimal } from "@prisma/client-runtime-utils";
+import type { TxClient } from "@/lib/invoices/numberGenerator";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 
@@ -274,6 +280,187 @@ export async function createAutoPosting(
     logger.error({ err: error, invoiceId }, "Auto-posting failed");
     return { success: false, error: String(error) };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Zahlungsbuchung (Bank an Forderung) — Finding 1.1
+// ---------------------------------------------------------------------------
+
+export interface PaymentPostingParams {
+  tenantId: string;
+  invoiceId: string;
+  /** InvoicePayment.id — dient als Referenz und Idempotenz-Schlüssel. */
+  paymentId: string;
+  /** Tatsächlich geflossener Brutto-Betrag (immer positiv, nur die Teilzahlung). */
+  amount: Decimal;
+  /** Buchungsdatum des JournalEntry. Muss in einer offenen Periode liegen. */
+  bookingDate: Date;
+  /** BANK/SEPA → Bankkonto, CASH → Kassenkonto, OTHER → Bankkonto. */
+  paymentMethod: "BANK" | "CASH" | "SEPA" | "OTHER";
+  userId: string;
+  /** Rechnungsnummer o.ä. für JournalEntry.reference. */
+  reference?: string | null;
+}
+
+export interface PaymentPostingResult {
+  journalEntryId: string | null;
+  /** Gesetzt wenn bewusst nicht gebucht wurde (mit Grund im Log). */
+  skippedReason?: "ACCOUNT_COLLISION" | "ALREADY_POSTED_RESOLVED";
+}
+
+/**
+ * Erzeugt die Zahlungsbuchung zu einer InvoicePayment-Zeile.
+ *
+ * Buchungssatz Ausgangsrechnung (Regelfall):
+ *   Bank (Soll)  an  Forderungen (Haben)   — gezahlter Bruttobetrag
+ *
+ * Buchungssatz "Incoming-Form" (z.B. LEASE — der Mandant zahlt Pacht, das
+ * Forderungskonto steht in der Ursprungsbuchung im HABEN):
+ *   Forderungen/Verbindlichkeit (Soll)  an  Bank (Haben)
+ *
+ * Die Richtung wird NICHT geraten, sondern aus der Ursprungsbuchung des
+ * Belegs abgeleitet (auf welcher Seite steht dort das Forderungskonto?).
+ * Damit bleibt die Zahlungsbuchung automatisch konsistent zu dem, was
+ * createAutoPosting() über buildAccountMap() tatsächlich gebucht hat —
+ * inklusive item-spezifischer Konto-Overrides.
+ *
+ * Bewusst NICHT enthalten:
+ *  - Skonto/§17: Entgeltminderungen laufen über createUStAdjustment()
+ *    (ust-adjustment.ts). Hier wird ausschließlich der GEFLOSSENE Betrag
+ *    gebucht, damit nichts doppelt in der GuV landet.
+ *  - Teilzahlung: es wird immer nur `amount` gebucht, nie der Rechnungsbetrag.
+ *
+ * Komponiert in eine bestehende Transaktion (Caller MUSS `tx` übergeben),
+ * damit InvoicePayment, Invoice.paidAmount und JournalEntry atomar sind.
+ *
+ * @returns journalEntryId, oder null wenn bewusst nicht gebucht wurde.
+ * @throws PeriodLockedError wenn bookingDate in einem geschlossenen Monat liegt.
+ */
+export async function createPaymentPosting(
+  tx: TxClient,
+  params: PaymentPostingParams,
+): Promise<PaymentPostingResult> {
+  // Idempotenz: existiert bereits eine Buchung zu genau dieser Zahlung,
+  // wird sie zurückgegeben statt eine zweite anzulegen. Innerhalb einer TX
+  // ist das per Konstruktion unmöglich (paymentId ist frisch), schützt aber
+  // Caller, die eine bestehende paymentId nachbuchen.
+  const existing = await tx.journalEntry.findFirst({
+    where: {
+      tenantId: params.tenantId,
+      referenceType: "InvoicePayment",
+      referenceId: params.paymentId,
+      source: "AUTO",
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    return { journalEntryId: existing.id, skippedReason: "ALREADY_POSTED_RESOLVED" };
+  }
+
+  // GoBD §146 AO: die Zahlung darf nicht in einen geschlossenen Monat buchen.
+  await assertPeriodOpen(params.tenantId, params.bookingDate, tx);
+
+  const settings = await getTenantSettings(params.tenantId);
+  const receivableAccount = settings.datevAccountReceivables;
+  const moneyAccount = resolvePaymentAccount(
+    settings,
+    params.paymentMethod === "CASH" ? "CASH" : "BANK",
+  );
+
+  // Schutz vor der Selbstauflösung "Bank an Bank": tritt auf, wenn ein
+  // SKR03-Tenant das Forderungskonto nicht umgestellt hat (SKR04-Default
+  // 1200 == SKR03-Bank 1200). Lieber gar nicht buchen als eine wirkungslose
+  // Buchung ins Hauptbuch schreiben.
+  if (moneyAccount === receivableAccount) {
+    logger.error(
+      {
+        invoiceId: params.invoiceId,
+        paymentId: params.paymentId,
+        moneyAccount,
+        receivableAccount,
+        chartOfAccountsVersion: settings.chartOfAccountsVersion,
+      },
+      "Zahlungsbuchung übersprungen: Geldkonto == Forderungskonto. " +
+        "datevAccountBank / datevAccountReceivables in den Mandanten-Einstellungen korrigieren.",
+    );
+    return { journalEntryId: null, skippedReason: "ACCOUNT_COLLISION" };
+  }
+
+  // Richtung aus der Ursprungsbuchung ableiten. orderBy createdAt asc, damit
+  // bei mehreren AUTO-Buchungen zum Beleg die ERSTE (die Umsatzbuchung)
+  // gewinnt und nicht z.B. eine spätere §17-Korrektur.
+  const original = await tx.journalEntry.findFirst({
+    where: {
+      tenantId: params.tenantId,
+      referenceType: "Invoice",
+      referenceId: params.invoiceId,
+      source: "AUTO",
+      deletedAt: null,
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      lines: { select: { account: true, debitAmount: true, creditAmount: true } },
+    },
+  });
+
+  const receivableLine = original?.lines.find((l) => l.account === receivableAccount);
+  // Default (auch ohne Ursprungsbuchung): Ausgangsrechnung → Geld kommt rein.
+  const moneyIsDebit = receivableLine ? receivableLine.debitAmount !== null : true;
+
+  if (!original) {
+    logger.warn(
+      { invoiceId: params.invoiceId, paymentId: params.paymentId },
+      "Zahlungsbuchung ohne Ursprungsbuchung — Richtung auf Ausgangsrechnung (Bank im Soll) angenommen",
+    );
+  }
+
+  const desc = `Zahlung ${params.reference ?? params.invoiceId}`.slice(0, 200);
+  const entry = await tx.journalEntry.create({
+    data: {
+      tenantId: params.tenantId,
+      entryDate: params.bookingDate,
+      description: desc,
+      reference: params.reference ?? null,
+      status: "POSTED",
+      source: "AUTO",
+      referenceType: "InvoicePayment",
+      referenceId: params.paymentId,
+      createdById: params.userId,
+      lines: {
+        create: [
+          {
+            lineNumber: 1,
+            account: moneyIsDebit ? moneyAccount : receivableAccount,
+            description: desc,
+            debitAmount: params.amount,
+            creditAmount: null,
+          },
+          {
+            lineNumber: 2,
+            account: moneyIsDebit ? receivableAccount : moneyAccount,
+            description: desc,
+            debitAmount: null,
+            creditAmount: params.amount,
+          },
+        ],
+      },
+    },
+    select: { id: true },
+  });
+
+  logger.info(
+    {
+      invoiceId: params.invoiceId,
+      paymentId: params.paymentId,
+      journalEntryId: entry.id,
+      debitAccount: moneyIsDebit ? moneyAccount : receivableAccount,
+      creditAccount: moneyIsDebit ? receivableAccount : moneyAccount,
+      amount: params.amount.toString(),
+    },
+    "Zahlungsbuchung erstellt",
+  );
+
+  return { journalEntryId: entry.id };
 }
 
 /**

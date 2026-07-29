@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    // Setzt die von src/lib/env.ts geforderten Env-Vars, damit Tests, die
+    // transitiv Prisma importieren, nicht schon beim Laden abreissen.
+    setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'tests/integration/**/*.test.ts'],
     exclude: ['node_modules', '.next'],
     coverage: {

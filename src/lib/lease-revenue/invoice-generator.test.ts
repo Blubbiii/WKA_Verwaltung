@@ -345,8 +345,11 @@ describe("getServicePeriodLabel", () => {
     expect(getServicePeriodLabel(2025, "ADVANCE", "MONTHLY", 1)).toBe(
       "Januar 2025",
     );
+    // "Maerz" war eine lokale Kopie der Monatsnamen ohne Umlaut. Seit der
+    // Konsolidierung auf MONTH_NAMES_DE (src/lib/format.ts) ist die
+    // Schreibweise einheitlich zu der, die PDF und UI verwenden.
     expect(getServicePeriodLabel(2025, "ADVANCE", "MONTHLY", 3)).toBe(
-      "Maerz 2025",
+      "März 2025",
     );
     expect(getServicePeriodLabel(2025, "ADVANCE", "MONTHLY", 12)).toBe(
       "Dezember 2025",

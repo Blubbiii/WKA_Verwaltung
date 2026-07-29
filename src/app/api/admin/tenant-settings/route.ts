@@ -69,6 +69,11 @@ export interface TenantSettings {
   datevAccountOutputTax7: string;
   datevAccountInputTax19: string;
   datevAccountInputTax7: string;
+  // Geldkonten für die Zahlungsbuchung (leer = aus Kontenrahmen ableiten)
+  datevAccountBank: string;
+  datevAccountCash: string;
+  // Aufwandskonto Forderungsverluste (leer = Fallback Erlöskonto)
+  datevAccountBadDebt: string;
 
   // Geschaeftsjahr
   fiscalYearStartMonth: number;
@@ -336,6 +341,20 @@ const tenantSettingsSchema = z.object({
     .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
     .optional(),
   chartOfAccountsVersion: z.enum(["SKR03", "SKR04"]).optional(),
+  // Geldkonten für die Zahlungsbuchung. Leerstring explizit erlaubt =
+  // "nicht konfiguriert" → Ableitung aus chartOfAccountsVersion.
+  datevAccountBank: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
+  datevAccountCash: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
+  datevAccountBadDebt: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
 });
 
 // =============================================================================

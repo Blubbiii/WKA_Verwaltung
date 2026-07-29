@@ -178,8 +178,9 @@ export async function POST(
     }
 
     let ustAdjustmentId: string | null = null;
+    let paymentJournalEntryId: string | null = null;
     const updated = await prisma.$transaction(async (tx) => {
-      await recordPayment(tx, {
+      const paymentResult = await recordPayment(tx, {
         tenantId: check.tenantId!,
         invoiceId: id,
         amount: remainingDec.toNumber(),
@@ -189,6 +190,7 @@ export async function POST(
           ? `Mark as paid mit Skonto ${invoice.skontoPercent}%`
           : "Mark as paid",
       });
+      paymentJournalEntryId = paymentResult.journalEntryId;
 
       // Bei Skonto-Anwendung Skonto-Flag setzen
       const inv = await tx.invoice.update({
@@ -235,11 +237,15 @@ export async function POST(
         { invoiceId: id, ustAdjustmentId, tenantId: check.tenantId },
         "§17 UStG Skonto-Korrektur gebucht",
       );
-      // §17-Korrekturbuchung ist POSTED → Reports-Cache invalidieren.
+    }
+
+    // §17-Korrektur UND/ODER Zahlungsbuchung sind POSTED → Reports-Cache
+    // invalidieren (Bilanz/GuV/BWA/SuSa/UStVA-Saldi haben sich geändert).
+    if (ustAdjustmentId || paymentJournalEntryId) {
       invalidateReportsCache(check.tenantId!).catch((err) => {
         logger.warn(
           { err, invoiceId: id },
-          "[Reports-Cache] Invalidation failed after §17 UStG Skonto-Korrektur",
+          "[Reports-Cache] Invalidation failed after mark-paid posting",
         );
       });
     }

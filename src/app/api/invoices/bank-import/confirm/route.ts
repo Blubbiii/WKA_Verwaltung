@@ -12,6 +12,7 @@ import {
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { invalidateReportsCache } from "@/lib/cache/reports";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
     const invoiceMap = new Map(invoices.map((inv) => [inv.id, inv]));
 
     let confirmed = 0;
+    let postedAny = false;
     const errors: string[] = [];
 
     // Pro Bestätigung recordPayment() in eigener Transaktion mit Row-Lock.
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
 
       try {
         await prisma.$transaction(async (tx) => {
-          await recordPayment(tx, {
+          const paymentResult = await recordPayment(tx, {
             tenantId: check.tenantId!,
             invoiceId: conf.invoiceId,
             amount: remaining.toNumber(),
@@ -130,6 +132,7 @@ export async function POST(request: NextRequest) {
             userId: check.userId!,
             notes: `Bank-Import${conf.paymentReference ? ` · Ref: ${conf.paymentReference}` : ""}`,
           });
+          if (paymentResult.journalEntryId) postedAny = true;
 
           if (conf.paymentReference) {
             await tx.invoice.update({
@@ -186,6 +189,16 @@ export async function POST(request: NextRequest) {
       },
       "Bank import confirmations processed"
     );
+
+    // Zahlungsbuchungen sind POSTED → Report-Saldi haben sich geändert.
+    if (postedAny) {
+      invalidateReportsCache(check.tenantId).catch((err) => {
+        logger.warn(
+          { err },
+          "[Reports-Cache] Invalidation failed after bank-import payment postings",
+        );
+      });
+    }
 
     return NextResponse.json({
       confirmed,

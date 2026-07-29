@@ -19,7 +19,12 @@ import { InvoicePaymentMethod } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
 import { getTenantSettings } from "@/lib/tenant-settings";
-import { assertPeriodOpen } from "./period-lock";
+import {
+  assertPeriodOpen,
+  PeriodLockedError,
+  reverseJournalEntry,
+} from "./period-lock";
+import { createPaymentPosting } from "./auto-posting";
 
 export class OverpaymentError extends Error {
   constructor(
@@ -47,7 +52,17 @@ export interface RecordPaymentParams {
   paymentDate: Date;
   paymentMethod?: InvoicePaymentMethod;
   bankTransactionId?: string | null;
+  /**
+   * Vorab erzeugte Buchung. Wenn gesetzt, wird sie nur verlinkt und KEINE
+   * automatische Zahlungsbuchung erzeugt (Caller hat selbst gebucht).
+   */
   journalEntryId?: string | null;
+  /**
+   * Setzt die automatische Zahlungsbuchung (Bank an Forderung) aus.
+   * Nur für Migrations-/Import-Fälle, in denen die Gegenbuchung bereits
+   * anderweitig im Hauptbuch steht.
+   */
+  skipPosting?: boolean;
   notes?: string;
   userId: string;
 }
@@ -57,6 +72,12 @@ export interface RecordPaymentResult {
   newPaidAmount: number;
   newStatus: "SENT" | "PARTIALLY_PAID" | "PAID";
   isFullyPaid: boolean;
+  /**
+   * ID der erzeugten Zahlungsbuchung (Bank an Forderung), oder null wenn
+   * keine erzeugt wurde (skipPosting, oder Konto-Konfiguration unbrauchbar).
+   * Caller sollten bei != null den Reports-Cache invalidieren.
+   */
+  journalEntryId: string | null;
 }
 
 /**
@@ -101,6 +122,7 @@ export async function recordPayment(
       status: true,
       grossAmount: true,
       paidAmount: true,
+      invoiceNumber: true,
     },
   });
 
@@ -123,6 +145,8 @@ export async function recordPayment(
   ) {
     throw new InvoiceNotPayableError(invoice.status);
   }
+
+  const invoiceNumber = invoice.invoiceNumber;
 
   // Decimal-Arithmetik (kein Number()-Cast für Cent-genaue Berechnung).
   const grossAmount = new Decimal(invoice.grossAmount);
@@ -169,10 +193,214 @@ export async function recordPayment(
     },
   });
 
+  // Finding 1.1: bis hierher war die Zahlung nur im Nebenbuch (InvoicePayment
+  // + Invoice.paidAmount) sichtbar. Ohne diese Buchung bleibt das
+  // Forderungskonto ewig belastet und das Geldkonto leer — Bilanz/SuSa/BWA
+  // driften dauerhaft von der OP-Sicht ab.
+  //
+  // Es wird ausschließlich `amountDec` gebucht (die tatsächliche Teilzahlung),
+  // NICHT der Rechnungsbetrag. Skonto ist hier bewusst nicht enthalten: die
+  // Entgeltminderung bucht der Caller separat über createUStAdjustment()
+  // (§17 UStG) — sonst würde die Minderung doppelt in der GuV landen.
+  let journalEntryId: string | null = params.journalEntryId ?? null;
+  if (!journalEntryId && !params.skipPosting) {
+    const posting = await createPaymentPosting(tx, {
+      tenantId: params.tenantId,
+      invoiceId: params.invoiceId,
+      paymentId: payment.id,
+      amount: amountDec,
+      // Buchungsdatum == Zahlungsdatum. Die Periodenprüfung oben lief gegen
+      // exakt dieses Datum, die Buchung kann also nicht in einen gesperrten
+      // Monat fallen.
+      bookingDate: params.paymentDate,
+      paymentMethod: params.paymentMethod ?? "BANK",
+      userId: params.userId,
+      reference: invoiceNumber,
+    });
+    journalEntryId = posting.journalEntryId;
+  }
+
+  if (journalEntryId) {
+    await tx.invoicePayment.update({
+      where: { id: payment.id },
+      data: { journalEntryId },
+    });
+  }
+
   return {
     paymentId: payment.id,
     newPaidAmount: newPaidDec.toNumber(),
     newStatus,
     isFullyPaid,
+    journalEntryId,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Rückabwicklung (Finding 1.2)
+// ---------------------------------------------------------------------------
+
+export interface RevertPaymentsParams {
+  tenantId: string;
+  /** Alle Zahlungen zu dieser Bank-Transaktion zurückrollen. */
+  bankTransactionId: string;
+  userId: string;
+  /** Grund für den Storno-Trail. */
+  reason: string;
+}
+
+export interface RevertPaymentsResult {
+  /** Anzahl entfernter InvoicePayment-Zeilen. */
+  revertedCount: number;
+  /** IDs der erzeugten Storno-Buchungen. */
+  reversalJournalEntryIds: string[];
+  /** Betroffene Rechnungen mit neuem Stand. */
+  invoices: Array<{
+    invoiceId: string;
+    newPaidAmount: number;
+    newStatus: string;
+  }>;
+}
+
+/**
+ * Rollt alle Zahlungen zurück, die an einer Bank-Transaktion hängen.
+ *
+ * Wird beim `unmatch` gebraucht: vorher wurde nur der Match-Status der
+ * Bank-Zeile zurückgesetzt, während InvoicePayment, Invoice.paidAmount und
+ * Invoice.status stehen blieben. Dieselbe Bank-Zeile ließ sich danach auf
+ * eine zweite Rechnung matchen → ein Geldeingang tilgte zwei Forderungen.
+ *
+ * Ablauf je Zahlung (alles im übergebenen `tx`):
+ *  1. Zahlungsbuchung per Generalumkehr stornieren (GoBD §146 Abs. 4 —
+ *     das Original bleibt stehen, es entsteht eine Spiegelbuchung im
+ *     AKTUELLEN Monat). Periodensperre gilt für den Storno-Monat.
+ *  2. InvoicePayment-Zeile entfernen (Nebenbuch; der Beleg-Trail bleibt über
+ *     die Storno-Buchung und den AuditLog-Eintrag des Callers erhalten —
+ *     das Modell hat kein `deletedAt`, ein Schema-Change wäre nötig).
+ *  3. Invoice.paidAmount aus den VERBLIEBENEN Zahlungen neu summieren und
+ *     den Status daraus ableiten.
+ *
+ * Status-Ableitung: nur PAID/PARTIALLY_PAID werden zurückgesetzt. Eine
+ * inzwischen stornierte oder ausgebuchte Rechnung (CANCELLED/WRITTEN_OFF)
+ * behält ihren Status — dort ist die Zahlungshistorie nicht mehr die
+ * bestimmende Größe.
+ *
+ * @throws PeriodLockedError wenn der aktuelle Monat gesperrt ist.
+ */
+export async function revertPaymentsForBankTransaction(
+  tx: TxClient,
+  params: RevertPaymentsParams,
+): Promise<RevertPaymentsResult> {
+  const payments = await tx.invoicePayment.findMany({
+    where: {
+      tenantId: params.tenantId,
+      bankTransactionId: params.bankTransactionId,
+    },
+    select: { id: true, invoiceId: true, amount: true, journalEntryId: true },
+  });
+
+  if (payments.length === 0) {
+    return { revertedCount: 0, reversalJournalEntryIds: [], invoices: [] };
+  }
+
+  const reversalJournalEntryIds: string[] = [];
+
+  for (const p of payments) {
+    if (p.journalEntryId) {
+      try {
+        const { reversalId } = await reverseJournalEntry(tx, {
+          tenantId: params.tenantId,
+          originalEntryId: p.journalEntryId,
+          userId: params.userId,
+          reason: params.reason,
+        });
+        reversalJournalEntryIds.push(reversalId);
+      } catch (err) {
+        // Bereits storniert / DRAFT / nicht gefunden → kein Grund, die
+        // Rückabwicklung des Nebenbuchs zu blockieren. Periodensperre schon.
+        if (err instanceof PeriodLockedError) throw err;
+        const name = err instanceof Error ? err.name : "";
+        if (
+          name !== "AlreadyReversedError" &&
+          name !== "EntityNotFoundError" &&
+          name !== "InvalidStateError"
+        ) {
+          throw err;
+        }
+      }
+    }
+  }
+
+  await tx.invoicePayment.deleteMany({
+    where: {
+      tenantId: params.tenantId,
+      bankTransactionId: params.bankTransactionId,
+    },
+  });
+
+  // paidAmount je betroffener Rechnung aus den VERBLIEBENEN Zahlungen neu
+  // bilden (nicht subtrahieren — Neuberechnung ist gegen Drift immun).
+  const settings = await getTenantSettings(params.tenantId);
+  const toleranceDec = new Decimal(settings.bankMatchToleranceEur);
+  const affectedInvoiceIds = [...new Set(payments.map((p) => p.invoiceId))];
+  const invoices: RevertPaymentsResult["invoices"] = [];
+
+  for (const invoiceId of affectedInvoiceIds) {
+    const remaining = await tx.invoicePayment.findMany({
+      where: { tenantId: params.tenantId, invoiceId },
+      select: { amount: true, paymentDate: true },
+    });
+
+    const newPaid = remaining
+      .reduce((sum, r) => sum.plus(new Decimal(r.amount)), new Decimal(0))
+      .toDecimalPlaces(2);
+
+    const invoice = await tx.invoice.findUnique({
+      where: { id: invoiceId },
+      select: { status: true, grossAmount: true },
+    });
+    if (!invoice) continue;
+
+    const gross = new Decimal(invoice.grossAmount);
+    const stillFullyPaid =
+      newPaid.greaterThan(0) &&
+      newPaid.greaterThanOrEqualTo(gross.minus(toleranceDec));
+
+    // Nur zahlungsgetriebene Status anfassen.
+    const statusIsPaymentDriven =
+      invoice.status === "PAID" || invoice.status === "PARTIALLY_PAID";
+    const newStatus = !statusIsPaymentDriven
+      ? invoice.status
+      : stillFullyPaid
+        ? "PAID"
+        : newPaid.greaterThan(0)
+          ? "PARTIALLY_PAID"
+          : "SENT";
+
+    const latestPaymentDate = remaining.reduce<Date | null>(
+      (acc, r) => (acc === null || r.paymentDate > acc ? r.paymentDate : acc),
+      null,
+    );
+
+    await tx.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        paidAmount: newPaid,
+        status: newStatus,
+        paidAt: stillFullyPaid ? latestPaymentDate : null,
+      },
+    });
+
+    invoices.push({
+      invoiceId,
+      newPaidAmount: newPaid.toNumber(),
+      newStatus,
+    });
+  }
+
+  return {
+    revertedCount: payments.length,
+    reversalJournalEntryIds,
+    invoices,
   };
 }

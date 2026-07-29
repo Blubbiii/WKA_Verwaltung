@@ -28,6 +28,30 @@ const TENANT_ENCRYPTED_FIELDS = ["iban", "bic", "bankName"] as const;
 const WEBHOOK_ENCRYPTED_FIELDS = ["secret"] as const;
 const FUND_ENCRYPTED_FIELDS = ["emailSmtpPassword"] as const;
 
+/**
+ * Single source of truth for "which model has which encrypted fields",
+ * keyed by the Prisma model name in PascalCase (= AuditEntityType spelling).
+ *
+ * Consumers outside this module MUST derive from this map instead of
+ * duplicating the field lists — otherwise a new encrypted field silently
+ * leaks through code paths that read via the extended client (the extension
+ * decrypts on read, so everything downstream sees plaintext).
+ *
+ * Known consumer: src/lib/audit-update.ts masks these fields before they
+ * reach the unencrypted auditLog.oldValues/newValues JSON columns.
+ */
+export const ENCRYPTED_FIELDS_BY_MODEL: Readonly<Record<string, readonly string[]>> = {
+  Person: PERSON_ENCRYPTED_FIELDS,
+  Tenant: TENANT_ENCRYPTED_FIELDS,
+  Webhook: WEBHOOK_ENCRYPTED_FIELDS,
+  Fund: FUND_ENCRYPTED_FIELDS,
+};
+
+/** Encrypted fields for a model name, or an empty list if the model has none. */
+export function getEncryptedFields(modelName: string): readonly string[] {
+  return ENCRYPTED_FIELDS_BY_MODEL[modelName] ?? [];
+}
+
 // ---------------------------------------------------------------------------
 // Helper: encrypt a single field value
 // ---------------------------------------------------------------------------
