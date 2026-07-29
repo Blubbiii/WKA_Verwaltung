@@ -18,6 +18,7 @@ import type {
   ScadaAutoImportJobData,
   ScadaAutoImportJobResult,
 } from '../queues/scada-auto-import.queue';
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 // ---------------------------------------------------------------
 // Logger
@@ -203,6 +204,15 @@ export function startScadaAutoImportWorker(): Worker<ScadaAutoImportJobData, Sca
       connection,
       concurrency: 1, // Only one auto-import at a time to avoid conflicts
       useWorkerThreads: false,
+      // F25: `concurrency: 1` gilt nur pro Prozess. Ohne lockDuration lief der
+      // Lock nach 30 s ab, der Job galt als stalled und wurde erneut zugestellt
+      // — bei WORKER_REPLICAS=2 an den anderen Prozess. Genau so entstanden
+      // parallele Importe auf denselben Dateien.
+      lockDuration: WORKER_LOCK_MS.scadaAutoImport,
+      stalledInterval: 60_000,
+      // Doppelter Import legt Produktionsdaten doppelt an — ein sichtbarer
+      // Fehlschlag ist die bessere Alternative.
+      maxStalledCount: 1,
     },
   );
 

@@ -77,6 +77,54 @@ export const queueJobsActive = getOrCreate(
     })
 );
 
+/**
+ * Wartende Jobs je Queue.
+ *
+ * F23 (Audit 2026-07): `wpm_queue_jobs_active` war definiert und wurde
+ * NIRGENDS gesetzt. Zusammen mit dem fehlenden Consumer-Check bedeutete das:
+ * der Zustand "kein Worker laeuft, alle Queues wachsen" (F1) war ueber keinen
+ * einzigen Health-Endpunkt und keinen Prometheus-Wert sichtbar.
+ */
+export const queueJobsWaiting = getOrCreate(
+  "wpm_queue_jobs_waiting",
+  () =>
+    new Gauge({
+      name: "wpm_queue_jobs_waiting",
+      help: "Number of waiting queue jobs",
+      labelNames: ["queue"],
+      registers: [registry],
+    })
+);
+
+/** Fehlgeschlagene Jobs je Queue (BullMQ-failed-Set). */
+export const queueJobsFailed = getOrCreate(
+  "wpm_queue_jobs_failed",
+  () =>
+    new Gauge({
+      name: "wpm_queue_jobs_failed",
+      help: "Number of failed queue jobs still retained by BullMQ",
+      labelNames: ["queue"],
+      registers: [registry],
+    })
+);
+
+/**
+ * Anzahl verbundener Worker je Queue.
+ *
+ * Das ist die Kennzahl, die F1 sichtbar macht: 0 Consumer bei wachsender
+ * Warteschlange heisst, dass niemand die Jobs abholt.
+ */
+export const queueConsumers = getOrCreate(
+  "wpm_queue_consumers",
+  () =>
+    new Gauge({
+      name: "wpm_queue_consumers",
+      help: "Number of workers currently connected to the queue",
+      labelNames: ["queue"],
+      registers: [registry],
+    })
+);
+
 /** Total weather sync operations */
 export const weatherSyncsTotal = getOrCreate(
   "wpm_weather_syncs_total",

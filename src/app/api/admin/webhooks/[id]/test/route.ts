@@ -80,8 +80,6 @@ export async function POST(
     // Enqueue delivery job
     await enqueueWebhookDelivery({
       webhookId: webhook.id,
-      url: webhook.url,
-      secret: webhook.secret,
       payload,
     });
 

@@ -20,6 +20,7 @@ import type {
   DailyDigestJobResult,
 } from "../queues/daily-digest.queue";
 import { DAILY_DIGEST_QUEUE_NAME } from "../queues/daily-digest.queue";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 const logger = jobLogger.child({ component: "daily-digest-worker" });
 
@@ -248,6 +249,9 @@ export function startDailyDigestWorker(): Worker<
       connection: getRedisConnection(),
       concurrency: 1,
       useWorkerThreads: false,
+      // F25: Digest laeuft ueber alle Nutzer eines Mandanten.
+      lockDuration: WORKER_LOCK_MS.dailyDigest,
+      stalledInterval: 60_000,
     },
   );
   dailyDigestWorker.on("failed", (job, error) => {

@@ -11,6 +11,7 @@ import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 export type TusGcJobData = Record<string, never>;
 
@@ -62,6 +63,23 @@ export const scheduleTusGc = async () => {
     `[Queue:${TUS_GC_QUEUE_NAME}] Cron scheduled (every 6h)`
   );
   return job;
+};
+
+/**
+ * Remove the scheduled cron.
+ *
+ * F20: Diese Funktion fehlte komplett — der Cron liess sich planen, aber nicht
+ * mehr abschalten. Aufgefallen ueber den Vollstaendigkeits-Test in
+ * queue-hygiene.test.ts ("jede Queue mit einem Cron kann ihn auch wieder
+ * entfernen"), nicht ueber den Auditbericht.
+ */
+export const removeTusGcSchedule = async (): Promise<boolean> => {
+  const queue = getTusGcQueue();
+  const removed = await removeRepeatableJobs(queue, {
+    name: "tus-gc",
+    jobId: REPEATABLE_JOB_ID,
+  });
+  return removed > 0;
 };
 
 export const closeTusGcQueue = async (): Promise<void> => {

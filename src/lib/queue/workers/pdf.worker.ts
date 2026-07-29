@@ -39,7 +39,14 @@ interface BasePdfJobData {
   type: PdfType;
   /** Tenant-ID für Multi-Tenancy */
   tenantId: string;
-  /** Ob das PDF gespeichert werden soll */
+  /**
+   * F27: Frueher konnte man hiermit die Storage-Ablage abschalten und bekam
+   * das PDF base64 im Job-Result. Das Feld bleibt aus Kompatibilitaet zu
+   * bereits eingereihten Jobs im Typ, wird aber nicht mehr ausgewertet — es
+   * wird immer in den Storage geschrieben.
+   *
+   * @deprecated wirkungslos
+   */
   saveToStorage?: boolean;
   /** Optionaler Dateiname (ohne Extension) */
   filename?: string;
@@ -109,8 +116,6 @@ export interface PdfJobResult {
   success: boolean;
   /** S3-Key wenn gespeichert */
   storageKey?: string;
-  /** Base64-kodiertes PDF wenn nicht gespeichert */
-  pdfBase64?: string;
   /** Dateigröße in Bytes */
   fileSizeBytes?: number;
   /** Fehler wenn fehlgeschlagen */
@@ -308,24 +313,28 @@ async function processPdfJobInner(job: Job<PdfJobData, PdfJobResult>): Promise<P
       generatedAt: new Date(),
     };
 
-    // PDF speichern wenn gewuenscht
-    if (data.saveToStorage !== false) {
-      const filename = `${data.filename || defaultFilename}.pdf`;
+    // F27: Hier gab es einen zweiten Zweig, der bei `saveToStorage === false`
+    // das komplette PDF base64-kodiert in den Job-Return-Wert legte. Der
+    // Return-Wert landet in Redis, und `removeOnComplete` haelt 100 Jobs vor:
+    // 100 x mehrere MB. Zusammen mit `noeviction` ohne `maxmemory` genau das
+    // Szenario, vor dem checkRedisMemoryConfig() warnt.
+    //
+    // Der Zweig war ausserdem toter Code — kein Aufrufer setzte
+    // `saveToStorage: false`, und `pdfBase64` wurde nirgends gelesen. Deshalb
+    // entfernt statt optimiert: das PDF geht immer in den Storage, wer die
+    // Bytes braucht, laedt sie von dort.
+    const filename = `${data.filename || defaultFilename}.pdf`;
 
-      log("info", jobId, `Saving PDF to storage`, { filename });
+    log("info", jobId, `Saving PDF to storage`, { filename });
 
-      const storageKey = await uploadFile(pdfBuffer, filename, "application/pdf", data.tenantId);
+    const storageKey = await uploadFile(pdfBuffer, filename, "application/pdf", data.tenantId);
 
-      result.storageKey = storageKey;
+    result.storageKey = storageKey;
 
-      log("info", jobId, `PDF saved to storage`, {
-        storageKey,
-        fileSizeBytes: pdfBuffer.length,
-      });
-    } else {
-      // PDF als Base64 zurückgeben
-      result.pdfBase64 = pdfBuffer.toString("base64");
-    }
+    log("info", jobId, `PDF saved to storage`, {
+      storageKey,
+      fileSizeBytes: pdfBuffer.length,
+    });
 
     log("info", jobId, `PDF job completed successfully`, {
       type: data.type,

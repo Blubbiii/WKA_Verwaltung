@@ -12,10 +12,21 @@ import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import type { WebhookEventPayload } from "@/lib/webhooks/dispatcher";
 
+/**
+ * F26: `url` und `secret` standen hier im Job-Payload.
+ *
+ * Zwei Probleme:
+ * 1. Sicherheit — das Signatur-Secret lag im Klartext in Redis, in `job.data`
+ *    (also auch in der Admin-Jobs-Ansicht) und in `FailedJob.payload`.
+ * 2. Snapshot — eine Secret- oder URL-Rotation wirkte nicht auf bereits
+ *    eingereihte Jobs. Die Zustellung signierte mit dem alten Secret, der
+ *    Empfaenger verwarf sie.
+ *
+ * Der Worker laedt beides jetzt zur Zustellzeit aus dem Webhook-Datensatz.
+ * Nebeneffekt: ein deaktivierter oder geloeschter Webhook stellt nicht mehr zu.
+ */
 export interface WebhookJobData {
   webhookId: string;
-  url: string;
-  secret: string;
   payload: WebhookEventPayload;
 }
 
@@ -58,7 +69,7 @@ export const enqueueWebhookDelivery = async (
   });
 
   logger.info(
-    `[Queue:${WEBHOOK_QUEUE_NAME}] Job ${job.id} added: ${jobData.payload.event} → ${jobData.url}`
+    `[Queue:${WEBHOOK_QUEUE_NAME}] Job ${job.id} added: ${jobData.payload.event} → webhook ${jobData.webhookId}`
   );
 
   return job;

@@ -16,6 +16,7 @@ import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 export interface ApprovalsReconcileJobData {
   /** Optional Tenant-Scope (rein für Tests/On-Demand). Standard: alle. */
@@ -112,33 +113,14 @@ export const enqueueApprovalsReconcileNow = async () => {
 
 export const removeApprovalsReconcileSchedule = async (): Promise<boolean> => {
   const queue = getApprovalsReconcileQueue();
-  try {
-    const removed = await queue.removeRepeatableByKey(
-      `reconcile-orphaned-approvals:${REPEATABLE_JOB_ID}:::${CRON_PATTERN}`,
-    );
-    if (removed) {
-      logger.info(
-        `[Queue:${APPROVALS_RECONCILE_QUEUE_NAME}] Cron schedule removed`,
-      );
-    }
-    return removed;
-  } catch {
-    try {
-      const repeatableJobs = await queue.getRepeatableJobs();
-      for (const rj of repeatableJobs) {
-        if (rj.name === "reconcile-orphaned-approvals") {
-          await queue.removeRepeatableByKey(rj.key);
-          logger.info(
-            `[Queue:${APPROVALS_RECONCILE_QUEUE_NAME}] Cron removed (by scan)`,
-          );
-          return true;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return false;
-  }
+  // F20: Hier stand ein handgebauter Key. Seit `tz` gesetzt ist, lautet das
+  // Format `name:jobId::<tz>:pattern` — jeder fest verdrahtete Key mit `:::`
+  // trifft also nicht mehr. Der Helper scannt statt zu rechnen.
+  const removed = await removeRepeatableJobs(queue, {
+    name: "reconcile-orphaned-approvals",
+    jobId: REPEATABLE_JOB_ID,
+  });
+  return removed > 0;
 };
 
 export const closeApprovalsReconcileQueue = async (): Promise<void> => {

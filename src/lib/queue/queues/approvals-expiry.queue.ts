@@ -14,6 +14,7 @@ import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 /**
  * Approvals-Expiry job data.
@@ -117,34 +118,14 @@ export const enqueueApprovalsExpiryNow = async () => {
  */
 export const removeApprovalsExpirySchedule = async (): Promise<boolean> => {
   const queue = getApprovalsExpiryQueue();
-  try {
-    const removed = await queue.removeRepeatableByKey(
-      `check-expired-approvals:${REPEATABLE_JOB_ID}:::${CRON_PATTERN}`,
-    );
-    if (removed) {
-      logger.info(
-        `[Queue:${APPROVALS_EXPIRY_QUEUE_NAME}] Cron schedule removed`,
-      );
-    }
-    return removed;
-  } catch {
-    // Fallback: scan repeatables and remove by name match
-    try {
-      const repeatableJobs = await queue.getRepeatableJobs();
-      for (const rj of repeatableJobs) {
-        if (rj.name === "check-expired-approvals") {
-          await queue.removeRepeatableByKey(rj.key);
-          logger.info(
-            `[Queue:${APPROVALS_EXPIRY_QUEUE_NAME}] Cron removed (by scan)`,
-          );
-          return true;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return false;
-  }
+  // F20: Hier stand ein handgebauter Key. Seit `tz` gesetzt ist, lautet das
+  // Format `name:jobId::<tz>:pattern` — jeder fest verdrahtete Key mit `:::`
+  // trifft also nicht mehr. Der Helper scannt statt zu rechnen.
+  const removed = await removeRepeatableJobs(queue, {
+    name: "check-expired-approvals",
+    jobId: REPEATABLE_JOB_ID,
+  });
+  return removed > 0;
 };
 
 export const closeApprovalsExpiryQueue = async (): Promise<void> => {

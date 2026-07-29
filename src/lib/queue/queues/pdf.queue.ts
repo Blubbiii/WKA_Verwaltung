@@ -9,6 +9,7 @@ import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { clearFinishedJob } from "../deduped-add";
 
 /**
  * Supported PDF document types
@@ -95,14 +96,16 @@ export const enqueuePdfGeneration = async (
 ) => {
   const queue = getPdfQueue();
 
-  // Generate unique job ID to prevent duplicate generations
+  // Deterministische ID — dedupliziert laufende Anfragen fuer dieselbe Entity.
   const jobId = `pdf-${jobData.type}-${jobData.entityId}-${jobData.tenantId}`;
+
+  // F14: Ein bereits abgeschlossener Lauf darf eine Neuerzeugung nicht
+  // blockieren.
+  await clearFinishedJob(queue, jobId);
 
   const job = await queue.add(jobData.type, jobData, {
     ...options,
     jobId,
-    // Prevent duplicate jobs for the same entity
-    // If a job with this ID exists and is not completed, skip
   });
 
   logger.info(
@@ -213,6 +216,10 @@ export const enqueueAnnualReportPdfAsync = async (
 ) => {
   const queue = getPdfQueue() as unknown as import("bullmq").Queue<Record<string, unknown>>;
   const jobId = `pdf-annual-report-${parkId}-${year}-${tenantId}`;
+
+  // F14: sonst liefert ein zweiter Klick den alten, veralteten Bericht zurueck.
+  await clearFinishedJob(queue, jobId);
+
   const job = await queue.add(
     "annual-report",
     {
@@ -241,6 +248,14 @@ export const enqueuePdfBulk = async (
   jobs: Array<{ data: PdfJobData; options?: Partial<JobsOptions> }>
 ) => {
   const queue = getPdfQueue();
+
+  // F14: auch im Bulk-Pfad muessen abgeschlossene Vorlaeufer weg, sonst
+  // liefert addBulk fuer bekannte IDs die alten Jobs zurueck.
+  await Promise.all(
+    jobs.map(({ data }) =>
+      clearFinishedJob(queue, `pdf-${data.type}-${data.entityId}-${data.tenantId}`),
+    ),
+  );
 
   const bulkJobs = jobs.map(({ data, options }) => ({
     name: data.type,

@@ -10,6 +10,7 @@ import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 // =============================================================================
 // Job contract — SINGLE SOURCE OF TRUTH
@@ -328,17 +329,15 @@ export const removeRecurringBilling = async (
 ): Promise<boolean> => {
   const queue = getBillingQueue();
 
-  const removed = await queue.removeRepeatableByKey(
-    `process-billing:${`billing-recurring-${ruleId}-${tenantId}`}:::${ruleId}`
-  );
+  // F20: Hier stand ein handgebauter Key mit `${ruleId}` als Suffix — BullMQ
+  // erwartet dort das Cron-Pattern. Die Entfernung schlug also immer fehl und
+  // der Cron feuerte nach dem Loeschen der BillingRule weiter.
+  const removed = await removeRepeatableJobs(queue, {
+    name: 'process-billing',
+    jobId: `billing-recurring-${ruleId}-${tenantId}`,
+  });
 
-  if (removed) {
-    logger.info(
-      `[Queue:${BILLING_QUEUE_NAME}] Recurring job removed: rule ${ruleId}`
-    );
-  }
-
-  return removed;
+  return removed > 0;
 };
 
 /**

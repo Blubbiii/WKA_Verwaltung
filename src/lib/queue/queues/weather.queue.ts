@@ -10,6 +10,7 @@ import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 /**
  * Weather job data structure
@@ -206,24 +207,20 @@ export const removeScheduledWeatherSync = async (
 ): Promise<boolean> => {
   const queue = getWeatherQueue();
 
-  // Try to remove both recurring and daily jobs
-  const recurringRemoved = await queue.removeRepeatableByKey(
-    `sync-weather:${`weather-recurring-${parkId}-${tenantId}`}:::*`
-  ).catch(() => false);
+  // F20: Hier stand ein Literal `*` im Key — `removeRepeatableByKey` kennt
+  // kein Globbing, die Entfernung schlug also immer fehl und der Cron lief
+  // nach dem Deaktivieren des Parks weiter.
+  const recurringRemoved = await removeRepeatableJobs(queue, {
+    name: 'sync-weather',
+    jobId: `weather-recurring-${parkId}-${tenantId}`,
+  });
 
-  const dailyRemoved = await queue.removeRepeatableByKey(
-    `sync-weather:${`weather-daily-${parkId}-${tenantId}`}:::*`
-  ).catch(() => false);
+  const dailyRemoved = await removeRepeatableJobs(queue, {
+    name: 'sync-weather',
+    jobId: `weather-daily-${parkId}-${tenantId}`,
+  });
 
-  const removed = recurringRemoved || dailyRemoved;
-
-  if (removed) {
-    logger.info(
-      `[Queue:${WEATHER_QUEUE_NAME}] Scheduled job removed: park ${parkId}`
-    );
-  }
-
-  return removed;
+  return recurringRemoved + dailyRemoved > 0;
 };
 
 /**

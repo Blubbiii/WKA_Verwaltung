@@ -60,6 +60,41 @@ export function getJobOptions(preset: QueuePreset): JobsOptions {
   };
 }
 
+/**
+ * Lock-Dauern für Worker mit langlaufenden Jobs.
+ *
+ * F25 / F15 (Audit 2026-07): BullMQs Default-`lockDuration` sind 30 Sekunden.
+ * Läuft ein Job länger und erneuert den Lock nicht, gilt er als "stalled" und
+ * wird ERNEUT ZUGESTELLT — bei mehreren Worker-Replikas an einen anderen
+ * Prozess. Genau so entstehen die überlappenden Läufe aus F25, nicht durch das
+ * Fehlen eines verteilten Locks: BullMQ erzeugt pro Cron-Tick nur einen Job
+ * (deterministische jobId) und nur ein Worker kann ihn aktiv setzen.
+ *
+ * `concurrency: 1` hilft dagegen nicht — das gilt pro Prozess.
+ *
+ * Gemessener Stand vor dem Fix: von 15 Workern hatten 12 keine `lockDuration`,
+ * darunter der SCADA-Import und der Retention-Lauf.
+ *
+ * Zusätzlich `maxStalledCount: 1` überall dort, wo ein doppelter Lauf teurer
+ * ist als ein sichtbarer Fehlschlag.
+ */
+export const WORKER_LOCK_MS = {
+  /** SCADA-Import: Dateiscan + Import über alle Mandanten. */
+  scadaAutoImport: envInt("WORKER_LOCK_SCADA_MS", 30 * 60_000),
+  /** DSGVO/GoBD-Retention: Sweep über alle Mandanten. */
+  retention: envInt("WORKER_LOCK_RETENTION_MS", 30 * 60_000),
+  /** Berichtserzeugung inkl. PDF-Rendering und Versand. */
+  report: envInt("WORKER_LOCK_REPORT_MS", 10 * 60_000),
+  /** Tages-Digest über alle Nutzer eines Mandanten. */
+  dailyDigest: envInt("WORKER_LOCK_DIGEST_MS", 10 * 60_000),
+  /** Paperless-Dokumentensynchronisation. */
+  paperless: envInt("WORKER_LOCK_PAPERLESS_MS", 10 * 60_000),
+  /** Re-Ausführung genehmigter Aktionen (bis zu 50 je Lauf). */
+  approvalsReconcile: envInt("WORKER_LOCK_APPROVALS_MS", 10 * 60_000),
+  /** Wetter-Sync: eine externe API-Abfrage je Park. */
+  weather: envInt("WORKER_LOCK_WEATHER_MS", 5 * 60_000),
+} as const;
+
 /** Queue-to-preset mapping (for reference / documentation) */
 export const QUEUE_PRESETS: Record<string, QueuePreset> = {
   billing: "slow",

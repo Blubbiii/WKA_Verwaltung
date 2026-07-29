@@ -163,14 +163,35 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    // Enqueue OCR job
-    await enqueueInboxOcrJob({
-      invoiceId: invoice.id,
-      tenantId,
-      fileUrl,
-    });
+    // F21 (Audit 2026-07): Der Create ist committet, das Enqueue lief danach
+    // ungeschuetzt. War Redis kurz weg, warf es, der aeussere catch antwortete
+    // 500 — der Datensatz existierte aber schon. Ein erneuter Upload lief in
+    // P2002 und damit in ein 409 "Rechnung existiert bereits": die Rechnung
+    // hing dauerhaft ohne OCR fest.
+    //
+    // Der Upload selbst ist erfolgreich, sobald der Datensatz steht. OCR ist
+    // ein Folgeschritt und darf ihn nicht scheitern lassen. Der Datensatz
+    // bleibt auf ocrStatus PENDING und ist ueber POST /api/inbox/[id]/ocr
+    // erneut anstossbar.
+    let ocrQueued = true;
+    try {
+      await enqueueInboxOcrJob({
+        invoiceId: invoice.id,
+        tenantId,
+        fileUrl,
+      });
+    } catch (enqueueError) {
+      ocrQueued = false;
+      logger.error(
+        { err: enqueueError, invoiceId: invoice.id, tenantId },
+        "Inbox-Upload gespeichert, OCR konnte nicht eingereiht werden — Datensatz bleibt PENDING",
+      );
+    }
 
-    return NextResponse.json(serializePrisma(invoice), { status: 201 });
+    return NextResponse.json(
+      { ...serializePrisma(invoice), ocrQueued },
+      { status: 201 },
+    );
   } catch (error) {
     logger.error({ err: error }, "Error uploading inbox invoice");
     return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Hochladen" });

@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { fetchAndUpsertBundesbankRates } from "@/lib/accounting/bundesbank-fetch";
+import { bearerTokenMatches } from "@/lib/auth/timing-safe";
 
 export async function POST(request: NextRequest) {
   // Bearer-Token-Auth
@@ -28,8 +29,8 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const providedToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (providedToken !== expectedToken) {
+  // F22: war ein String-Vergleich und damit nicht timing-safe.
+  if (!bearerTokenMatches(auth, expectedToken)) {
     return apiError("UNAUTHORIZED", 401, {
       message: "Ungültiger Bearer-Token",
     });

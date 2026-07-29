@@ -58,10 +58,32 @@ export async function GET() {
   // Check storage in parallel with DB result known
   storage = await checkStorage();
 
+  // F23 (Audit 2026-07): Der Zustand "kein Worker laeuft, alle Queues wachsen"
+  // (F1) war ueber keinen einzigen Health-Endpunkt sichtbar. Bewusst NICHT in
+  // /api/health/ready: das gated das Load-Balancer-Routing, und die Web-App
+  // kann Traffic auch ohne Worker bedienen. Hier gehoert es hin — das
+  // Health-Widget liest genau diese Antwort.
+  let queues: {
+    redis: boolean;
+    healthy: boolean;
+    stalledQueues: string[];
+  } = { redis: false, healthy: false, stalledQueues: [] };
+  try {
+    const { getQueueHealth } = await import("@/lib/queue");
+    const health = await getQueueHealth();
+    queues = {
+      redis: health.redis,
+      healthy: health.healthy,
+      stalledQueues: health.stalledQueues,
+    };
+  } catch {
+    // Queue-Status ist Zusatzinformation — kein Grund, den Endpunkt zu kippen.
+  }
+
   const status: "healthy" | "degraded" | "down" =
     database === "disconnected"
       ? "down"
-      : storage === "unavailable"
+      : storage === "unavailable" || !queues.healthy
       ? "degraded"
       : "healthy";
 
@@ -74,6 +96,7 @@ export async function GET() {
     status,
     database,
     storage,
+    queues,
     uptime: formatUptime(Math.floor(process.uptime())),
     version,
     lastCheck: new Date().toISOString(),

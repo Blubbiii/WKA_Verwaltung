@@ -318,7 +318,22 @@ export const closeAllQueues = async (): Promise<void> => {
  */
 export const getQueueHealth = async (): Promise<{
   redis: boolean;
-  queues: Record<string, { connected: boolean; jobCounts?: object }>;
+  /**
+   * F23: Gesamturteil. Vorher gab es keins — der Aufrufer musste selbst
+   * interpretieren, und der Fall "Queue waechst, kein Consumer" fiel durch.
+   */
+  healthy: boolean;
+  /** Queues mit wartenden Jobs, aber ohne verbundenen Worker. */
+  stalledQueues: string[];
+  queues: Record<
+    string,
+    {
+      connected: boolean;
+      jobCounts?: object;
+      /** Verbundene Worker. 0 heisst: niemand holt die Jobs ab. */
+      consumers?: number;
+    }
+  >;
 }> => {
   const { isRedisHealthy } = await import('./connection');
   const { getEmailQueue } = await import('./queues/email.queue');
@@ -332,13 +347,32 @@ export const getQueueHealth = async (): Promise<{
 
   const redisHealthy = await isRedisHealthy();
 
-  const queueStatus: Record<string, { connected: boolean; jobCounts?: object }> = {};
+  const queueStatus: Record<
+    string,
+    { connected: boolean; jobCounts?: object; consumers?: number }
+  > = {};
+  const stalledQueues: string[] = [];
 
   const checkQueue = async (name: string, getQueue: () => unknown) => {
     try {
-      const queue = getQueue() as { getJobCounts: () => Promise<object> };
+      const queue = getQueue() as {
+        getJobCounts: () => Promise<Record<string, number>>;
+        getWorkersCount: () => Promise<number>;
+      };
       const jobCounts = await queue.getJobCounts();
-      queueStatus[name] = { connected: true, jobCounts };
+
+      // F23: Bisher galt eine Queue als gesund, sobald getJobCounts()
+      // antwortete — das sagt nur, dass Redis erreichbar ist, nicht dass
+      // irgendjemand die Jobs abholt. getWorkersCount() fragt die tatsaechlich
+      // verbundenen Consumer ab (BullMQ ueber Redis CLIENT LIST).
+      const consumers = await queue.getWorkersCount();
+
+      queueStatus[name] = { connected: true, jobCounts, consumers };
+
+      const waiting = (jobCounts.waiting ?? 0) + (jobCounts.delayed ?? 0);
+      if (consumers === 0 && waiting > 0) {
+        stalledQueues.push(name);
+      }
     } catch {
       queueStatus[name] = { connected: false };
     }
@@ -355,8 +389,31 @@ export const getQueueHealth = async (): Promise<{
     checkQueue(QUEUE_NAMES.WEBHOOK, getWebhookQueue),
   ]);
 
+  // Prometheus-Gauges beim Health-Check mitziehen: so sind sie in /api/metrics
+  // ohne eigenen Scrape-Pfad aktuell. Fehler hier duerfen den Health-Check
+  // nicht kippen — Metriken sind Beobachtung, nicht Funktion.
+  try {
+    const { queueJobsActive, queueJobsWaiting, queueJobsFailed, queueConsumers } =
+      await import("@/lib/metrics/prometheus");
+
+    for (const [name, status] of Object.entries(queueStatus)) {
+      if (!status.connected) continue;
+      const counts = (status.jobCounts ?? {}) as Record<string, number>;
+      queueJobsActive.set({ queue: name }, counts.active ?? 0);
+      queueJobsWaiting.set({ queue: name }, counts.waiting ?? 0);
+      queueJobsFailed.set({ queue: name }, counts.failed ?? 0);
+      queueConsumers.set({ queue: name }, status.consumers ?? 0);
+    }
+  } catch {
+    // Metriken sind optional.
+  }
+
   return {
     redis: redisHealthy,
+    // Eine Queue mit wartenden Jobs und ohne Consumer ist der Zustand, den F1
+    // erzeugt — der muss als "nicht gesund" herauskommen.
+    healthy: redisHealthy && stalledQueues.length === 0,
+    stalledQueues,
     queues: queueStatus,
   };
 };

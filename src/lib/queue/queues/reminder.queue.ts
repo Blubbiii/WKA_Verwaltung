@@ -11,6 +11,7 @@ import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 /**
  * Reminder job data structure
@@ -139,37 +140,14 @@ export const scheduleDailyReminderCheck = async () => {
  */
 export const removeDailyReminderCheck = async (): Promise<boolean> => {
   const queue = getReminderQueue();
-
-  try {
-    const removed = await queue.removeRepeatableByKey(
-      "check-reminders:reminder-daily-all:::0 8 * * *"
-    );
-
-    if (removed) {
-      logger.info(
-        `[Queue:${REMINDER_QUEUE_NAME}] Daily reminder check removed`
-      );
-    }
-
-    return removed;
-  } catch {
-    // Try alternative key format
-    try {
-      const repeatableJobs = await queue.getRepeatableJobs();
-      for (const rj of repeatableJobs) {
-        if (rj.name === "check-reminders") {
-          await queue.removeRepeatableByKey(rj.key);
-          logger.info(
-            `[Queue:${REMINDER_QUEUE_NAME}] Daily reminder check removed (by scan)`
-          );
-          return true;
-        }
-      }
-    } catch {
-      // Ignore
-    }
-    return false;
-  }
+  // F20: Hier stand ein handgebauter Key. Seit `tz` gesetzt ist, lautet das
+  // Format `name:jobId::<tz>:pattern` — jeder fest verdrahtete Key mit `:::`
+  // trifft also nicht mehr. Der Helper scannt statt zu rechnen.
+  const removed = await removeRepeatableJobs(queue, {
+    name: "check-reminders",
+    jobId: 'reminder-daily-all',
+  });
+  return removed > 0;
 };
 
 /**

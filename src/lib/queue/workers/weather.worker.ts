@@ -20,6 +20,7 @@ import {
   setLastSyncTime,
 } from "../../weather";
 import { WeatherJobData, WeatherJobResult } from "../queues/weather.queue";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 // =============================================================================
 // Helper Functions
@@ -244,6 +245,11 @@ export function startWeatherWorker(): Worker<WeatherJobData, WeatherJobResult> {
         max: 60,
         duration: 60000,
       },
+      // F25: Mit dem Limiter oben kann ein Job auf sein Fenster warten und
+      // dabei die 30-s-Vorgabe ueberschreiten — dann gilt er als stalled und
+      // wird ein zweites Mal zugestellt.
+      lockDuration: WORKER_LOCK_MS.weather,
+      stalledInterval: 60_000,
     }
   );
 

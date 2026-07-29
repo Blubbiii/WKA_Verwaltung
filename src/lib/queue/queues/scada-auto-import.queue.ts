@@ -12,6 +12,7 @@ import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from '@/lib/logger';
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 // ---------------------------------------------------------------
 // Types
@@ -191,19 +192,12 @@ export const scheduleScadaAutoImport = async (
 export const removeScadaAutoImportSchedule = async (): Promise<boolean> => {
   const queue = getScadaAutoImportQueue();
 
-  try {
-    const removed = await queue.removeRepeatableByKey(
-      'scada-auto-import-scheduled:scada-auto-import-daily:::*',
-    );
-    if (removed) {
-      logger.info(
-        `[Queue:${SCADA_AUTO_IMPORT_QUEUE_NAME}] Daily scheduled job removed`,
-      );
-    }
-    return removed;
-  } catch {
-    return false;
-  }
+  // F20: Literal `*` im Key — kein Globbing, Entfernung schlug immer fehl.
+  const removed = await removeRepeatableJobs(queue, {
+    name: 'scada-auto-import-scheduled',
+    jobId: 'scada-auto-import-daily',
+  });
+  return removed > 0;
 };
 
 // ---------------------------------------------------------------

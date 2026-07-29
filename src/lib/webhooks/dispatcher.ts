@@ -53,10 +53,9 @@ export async function dispatchWebhook(
     );
 
     for (const webhook of webhooks) {
+      // F26: kein url/secret im Payload — der Worker laedt beides frisch.
       await enqueueWebhookDelivery({
         webhookId: webhook.id,
-        url: webhook.url,
-        secret: webhook.secret,
         payload,
       });
     }

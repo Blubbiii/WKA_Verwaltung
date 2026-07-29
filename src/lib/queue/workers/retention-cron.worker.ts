@@ -21,6 +21,7 @@ import type {
 } from "../queues/retention-cron.queue";
 import { RETENTION_CRON_QUEUE_NAME } from "../queues/retention-cron.queue";
 import { addYearsSafe } from "@/lib/date-utils";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 const logger = jobLogger.child({ component: "retention-cron-worker" });
 
@@ -246,6 +247,9 @@ export function startRetentionCronWorker(): Worker<
     connection: getRedisConnection(),
     concurrency: 1,
     useWorkerThreads: false,
+    // F25: Sweep ueber alle Mandanten dauert laenger als die 30-s-Vorgabe.
+    lockDuration: WORKER_LOCK_MS.retention,
+    stalledInterval: 60_000,
   });
 
   retentionCronWorker.on("completed", (job, result) => {

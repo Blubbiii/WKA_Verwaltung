@@ -12,6 +12,7 @@ import { getRedisConnection } from "../connection";
 import { jobLogger } from "@/lib/logger";
 import type { ReportJobData, ReportJobResult } from "../queues/report.queue";
 import { REPORT_QUEUE_NAME } from "../queues/report.queue";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 const logger = jobLogger.child({ component: "report-worker" });
 
@@ -117,6 +118,12 @@ export function startReportWorker(): Worker<ReportJobData, ReportJobResult> {
     {
       connection: getRedisConnection(),
       concurrency: 1, // Process one report job at a time (resource-intensive)
+      // F25: Berichtserzeugung inkl. PDF-Rendering und Versand ueberschreitet
+      // die 30-s-Vorgabe regelmaessig — der Job galt dann als stalled und lief
+      // ein zweites Mal, mit doppeltem Mailversand an alle Empfaenger.
+      lockDuration: WORKER_LOCK_MS.report,
+      stalledInterval: 60_000,
+      maxStalledCount: 1,
       limiter: {
         max: 5,
         duration: 60000, // Max 5 jobs per minute

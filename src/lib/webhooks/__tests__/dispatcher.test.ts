@@ -111,10 +111,11 @@ describe("Webhook Dispatcher", () => {
         settlementId: "stl-5",
       });
 
+      // F26: url und secret gehoeren NICHT in den Job-Payload — sonst liegt
+      // das Signatur-Secret im Klartext in Redis und in FailedJob.payload.
+      // Der Worker laedt beides zur Zustellzeit aus dem Webhook-Datensatz.
       expect(mockEnqueueWebhookDelivery).toHaveBeenCalledWith({
         webhookId: "wh-1",
-        url: "https://example.com/hook",
-        secret: "s3cret",
         payload: {
           event: "settlement.created",
           timestamp: "2026-02-25T10:00:00.000Z",

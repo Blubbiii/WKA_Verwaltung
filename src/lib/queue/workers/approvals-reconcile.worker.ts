@@ -17,6 +17,7 @@ import type {
   ApprovalsReconcileJobResult,
 } from "../queues/approvals-reconcile.queue";
 import { APPROVALS_RECONCILE_QUEUE_NAME } from "../queues/approvals-reconcile.queue";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 const logger = jobLogger.child({ component: "approvals-reconcile-worker" });
 
@@ -217,6 +218,12 @@ export function startApprovalsReconcileWorker(): Worker<
     connection: getRedisConnection(),
     concurrency: 1,
     useWorkerThreads: false,
+    // F25: bis zu 50 Approvals je Lauf, jedes mit eigenem Executor.
+    lockDuration: WORKER_LOCK_MS.approvalsReconcile,
+    stalledInterval: 60_000,
+    // Doppelte Ausfuehrung genehmigter, geldrelevanter Aktionen ist der
+    // teuerste denkbare Fall — lieber ein Fehlschlag, den F18 sichtbar macht.
+    maxStalledCount: 1,
   });
 
   approvalsReconcileWorker.on("completed", (job, result) => {

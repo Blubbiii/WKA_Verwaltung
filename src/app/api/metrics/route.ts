@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registry } from "@/lib/metrics/prometheus";
+import { timingSafeEquals } from "@/lib/auth/timing-safe";
 
 /**
  * GET /api/metrics
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
       : null;
     const queryToken = req.nextUrl.searchParams.get("token");
     const providedToken = bearerToken ?? queryToken;
-    if (providedToken !== expectedToken) {
+    // F22: timing-safe, analog zu den Cron-Routen.
+    if (!timingSafeEquals(providedToken, expectedToken)) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
   }

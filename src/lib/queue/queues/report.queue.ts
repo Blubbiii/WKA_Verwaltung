@@ -10,6 +10,7 @@ import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
+import { removeRepeatableJobs } from "../repeatable";
 
 /**
  * Supported report job types
@@ -127,33 +128,14 @@ export const scheduleDailyReportProcessing = async () => {
  */
 export const removeDailyReportProcessing = async (): Promise<boolean> => {
   const queue = getReportQueue();
-
-  try {
-    const removed = await queue.removeRepeatableByKey(
-      `process-scheduled-reports:report-daily-check:::0 6 * * *`
-    );
-
-    if (removed) {
-      logger.info(
-        `[Queue:${REPORT_QUEUE_NAME}] Daily report processing removed`
-      );
-    }
-
-    return removed;
-  } catch {
-    // Key format may differ - try to remove all repeatables
-    const repeatableJobs = await queue.getRepeatableJobs();
-    for (const job of repeatableJobs) {
-      if (job.name === "process-scheduled-reports") {
-        await queue.removeRepeatableByKey(job.key);
-        logger.info(
-          `[Queue:${REPORT_QUEUE_NAME}] Removed repeatable job: ${job.key}`
-        );
-        return true;
-      }
-    }
-    return false;
-  }
+  // F20: Hier stand ein handgebauter Key. Seit `tz` gesetzt ist, lautet das
+  // Format `name:jobId::<tz>:pattern` — jeder fest verdrahtete Key mit `:::`
+  // trifft also nicht mehr. Der Helper scannt statt zu rechnen.
+  const removed = await removeRepeatableJobs(queue, {
+    name: "process-scheduled-reports",
+    jobId: 'report-daily-check',
+  });
+  return removed > 0;
 };
 
 /**

@@ -39,7 +39,36 @@ export function isRetryableHttpStatus(status: number): boolean {
 async function processWebhookJob(
   job: Job<WebhookJobData, WebhookJobResult>
 ): Promise<WebhookJobResult> {
-  const { webhookId, url, secret, payload } = job.data;
+  const { webhookId, payload } = job.data;
+
+  // F26: url und secret kommen aus dem Datensatz, nicht aus dem Job-Payload.
+  // Damit liegt das Secret nicht in Redis, und eine Rotation wirkt auch auf
+  // bereits eingereihte Jobs.
+  const webhook = await prisma.webhook.findUnique({
+    where: { id: webhookId },
+    select: { url: true, secret: true, isActive: true },
+  });
+
+  if (!webhook) {
+    logger.warn(
+      { jobId: job.id, webhookId, event: payload.event },
+      "[Webhook Worker] Webhook existiert nicht mehr — Zustellung verworfen"
+    );
+    // Kein Retry: der Empfaenger ist weg, das aendert sich nicht.
+    job.discard();
+    throw new Error(`Webhook ${webhookId} existiert nicht mehr`);
+  }
+
+  if (!webhook.isActive) {
+    logger.info(
+      { jobId: job.id, webhookId, event: payload.event },
+      "[Webhook Worker] Webhook ist deaktiviert — Zustellung uebersprungen"
+    );
+    // Deaktiviert ist kein Fehler, sondern eine bewusste Einstellung.
+    return { success: true };
+  }
+
+  const { url, secret } = webhook;
 
   logger.info(
     { jobId: job.id, event: payload.event, url },

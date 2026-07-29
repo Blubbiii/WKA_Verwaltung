@@ -8,6 +8,7 @@ import { Queue } from "bullmq";
 import { getBullMQConnection } from "../connection";
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import { clearFinishedJob } from "../deduped-add";
 
 export interface InboxOcrJobData {
   invoiceId: string;
@@ -41,6 +42,12 @@ export const getInboxOcrQueue = (): Queue<InboxOcrJobData> => {
 export const enqueueInboxOcrJob = async (data: InboxOcrJobData): Promise<void> => {
   const queue = getInboxOcrQueue();
   const jobId = `inbox-ocr-${data.invoiceId}`;
+
+  // F14: Die jobId ist deterministisch. Ohne diesen Schritt war "OCR erneut
+  // starten" ein No-Op — die Route meldete Erfolg, BullMQ gab den alten,
+  // abgeschlossenen Job zurueck und es lief nichts.
+  await clearFinishedJob(queue, jobId);
+
   const job = await queue.add("ocr", data, { jobId });
   logger.info(
     `[Queue:${INBOX_OCR_QUEUE_NAME}] Job ${job.id} added: invoice=${data.invoiceId}`

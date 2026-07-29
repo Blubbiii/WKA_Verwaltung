@@ -16,6 +16,7 @@ import type {
   PaperlessJobResult,
 } from "../queues/paperless.queue";
 import { PAPERLESS_QUEUE_NAME } from "../queues/paperless.queue";
+import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
 
 async function processPaperlessJob(
   job: Job<PaperlessJobData, PaperlessJobResult>
@@ -116,6 +117,9 @@ export function startPaperlessWorker(): Worker<PaperlessJobData, PaperlessJobRes
       connection,
       concurrency: 3,
       useWorkerThreads: false,
+      // F25: Dokumentensync gegen ein externes System.
+      lockDuration: WORKER_LOCK_MS.paperless,
+      stalledInterval: 60_000,
     }
   );
 

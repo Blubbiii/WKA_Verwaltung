@@ -586,5 +586,49 @@ export async function toggleAutoImport(
     `Auto-import ${enabled ? 'enabled' : 'disabled'} for location`,
   );
 
+  // F8 (Audit 2026-07): Bisher wurde nur `autoImportEnabled` gesetzt und die
+  // API antwortete "Auto-Import aktiviert für {locationCode}".
+  // `scheduleScadaAutoImport()` wurde NIRGENDS aufgerufen — der Nutzer bekam
+  // eine positive Bestaetigung fuer einen Automatismus, der nicht existierte,
+  // und die Ertragsdaten fehlten unbemerkt.
+  //
+  // Der Cron ist global (ein taeglicher "auto-import-all"-Lauf), nicht pro
+  // Standort. Deshalb: beim Aktivieren sicherstellen, dass er existiert
+  // (idempotent ueber die stabile jobId), beim Deaktivieren nur entfernen,
+  // wenn keine Zuordnung mehr aktiv ist.
+  try {
+    const {
+      scheduleScadaAutoImport,
+      removeScadaAutoImportSchedule,
+    } = await import('@/lib/queue/queues/scada-auto-import.queue');
+
+    if (enabled) {
+      await scheduleScadaAutoImport();
+      autoImportLogger.info(
+        { tenantId, locationCode },
+        'Auto-import cron ensured',
+      );
+    } else {
+      const stillEnabled = await prisma.scadaTurbineMapping.count({
+        where: { autoImportEnabled: true, status: 'ACTIVE' },
+      });
+      if (stillEnabled === 0) {
+        await removeScadaAutoImportSchedule();
+        autoImportLogger.info(
+          { tenantId, locationCode },
+          'Auto-import cron removed — keine aktive Zuordnung mehr',
+        );
+      }
+    }
+  } catch (err) {
+    // Die Datenbank-Aenderung steht bereits. Ein fehlgeschlagenes Scheduling
+    // darf den Aufrufer nicht mit einem 500 abwuergen, muss aber sichtbar
+    // sein — sonst waere es genau die stille Bestaetigung von vorher.
+    autoImportLogger.error(
+      { tenantId, locationCode, enabled, err },
+      'Auto-import cron konnte nicht angepasst werden — Automatismus laeuft moeglicherweise nicht',
+    );
+  }
+
   return result.count;
 }

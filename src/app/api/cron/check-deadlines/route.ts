@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
 import { rateLimit, getClientIp, getRateLimitResponse } from "@/lib/rate-limit";
+import { bearerTokenMatches } from "@/lib/auth/timing-safe";
 
 export async function POST(request: NextRequest) {
   // IP-Rate-Limit als Defense-in-Depth gegen CRON_SECRET-Leak.
@@ -21,8 +22,9 @@ export async function POST(request: NextRequest) {
     return apiError("INTERNAL_ERROR", 503, { message: "Service unavailable" });
   }
 
+  // F22: war ein String-Vergleich und damit nicht timing-safe.
   const authHeader = request.headers.get("authorization");
-  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+  if (!bearerTokenMatches(authHeader, cronSecret)) {
     logger.warn("Unauthorized cron request to check-deadlines");
     return apiError("UNAUTHORIZED", 401, { message: "Unauthorized" });
   }
