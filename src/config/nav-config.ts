@@ -297,6 +297,7 @@ export const navGroups: NavGroup[] = [
           { title: "Produktionsdaten", titleKey: "productionData", href: "/energy/productions", icon: BarChart3 },
           { title: "Netzbetreiber-Daten", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
           { title: "SCADA-Messdaten", titleKey: "scadaMeasurements", href: "/energy/scada/data", icon: Activity },
+          { title: "Turbinen-Import", titleKey: "energyTurbineImport", href: "/energy/turbine-import", icon: Upload },
           { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
           { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
           { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
@@ -435,6 +436,20 @@ export const navGroups: NavGroup[] = [
           { title: "Steuern & Meldungen", titleKey: "accountingTax", href: "/buchhaltung/steuern", icon: Percent, featureFlag: "accounting.ustva" },
           { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins, featureFlag: "accounting.cashbook" },
           { title: "Export & Abschluss", titleKey: "accountingExport", href: "/buchhaltung/abschluss", icon: Archive, featureFlag: "accounting.datev" },
+          // Diese elf Seiten waren fertig gebaut, hatten aber keinen einzigen
+          // eingehenden Link — die Konsolidierung auf Hub-Seiten mit Tabs hat
+          // die Endstationen abgehaengt (Audit 2026-07, Tote Funktionalitaet 5).
+          { title: "Bilanz", titleKey: "accountingBalanceSheet", href: "/buchhaltung/bilanz", icon: Scale, featureFlag: "accounting.reports" },
+          { title: "Anlagenspiegel", titleKey: "accountingAssetSchedule", href: "/buchhaltung/anlagenspiegel", icon: HardDrive, featureFlag: "accounting.assets" },
+          { title: "Kapitalflussrechnung", titleKey: "accountingCashflow", href: "/buchhaltung/cashflow", icon: Droplets, featureFlag: "accounting.reports" },
+          { title: "Gewerbesteuer", titleKey: "accountingTradeTax", href: "/buchhaltung/gewerbesteuer", icon: Percent, featureFlag: "accounting.ustva" },
+          { title: "Soll-Ist Multi-Park", titleKey: "accountingMultiParkPlanActual", href: "/buchhaltung/multi-park-soll-ist", icon: GitCompare, featureFlag: "accounting.costcenter" },
+          { title: "Jahresabschluss durchführen", titleKey: "accountingYearEndClose", href: "/buchhaltung/year-end-close", icon: CheckSquare, featureFlag: "accounting.yearend" },
+          { title: "Periodensperre", titleKey: "accountingPeriodLock", href: "/buchhaltung/periodensperre", icon: Lock, featureFlag: "accounting.yearend" },
+          { title: "Storno-Audit", titleKey: "accountingReversalAudit", href: "/buchhaltung/storno-audit", icon: ScrollText, featureFlag: "accounting.yearend" },
+          { title: "GoBD-Export", titleKey: "accountingGobdExport", href: "/buchhaltung/gobd-export", icon: FolderSync, featureFlag: "accounting.datev" },
+          { title: "DATEV-Export (Datei)", titleKey: "accountingDatevExportFile", href: "/buchhaltung/datev-export", icon: FileSpreadsheet, featureFlag: "accounting.datev" },
+          { title: "Konten-Markierung", titleKey: "accountingAccountFlags", href: "/buchhaltung/konten-markierung", icon: Tag },
         ],
       },
       {
@@ -553,6 +568,23 @@ export const navGroups: NavGroup[] = [
         icon: Mail,
         permission: "admin:manage",
       },
+      {
+        // Einzige Stelle, an der DunningStagesSettings gerendert wird — ohne
+        // diesen Eintrag liessen sich Mahnstufen und -gebuehren gar nicht
+        // einstellen, obwohl sie laut Projektregel aus TenantSettings kommen.
+        title: "Mahnstufen",
+        titleKey: "dunningStages",
+        href: "/admin/mahn-stufen",
+        icon: Bell,
+        permission: "settings:read",
+      },
+      {
+        title: "Bankdaten-Freigaben",
+        titleKey: "bankUpdateRequests",
+        href: "/admin/bank-update-requests",
+        icon: Banknote,
+        permission: "admin:manage",
+      },
     ],
   },
 
@@ -617,6 +649,27 @@ export const navGroups: NavGroup[] = [
         href: "/admin/version",
         icon: Tag,
         permission: "system:config",
+      },
+      {
+        title: "Fonds-Zugriff",
+        titleKey: "fundAccess",
+        href: "/admin/fund-access",
+        icon: KeyRound,
+        permission: "system:settings",
+      },
+      {
+        title: "HGB-Einstellungen",
+        titleKey: "hgbSystemSettings",
+        href: "/admin/hgb-system-settings",
+        icon: Scale,
+        permission: "system:settings",
+      },
+      {
+        title: "Steuerkategorie-Vorlagen",
+        titleKey: "taxCategoryTemplates",
+        href: "/admin/tax-category-templates",
+        icon: Percent,
+        permission: "system:settings",
       },
     ],
   },

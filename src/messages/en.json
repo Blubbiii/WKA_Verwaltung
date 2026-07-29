@@ -368,7 +368,24 @@
     "mailingsOverview": "Overview",
     "mailingTemplates": "Templates",
     "emailSettings": "Email Settings",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "energyTurbineImport": "Turbine import",
+    "accountingBalanceSheet": "Balance sheet",
+    "accountingAssetSchedule": "Asset schedule",
+    "accountingCashflow": "Cash flow statement",
+    "accountingTradeTax": "Trade tax",
+    "accountingMultiParkPlanActual": "Plan/actual multi-park",
+    "accountingYearEndClose": "Run year-end close",
+    "accountingPeriodLock": "Period lock",
+    "accountingReversalAudit": "Reversal audit",
+    "accountingGobdExport": "GoBD export",
+    "accountingDatevExportFile": "DATEV export (file)",
+    "accountingAccountFlags": "Account flags",
+    "dunningStages": "Dunning stages",
+    "bankUpdateRequests": "Bank detail approvals",
+    "fundAccess": "Fund access",
+    "hgbSystemSettings": "HGB settings",
+    "taxCategoryTemplates": "Tax category templates"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
@@ -400,7 +417,8 @@
     "sections": {
       "navigation": "Navigation",
       "quickActions": "Quick actions",
-      "recent": "Recent"
+      "recent": "Recent",
+      "results": "Results"
     },
     "actions": {
       "newInvoice": "Create new invoice",
@@ -413,6 +431,15 @@
       "checkApprovals": "Review approvals",
       "runReminders": "Run reminders",
       "openDashboard": "Dashboard"
+    },
+    "searching": "Searching …",
+    "types": {
+      "park": "Park",
+      "invoice": "Invoice",
+      "contact": "Contact",
+      "contract": "Contract",
+      "fund": "Fund",
+      "journal": "Journal entry"
     }
   },
   "dashboard": {
@@ -640,7 +667,12 @@
         "emptySubtitle": "Nice. No open items.",
         "unauthorizedHint": "No permission to view focus items."
       },
-      "todayFocus": "Today's focus"
+      "todayFocus": "Today's focus",
+      "noDeadlines": "No upcoming deadlines",
+      "deadlinesNotAvailable": "Deadlines unavailable",
+      "daysLeft": "{count} days",
+      "activitiesNotAvailable": "Activities unavailable",
+      "contractsNotAvailable": "Expiring contracts unavailable"
     },
     "parkHealth": {
       "statusDisturbance": "Fault",
@@ -3295,7 +3327,38 @@
       "selectFolder": "Select folder",
       "selectFolderHint": "Select a folder on the left to view files",
       "downloadStarted": "Download started",
-      "downloadFailed": "Download failed"
+      "downloadFailed": "Download failed",
+      "name": "Name",
+      "type": "Type",
+      "size": "Size",
+      "date": "Date",
+      "amount": "Amount",
+      "invoice": "Invoice",
+      "preview": "Preview",
+      "download": "Download",
+      "noFiles": "No files",
+      "uploadOrChooseFolder": "Upload files or pick a different folder",
+      "noDocuments": "No documents",
+      "selectAll": "Select all",
+      "deselectAll": "Clear selection",
+      "selectedCount": "{count} selected",
+      "clear": "Clear",
+      "paginationInfo": "{total} files · page {page} of {totalPages}",
+      "folderPath": "Folder path",
+      "documentsRoot": "Documents",
+      "taxExport": "Tax export",
+      "taxExportInfo": "Exports every document of one park for one year as a ZIP archive for the tax advisor.",
+      "park": "Park",
+      "selectPark": "Select park",
+      "documentsCount": "{count} documents",
+      "year": "Year",
+      "noDataAvailable": "No data available",
+      "cancel": "Cancel",
+      "startExport": "Start export",
+      "uploading": "Uploading …",
+      "dragOrSelect": "Drag files here or",
+      "select": "select",
+      "filedTo": "Filed under: {park} · {year} · {category}"
     },
     "categories": {
       "CONTRACT": "Contract",
@@ -4593,7 +4656,28 @@
       "anhangLabel": "Notes and management report",
       "anhangDesc": "Write explanations for year-end financial statements",
       "protokollLabel": "Shareholder resolution",
-      "protokollDesc": "Decide on profit appropriation / result distribution"
+      "protokollDesc": "Decide on profit appropriation / result distribution",
+      "section5Title": "5. Lock down the close",
+      "gewstLabel": "Prepare trade tax return",
+      "gewstDesc": "Review add-backs and reductions per §8/§9 GewStG",
+      "gewstLinkLabel": "Trade tax",
+      "gobdLabel": "Produce GoBD data hand-over",
+      "gobdDesc": "Provide the Z3 export for the tax audit",
+      "gobdLinkLabel": "GoBD export",
+      "bilanzLinkLabel": "Balance sheet",
+      "guvLinkLabel": "P&L",
+      "anlagenspiegelLabel": "Produce asset schedule",
+      "anlagenspiegelDesc": "Movement of fixed assets per §268 (2) HGB",
+      "anlagenspiegelLinkLabel": "Asset schedule",
+      "periodensperreLabel": "Lock periods",
+      "periodensperreDesc": "Block closed months against later postings",
+      "periodensperreLinkLabel": "Period lock",
+      "yearEndCloseLabel": "Run year-end close",
+      "yearEndCloseDesc": "Create closing entries and close the fiscal year",
+      "yearEndCloseLinkLabel": "Start close",
+      "stornoAuditLabel": "Review reversal audit trail",
+      "stornoAuditDesc": "Inspect every reversal of the year for the tax audit",
+      "stornoAuditLinkLabel": "Reversal audit"
     },
     "bankingImport": {
       "importBtn": "Import bank statement",
@@ -7156,7 +7240,8 @@
       "previewToast": "Preview: {count} invoices would be created",
       "createdToast": "{count} invoices created",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "loadRuleError": "Could not load billing rule"
     },
     "documentRouting": {
       "title": "Document Routing",
@@ -8849,7 +8934,8 @@
         "changePassword": "Change password",
         "changePasswordDesc": "Update your login password",
         "comingSoon": "Coming soon",
-        "lastLogin": "Last login"
+        "lastLogin": "Last login",
+        "lastLoginUnknown": "No login recorded yet"
       },
       "privacy": {
         "title": "Data protection (GDPR)",
@@ -9683,7 +9769,9 @@
     },
     "status": {
       "draft": "Draft",
-      "posted": "Posted"
+      "posted": "Posted",
+      "reversed": "Reversed",
+      "reversal": "Reversal"
     },
     "dialog": {
       "view": "View entry",
@@ -9741,6 +9829,17 @@
       "pageOf": "Page {page} of {totalPages} ({totalCount} entries)",
       "prev": "Previous",
       "next": "Next"
+    },
+    "reverse": {
+      "title": "Reverse entry",
+      "info": "A mirror entry with swapped debit and credit amounts is created. The original entry stays untouched (GoBD §146 (4)).",
+      "reasonLabel": "Reversal reason",
+      "reasonPlaceholder": "e.g. posted against the wrong account",
+      "reasonTooShort": "At least {min} characters required",
+      "confirm": "Reverse",
+      "success": "Entry reversed",
+      "error": "Reversal failed",
+      "pendingApproval": "Four-eyes principle: the reversal is waiting for a second approval."
     }
   },
   "serviceEvents": {

@@ -48,17 +48,30 @@ const CHECKLIST_SECTIONS: ChecklistSection[] = [
     items: [
       { id: "ustva", labelKey: "ustvaLabel", descKey: "ustvaDesc", link: "/buchhaltung/steuern?tab=ustva", linkLabelKey: "ustvaLinkLabel" },
       { id: "ust-jahreserkl", labelKey: "ustJahreserklLabel", descKey: "ustJahreserklDesc" },
+      { id: "gewst", labelKey: "gewstLabel", descKey: "gewstDesc", link: "/buchhaltung/gewerbesteuer", linkLabelKey: "gewstLinkLabel" },
       { id: "datev", labelKey: "datevLabel", descKey: "datevDesc", link: "/buchhaltung/abschluss?tab=datev", linkLabelKey: "datevLinkLabel" },
+      { id: "gobd", labelKey: "gobdLabel", descKey: "gobdDesc", link: "/buchhaltung/gobd-export", linkLabelKey: "gobdLinkLabel" },
     ],
   },
   {
     titleKey: "section4Title",
     items: [
       { id: "bwa", labelKey: "bwaLabel", descKey: "bwaDesc", link: "/buchhaltung/berichte?tab=bwa", linkLabelKey: "bwaLinkLabel" },
-      { id: "bilanz", labelKey: "bilanzLabel", descKey: "bilanzDesc" },
-      { id: "guv", labelKey: "guvLabel", descKey: "guvDesc" },
+      // Diese vier Endstationen waren fertig gebaut und von hier NICHT
+      // verlinkt — die Checkliste fuehrte bis zum Abschluss und dann nirgendwo hin.
+      { id: "bilanz", labelKey: "bilanzLabel", descKey: "bilanzDesc", link: "/buchhaltung/bilanz", linkLabelKey: "bilanzLinkLabel" },
+      { id: "guv", labelKey: "guvLabel", descKey: "guvDesc", link: "/buchhaltung/berichte?tab=guv", linkLabelKey: "guvLinkLabel" },
+      { id: "anlagenspiegel", labelKey: "anlagenspiegelLabel", descKey: "anlagenspiegelDesc", link: "/buchhaltung/anlagenspiegel", linkLabelKey: "anlagenspiegelLinkLabel" },
       { id: "anhang", labelKey: "anhangLabel", descKey: "anhangDesc" },
       { id: "protokoll", labelKey: "protokollLabel", descKey: "protokollDesc" },
+    ],
+  },
+  {
+    titleKey: "section5Title",
+    items: [
+      { id: "periodensperre", labelKey: "periodensperreLabel", descKey: "periodensperreDesc", link: "/buchhaltung/periodensperre", linkLabelKey: "periodensperreLinkLabel" },
+      { id: "year-end-close", labelKey: "yearEndCloseLabel", descKey: "yearEndCloseDesc", link: "/buchhaltung/year-end-close", linkLabelKey: "yearEndCloseLinkLabel" },
+      { id: "storno-audit", labelKey: "stornoAuditLabel", descKey: "stornoAuditDesc", link: "/buchhaltung/storno-audit", linkLabelKey: "stornoAuditLinkLabel" },
     ],
   },
 ];

@@ -125,6 +125,12 @@ export async function GET(request: NextRequest) {
           status: true,
           createdAt: true,
           createdBy: { select: { firstName: true, lastName: true } },
+          // Storno-Zustand: die Liste ist der einzige Einstieg in den
+          // Storno-Auslöser und muss unterscheiden können zwischen
+          // "stornierbar", "bereits storniert" und "ist selbst ein Storno".
+          reversesJournalEntryId: true,
+          reversalReason: true,
+          reversedBy: { select: { id: true } },
           lines: {
             select: {
               id: true,

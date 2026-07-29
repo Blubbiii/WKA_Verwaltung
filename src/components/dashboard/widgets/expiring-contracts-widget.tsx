@@ -46,66 +46,18 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
         const data = await response.json();
         setContracts(data);
       } else {
-        // Use mock data if API is not available
-        setContracts([
-          {
-            id: "1",
-            title: "Pachtvertrag Flurstueck 12/3",
-            type: "Pacht",
-            expiryDate: "24.02.2026",
-            daysUntilExpiry: 19,
-            status: "critical",
-          },
-          {
-            id: "2",
-            title: "Wartungsvertrag Vestas",
-            type: "Wartung",
-            expiryDate: "15.03.2026",
-            daysUntilExpiry: 38,
-            status: "warning",
-          },
-          {
-            id: "3",
-            title: "Versicherung Windpark Nord",
-            type: "Versicherung",
-            expiryDate: "01.04.2026",
-            daysUntilExpiry: 55,
-            status: "normal",
-          },
-        ]);
+        // Kein Mock-Fallback: die erfundenen Verträge trugen Status
+        // "critical"/"warning" und lösten damit falschen Handlungsdruck aus.
+        setContracts([]);
+        setError(t("contractsNotAvailable"));
       }
     } catch {
-      // Use mock data on error
-      setContracts([
-        {
-          id: "1",
-          title: "Pachtvertrag Flurstueck 12/3",
-          type: "Pacht",
-          expiryDate: "24.02.2026",
-          daysUntilExpiry: 19,
-          status: "critical",
-        },
-        {
-          id: "2",
-          title: "Wartungsvertrag Vestas",
-          type: "Wartung",
-          expiryDate: "15.03.2026",
-          daysUntilExpiry: 38,
-          status: "warning",
-        },
-        {
-          id: "3",
-          title: "Versicherung Windpark Nord",
-          type: "Versicherung",
-          expiryDate: "01.04.2026",
-          daysUntilExpiry: 55,
-          status: "normal",
-        },
-      ]);
+      setContracts([]);
+      setError(t("contractsNotAvailable"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchContracts();

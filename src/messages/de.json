@@ -368,7 +368,24 @@
     "mailingsOverview": "Übersicht",
     "mailingTemplates": "Vorlagen",
     "emailSettings": "E-Mail-Einstellungen",
-    "notifications": "Benachrichtigungen"
+    "notifications": "Benachrichtigungen",
+    "energyTurbineImport": "Turbinen-Import",
+    "accountingBalanceSheet": "Bilanz",
+    "accountingAssetSchedule": "Anlagenspiegel",
+    "accountingCashflow": "Kapitalflussrechnung",
+    "accountingTradeTax": "Gewerbesteuer",
+    "accountingMultiParkPlanActual": "Soll-Ist Multi-Park",
+    "accountingYearEndClose": "Jahresabschluss durchführen",
+    "accountingPeriodLock": "Periodensperre",
+    "accountingReversalAudit": "Storno-Audit",
+    "accountingGobdExport": "GoBD-Export",
+    "accountingDatevExportFile": "DATEV-Export (Datei)",
+    "accountingAccountFlags": "Konten-Markierung",
+    "dunningStages": "Mahnstufen",
+    "bankUpdateRequests": "Bankdaten-Freigaben",
+    "fundAccess": "Fonds-Zugriff",
+    "hgbSystemSettings": "HGB-Einstellungen",
+    "taxCategoryTemplates": "Steuerkategorie-Vorlagen"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -400,7 +417,8 @@
     "sections": {
       "navigation": "Navigation",
       "quickActions": "Schnellaktionen",
-      "recent": "Zuletzt besucht"
+      "recent": "Zuletzt besucht",
+      "results": "Treffer"
     },
     "actions": {
       "newInvoice": "Neue Rechnung erstellen",
@@ -413,6 +431,15 @@
       "checkApprovals": "Genehmigungen prüfen",
       "runReminders": "Mahnlauf",
       "openDashboard": "Dashboard"
+    },
+    "searching": "Suche läuft …",
+    "types": {
+      "park": "Park",
+      "invoice": "Rechnung",
+      "contact": "Kontakt",
+      "contract": "Vertrag",
+      "fund": "Beteiligung",
+      "journal": "Buchung"
     }
   },
   "dashboard": {
@@ -640,7 +667,12 @@
         "emptySubtitle": "Schön! Keine offenen Punkte.",
         "unauthorizedHint": "Keine Berechtigung für die anstehenden Aktionen."
       },
-      "todayFocus": "Heute zu erledigen"
+      "todayFocus": "Heute zu erledigen",
+      "noDeadlines": "Keine anstehenden Fristen",
+      "deadlinesNotAvailable": "Fristen nicht verfügbar",
+      "daysLeft": "{count} Tage",
+      "activitiesNotAvailable": "Aktivitäten nicht verfügbar",
+      "contractsNotAvailable": "Auslaufende Verträge nicht verfügbar"
     },
     "parkHealth": {
       "statusDisturbance": "Störung",
@@ -3295,7 +3327,38 @@
       "selectFolder": "Ordner auswählen",
       "selectFolderHint": "Wählen Sie links einen Ordner um Dateien anzuzeigen",
       "downloadStarted": "Download gestartet",
-      "downloadFailed": "Download fehlgeschlagen"
+      "downloadFailed": "Download fehlgeschlagen",
+      "name": "Name",
+      "type": "Typ",
+      "size": "Größe",
+      "date": "Datum",
+      "amount": "Betrag",
+      "invoice": "Rechnung",
+      "preview": "Vorschau",
+      "download": "Herunterladen",
+      "noFiles": "Keine Dateien",
+      "uploadOrChooseFolder": "Laden Sie Dateien hoch oder wählen Sie einen anderen Ordner",
+      "noDocuments": "Keine Dokumente",
+      "selectAll": "Alle auswählen",
+      "deselectAll": "Auswahl aufheben",
+      "selectedCount": "{count} ausgewählt",
+      "clear": "Aufheben",
+      "paginationInfo": "{total} Dateien · Seite {page} von {totalPages}",
+      "folderPath": "Ordnerpfad",
+      "documentsRoot": "Dokumente",
+      "taxExport": "Steuerexport",
+      "taxExportInfo": "Exportiert alle Dokumente eines Parks für ein Jahr als ZIP-Archiv für den Steuerberater.",
+      "park": "Park",
+      "selectPark": "Park auswählen",
+      "documentsCount": "{count} Dokumente",
+      "year": "Jahr",
+      "noDataAvailable": "Keine Daten vorhanden",
+      "cancel": "Abbrechen",
+      "startExport": "Export starten",
+      "uploading": "Wird hochgeladen …",
+      "dragOrSelect": "Dateien hierher ziehen oder",
+      "select": "auswählen",
+      "filedTo": "Ablage: {park} · {year} · {category}"
     },
     "categories": {
       "CONTRACT": "Vertrag",
@@ -4593,7 +4656,28 @@
       "anhangLabel": "Anhang und Lagebericht",
       "anhangDesc": "Erläuterungen zum Jahresabschluss verfassen",
       "protokollLabel": "Gesellschafterbeschluss",
-      "protokollDesc": "Gewinnverwendung / Ergebnisverteilung beschließen"
+      "protokollDesc": "Gewinnverwendung / Ergebnisverteilung beschließen",
+      "section5Title": "5. Abschluss festschreiben",
+      "gewstLabel": "Gewerbesteuer-Erklärung vorbereiten",
+      "gewstDesc": "Hinzurechnungen und Kürzungen nach §8/§9 GewStG prüfen",
+      "gewstLinkLabel": "Gewerbesteuer",
+      "gobdLabel": "GoBD-Datenträgerüberlassung erzeugen",
+      "gobdDesc": "Z3-Export für die Betriebsprüfung bereitstellen",
+      "gobdLinkLabel": "GoBD-Export",
+      "bilanzLinkLabel": "Bilanz",
+      "guvLinkLabel": "GuV",
+      "anlagenspiegelLabel": "Anlagenspiegel erstellen",
+      "anlagenspiegelDesc": "Entwicklung des Anlagevermögens nach §268 Abs. 2 HGB",
+      "anlagenspiegelLinkLabel": "Anlagenspiegel",
+      "periodensperreLabel": "Perioden sperren",
+      "periodensperreDesc": "Abgeschlossene Monate gegen nachträgliche Buchungen sperren",
+      "periodensperreLinkLabel": "Periodensperre",
+      "yearEndCloseLabel": "Jahresabschluss durchführen",
+      "yearEndCloseDesc": "Abschlussbuchungen erzeugen und Geschäftsjahr schließen",
+      "yearEndCloseLinkLabel": "Abschluss starten",
+      "stornoAuditLabel": "Storno-Audit-Trail prüfen",
+      "stornoAuditDesc": "Alle Generalumkehrungen des Jahres für die Betriebsprüfung sichten",
+      "stornoAuditLinkLabel": "Storno-Audit"
     },
     "bankingImport": {
       "importBtn": "Kontoauszug importieren",
@@ -7156,7 +7240,8 @@
       "previewToast": "Vorschau: {count} Rechnungen wuerden erstellt",
       "createdToast": "{count} Rechnungen erstellt",
       "yes": "Ja",
-      "no": "Nein"
+      "no": "Nein",
+      "loadRuleError": "Abrechnungsregel konnte nicht geladen werden"
     },
     "documentRouting": {
       "title": "Dokument-Routing",
@@ -8849,7 +8934,8 @@
         "changePassword": "Passwort ändern",
         "changePasswordDesc": "Aktualisieren Sie Ihr Anmeldepasswort",
         "comingSoon": "Funktion folgt",
-        "lastLogin": "Letzte Anmeldung"
+        "lastLogin": "Letzte Anmeldung",
+        "lastLoginUnknown": "Noch keine Anmeldung erfasst"
       },
       "privacy": {
         "title": "Datenschutz (DSGVO)",
@@ -9683,7 +9769,9 @@
     },
     "status": {
       "draft": "Entwurf",
-      "posted": "Gebucht"
+      "posted": "Gebucht",
+      "reversed": "Storniert",
+      "reversal": "Storno"
     },
     "dialog": {
       "view": "Buchung ansehen",
@@ -9741,6 +9829,17 @@
       "pageOf": "Seite {page} von {totalPages} ({totalCount} Einträge)",
       "prev": "Zurück",
       "next": "Weiter"
+    },
+    "reverse": {
+      "title": "Buchung stornieren",
+      "info": "Es wird eine Gegenbuchung mit getauschten Soll- und Haben-Beträgen erzeugt. Die Originalbuchung bleibt unverändert bestehen (GoBD §146 Abs. 4).",
+      "reasonLabel": "Storno-Begründung",
+      "reasonPlaceholder": "z. B. Falsches Gegenkonto gebucht",
+      "reasonTooShort": "Mindestens {min} Zeichen erforderlich",
+      "confirm": "Stornieren",
+      "success": "Buchung storniert",
+      "error": "Storno fehlgeschlagen",
+      "pendingApproval": "Vier-Augen-Prinzip: der Storno wartet auf eine zweite Freigabe."
     }
   },
   "serviceEvents": {

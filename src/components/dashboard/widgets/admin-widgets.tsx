@@ -111,30 +111,19 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
         const data = await response.json();
         setStatus(data);
       } else {
-        // Use mock data if API is not available
-        setStatus({
-          status: "healthy",
-          database: "connected",
-          storage: "available",
-          uptime: "14 Tage, 7 Stunden",
-          version: "1.0.0",
-          lastCheck: new Date().toISOString(),
-        });
+        // NIEMALS "healthy" als Fallback: ein Health-Widget, das Gesundheit
+        // meldet WEIL es die Status-API nicht erreicht, arbeitet gegen seinen
+        // eigenen Zweck. Unerreichbar ist ein Befund, kein Normalzustand.
+        setStatus(null);
+        setError(t("statusNotAvailable"));
       }
     } catch {
-      // Use mock data on error
-      setStatus({
-        status: "healthy",
-        database: "connected",
-        storage: "available",
-        uptime: "14 Tage, 7 Stunden",
-        version: "1.0.0",
-        lastCheck: new Date().toISOString(),
-      });
+      setStatus(null);
+      setError(t("statusNotAvailable"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchStatus();
@@ -227,26 +216,18 @@ export function UserStatsWidget({ className }: UserStatsWidgetProps) {
         const data = await response.json();
         setStats(data);
       } else {
-        // Use mock data if API is not available
-        setStats({
-          totalUsers: 45,
-          activeToday: 12,
-          newThisMonth: 3,
-          adminCount: 2,
-        });
+        // Kein Mock-Fallback — erfundene Nutzerzahlen sind von echten nicht
+        // unterscheidbar.
+        setStats(null);
+        setError(t("statsNotAvailable"));
       }
     } catch {
-      // Use mock data on error
-      setStats({
-        totalUsers: 45,
-        activeToday: 12,
-        newThisMonth: 3,
-        adminCount: 2,
-      });
+      setStats(null);
+      setError(t("statsNotAvailable"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchStats();

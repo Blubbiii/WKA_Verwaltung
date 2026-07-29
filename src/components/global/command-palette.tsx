@@ -3,10 +3,12 @@
 /**
  * Global Command Palette (Cmd+K / Ctrl+K)
  *
- * Strukturiertes Modal mit drei Sektionen:
+ * Strukturiertes Modal mit vier Sektionen:
  *   1. Recent     — letzte 5 besuchte Pages aus localStorage
- *   2. Quick Actions — kuratierte Liste mit ~10 Schnellaktionen
- *   3. Navigation — alle Items aus nav-config.ts (Permission/Feature-gefiltert)
+ *   2. Treffer    — Entitaeten aus /api/quick-search (Parks, Rechnungen,
+ *                   Kontakte, Vertraege, Beteiligungen, Buchungen)
+ *   3. Quick Actions — kuratierte Liste mit ~10 Schnellaktionen
+ *   4. Navigation — alle Items aus nav-config.ts (Permission/Feature-gefiltert)
  *
  * Such-Logik: Fuzzy-Match auf Title + titleKey + Tag-Aliases (case-insensitive).
  * Keyboard: ↑/↓ wechselt Selection (durch cmdk), Enter führt aus, Esc schliesst.
@@ -16,6 +18,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Command } from "cmdk";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import {
   Search,
@@ -32,6 +35,10 @@ import {
   ShieldCheck,
   Bell,
   LayoutDashboard,
+  Wind,
+  Users,
+  Building2,
+  BookOpen,
 } from "lucide-react";
 import { navGroups, type NavItem, type NavChild } from "@/config/nav-config";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -163,6 +170,40 @@ function flattenNav(): FlatNavEntry[] {
 }
 
 // ---------------------------------------------------------------------------
+// Entity search (/api/quick-search) — der Endpunkt existierte, hatte aber
+// keinen einzigen Aufrufer. Ohne ihn fand Cmd+K nur statische Nav-Eintraege.
+// ---------------------------------------------------------------------------
+
+/** Server-seitig gematcht — mindestens 2 Zeichen, sonst antwortet die API leer. */
+const SEARCH_MIN_CHARS = 2;
+const SEARCH_DEBOUNCE_MS = 250;
+
+type QuickSearchType =
+  | "park"
+  | "invoice"
+  | "contact"
+  | "contract"
+  | "fund"
+  | "journal";
+
+interface QuickSearchResult {
+  type: QuickSearchType;
+  id: string;
+  title: string;
+  subtitle: string;
+  href: string;
+}
+
+const RESULT_ICONS: Record<QuickSearchType, React.ElementType> = {
+  park: Wind,
+  invoice: Receipt,
+  contact: Users,
+  contract: FileText,
+  fund: Building2,
+  journal: BookOpen,
+};
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -228,6 +269,33 @@ export function CommandPalette() {
     });
   }, [flatNav, hasPermission, isFeatureEnabled, permsLoaded]);
 
+  // Debounced query term — verhindert einen Request pro Tastenanschlag.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  // /api/quick-search verlangt parks:read — ohne das Recht gar nicht erst fragen.
+  const maySearchEntities = permsLoaded && hasPermission("parks:read");
+  const searchEnabled =
+    open && maySearchEntities && debouncedSearch.length >= SEARCH_MIN_CHARS;
+
+  const { data: entityResults = [], isFetching: entitiesLoading } = useQuery({
+    queryKey: ["/api/quick-search", debouncedSearch],
+    enabled: searchEnabled,
+    staleTime: 30_000,
+    queryFn: async ({ signal }) => {
+      const res = await fetch(
+        `/api/quick-search?q=${encodeURIComponent(debouncedSearch)}&limit=10`,
+        { signal },
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data = (await res.json()) as { results?: QuickSearchResult[] };
+      return data.results ?? [];
+    },
+  });
+
   const navigate = useCallback(
     (href: string) => {
       setOpen(false);
@@ -280,9 +348,12 @@ export function CommandPalette() {
           </div>
 
           <Command.List className="max-h-[60vh] overflow-y-auto p-2">
-            <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-              {t("empty")}
-            </Command.Empty>
+            {/* Waehrend die Entitaetssuche laeuft kein "Nichts gefunden" zeigen */}
+            {!(searchEnabled && entitiesLoading) && (
+              <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
+                {t("empty")}
+              </Command.Empty>
+            )}
 
             {/* Recent */}
             {recent.length > 0 && !search && (
@@ -303,6 +374,47 @@ export function CommandPalette() {
                   </Command.Item>
                 ))}
               </Command.Group>
+            )}
+
+            {/* Entity results — server-side gematcht */}
+            {searchEnabled && entityResults.length > 0 && (
+              <Command.Group
+                heading={t("sections.results")}
+                className="text-xs text-muted-foreground font-semibold uppercase tracking-wide px-2 py-1.5"
+              >
+                {entityResults.map((r) => {
+                  const Icon = RESULT_ICONS[r.type] ?? FileText;
+                  return (
+                    <Command.Item
+                      key={`result-${r.type}-${r.id}`}
+                      // debouncedSearch im value: die Treffer sind bereits
+                      // server-seitig gefiltert (u. a. auf Felder, die hier gar
+                      // nicht angezeigt werden). Ein zweiter Client-Filter
+                      // wuerde genau diese Treffer wieder verwerfen.
+                      value={`${debouncedSearch} ${r.title} ${r.subtitle}`}
+                      onSelect={() => navigate(r.href)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer data-[selected=true]:bg-accent transition-colors"
+                    >
+                      <Icon className="h-4 w-4 text-primary shrink-0" aria-hidden />
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate">{r.title}</span>
+                        {r.subtitle && (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {r.subtitle}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground shrink-0">
+                        {t(`types.${r.type}`)}
+                      </span>
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+            )}
+
+            {searchEnabled && entitiesLoading && entityResults.length === 0 && (
+              <p className="px-3 py-2 text-xs text-muted-foreground">{t("searching")}</p>
             )}
 
             {/* Quick Actions */}

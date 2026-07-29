@@ -58,66 +58,18 @@ export function ActivitiesWidget({ className }: ActivitiesWidgetProps) {
           }))
         );
       } else {
-        // Use mock data if API is not available
-        setActivities([
-          {
-            id: "1",
-            action: "Neue Abstimmung erstellt",
-            detail: "Jahresabschluss 2025 - Gesellschaft Alpha",
-            time: "vor 2 Stunden",
-          },
-          {
-            id: "2",
-            action: "Dokument hochgeladen",
-            detail: "Monatsbericht Januar 2026",
-            time: "vor 5 Stunden",
-          },
-          {
-            id: "3",
-            action: "Gutschrift erstellt",
-            detail: "Ausschuettung Q4/2025 - 15 Gesellschafter",
-            time: "gestern",
-          },
-          {
-            id: "4",
-            action: "Vertrag aktualisiert",
-            detail: "Wartungsvertrag Enercon - Verlaengert bis 2028",
-            time: "vor 2 Tagen",
-          },
-        ]);
+        // Kein Mock-Fallback: eine erfundene Aktivitaetshistorie ist als
+        // Audit-naher Verlauf besonders irrefuehrend.
+        setActivities([]);
+        setError(t("activitiesNotAvailable"));
       }
     } catch {
-      // Use mock data on error
-      setActivities([
-        {
-          id: "1",
-          action: "Neue Abstimmung erstellt",
-          detail: "Jahresabschluss 2025 - Gesellschaft Alpha",
-          time: "vor 2 Stunden",
-        },
-        {
-          id: "2",
-          action: "Dokument hochgeladen",
-          detail: "Monatsbericht Januar 2026",
-          time: "vor 5 Stunden",
-        },
-        {
-          id: "3",
-          action: "Gutschrift erstellt",
-          detail: "Ausschuettung Q4/2025 - 15 Gesellschafter",
-          time: "gestern",
-        },
-        {
-          id: "4",
-          action: "Vertrag aktualisiert",
-          detail: "Wartungsvertrag Enercon - Verlaengert bis 2028",
-          time: "vor 2 Tagen",
-        },
-      ]);
+      setActivities([]);
+      setError(t("activitiesNotAvailable"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchActivities();

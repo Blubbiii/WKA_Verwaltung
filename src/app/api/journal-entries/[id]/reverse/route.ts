@@ -180,7 +180,9 @@ export async function POST(
             type: "SYSTEM",
             title: "Ihre Buchung wurde storniert",
             message: `Buchung "${original.description}" wurde von ${deciderLabel} storniert. Begründung: ${reason}`,
-            link: `/journal-entries/${result.reversalId}`,
+            // Es gibt keine /journal-entries/[id]-Detailseite — der Link ging
+            // ins Leere. Die Liste ist das erreichbare Ziel.
+            link: "/journal-entries",
             referenceType: "JournalEntry",
             referenceId: result.reversalId,
           },

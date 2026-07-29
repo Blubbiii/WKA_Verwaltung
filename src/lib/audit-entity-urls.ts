@@ -3,12 +3,21 @@
  *
  * QW-5 / RA-5: erlaubt es, im Audit-Log-Viewer direkt zur Detail-Seite
  * einer geänderten Entität zu springen.
+ *
+ * WICHTIG: Jeder hier zurückgegebene Pfad MUSS im App-Router existieren.
+ * Die API hängt ihn an jeden Audit-Eintrag, die UI rendert ihn als <Link>.
+ * Ein Pfad ohne `page.tsx` ist ein 404 beim Klick — lieber `null`
+ * zurückgeben, dann rendert die UI reinen Text statt eines toten Links.
+ *
+ * Entitäten ohne eigene Route (Turbine, Plot, Shareholder, TurbineOperator)
+ * werden nur innerhalb ihrer Elternseite dargestellt; ohne die Eltern-ID
+ * lässt sich kein gültiges Ziel bilden → bewusst `null`.
  */
 import type { AuditEntityType } from "./audit-types";
 
 /**
  * Returns the canonical detail-route for an audit-log entity,
- * or `null` if the entity has no dedicated detail page.
+ * or `null` if the entity has no reachable page.
  */
 export function getAuditEntityHref(
   entityType: AuditEntityType | string,
@@ -18,62 +27,65 @@ export function getAuditEntityHref(
 
   // Mapping table — keys mirror AuditEntityType values.
   switch (entityType) {
+    // ---- Entities with a real detail page ----
     case "Park":
       return `/parks/${entityId}`;
-    case "Turbine":
-      return `/anlagen/${entityId}`;
-    case "TurbineProduction":
-      return `/anlagen/produktion/${entityId}`;
     case "Fund":
-      return `/gesellschaften/${entityId}`;
-    case "FundHierarchy":
-      return `/gesellschaften?hierarchy=${entityId}`;
-    case "Shareholder":
-      return `/gesellschafter/${entityId}`;
-    case "Plot":
-      return `/flurstuecke/${entityId}`;
+      return `/funds/${entityId}`;
     case "Lease":
-      return `/pachtvertraege/${entityId}`;
+      return `/leases/${entityId}`;
     case "Contract":
-      return `/vertraege/${entityId}`;
-    case "Document":
-      return `/dokumente/${entityId}`;
+      return `/contracts/${entityId}`;
     case "Invoice":
-      return `/rechnungen/${entityId}`;
+      return `/invoices/${entityId}`;
     case "IncomingInvoice":
-      return `/buchhaltung/eingangsrechnungen/${entityId}`;
-    case "JournalEntry":
-      return `/buchhaltung/journal/${entityId}`;
-    case "BankTransaction":
-      return `/buchhaltung/banktransaktionen/${entityId}`;
+      return `/inbox/${entityId}`;
     case "Vote":
-      return `/abstimmungen/${entityId}`;
+      return `/votes/${entityId}`;
     case "ServiceEvent":
       return `/service-events/${entityId}`;
     case "News":
       return `/news/${entityId}`;
     case "Person":
-      return `/personen/${entityId}`;
-    case "User":
-      return `/admin/users/${entityId}`;
-    case "Role":
-      return `/admin/roles/${entityId}`;
-    case "Tenant":
-      return `/admin/tenants/${entityId}`;
-    case "TurbineOperator":
-      return `/wka-betreiber/${entityId}`;
+      return `/crm/contacts/${entityId}`;
     case "EnergySettlement":
-      return `/energie/abrechnungen/${entityId}`;
-    case "EnergySettlementItem":
-      return `/energie/abrechnungen?item=${entityId}`;
+      return `/energy/settlements/${entityId}`;
     case "LeaseRevenueSettlement":
-      return `/pacht/abrechnungen/${entityId}`;
+      return `/leases/settlement/${entityId}`;
     case "ParkCostAllocation":
-      return `/parks/kostenaufteilung/${entityId}`;
-    case "MassCommunication":
-      return `/kommunikation/${entityId}`;
+      return `/leases/cost-allocation/${entityId}`;
+    case "TurbineProduction":
+      return `/energy/productions/${entityId}/edit`;
+
+    // ---- Only a list page exists — besser als ein 404 ----
+    case "FundHierarchy":
+      return "/funds";
+    case "Document":
+      return "/documents";
+    case "JournalEntry":
+      return "/journal-entries";
+    case "BankTransaction":
+      return "/buchhaltung/banking";
+    case "EnergySettlementItem":
+      return "/energy/settlements";
     case "ArchivedDocument":
-      return `/archiv/${entityId}`;
+      return "/admin/archive";
+    case "MassCommunication":
+      return "/kommunikation";
+    case "Role":
+      return "/admin/roles";
+    // Benutzerverwaltung liegt auf der Mandantenseite (UserManagement).
+    case "User":
+    case "Tenant":
+      return "/admin/tenants";
+
+    // ---- Kein erreichbares Ziel (nur innerhalb der Elternseite sichtbar) ----
+    case "Turbine":
+    case "Plot":
+    case "Shareholder":
+    case "TurbineOperator":
+      return null;
+
     default:
       return null;
   }

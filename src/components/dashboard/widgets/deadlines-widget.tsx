@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Calendar, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +26,7 @@ interface DeadlinesWidgetProps {
 // =============================================================================
 
 export function DeadlinesWidget({ className }: DeadlinesWidgetProps) {
+  const t = useTranslations("dashboard.widgets");
   const [deadlines, setDeadlines] = useState<Deadline[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,60 +42,18 @@ export function DeadlinesWidget({ className }: DeadlinesWidgetProps) {
         const data = await response.json();
         setDeadlines(data);
       } else {
-        // Use mock data if API is not available
-        setDeadlines([
-          {
-            id: "1",
-            title: "Pachtvertrag Flurstueck 12/3",
-            date: "24.02.2026",
-            type: "Kuendigung",
-            daysLeft: 30,
-          },
-          {
-            id: "2",
-            title: "Wartungsvertrag Vestas",
-            date: "15.03.2026",
-            type: "Verlaengerung",
-            daysLeft: 49,
-          },
-          {
-            id: "3",
-            title: "Versicherung Windpark Nord",
-            date: "01.04.2026",
-            type: "Erneuerung",
-            daysLeft: 66,
-          },
-        ]);
+        // Kein Mock-Fallback: erfundene Fristen sind vom Echtbestand nicht
+        // unterscheidbar und der User verpasst genau die Frist, die fehlt.
+        setDeadlines([]);
+        setError(t("deadlinesNotAvailable"));
       }
     } catch {
-      // Use mock data on error
-      setDeadlines([
-        {
-          id: "1",
-          title: "Pachtvertrag Flurstueck 12/3",
-          date: "24.02.2026",
-          type: "Kuendigung",
-          daysLeft: 30,
-        },
-        {
-          id: "2",
-          title: "Wartungsvertrag Vestas",
-          date: "15.03.2026",
-          type: "Verlaengerung",
-          daysLeft: 49,
-        },
-        {
-          id: "3",
-          title: "Versicherung Windpark Nord",
-          date: "01.04.2026",
-          type: "Erneuerung",
-          daysLeft: 66,
-        },
-      ]);
+      setDeadlines([]);
+      setError(t("deadlinesNotAvailable"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchDeadlines();
@@ -128,7 +88,7 @@ export function DeadlinesWidget({ className }: DeadlinesWidgetProps) {
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center text-muted-foreground">
           <Calendar className="h-8 w-8 mx-auto mb-2" />
-          <p className="text-sm">Keine anstehenden Fristen</p>
+          <p className="text-sm">{t("noDeadlines")}</p>
         </div>
       </div>
     );
@@ -158,7 +118,7 @@ export function DeadlinesWidget({ className }: DeadlinesWidgetProps) {
                   : "bg-green-500/10 text-green-600"
             )}
           >
-            {deadline.daysLeft} Tage
+            {t("daysLeft", { count: deadline.daysLeft })}
           </div>
         </div>
       ))}

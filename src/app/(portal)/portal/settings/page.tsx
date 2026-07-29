@@ -57,6 +57,8 @@ export default function SettingsPage() {
   const hydratedRef = useRef(false);
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Real value from User.lastLoginAt — security-relevant, never a placeholder.
+  const [lastLogin, setLastLogin] = useState<Date | null>(null);
 
   // Load persisted notification prefs on mount
   useEffect(() => {
@@ -68,6 +70,10 @@ export default function SettingsPage() {
         const data = await res.json();
         const n = data?.preferences?.notifications ?? {};
         if (cancelled) return;
+        if (data?.lastLoginAt) {
+          const parsed = new Date(data.lastLoginAt);
+          if (!Number.isNaN(parsed.getTime())) setLastLogin(parsed);
+        }
         setNotifications({
           newVote: typeof n.newVote === "boolean" ? n.newVote : true,
           newDistribution:
@@ -156,9 +162,6 @@ export default function SettingsPage() {
       setDeleting(false);
     }
   }
-
-  // Mock last login date
-  const lastLogin = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000); // 2 days ago
 
   // formatDate with datetime → use central formatDateTime from @/lib/format
   const formatDate = formatDateTime;
@@ -358,7 +361,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-base font-medium">{t("security.lastLogin")}</p>
                 <p className="text-sm text-muted-foreground">
-                  {formatDate(lastLogin)}
+                  {lastLogin ? formatDate(lastLogin) : t("security.lastLoginUnknown")}
                 </p>
               </div>
             </div>

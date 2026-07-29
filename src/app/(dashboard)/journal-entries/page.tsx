@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDate, LOCALE_DE } from "@/lib/format";
@@ -16,6 +17,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
 import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
@@ -77,6 +79,11 @@ interface JournalEntry {
   status: "DRAFT" | "POSTED";
   createdAt: string;
   createdBy: { firstName: string | null; lastName: string | null } | null;
+  /** gesetzt, wenn dieser Eintrag SELBST die Storno-Buchung eines anderen ist */
+  reversesJournalEntryId?: string | null;
+  reversalReason?: string | null;
+  /** gesetzt, wenn dieser Eintrag bereits storniert wurde */
+  reversedBy?: { id: string } | null;
   lines: {
     id: string;
     lineNumber: number;
@@ -497,6 +504,116 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
 }
 
 // ============================================================================
+// STORNO DIALOG (Generalumkehr, GoBD §146 AO)
+// ============================================================================
+
+/** Serverseitiges Minimum aus reverseSchema — hier gespiegelt, damit der
+ *  User die Begründung nicht erst nach einem 400 nachbessern muss. */
+const REVERSAL_REASON_MIN = 10;
+
+interface ReverseDialogProps {
+  entry: JournalEntry | null;
+  onClose: () => void;
+  onReversed: () => void;
+}
+
+function ReverseDialog({ entry, onClose, onReversed }: ReverseDialogProps) {
+  const t = useTranslations("journalEntries");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (entry) setReason("");
+  }, [entry]);
+
+  const tooShort = reason.trim().length < REVERSAL_REASON_MIN;
+
+  async function handleSubmit() {
+    if (!entry || tooShort) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/journal-entries/${entry.id}/reverse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+
+      // 202: Vier-Augen-Prinzip — der Storno wartet auf eine zweite Freigabe.
+      if (res.status === 202 && data?.status === "PENDING_APPROVAL") {
+        toast.info(data.message ?? t("reverse.pendingApproval"));
+        onReversed();
+        return;
+      }
+      if (!res.ok) {
+        toast.error(data?.message ?? data?.error ?? t("reverse.error"));
+        return;
+      }
+      toast.success(t("reverse.success"));
+      onReversed();
+    } catch {
+      toast.error(t("dialog.connectionError"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open={!!entry} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("reverse.title")}</DialogTitle>
+        </DialogHeader>
+
+        {entry && (
+          <div className="space-y-4">
+            <div className="rounded-md border bg-muted/40 p-3 text-sm">
+              <p className="font-medium">{entry.description}</p>
+              <p className="text-muted-foreground">
+                {formatDate(entry.entryDate)}
+                {entry.reference ? ` · ${entry.reference}` : ""}
+              </p>
+            </div>
+
+            <p className="text-sm text-muted-foreground">{t("reverse.info")}</p>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="reversal-reason">{t("reverse.reasonLabel")}</Label>
+              <Input
+                id="reversal-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={t("reverse.reasonPlaceholder")}
+                maxLength={500}
+              />
+              {tooShort && reason.length > 0 && (
+                <p className="text-xs text-destructive">
+                  {t("reverse.reasonTooShort", { min: REVERSAL_REASON_MIN })}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            {t("dialog.cancel")}
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSubmit}
+            disabled={submitting || tooShort}
+          >
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t("reverse.confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
 // MAIN PAGE
 // ============================================================================
 
@@ -507,8 +624,9 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-export default function JournalEntriesPage() {
+function JournalEntriesPageInner() {
   const t = useTranslations("journalEntries");
+  const searchParams = useSearchParams();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -516,6 +634,7 @@ export default function JournalEntriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reversingEntry, setReversingEntry] = useState<JournalEntry | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
 
@@ -564,6 +683,32 @@ export default function JournalEntriesPage() {
   useEffect(() => {
     setPage(1);
   }, [statusFilter, yearFilter]);
+
+  // Deep-Link ?id=<uuid> (Command Palette, Benachrichtigungen): die Buchung
+  // liegt oft nicht auf der aktuellen Seite oder im gefilterten Jahr — deshalb
+  // direkt nachladen statt in der Liste zu suchen.
+  const deepLinkId = searchParams.get("id");
+  const deepLinkHandled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!deepLinkId || deepLinkHandled.current === deepLinkId) return;
+    deepLinkHandled.current = deepLinkId;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/journal-entries/${deepLinkId}`);
+        if (!res.ok) return;
+        const entry = (await res.json()) as JournalEntry;
+        if (cancelled) return;
+        setEditingEntry(entry);
+        setDialogOpen(true);
+      } catch {
+        // Deep-Link ist ein Komfort-Pfad — die Liste bleibt nutzbar.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [deepLinkId]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -816,15 +961,23 @@ export default function JournalEntriesPage() {
                         {formatCurrency(totalDebit)}
                       </TableCell>
                       <TableCell>
-                        {entry.status === "POSTED" ? (
-                          <Badge variant="success">
-                            {t("status.posted")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="warning">
-                            {t("status.draft")}
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {entry.status === "POSTED" ? (
+                            <Badge variant="success">
+                              {t("status.posted")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="warning">
+                              {t("status.draft")}
+                            </Badge>
+                          )}
+                          {entry.reversedBy && (
+                            <Badge variant="destructive">{t("status.reversed")}</Badge>
+                          )}
+                          {entry.reversesJournalEntryId && (
+                            <Badge variant="outline">{t("status.reversal")}</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
@@ -860,6 +1013,26 @@ export default function JournalEntriesPage() {
                               </Button>
                             </>
                           )}
+                          {/* Storno: der einzige Weg, eine gebuchte
+                              Fehlbuchung zu korrigieren. DELETE ist auf DRAFT
+                              beschraenkt (GoBD §146 Abs. 4). */}
+                          {entry.status === "POSTED" &&
+                            !entry.reversedBy &&
+                            !entry.reversesJournalEntryId && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                title={t("reverse.title")}
+                                aria-label={t("reverse.title")}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReversingEntry(entry);
+                                }}
+                              >
+                                <Undo2 className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -930,6 +1103,21 @@ export default function JournalEntriesPage() {
         onSaved={() => { setDialogOpen(false); load(); }}
         editing={editingEntry}
       />
+
+      <ReverseDialog
+        entry={reversingEntry}
+        onClose={() => setReversingEntry(null)}
+        onReversed={() => { setReversingEntry(null); load(); }}
+      />
     </div>
+  );
+}
+
+// useSearchParams verlangt eine Suspense-Grenze (Next.js App-Router).
+export default function JournalEntriesPage() {
+  return (
+    <Suspense fallback={null}>
+      <JournalEntriesPageInner />
+    </Suspense>
   );
 }
