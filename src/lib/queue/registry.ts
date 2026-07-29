@@ -389,6 +389,42 @@ export const getJobs = async (options: GetJobsOptions): Promise<PaginatedJobs> =
 };
 
 /**
+ * Prueft, ob ein Job zum Mandanten des Aufrufers gehoert.
+ *
+ * F19 (Security): Die Admin-Jobs-Routen nutzen `requireAdmin()`, das nur die
+ * Rollen-Hierarchie prueft und KEINEN Mandanten-Scope setzt. `findJobById`
+ * iteriert ueber alle Queues aller Mandanten und `serializeJob` gibt
+ * `job.data` vollstaendig zurueck. Ein Admin von Mandant A konnte damit
+ * fremde Empfaenger-Adressen, Rechnungspositionen und Betraege lesen und
+ * `retry`/`DELETE` mandantenuebergreifend ausfuehren.
+ *
+ * Alle WPM-Worker legen `tenantId` an die Wurzel von `job.data` — dieselbe
+ * Konvention, auf die sich auch die Dead-Letter-Persistenz stuetzt.
+ *
+ * @param job         der gefundene BullMQ-Job
+ * @param tenantId    Mandant des Aufrufers
+ * @param crossTenant true fuer Superadmins, die bewusst alles sehen duerfen
+ */
+export const jobBelongsToTenant = (
+  job: Job,
+  tenantId: string | undefined,
+  crossTenant: boolean,
+): boolean => {
+  if (crossTenant) return true;
+  if (!tenantId) return false;
+
+  const data = (job.data ?? {}) as Record<string, unknown>;
+  const jobTenantId = typeof data.tenantId === "string" ? data.tenantId : null;
+
+  // Jobs ohne tenantId bzw. mit "__all__" sind mandantenuebergreifende
+  // Systemjobs (z. B. der globale Recurring-Invoice-Lauf). Die bleiben den
+  // Superadmins vorbehalten — fail closed.
+  if (!jobTenantId || jobTenantId === "__all__") return false;
+
+  return jobTenantId === tenantId;
+};
+
+/**
  * Find a job by ID across all queues
  */
 export const findJobById = async (

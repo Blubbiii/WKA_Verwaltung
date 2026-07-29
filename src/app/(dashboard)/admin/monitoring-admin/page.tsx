@@ -7,12 +7,14 @@ import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, BarChart2, ClipboardList } from "lucide-react";
+import { Activity, AlertTriangle, BarChart2, ClipboardList } from "lucide-react";
 
 // Lazy-loaded tab content
 const MonitoringContent = dynamic(() => import("./tabs/monitoring"), { ssr: false });
 const AnalyticsContent = dynamic(() => import("./tabs/analytics"), { ssr: false });
 const AuditContent = dynamic(() => import("./tabs/audit"), { ssr: false });
+// F18: Lesepfad fuer die Dead-Letter-Queue — vorher wurde FailedJob nie gelesen.
+const FailedJobsContent = dynamic(() => import("./tabs/failed-jobs"), { ssr: false });
 
 function LoadingSkeleton() {
   return (
@@ -55,6 +57,10 @@ function MonitoringAdminPageInner() {
             <ClipboardList className="h-4 w-4" />
             {t("tabAudit")}
           </TabsTrigger>
+          <TabsTrigger value="failed-jobs" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            {t("tabFailedJobs")}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="monitoring">
           <Suspense fallback={<LoadingSkeleton />}><MonitoringContent /></Suspense>
@@ -64,6 +70,9 @@ function MonitoringAdminPageInner() {
         </TabsContent>
         <TabsContent value="audit">
           <Suspense fallback={<LoadingSkeleton />}><AuditContent /></Suspense>
+        </TabsContent>
+        <TabsContent value="failed-jobs">
+          <Suspense fallback={<LoadingSkeleton />}><FailedJobsContent /></Suspense>
         </TabsContent>
       </Tabs>
     </div>

@@ -6927,7 +6927,8 @@
       "description": "System-Monitoring, Analytics und Audit-Trail",
       "tabMonitoring": "Monitoring",
       "tabAnalytics": "Analytics",
-      "tabAudit": "Audit-Logs"
+      "tabAudit": "Audit-Logs",
+      "tabFailedJobs": "Fehlgeschlagene Jobs"
     },
     "systemAdmin": {
       "title": "System",
@@ -8403,6 +8404,41 @@
       "saveDirty": "Speichern *",
       "emptyTitle": "Keine Bausteine vorhanden",
       "emptyHint": "Ziehen Sie Bausteine aus der linken Leiste hierher"
+    },
+    "failedJobs": {
+      "openTitle": "Offene Fehlschläge",
+      "noOpenFailures": "Keine offenen Fehlschläge",
+      "openCount": "{count} offen",
+      "filterQueue": "Queue",
+      "allQueues": "Alle Queues",
+      "filterOpen": "Nur offene",
+      "filterResolved": "Nur erledigte",
+      "filterAll": "Alle",
+      "empty": "Keine Einträge für diesen Filter",
+      "loadError": "Fehlgeschlagene Jobs konnten nicht geladen werden",
+      "table": {
+        "failedAt": "Zeitpunkt",
+        "queue": "Queue",
+        "job": "Job",
+        "attempts": "Versuche",
+        "error": "Fehler"
+      },
+      "statusOpen": "Offen",
+      "reopen": "Wieder öffnen",
+      "markResolved": "Als erledigt markieren",
+      "markedResolved": "Als erledigt markiert",
+      "markedOpen": "Wieder als offen markiert",
+      "updateFailed": "Status konnte nicht geändert werden",
+      "detail": {
+        "error": "Fehlermeldung",
+        "payload": "Job-Daten",
+        "stackTrace": "Stacktrace",
+        "notePlaceholder": "Notiz zur Erledigung (optional)",
+        "resolvedAt": "Erledigt am {date}"
+      },
+      "pagination": "Seite {page} von {totalPages} · {total} Einträge",
+      "prev": "Zurück",
+      "next": "Weiter"
     }
   },
   "portal": {

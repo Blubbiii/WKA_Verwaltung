@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { emailLogger } from '@/lib/logger';
-import { enqueueEmail, EmailJobData, EmailTemplate as QueueEmailTemplate } from '@/lib/queue';
+import { enqueueEmail, EmailJobData } from '@/lib/queue';
 import { getCachedProvider, clearProviderCache, SmtpProvider } from './provider';
 import { renderEmail, type SupportedTemplateName } from './renderer';
 import { getEmailConfig } from '@/lib/config';
@@ -53,23 +53,17 @@ type TemplatePropsMap = {
   'report-ready': Omit<ReportReadyEmailProps, keyof import('./types').BaseTemplateProps>;
 };
 
-// Map EmailTemplateName to QueueEmailTemplate for queue integration
-const templateNameToQueue: Record<EmailTemplateName, QueueEmailTemplate> = {
-  welcome: 'welcome',
-  'password-reset': 'password-reset',
-  'new-invoice': 'invoice-notification',
-  'invoice-reminder': 'invoice-reminder',
-  'vote-invitation': 'vote-invitation',
-  'tenant-admin-invitation': 'welcome',
-  'portal-invitation': 'portal-invitation',
-  'vote-reminder': 'vote-reminder',
-  'vote-result': 'vote-result',
-  'document-shared': 'document-shared',
-  'settlement-notification': 'settlement-notification',
-  'news-announcement': 'news-announcement',
-  'service-event': 'service-event-notification',
-  'report-ready': 'report-ready',
-};
+// F3: Hier stand eine Uebersetzungstabelle EmailTemplateName -> Queue-Template.
+// Sie existierte nur, weil die Queue eine eigene, abweichende Namensmenge
+// pflegte — und sie uebersetzte falsch: 'new-invoice' -> 'invoice-notification'
+// (kein solches Template), 'service-event' -> 'service-event-notification'
+// (dito) und 'tenant-admin-invitation' -> 'welcome', also eine voellig andere
+// E-Mail. Der Zugriff endete zudem auf `|| 'welcome'`, sodass ein unbekannter
+// Name still eine Willkommensmail verschickt haette.
+//
+// Die Queue nutzt jetzt SupportedTemplateName direkt; EmailTemplateName ist
+// damit deckungsgleich und die Tabelle entfaellt. Der Compiler prueft die
+// Zuordnung ab jetzt selbst.
 
 // =============================================================================
 // Synchronous Email Sending
@@ -254,9 +248,6 @@ export async function sendEmailAsync(
     priority?: number;
   }
 ): Promise<{ jobId: string }> {
-  // Map template name to queue template
-  const queueTemplate = templateNameToQueue[templateName] || 'welcome';
-
   // Determine subject
   let subject = options?.subject;
 
@@ -274,7 +265,7 @@ export async function sendEmailAsync(
   const job = await enqueueEmail({
     to,
     subject,
-    template: queueTemplate,
+    template: templateName,
     data,
     tenantId,
     cc: options?.cc,

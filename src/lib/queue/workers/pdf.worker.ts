@@ -391,9 +391,7 @@ export function startPdfWorker(): Worker<PdfJobData, PdfJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
-    void import("../dead-letter").then(({ persistFailedJob }) =>
-      persistFailedJob({ queueName: "pdf", job, error }),
-    );
+    // F18: DLQ-Persistenz haengt zentral in der Worker-Registry.
   });
 
   pdfWorker.on("error", (error) => {

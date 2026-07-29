@@ -9,36 +9,50 @@ import { Queue, JobsOptions } from 'bullmq';
 import { getBullMQConnection } from '../connection';
 import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
+import type { SupportedTemplateName } from "@/lib/email/renderer";
 
 /**
- * Available email templates
+ * Available email templates.
+ *
+ * F3: Das war frueher eine handgepflegte Union, die von der tatsaechlich
+ * renderbaren Liste abwich — sie kannte 'invoice-notification' und
+ * 'service-event-notification' (existieren nicht) und kannte 'new-invoice'
+ * und 'tenant-admin-invitation' nicht (existieren sehr wohl). Jetzt direkt
+ * an den Renderer gekoppelt, damit ein nicht renderbares Template gar nicht
+ * mehr compiliert.
  */
-export type EmailTemplate =
-  | 'welcome'
-  | 'password-reset'
-  | 'invoice-notification'
-  | 'invoice-reminder'
-  | 'report-ready'
-  | 'vote-invitation'
-  | 'vote-reminder'
-  | 'vote-result'
-  | 'document-shared'
-  | 'service-event-notification'
-  | 'settlement-notification'
-  | 'news-announcement'
-  | 'portal-invitation';
+export type EmailTemplate = SupportedTemplateName;
 
 /**
- * Email job data structure
+ * Email job data structure — SINGLE SOURCE OF TRUTH.
+ *
+ * F3: Es gab zwei verschiedene Typen namens `EmailJobData` — hier
+ * `{template, data}`, im Worker `{type, templateData}`. Der Worker las
+ * `data.type` (undefined) und fiel in den Fallback-Zweig, der
+ * `data.templateData.html` liest → TypeError auf undefined. Der Job schlug
+ * also nicht mit Template-Fehler fehl, sondern hart: 3x Retry, dann DLQ.
+ * Verstaerkend schrieb reminder-service `emailSent = true`, sobald das
+ * Enqueue zurueckkam — die Mahnung galt als versendet, kam nie an, und der
+ * Cooldown verhinderte danach jede Wiederholung.
  */
 export interface EmailJobData {
+  /** Optionale Job-ID für Tracking (Fallback: BullMQ job.id) */
+  jobId?: string;
   /** Recipient email address */
   to: string;
   /** Email subject line */
   subject: string;
-  /** Template identifier for the email */
-  template: EmailTemplate;
-  /** Dynamic data to populate the template */
+  /**
+   * Template identifier for the email.
+   *
+   * Weglassen für eine einfache HTML-Mail ohne Template — dann kommen
+   * `data.html` und `data.text` zum Einsatz. Das ist der richtige Weg für
+   * Ad-hoc- und Admin-Benachrichtigungen, die zu keinem Fachtemplate passen.
+   * Vorher war dieser Pfad nur der ungewollte Fallback bei unbekanntem
+   * Template-Namen und lief auf einen TypeError.
+   */
+  template?: EmailTemplate;
+  /** Dynamic data to populate the template (bzw. `html`/`text` ohne Template) */
   data: Record<string, unknown>;
   /** Tenant ID for multi-tenant isolation */
   tenantId: string;
@@ -48,10 +62,19 @@ export interface EmailJobData {
   bcc?: string[];
   /** Optional reply-to address */
   replyTo?: string;
-  /** Optional attachments */
+  /**
+   * Optional attachments.
+   *
+   * `content` MUSS ein Base64-String sein, kein Buffer: BullMQ serialisiert
+   * die Job-Daten nach JSON, und ein Buffer kommt auf der Worker-Seite als
+   * `{ type: "Buffer", data: [...] }` wieder heraus — nicht als Buffer.
+   * Wer eine Datei anhaengen will, nutzt `path` oder base64-kodiert selbst.
+   */
   attachments?: Array<{
     filename: string;
-    content?: string | Buffer;
+    /** Base64-kodierter Inhalt */
+    content?: string;
+    /** Alternativ: Pfad, den der Provider selbst liest */
     path?: string;
     contentType?: string;
   }>;
@@ -99,9 +122,9 @@ export const getEmailQueue = (): Queue<EmailJobData> => {
  * ```typescript
  * await enqueueEmail({
  *   to: 'user@example.com',
- *   subject: 'Your Invoice is Ready',
- *   template: 'invoice-notification',
- *   data: { invoiceNumber: 'INV-001', amount: 1500 },
+ *   subject: 'Ihre Rechnung ist bereit',
+ *   template: 'new-invoice',
+ *   data: { invoiceNumber: 'INV-001', amount: '1.500,00 €' },
  *   tenantId: 'tenant-123',
  * });
  * ```
@@ -115,7 +138,9 @@ export const enqueueEmail = async (
   // Generate a unique job ID based on content to prevent duplicates
   const jobId = `email-${jobData.tenantId}-${jobData.to}-${Date.now()}`;
 
-  const job = await queue.add(jobData.template, jobData, {
+  // Job-Name = Template, ohne Template ein sprechender Platzhalter.
+  // Der Name taucht in der Admin-Jobs-Ansicht und in BullMQ-Metriken auf.
+  const job = await queue.add(jobData.template ?? "plain", jobData, {
     ...options,
     jobId,
     // Set priority if specified (lower number = higher priority)
@@ -123,7 +148,7 @@ export const enqueueEmail = async (
   });
 
   logger.info(
-    `[Queue:${EMAIL_QUEUE_NAME}] Job ${job.id} added: ${jobData.template} to ${jobData.to}`
+    `[Queue:${EMAIL_QUEUE_NAME}] Job ${job.id} added: ${jobData.template ?? "plain"} to ${jobData.to}`
   );
 
   return job;
@@ -141,7 +166,7 @@ export const enqueueEmailBulk = async (
   const queue = getEmailQueue();
 
   const bulkJobs = jobs.map(({ data, options }) => ({
-    name: data.template,
+    name: data.template ?? "plain",
     data,
     opts: {
       ...options,

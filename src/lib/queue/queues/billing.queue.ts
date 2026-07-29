@@ -11,41 +11,159 @@ import { jobLogger as logger } from "@/lib/logger";
 import { getJobOptions } from "@/lib/config/queue-config";
 import { CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 
-/**
- * Billing job data structure
- */
-export interface BillingJobData {
-  /** ID of the billing rule to execute */
-  ruleId: string;
-  /** Tenant ID for multi-tenant isolation */
+// =============================================================================
+// Job contract — SINGLE SOURCE OF TRUTH
+// =============================================================================
+//
+// F2: Bis Welle 4 gab es ZWEI verschiedene Typen namens `BillingJobData` —
+// hier ein regelbasierter (`ruleId`/`periodStart`/…, ohne `type`) und in
+// billing.worker.ts eine Discriminated Union MIT `type`. Die Producer nutzten
+// den hiesigen, der Worker schaltete auf `data.type` → `undefined` → landete im
+// default-Zweig und warf `Unknown billing job type: undefined`.
+// TypeScript konnte das nicht sehen, weil es zwei gleichnamige Typen in
+// verschiedenen Modulen waren und der Worker nie aus diesem Modul importierte.
+//
+// Auch `BillingJobResult` war unterschiedlich definiert.
+//
+// Der Vertrag liegt jetzt — wie bei report.queue.ts / report.worker.ts — im
+// Queue-Modul; der Worker importiert ihn. Damit erzwingt tsc die Konsistenz
+// zwischen Producer und Consumer.
+
+/** Alle vom Billing-Worker implementierten Job-Typen. */
+export type BillingJobType =
+  | "execute-rule"
+  | "generate-invoice"
+  | "generate-settlement"
+  | "send-reminder"
+  | "calculate-fees"
+  | "bulk-invoice"
+  | "process-recurring-invoices";
+
+/** Basis-Interface für alle Billing-Jobs */
+export interface BaseBillingJobData {
+  /** Eindeutige Job-ID für Tracking */
+  jobId: string;
+  /** Typ des Billing-Jobs (Discriminator) */
+  type: BillingJobType;
+  /** Tenant-ID für Multi-Tenancy */
   tenantId: string;
-  /** Optional: Specific billing period start date (ISO string) */
-  periodStart?: string;
-  /** Optional: Specific billing period end date (ISO string) */
-  periodEnd?: string;
-  /** Optional: Force execution even if already processed */
-  force?: boolean;
-  /** Optional: Dry run mode - calculate but don't create invoices */
-  dryRun?: boolean;
-  /** Optional: User who triggered the billing (for manual triggers) */
-  triggeredBy?: string;
 }
 
 /**
- * Billing job result structure (returned by worker)
+ * Führt EINE Abrechnungsregel aus (lib/billing/executor.ts → executeRule).
+ *
+ * Genau das versprechen `enqueueBillingJob`, `enqueueBillingDryRun` und
+ * `scheduleRecurringBilling` seit jeher — nur gab es dafür keinen Handler.
+ */
+export interface ExecuteRuleJobData extends BaseBillingJobData {
+  type: "execute-rule";
+  /** ID der auszuführenden BillingRule */
+  ruleId: string;
+  /** Nur Vorschau, keine echten Rechnungen */
+  dryRun?: boolean;
+  /** Ausführung erzwingen, auch wenn nextRunAt noch nicht erreicht ist */
+  forceRun?: boolean;
+  /** User, der den Lauf manuell angestoßen hat */
+  triggeredBy?: string;
+}
+
+/** Job-Daten für Rechnungsgenerierung */
+export interface GenerateInvoiceJobData extends BaseBillingJobData {
+  type: "generate-invoice";
+  /** Kunde oder Gesellschafter ID */
+  customerId: string;
+  /** Rechnungsposten */
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+  }>;
+  /** Fälligkeitsdatum (ISO-String) */
+  dueDate?: string;
+  /** Interne Referenz */
+  reference?: string;
+}
+
+/** Job-Daten für Settlement-Generierung */
+export interface GenerateSettlementJobData extends BaseBillingJobData {
+  type: "generate-settlement";
+  /** Park ID */
+  parkId: string;
+  /** Jahr der Abrechnung */
+  year: number;
+  /** Gesamteinnahmen */
+  totalRevenue?: number;
+}
+
+/** Job-Daten für Zahlungserinnerungen */
+export interface SendReminderJobData extends BaseBillingJobData {
+  type: "send-reminder";
+  /** Rechnungs-ID */
+  invoiceId: string;
+  /** Mahnstufe */
+  reminderLevel: 1 | 2 | 3;
+}
+
+/** Job-Daten für Gebührenberechnung */
+export interface CalculateFeesJobData extends BaseBillingJobData {
+  type: "calculate-fees";
+  /** Zeitraum Start (ISO-String) */
+  periodStart: string;
+  /** Zeitraum Ende (ISO-String) */
+  periodEnd: string;
+  /** Betroffene Entity-IDs */
+  entityIds?: string[];
+}
+
+/** Job-Daten für Massenrechnungen */
+export interface BulkInvoiceJobData extends BaseBillingJobData {
+  type: "bulk-invoice";
+  /** Park ID */
+  parkId: string;
+  /** Abrechnungsperiode */
+  period: string;
+  /** Filter für Gesellschafter */
+  shareholderFilter?: {
+    status?: string[];
+    minimumShare?: number;
+  };
+}
+
+/** Job-Daten für wiederkehrende Rechnungen */
+export interface ProcessRecurringInvoicesJobData extends BaseBillingJobData {
+  type: "process-recurring-invoices";
+  /** Optional: Nur für bestimmten Tenant ausfuehren (default: alle) */
+  targetTenantId?: string;
+}
+
+/** Union-Typ für alle Billing-Job-Daten */
+export type BillingJobData =
+  | ExecuteRuleJobData
+  | GenerateInvoiceJobData
+  | GenerateSettlementJobData
+  | SendReminderJobData
+  | CalculateFeesJobData
+  | BulkInvoiceJobData
+  | ProcessRecurringInvoicesJobData;
+
+/**
+ * Ergebnis nach Billing-Job
  */
 export interface BillingJobResult {
-  /** Number of invoices created */
-  invoicesCreated: number;
-  /** Total amount billed */
-  totalAmount: number;
-  /** List of created invoice IDs */
-  invoiceIds: string[];
-  /** Any errors encountered (partial success possible) */
-  errors?: Array<{
-    entityId: string;
-    message: string;
-  }>;
+  success: boolean;
+  /** Generierte Rechnungs-IDs */
+  invoiceIds?: string[];
+  /** Generierte Settlement-IDs */
+  settlementIds?: string[];
+  /** Anzahl verarbeiteter Elemente */
+  processedCount?: number;
+  /** Fehler wenn fehlgeschlagen */
+  error?: string;
+  /** Details zur Verarbeitung */
+  details?: Record<string, unknown>;
+  /** Zeitpunkt der Verarbeitung */
+  processedAt?: Date;
 }
 
 /**
@@ -88,10 +206,10 @@ export const getBillingQueue = (): Queue<BillingJobData, BillingJobResult> => {
  * @example
  * ```typescript
  * await enqueueBillingJob({
+ *   type: 'execute-rule',
+ *   jobId: 'billing-rule-123-2024-01',
  *   ruleId: 'rule-123',
  *   tenantId: 'tenant-456',
- *   periodStart: '2024-01-01',
- *   periodEnd: '2024-01-31',
  * });
  * ```
  */
@@ -101,24 +219,36 @@ export const enqueueBillingJob = async (
 ) => {
   const queue = getBillingQueue();
 
-  // Generate unique job ID to prevent duplicate processing
-  // Include period info to allow same rule to run for different periods
-  const periodKey = jobData.periodStart && jobData.periodEnd
-    ? `-${jobData.periodStart}-${jobData.periodEnd}`
-    : `-${new Date().toISOString().slice(0, 10)}`;
-
-  const jobId = `billing-${jobData.ruleId}-${jobData.tenantId}${periodKey}`;
-
   const job = await queue.add('process-billing', jobData, {
     ...options,
-    jobId,
+    // jobId ist Teil des Job-Vertrags und dient der Deduplizierung.
+    jobId: jobData.jobId,
   });
 
   logger.info(
-    `[Queue:${BILLING_QUEUE_NAME}] Job ${job.id} added: rule ${jobData.ruleId} for tenant ${jobData.tenantId}`
+    `[Queue:${BILLING_QUEUE_NAME}] Job ${job.id} added: ${jobData.type} for tenant ${jobData.tenantId}`
   );
 
   return job;
+};
+
+/**
+ * Baut die deduplizierende Job-ID für einen Regel-Lauf.
+ *
+ * Der Periodenanteil erlaubt es, dieselbe Regel für unterschiedliche Perioden
+ * laufen zu lassen, verhindert aber den doppelten Lauf derselben Periode.
+ */
+export const buildRuleJobId = (
+  ruleId: string,
+  tenantId: string,
+  periodStart?: string,
+  periodEnd?: string
+): string => {
+  const periodKey =
+    periodStart && periodEnd
+      ? `-${periodStart}-${periodEnd}`
+      : `-${new Date().toISOString().slice(0, 10)}`;
+  return `billing-${ruleId}-${tenantId}${periodKey}`;
 };
 
 /**
@@ -143,6 +273,8 @@ export const scheduleRecurringBilling = async (
   const queue = getBillingQueue();
 
   const jobData: BillingJobData = {
+    type: 'execute-rule',
+    jobId: `billing-recurring-${ruleId}-${tenantId}`,
     ruleId,
     tenantId,
   };
@@ -198,10 +330,10 @@ export const enqueueBillingDryRun = async (
   }
 ) => {
   return enqueueBillingJob({
+    type: 'execute-rule',
+    jobId: `${buildRuleJobId(ruleId, tenantId, options?.periodStart, options?.periodEnd)}-dryrun`,
     ruleId,
     tenantId,
-    periodStart: options?.periodStart,
-    periodEnd: options?.periodEnd,
     triggeredBy: options?.triggeredBy,
     dryRun: true,
   });
@@ -215,20 +347,14 @@ export const enqueueBillingBulk = async (
 ) => {
   const queue = getBillingQueue();
 
-  const bulkJobs = jobs.map(({ data, options }) => {
-    const periodKey = data.periodStart && data.periodEnd
-      ? `-${data.periodStart}-${data.periodEnd}`
-      : `-${new Date().toISOString().slice(0, 10)}`;
-
-    return {
-      name: 'process-billing',
-      data,
-      opts: {
-        ...options,
-        jobId: `billing-${data.ruleId}-${data.tenantId}${periodKey}`,
-      },
-    };
-  });
+  const bulkJobs = jobs.map(({ data, options }) => ({
+    name: 'process-billing',
+    data,
+    opts: {
+      ...options,
+      jobId: data.jobId,
+    },
+  }));
 
   const addedJobs = await queue.addBulk(bulkJobs);
 
@@ -253,7 +379,8 @@ export const scheduleRecurringInvoiceProcessing = async (
   const queue = getBillingQueue();
 
   const jobData: BillingJobData = {
-    ruleId: 'recurring-invoices',
+    type: 'process-recurring-invoices',
+    jobId: 'recurring-invoices-global',
     tenantId: '__all__', // Process for all tenants
   };
 

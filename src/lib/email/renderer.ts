@@ -101,6 +101,25 @@ const templateComponents: TemplateComponentMap = {
   'report-ready': ReportReadyEmail,
 };
 
+/**
+ * Laufzeit-Liste der tatsaechlich renderbaren Templates.
+ *
+ * F3: Der Email-Worker pflegte dieselbe Liste ein zweites Mal von Hand
+ * ("knownTemplates") — und sie war falsch: 'invoice-reminder' fehlte, also
+ * landete ausgerechnet die Mahnung im Fallback-Zweig. Wer hier ein Template
+ * ergaenzt, ergaenzt es damit ueberall.
+ */
+export const SUPPORTED_TEMPLATE_NAMES = Object.keys(
+  templateComponents,
+) as SupportedTemplateName[];
+
+/** Type-Guard: ist der String ein renderbares Template? */
+export function isSupportedTemplate(
+  name: string,
+): name is SupportedTemplateName {
+  return Object.prototype.hasOwnProperty.call(templateComponents, name);
+}
+
 // =============================================================================
 // Base Props Helper
 // =============================================================================

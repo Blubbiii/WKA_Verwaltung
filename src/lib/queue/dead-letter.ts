@@ -31,6 +31,23 @@ export interface PersistFailedJobInput {
  * if the DB write fails, we log but don't crash the worker (the job is
  * already failed; compounding the failure helps no one).
  */
+/**
+ * Ist das der letzte Versuch, oder folgt noch ein Retry?
+ *
+ * BullMQ feuert `failed` bei JEDEM fehlgeschlagenen Versuch, nicht nur beim
+ * letzten — ein separates "endgueltig gescheitert"-Event gibt es nicht. Ohne
+ * diese Pruefung entstuende pro Job eine Zeile je Versuch (bei den ueblichen
+ * 3 Attempts also drei), und die Liste der offenen Fehlschlaege waere
+ * dreifach ueberzeichnet.
+ *
+ * `attemptsMade` wird nach dem Fehlschlag hochgezaehlt und entspricht beim
+ * letzten Versuch genau `opts.attempts`.
+ */
+function isFinalAttempt(job: Job): boolean {
+  const maxAttempts = job.opts?.attempts ?? 1;
+  return (job.attemptsMade ?? 0) >= maxAttempts;
+}
+
 export async function persistFailedJob({
   queueName,
   job,
@@ -38,6 +55,20 @@ export async function persistFailedJob({
 }: PersistFailedJobInput): Promise<void> {
   if (!job) {
     logger.warn({ queueName, error: error.message }, "Cannot persist failed job: job is undefined");
+    return;
+  }
+
+  if (!isFinalAttempt(job)) {
+    // Zwischen-Fehlschlag: BullMQ versucht es erneut. Nur loggen.
+    logger.debug(
+      {
+        queueName,
+        jobId: job.id,
+        attemptsMade: job.attemptsMade,
+        maxAttempts: job.opts?.attempts ?? 1,
+      },
+      "Job attempt failed — retry pending, not persisting to dead-letter store",
+    );
     return;
   }
 

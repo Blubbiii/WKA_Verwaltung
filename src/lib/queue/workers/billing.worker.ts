@@ -20,147 +20,43 @@ import { Worker, Job } from "bullmq";
 import { getRedisConnection } from "../connection";
 import { billingLogger } from "@/lib/logger";
 import { getTenantSettings } from "@/lib/tenant-settings";
-import { formatDate, LOCALE_DE } from "@/lib/format";
+import { formatCurrency, formatDate, LOCALE_DE } from "@/lib/format";
 import { MS_PER_DAY } from "@/lib/constants/time";
 
 // =============================================================================
 // Types
 // =============================================================================
 
-/**
- * Billing-Job-Typen
- */
-export type BillingJobType =
-  | "generate-invoice"
-  | "generate-settlement"
-  | "send-reminder"
-  | "calculate-fees"
-  | "bulk-invoice"
-  | "process-recurring-invoices";
+// F2: Die Job-Typen liegen im Queue-Modul (single source of truth). Vorher
+// definierte dieser Worker eine eigene, mit den Producern unvereinbare Version
+// — gleicher Name, anderes Datenmodell, kein Import dazwischen, also für
+// TypeScript unsichtbar. Re-Export wie bei report.worker.ts, damit bestehende
+// Importe aus diesem Modul gültig bleiben.
+import type {
+  ExecuteRuleJobData,
+  GenerateInvoiceJobData,
+  GenerateSettlementJobData,
+  SendReminderJobData,
+  CalculateFeesJobData,
+  BulkInvoiceJobData,
+  ProcessRecurringInvoicesJobData,
+  BillingJobData,
+  BillingJobResult,
+} from "../queues/billing.queue";
 
-/**
- * Basis-Interface für alle Billing-Jobs
- */
-interface BaseBillingJobData {
-  /** Eindeutige Job-ID für Tracking */
-  jobId: string;
-  /** Typ des Billing-Jobs */
-  type: BillingJobType;
-  /** Tenant-ID für Multi-Tenancy */
-  tenantId: string;
-}
-
-/**
- * Job-Daten für Rechnungsgenerierung
- */
-export interface GenerateInvoiceJobData extends BaseBillingJobData {
-  type: "generate-invoice";
-  /** Kunde oder Gesellschafter ID */
-  customerId: string;
-  /** Rechnungsposten */
-  items: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    taxRate: number;
-  }>;
-  /** Fälligkeitsdatum (ISO-String) */
-  dueDate?: string;
-  /** Interne Referenz */
-  reference?: string;
-}
-
-/**
- * Job-Daten für Settlement-Generierung
- */
-export interface GenerateSettlementJobData extends BaseBillingJobData {
-  type: "generate-settlement";
-  /** Park ID */
-  parkId: string;
-  /** Jahr der Abrechnung */
-  year: number;
-  /** Gesamteinnahmen */
-  totalRevenue?: number;
-}
-
-/**
- * Job-Daten für Zahlungserinnerungen
- */
-export interface SendReminderJobData extends BaseBillingJobData {
-  type: "send-reminder";
-  /** Rechnungs-ID */
-  invoiceId: string;
-  /** Mahnstufe */
-  reminderLevel: 1 | 2 | 3;
-}
-
-/**
- * Job-Daten für Gebührenberechnung
- */
-export interface CalculateFeesJobData extends BaseBillingJobData {
-  type: "calculate-fees";
-  /** Zeitraum Start (ISO-String) */
-  periodStart: string;
-  /** Zeitraum Ende (ISO-String) */
-  periodEnd: string;
-  /** Betroffene Entity-IDs */
-  entityIds?: string[];
-}
-
-/**
- * Job-Daten für Massenrechnungen
- */
-export interface BulkInvoiceJobData extends BaseBillingJobData {
-  type: "bulk-invoice";
-  /** Park ID */
-  parkId: string;
-  /** Abrechnungsperiode */
-  period: string;
-  /** Filter für Gesellschafter */
-  shareholderFilter?: {
-    status?: string[];
-    minimumShare?: number;
-  };
-}
-
-/**
- * Job-Daten für wiederkehrende Rechnungen
- */
-export interface ProcessRecurringInvoicesJobData extends BaseBillingJobData {
-  type: "process-recurring-invoices";
-  /** Optional: Nur für bestimmten Tenant ausfuehren (default: alle) */
-  targetTenantId?: string;
-}
-
-/**
- * Union-Typ für alle Billing-Job-Daten
- */
-export type BillingJobData =
-  | GenerateInvoiceJobData
-  | GenerateSettlementJobData
-  | SendReminderJobData
-  | CalculateFeesJobData
-  | BulkInvoiceJobData
-  | ProcessRecurringInvoicesJobData;
-
-/**
- * Ergebnis nach Billing-Job
- */
-export interface BillingJobResult {
-  success: boolean;
-  /** Generierte Rechnungs-IDs */
-  invoiceIds?: string[];
-  /** Generierte Settlement-IDs */
-  settlementIds?: string[];
-  /** Anzahl verarbeiteter Elemente */
-  processedCount?: number;
-  /** Fehler wenn fehlgeschlagen */
-  error?: string;
-  /** Details zur Verarbeitung */
-  details?: Record<string, unknown>;
-  /** Zeitpunkt der Verarbeitung */
-  processedAt?: Date;
-}
+export type {
+  BillingJobType,
+  BaseBillingJobData,
+  ExecuteRuleJobData,
+  GenerateInvoiceJobData,
+  GenerateSettlementJobData,
+  SendReminderJobData,
+  CalculateFeesJobData,
+  BulkInvoiceJobData,
+  ProcessRecurringInvoicesJobData,
+  BillingJobData,
+  BillingJobResult,
+} from "../queues/billing.queue";
 
 // =============================================================================
 // Logger
@@ -756,11 +652,14 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
       await enqueueEmail({
         to: recipientEmail,
         subject: `${reminderLabel} - Rechnung ${invoice.invoiceNumber}`,
-        template: "invoice-notification",
+        // F3: hier stand "invoice-notification" — ein Template, das es nie
+        // gab. Korrekt ist 'invoice-reminder'; dessen Props verlangen `amount`
+        // als FORMATIERTEN String, nicht `grossAmount` als Zahl.
+        template: "invoice-reminder",
         data: {
           invoiceNumber: invoice.invoiceNumber,
           recipientName: invoice.recipientName || "Empfänger",
-          grossAmount: Number(invoice.grossAmount),
+          amount: formatCurrency(Number(invoice.grossAmount)),
           dueDate: invoice.dueDate ? formatDate(invoice.dueDate) : "n/a",
           daysOverdue,
           reminderLevel: data.reminderLevel,
@@ -1320,6 +1219,66 @@ async function processBulkInvoice(
  * Delegiert die eigentliche Verarbeitung an den recurring-invoice-service.
  * Dieser Job wird typischerweise stuendlich per BullMQ Repeat ausgeführt.
  */
+/**
+ * Führt EINE Abrechnungsregel aus.
+ *
+ * F2: Diesen Handler gab es nicht, obwohl `enqueueBillingJob`,
+ * `enqueueBillingDryRun` und `scheduleRecurringBilling` seit jeher genau das
+ * versprachen. Die Regel-Ausführung selbst (`executeRule`) war fertig und wurde
+ * bisher nur synchron aus der Admin-Route heraus benutzt.
+ */
+async function processExecuteRule(data: ExecuteRuleJobData): Promise<BillingJobResult> {
+  log("info", data.jobId, "Processing execute-rule job", {
+    ruleId: data.ruleId,
+    dryRun: data.dryRun ?? false,
+    forceRun: data.forceRun ?? false,
+  });
+
+  const { executeRule } = await import("@/lib/billing/executor");
+
+  const result = await executeRule(data.ruleId, {
+    dryRun: data.dryRun,
+    forceRun: data.forceRun,
+  });
+
+  // executeRule liefert einen Status statt zu werfen. Ein fachlich
+  // gescheiterter ODER nur teilweise gelungener Lauf darf NICHT als
+  // erfolgreich zurueckgemeldet werden (F11) — sonst steht ein Fehlschlag in
+  // der Admin-UI auf gruen. Bewusst kein throw: ein Retry wuerde die bereits
+  // erzeugten Rechnungen des Teil-Laufs ein zweites Mal anlegen.
+  const succeeded = result.status === "success";
+
+  const invoiceIds = Array.isArray(result.details?.invoices)
+    ? result.details.invoices
+        .map((inv) => inv.invoiceId)
+        .filter((id): id is string => typeof id === "string")
+    : [];
+
+  log(succeeded ? "info" : "error", data.jobId, "Execute-rule job finished", {
+    ruleId: data.ruleId,
+    status: result.status,
+    invoicesCreated: result.invoicesCreated,
+    totalAmount: result.totalAmount,
+  });
+
+  return {
+    success: succeeded,
+    invoiceIds,
+    processedCount: result.invoicesCreated,
+    error: succeeded
+      ? undefined
+      : result.errorMessage || `Regel-Lauf endete mit Status "${result.status}"`,
+    details: {
+      ruleId: data.ruleId,
+      status: result.status,
+      totalAmount: result.totalAmount,
+      executionId: result.executionId,
+      dryRun: data.dryRun ?? false,
+      triggeredBy: data.triggeredBy,
+    },
+  };
+}
+
 async function processRecurringInvoicesJob(data: ProcessRecurringInvoicesJobData): Promise<BillingJobResult> {
   log("info", data.jobId, "Processing recurring invoices job", {
     targetTenantId: data.targetTenantId || "all",
@@ -1393,6 +1352,10 @@ async function processBillingJobInner(job: Job<BillingJobData, BillingJobResult>
     let result: BillingJobResult;
 
     switch (data.type) {
+      case "execute-rule":
+        result = await processExecuteRule(data as ExecuteRuleJobData);
+        break;
+
       case "generate-invoice":
         result = await processGenerateInvoice(data as GenerateInvoiceJobData);
         break;
@@ -1495,12 +1458,9 @@ export function startBillingWorker(): Worker<BillingJobData, BillingJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
-    // Persist to FailedJob table so the failed billing job stays
-    // investigable after BullMQ's removeOnFail window expires.
-    // Fire-and-forget: don't block the worker event loop.
-    void import("../dead-letter").then(({ persistFailedJob }) =>
-      persistFailedJob({ queueName: "billing", job, error }),
-    );
+    // F18: Die Persistenz in die FailedJob-Tabelle haengt jetzt zentral in
+    // der Worker-Registry (attachDeadLetterHook) — vorher tat das nur billing,
+    // email und pdf. Hier NICHT mehr, sonst zwei Zeilen pro Fehlschlag.
   });
 
   billingWorker.on("error", (error) => {

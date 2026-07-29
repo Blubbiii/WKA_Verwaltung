@@ -6,7 +6,6 @@
  */
 
 import { Worker, Job } from "bullmq";
-import type { SupportedTemplateName } from "@/lib/email/renderer";
 import { getRedisConnection } from "../connection";
 import { emailLogger } from "@/lib/logger";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
@@ -15,47 +14,13 @@ import { EMAIL_REGEX } from "@/lib/validation/patterns";
 // Types
 // =============================================================================
 
-/**
- * Job-Daten für E-Mail-Versand
- */
-export interface EmailJobData {
-  /** Eindeutige Job-ID für Tracking */
-  jobId: string;
-  /** E-Mail-Typ für unterschiedliche Templates */
-  type:
-    | "welcome"
-    | "password-reset"
-    | "invoice"
-    | "notification"
-    | "vote-invitation"
-    | "vote-reminder"
-    | "settlement-report"
-    | "new-invoice"
-    | "vote-result"
-    | "document-shared"
-    | "news-announcement"
-    | "service-event";
-  /** Empfänger-E-Mail-Adresse */
-  to: string;
-  /** CC-Empfänger (optional) */
-  cc?: string[];
-  /** BCC-Empfänger (optional) */
-  bcc?: string[];
-  /** E-Mail-Betreff */
-  subject: string;
-  /** Template-Variablen */
-  templateData: Record<string, unknown>;
-  /** Anhaenge (optional) */
-  attachments?: Array<{
-    filename: string;
-    content: string; // Base64-encoded
-    contentType: string;
-  }>;
-  /** Tenant-ID für Multi-Tenancy */
-  tenantId: string;
-  /** Prioritaet (1 = hoechste) */
-  priority?: number;
-}
+// F3: Der Job-Vertrag liegt im Queue-Modul (single source of truth). Vorher
+// definierte dieser Worker eine eigene, mit den Producern unvereinbare Version
+// desselben Namens — gleicher Typname, anderes Datenmodell, kein Import
+// dazwischen, also fuer TypeScript unsichtbar.
+import type { EmailJobData } from "../queues/email.queue";
+
+export type { EmailJobData, EmailTemplate } from "../queues/email.queue";
 
 /**
  * Ergebnis nach E-Mail-Versand
@@ -98,16 +63,16 @@ function log(level: "info" | "warn" | "error", jobId: string, message: string, m
 /**
  * Sendet eine E-Mail unter Verwendung der Email-Provider-Abstraktion
  */
-async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
-  log("info", data.jobId, `Sending email to ${maskEmail(data.to)}`, {
-    type: data.type,
+async function sendEmail(data: EmailJobData, jobId: string): Promise<EmailJobResult> {
+  log("info", jobId, `Sending email to ${maskEmail(data.to)}`, {
+    template: data.template,
     subject: data.subject,
     hasAttachments: !!data.attachments?.length,
   });
 
   try {
     // Dynamischer Import um zirkulaere Abhaengigkeiten zu vermeiden
-    const { renderEmail } = await import("@/lib/email/renderer");
+    const { renderEmail, isSupportedTemplate } = await import("@/lib/email/renderer");
     const { getCachedProvider } = await import("@/lib/email/provider");
     const { prisma } = await import("@/lib/prisma");
 
@@ -134,29 +99,34 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
       throw new Error("Kein E-Mail-Provider konfiguriert");
     }
 
-    // Template rendern (wenn es ein bekanntes Template ist)
+    // Template rendern. Die Liste der renderbaren Templates kommt aus dem
+    // Renderer selbst (isSupportedTemplate) — vorher stand sie hier ein
+    // zweites Mal von Hand und war falsch: 'invoice-reminder' fehlte, also
+    // ging ausgerechnet die Mahnung in den Fallback-Zweig.
     let html = "";
     let text = "";
 
-    const knownTemplates: string[] = [
-      "welcome", "password-reset", "new-invoice", "vote-invitation",
-      "tenant-admin-invitation", "portal-invitation", "vote-reminder",
-      "vote-result", "document-shared", "settlement-notification",
-      "news-announcement", "service-event", "report-ready",
-    ];
-
-    if (knownTemplates.includes(data.type)) {
+    if (data.template && isSupportedTemplate(data.template)) {
       const rendered = await renderEmail(
-        data.type as SupportedTemplateName,
-        data.templateData as unknown as Parameters<typeof renderEmail>[1],
+        data.template,
+        data.data as unknown as Parameters<typeof renderEmail>[1],
         data.tenantId
       );
       html = rendered.html;
       text = rendered.text;
     } else {
-      // Fallback: Einfaches HTML aus templateData
-      html = (data.templateData.html as string) || `<p>${data.subject}</p>`;
-      text = (data.templateData.text as string) || data.subject;
+      // Ohne Template: einfache HTML-Mail aus den Job-Daten. Der optionale
+      // Zugriff schuetzt zusaetzlich gegen Alt-Jobs, die noch mit dem
+      // kaputten Schema in der Queue liegen (dort fehlt `data` ganz).
+      const payload = (data.data ?? {}) as Record<string, unknown>;
+      if (data.template) {
+        // Template gesetzt, aber nicht renderbar -> Alt-Job oder Tippfehler.
+        log("warn", jobId, "Unknown email template — sending plain HTML instead", {
+          template: data.template,
+        });
+      }
+      html = (payload.html as string) || `<p>${data.subject}</p>`;
+      text = (payload.text as string) || data.subject;
     }
 
     // E-Mail senden
@@ -167,10 +137,15 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
       subject: data.subject,
       html,
       text,
+      // Durchreichen statt umkodieren: EmailAttachment akzeptiert genau diese
+      // Form. Das frühere Buffer.from(att.content, "base64") setzte voraus,
+      // dass jeder Producer base64 liefert, und warf bei fehlendem content.
       attachments: data.attachments?.map((att) => ({
         filename: att.filename,
-        content: Buffer.from(att.content, "base64"),
+        content: att.content,
+        path: att.path,
         contentType: att.contentType,
+        encoding: att.content ? ("base64" as const) : undefined,
       })),
     });
 
@@ -178,7 +153,7 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
       throw new Error(result.error || "E-Mail-Versand fehlgeschlagen");
     }
 
-    log("info", data.jobId, `Email sent successfully`, {
+    log("info", jobId, `Email sent successfully`, {
       messageId: result.messageId,
       to: maskEmail(data.to),
       provider: result.provider,
@@ -191,7 +166,7 @@ async function sendEmail(data: EmailJobData): Promise<EmailJobResult> {
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    log("error", data.jobId, `Email sending failed`, { error: errorMessage });
+    log("error", jobId, `Email sending failed`, { error: errorMessage });
 
     return {
       success: false,
@@ -229,7 +204,7 @@ async function processEmailJobInner(job: Job<EmailJobData, EmailJobResult>): Pro
   const jobId = data.jobId || job.id || "unknown";
 
   log("info", jobId, `Processing email job`, {
-    type: data.type,
+    template: data.template,
     to: maskEmail(data.to),
     attempt: job.attemptsMade + 1,
   });
@@ -246,7 +221,7 @@ async function processEmailJobInner(job: Job<EmailJobData, EmailJobResult>): Pro
     }
 
     // E-Mail senden
-    const result = await sendEmail(data);
+    const result = await sendEmail(data, jobId);
 
     if (!result.success) {
       throw new Error(result.error || "Unknown email sending error");
@@ -313,9 +288,7 @@ export function startEmailWorker(): Worker<EmailJobData, EmailJobResult> {
       error: error.message,
       attempts: job?.attemptsMade,
     });
-    void import("../dead-letter").then(({ persistFailedJob }) =>
-      persistFailedJob({ queueName: "email", job, error }),
-    );
+    // F18: DLQ-Persistenz haengt zentral in der Worker-Registry.
   });
 
   emailWorker.on("error", (error) => {

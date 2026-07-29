@@ -345,6 +345,44 @@ let workersStartedAt: Date | null = null;
 // =============================================================================
 
 /**
+ * Hängt den Dead-Letter-Hook an eine Worker-Instanz.
+ *
+ * F18: Vorher rief nur billing, email und pdf `persistFailedJob()` in ihrem
+ * eigenen `failed`-Handler auf — 3 von 15 Workern. Für weather, report,
+ * reminder, scada, webhook, inbox-ocr und die übrigen verschwand ein endgültig
+ * gescheiterter Job restlos, sobald BullMQs `removeOnFail`-Fenster ablief.
+ *
+ * Zentral in der Registry statt zwölfmal kopiert: so kann die Abdeckung nicht
+ * wieder auseinanderlaufen, wenn ein Worker dazukommt.
+ *
+ * Idempotent — der Hook wird pro Instanz nur einmal registriert.
+ */
+const dlqHookedWorkers = new WeakSet<Worker<unknown, unknown>>();
+
+function attachDeadLetterHook(
+  worker: Worker<unknown, unknown>,
+  queueName: WorkerName,
+): void {
+  if (dlqHookedWorkers.has(worker)) return;
+  dlqHookedWorkers.add(worker);
+
+  worker.on("failed", (job, error) => {
+    // Fire-and-forget: der Job ist bereits gescheitert, ein Fehler beim
+    // Persistieren darf den Worker-Eventloop nicht blockieren.
+    void import("../dead-letter")
+      .then(({ persistFailedJob }) =>
+        persistFailedJob({ queueName, job, error }),
+      )
+      .catch((err) => {
+        logger.error(
+          { worker: queueName, err },
+          "Dead-letter persistence could not be loaded",
+        );
+      });
+  });
+}
+
+/**
  * Startet alle registrierten Worker
  *
  * @returns Array mit gestarteten Worker-Namen
@@ -357,7 +395,8 @@ export function startAllWorkers(): WorkerName[] {
   for (const entry of workerRegistry) {
     try {
       if (!entry.isRunning()) {
-        entry.start();
+        const worker = entry.start();
+        attachDeadLetterHook(worker, entry.name);
         startedWorkers.push(entry.name);
         logger.info({ worker: entry.displayName }, `Started: ${entry.displayName}`);
       } else {
@@ -443,7 +482,8 @@ export function startWorker(name: WorkerName): boolean {
   }
 
   try {
-    entry.start();
+    const worker = entry.start();
+    attachDeadLetterHook(worker, entry.name);
     logger.info({ worker: name }, `Started worker: ${name}`);
     return true;
   } catch (error) {

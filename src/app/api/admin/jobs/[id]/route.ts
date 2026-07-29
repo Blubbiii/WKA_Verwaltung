@@ -22,9 +22,11 @@ import { apiError } from "@/lib/api-errors";
 import {
   findJobById,
   findJobInQueue,
+  jobBelongsToTenant,
   serializeJob,
   type SerializedJob,
 } from '@/lib/queue/registry';
+import { isSuperadmin } from '@/lib/auth/permissions';
 
 /**
  * Route params
@@ -87,6 +89,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { job, queueInfo } = result;
 
+    // F19: Mandantentrennung. requireAdmin() prueft nur die Rollen-Hierarchie,
+    // findJobById sucht aber ueber alle Mandanten hinweg und serializeJob gibt
+    // job.data komplett zurueck (Empfaenger, Betraege, fremde tenantId).
+    // Gleiche NOT_FOUND-Antwort wie bei unbekanntem Job — verraet nicht, dass
+    // die ID in einem anderen Mandanten existiert.
+    if (!jobBelongsToTenant(job, check.tenantId, await isSuperadmin(check.userId!))) {
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
+    }
+
     // Serialize job data
     const serializedJob = await serializeJob(job);
 
@@ -139,6 +150,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { job, queueInfo } = result;
+
+    // F19: DELETE war ebenfalls mandantenuebergreifend ausfuehrbar.
+    if (!jobBelongsToTenant(job, check.tenantId, await isSuperadmin(check.userId!))) {
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
+    }
 
     // Check job state - only allow deletion of waiting/delayed jobs
     const state = await job.getState();

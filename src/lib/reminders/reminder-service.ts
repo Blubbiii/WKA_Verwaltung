@@ -10,7 +10,7 @@
 import { jobLogger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { notifyAdmins } from "@/lib/notifications";
-import { formatDate } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type {
   ReminderCategory,
   ReminderItem,
@@ -626,6 +626,60 @@ async function findExpiringDocuments(
 // Email sending helper
 // =============================================================================
 
+/** Escape user-controlled text before it goes into the HTML body. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Baut Body einer Fristen-Benachrichtigung als einfache HTML-/Text-Mail.
+ *
+ * Bewusst ohne Fachtemplate: es gibt kein Template fuer "Frist laeuft ab",
+ * und das frueher benutzte 'invoice-notification' existierte nicht.
+ */
+function buildDeadlineReminderBody(input: {
+  recipientName: string;
+  title: string;
+  description: string;
+  referenceDate: string;
+  amount: number | null;
+  category: string;
+  urgency: string;
+}): { html: string; text: string } {
+  const amountLine =
+    input.amount !== null && input.amount !== 0
+      ? `Betrag: ${formatCurrency(input.amount)}`
+      : null;
+
+  const lines = [
+    `Hallo ${input.recipientName},`,
+    "",
+    input.title,
+    input.description,
+    `Termin: ${input.referenceDate}`,
+    amountLine,
+    `Kategorie: ${input.category}`,
+  ].filter((line): line is string => line !== null);
+
+  const html = [
+    `<p>Hallo ${escapeHtml(input.recipientName)},</p>`,
+    `<p><strong>${escapeHtml(input.title)}</strong></p>`,
+    `<p>${escapeHtml(input.description)}</p>`,
+    `<p>Termin: ${escapeHtml(input.referenceDate)}</p>`,
+    amountLine ? `<p>${escapeHtml(amountLine)}</p>` : "",
+    `<p>Kategorie: ${escapeHtml(input.category)}</p>`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { html, text: lines.join("\n") };
+}
+
 /**
  * Send a reminder email notification for a specific item.
  * Sends to all ADMIN+ users in the tenant who have system email enabled.
@@ -684,17 +738,21 @@ async function sendReminderEmail(
       await enqueueEmail({
         to: recipient.email,
         subject,
-        template: "invoice-notification", // Reuse existing template for now
-        data: {
-          recipientName:
-            recipient.firstName || "Administrator",
-          invoiceNumber: item.title,
-          grossAmount: item.amount ?? 0,
-          dueDate: formatDate(item.referenceDate),
-          reminderDescription: item.description,
+        // F3: hier stand template "invoice-notification" mit dem Kommentar
+        // "Reuse existing template for now" — dieses Template existierte nie.
+        // Das ist auch keine Mahnung, sondern ein Fristen-Hinweis an Admins;
+        // 'invoice-reminder' wuerde inhaltlich Unsinn rendern ("2. Mahnung,
+        // Rechnung <Fristtitel>, 0,00 EUR"). Deshalb bewusst ohne Template
+        // als einfache HTML-Mail.
+        data: buildDeadlineReminderBody({
+          recipientName: recipient.firstName || "Administrator",
+          title: item.title,
+          description: item.description,
+          referenceDate: formatDate(item.referenceDate),
+          amount: item.amount ?? null,
           category: item.category,
           urgency: item.urgency,
-        },
+        }),
         tenantId,
         priority: item.urgency === "critical" ? 2 : 5,
       });

@@ -6927,7 +6927,8 @@
       "description": "System monitoring, analytics and audit trail",
       "tabMonitoring": "Monitoring",
       "tabAnalytics": "Analytics",
-      "tabAudit": "Audit logs"
+      "tabAudit": "Audit logs",
+      "tabFailedJobs": "Failed jobs"
     },
     "systemAdmin": {
       "title": "System",
@@ -8403,6 +8404,41 @@
       "saveDirty": "Save *",
       "emptyTitle": "No blocks available",
       "emptyHint": "Drag blocks from the left bar here"
+    },
+    "failedJobs": {
+      "openTitle": "Open failures",
+      "noOpenFailures": "No open failures",
+      "openCount": "{count} open",
+      "filterQueue": "Queue",
+      "allQueues": "All queues",
+      "filterOpen": "Open only",
+      "filterResolved": "Resolved only",
+      "filterAll": "All",
+      "empty": "No entries for this filter",
+      "loadError": "Could not load failed jobs",
+      "table": {
+        "failedAt": "When",
+        "queue": "Queue",
+        "job": "Job",
+        "attempts": "Attempts",
+        "error": "Error"
+      },
+      "statusOpen": "Open",
+      "reopen": "Reopen",
+      "markResolved": "Mark resolved",
+      "markedResolved": "Marked as resolved",
+      "markedOpen": "Reopened",
+      "updateFailed": "Could not change the status",
+      "detail": {
+        "error": "Error message",
+        "payload": "Job payload",
+        "stackTrace": "Stack trace",
+        "notePlaceholder": "Resolution note (optional)",
+        "resolvedAt": "Resolved on {date}"
+      },
+      "pagination": "Page {page} of {totalPages} · {total} entries",
+      "prev": "Previous",
+      "next": "Next"
     }
   },
   "portal": {

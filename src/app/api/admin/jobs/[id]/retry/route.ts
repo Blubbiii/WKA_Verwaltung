@@ -19,8 +19,10 @@ import { apiError } from "@/lib/api-errors";
 import {
   findJobById,
   findJobInQueue,
+  jobBelongsToTenant,
   serializeJob,
 } from '@/lib/queue/registry';
+import { isSuperadmin } from '@/lib/auth/permissions';
 
 /**
  * Route params
@@ -69,6 +71,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const { job, queueInfo } = result;
+
+    // F19: retry war mandantenuebergreifend ausfuehrbar — ein Admin von
+    // Mandant A konnte fremde Rechnungs- und Mail-Jobs neu anstossen.
+    if (!jobBelongsToTenant(job, check.tenantId, await isSuperadmin(check.userId!))) {
+      return apiError("NOT_FOUND", undefined, { message: `Job "${jobId}" nicht gefunden` });
+    }
 
     // Check job state - only allow retry of failed jobs
     const state = await job.getState();
