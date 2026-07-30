@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Download,
   Loader2,
   Pencil,
@@ -54,6 +55,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JournalAttachmentsList } from "@/components/buchhaltung/JournalAttachmentsList";
+import { Combobox } from "@/components/ui/combobox";
 import { downloadBlob } from "@/lib/download";
 
 // ============================================================================
@@ -134,9 +136,20 @@ interface FormDialogProps {
   onClose: () => void;
   onSaved: () => void;
   editing: JournalEntry | null;  // null = new entry
+  /**
+   * Vorlage fuer eine NEUE Buchung (Bedienaufwand #8).
+   *
+   * Bewusst getrennt von `editing`: nur so bleibt der Speicherpfad ein POST.
+   * Waere die Vorlage ueber `editing` gelaufen, haette der Dialog die
+   * Originalbuchung ueberschrieben statt eine neue anzulegen.
+   *
+   * Ein "Buchung duplizieren" gab es nicht — jede wiederkehrende Buchung wurde
+   * neu getippt, obwohl Budget und Rechnungsvorlagen das Muster schon kennen.
+   */
+  duplicateFrom?: JournalEntry | null;
 }
 
-function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
+function EntryFormDialog({ open, onClose, onSaved, editing, duplicateFrom }: FormDialogProps) {
   const t = useTranslations("journalEntries");
   const [entryDate, setEntryDate] = useState("");
   const [description, setDescription] = useState("");
@@ -146,6 +159,12 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
   const [posting, setPosting] = useState(false);
   // Sprint 3: 4-Augen-Schwelle für Posting (aus TenantSettings).
   const [postingThreshold, setPostingThreshold] = useState<number | null>(null);
+  // Bedienaufwand #7: Kontenrahmen fuer die Auswahl. Einmal beim Oeffnen
+  // geladen und clientseitig gefiltert — ein Kontenrahmen hat wenige hundert
+  // Eintraege, dafuer lohnt keine Server-Suche pro Tastendruck.
+  const [accounts, setAccounts] = useState<
+    Array<{ accountNumber: string; name: string }>
+  >([]);
 
   useEffect(() => {
     fetch("/api/admin/tenant-settings")
@@ -156,8 +175,50 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
       .catch(() => {});
   }, []);
 
+  // Kontenrahmen nur laden, wenn der Dialog offen ist — sonst laeuft der
+  // Request auch dann, wenn der Nutzer nur die Liste ansieht.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetch("/api/buchhaltung/accounts")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.data) setAccounts(d.data);
+      })
+      .catch(() => {
+        // Ohne Kontenliste bleibt die Auswahl leer; die Nummer laesst sich
+        // weiterhin ueber die Freitext-Eingabe erfassen.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   // Populate form when editing
   useEffect(() => {
+    // Vorlage hat Vorrang, wenn kein Bearbeiten laeuft.
+    const template = editing ?? duplicateFrom ?? null;
+    if (template && !editing) {
+      // Duplizieren: Positionen uebernehmen, aber KEINE Zeilen-IDs (sonst
+      // wuerde der Server sie als bestehende Zeilen deuten), heutiges Datum,
+      // und die Referenz leer lassen — sie ist beleg-, nicht buchungsbezogen.
+      setEntryDate(new Date().toISOString().slice(0, 10));
+      setDescription(template.description);
+      setReference("");
+      setLines(
+        template.lines.map((l) => ({
+          lineNumber: l.lineNumber,
+          account: l.account,
+          accountName: l.accountName ?? "",
+          description: "",
+          debitAmount: l.debitAmount ? parseFloat(l.debitAmount).toFixed(2) : "",
+          creditAmount: l.creditAmount ? parseFloat(l.creditAmount).toFixed(2) : "",
+          taxKey: "",
+          costCenter: "",
+        }))
+      );
+      return;
+    }
     if (editing) {
       setEntryDate(editing.entryDate.slice(0, 10));
       setDescription(editing.description);
@@ -181,7 +242,14 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
       setReference("");
       setLines([emptyLine(1), emptyLine(2)]);
     }
-  }, [editing, open]);
+  }, [editing, duplicateFrom, open]);
+
+  // Nummer als Label, Name als zweite Zeile — der Buchhalter sucht nach beidem.
+  const accountOptions = accounts.map((a) => ({
+    value: a.accountNumber,
+    label: a.accountNumber,
+    description: a.name,
+  }));
 
   const totalDebit = lines.reduce((s, l) => s + parseAmount(l.debitAmount), 0);
   const totalCredit = lines.reduce((s, l) => s + parseAmount(l.creditAmount), 0);
@@ -202,6 +270,26 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
   const updateLine = (idx: number, field: keyof JournalLine, value: string) => {
     setLines((prev) =>
       prev.map((l, i) => (i === idx ? { ...l, [field]: value } : l))
+    );
+  };
+
+  /**
+   * Bedienaufwand #7: Konto waehlen statt Nummer UND Name tippen.
+   *
+   * Vorher waren beides rohe Inputs ohne Anbindung — der Buchhalter tippte pro
+   * Zeile die Kontonummer und schrieb den Namen ab, mit Tippfehlerrisiko das
+   * kein Validator abfing. `GET /api/buchhaltung/accounts` existierte und wurde
+   * nur von /admin/kontenrahmen genutzt.
+   *
+   * Beide Felder muessen in EINEM setLines-Aufruf gesetzt werden: zwei
+   * aufeinanderfolgende updateLine wuerden auf demselben Snapshot arbeiten und
+   * die erste Aenderung verwerfen.
+   */
+  const applyAccount = (idx: number, accountNumber: string, accountName: string) => {
+    setLines((prev) =>
+      prev.map((l, i) =>
+        i === idx ? { ...l, account: accountNumber, accountName } : l
+      )
     );
   };
 
@@ -342,8 +430,13 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left py-2 px-3 font-medium w-8">{t("dialog.cols.line")}</th>
-                  <th className="text-left py-2 px-3 font-medium w-28">{t("dialog.cols.account")}</th>
-                  <th className="text-left py-2 px-3 font-medium">{t("dialog.cols.accountName")}</th>
+                  <th className="text-left py-2 px-3 font-medium w-64">{t("dialog.cols.account")}</th>
+                  {/* Bedienaufwand #7: JournalLine traegt taxKey und costCenter,
+                      der Payload sendet sie — im Dialog gab es dafuer kein
+                      Eingabefeld. Steuerschluessel waren also gar nicht
+                      erfassbar. */}
+                  <th className="text-left py-2 px-3 font-medium w-24">{t("dialog.cols.taxKey")}</th>
+                  <th className="text-left py-2 px-3 font-medium w-28">{t("dialog.cols.costCenter")}</th>
                   <th className="text-right py-2 px-3 font-medium w-32">{t("dialog.cols.debit")}</th>
                   <th className="text-right py-2 px-3 font-medium w-32">{t("dialog.cols.credit")}</th>
                   {!isReadOnly && <th className="w-8" />}
@@ -354,21 +447,49 @@ function EntryFormDialog({ open, onClose, onSaved, editing }: FormDialogProps) {
                   <tr key={idx} className="border-t">
                     <td className="py-1.5 px-3 text-muted-foreground">{line.lineNumber}</td>
                     <td className="py-1.5 px-2">
-                      <Input
+                      {/* Eine Auswahl statt zweier Freitextfelder: Nummer und
+                          Name kommen zusammen aus dem Kontenrahmen. */}
+                      <Combobox
+                        options={accountOptions}
                         value={line.account}
-                        onChange={(e) => updateLine(idx, "account", e.target.value)}
+                        onChange={(accountNumber) => {
+                          const match = accounts.find((a) => a.accountNumber === accountNumber);
+                          applyAccount(idx, accountNumber, match?.name ?? "");
+                        }}
                         placeholder={t("dialog.accountPlaceholder")}
+                        searchPlaceholder={t("dialog.accountSearchPlaceholder")}
+                        emptyText={t("dialog.accountEmpty")}
+                        disabled={isReadOnly}
+                        aria-label={t("dialog.cols.account")}
+                        className="h-7 text-sm"
+                      />
+                      {/* Konto aus einer Altbuchung, das nicht mehr im
+                          Kontenrahmen steht: sonst waere die Zeile leer und der
+                          Wert beim Speichern still verloren. */}
+                      {line.account && !accounts.some((a) => a.accountNumber === line.account) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t("dialog.accountNotInChart", { account: line.account })}
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-1.5 px-2">
+                      <Input
+                        value={line.taxKey}
+                        onChange={(e) => updateLine(idx, "taxKey", e.target.value)}
+                        placeholder={t("dialog.taxKeyPlaceholder")}
                         className="h-7 text-sm font-mono"
                         disabled={isReadOnly}
+                        aria-label={t("dialog.cols.taxKey")}
                       />
                     </td>
                     <td className="py-1.5 px-2">
                       <Input
-                        value={line.accountName}
-                        onChange={(e) => updateLine(idx, "accountName", e.target.value)}
-                        placeholder={t("dialog.accountNamePlaceholder")}
-                        className="h-7 text-sm"
+                        value={line.costCenter}
+                        onChange={(e) => updateLine(idx, "costCenter", e.target.value)}
+                        placeholder={t("dialog.costCenterPlaceholder")}
+                        className="h-7 text-sm font-mono"
                         disabled={isReadOnly}
+                        aria-label={t("dialog.cols.costCenter")}
                       />
                     </td>
                     <td className="py-1.5 px-2">
@@ -636,6 +757,8 @@ function JournalEntriesPageInner() {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reversingEntry, setReversingEntry] = useState<JournalEntry | null>(null);
+  // Bedienaufwand #8: Vorlage fuer eine neue Buchung.
+  const [duplicateFrom, setDuplicateFrom] = useState<JournalEntry | null>(null);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
 
@@ -810,7 +933,7 @@ function JournalEntriesPageInner() {
           </Button>
           <Button
             size="sm"
-            onClick={() => { setEditingEntry(null); setDialogOpen(true); }}
+            onClick={() => { setEditingEntry(null); setDuplicateFrom(null); setDialogOpen(true); }}
           >
             <Plus className="h-4 w-4 mr-2" />
             {t("newEntry")}
@@ -887,7 +1010,7 @@ function JournalEntriesPageInner() {
                 size="sm"
                 variant="outline"
                 className="mt-2"
-                onClick={() => { setEditingEntry(null); setDialogOpen(true); }}
+                onClick={() => { setEditingEntry(null); setDuplicateFrom(null); setDialogOpen(true); }}
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 {t("createFirst")}
@@ -1009,6 +1132,24 @@ function JournalEntriesPageInner() {
                               </Button>
                             </>
                           )}
+                          {/* Bedienaufwand #8: Duplizieren fuer wiederkehrende
+                              Buchungen — fuer JEDEN Status sinnvoll, auch fuer
+                              gebuchte, denn die sind gerade die Vorlage. */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title={t("duplicate.title")}
+                            aria-label={t("duplicate.title")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingEntry(null);
+                              setDuplicateFrom(entry);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
                           {/* Storno: der einzige Weg, eine gebuchte
                               Fehlbuchung zu korrigieren. DELETE ist auf DRAFT
                               beschraenkt (GoBD §146 Abs. 4). */}
@@ -1095,9 +1236,10 @@ function JournalEntriesPageInner() {
 
       <EntryFormDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSaved={() => { setDialogOpen(false); load(); }}
+        onClose={() => { setDialogOpen(false); setDuplicateFrom(null); }}
+        onSaved={() => { setDialogOpen(false); setDuplicateFrom(null); load(); }}
         editing={editingEntry}
+        duplicateFrom={duplicateFrom}
       />
 
       <ReverseDialog

@@ -179,6 +179,11 @@
       "saveError": "Dein Filter konnte nicht gespeichert werden",
       "updateError": "Dein Filter konnte nicht aktualisiert werden",
       "deleteError": "Dein Filter konnte nicht gelöscht werden"
+    },
+    "combobox": {
+      "placeholder": "Bitte wählen",
+      "searchPlaceholder": "Suchen …",
+      "empty": "Kein Treffer"
     }
   },
   "statusLabels": {
@@ -1143,7 +1148,9 @@
       "xrechnungUBL": "XRechnung (UBL 2.1)",
       "zugferdCII": "ZUGFeRD (CII)",
       "leaseContract": "Pachtvertrag:",
-      "openLeaseContract": "Vertrag öffnen"
+      "openLeaseContract": "Vertrag öffnen",
+      "duplicate": "Duplizieren",
+      "openContact": "Kontakt öffnen"
     },
     "new": {
       "titleInvoice": "Neue Rechnung",
@@ -1221,7 +1228,9 @@
       "toastPriceRequired": "Alle Positionen benötigen einen positiven Preis",
       "toastSaveError": "Fehler beim Speichern",
       "toastCreateSuccessInvoice": "Rechnung erstellt!",
-      "toastCreateSuccessCreditNote": "Gutschrift erstellt!"
+      "toastCreateSuccessCreditNote": "Gutschrift erstellt!",
+      "duplicatedFrom": "Vorlage aus Rechnung {number} übernommen",
+      "duplicateLoadError": "Vorlage konnte nicht geladen werden"
     },
     "list": {
       "pageTitle": "Abrechnungen",
@@ -3553,7 +3562,12 @@
         "SOFTWARE_UPDATE": "Software-Update",
         "EMERGENCY": "Notfall",
         "OTHER": "Sonstiges"
-      }
+      },
+      "removeFile": "{name} entfernen",
+      "batchTitleHint": "{count} Dateien ausgewählt – der Titel wird je Datei aus dem Dateinamen übernommen.",
+      "batchProgress": "{done} von {total} hochgeladen",
+      "batchSuccess": "{count} Dokumente hochgeladen",
+      "batchPartial": "{ok} hochgeladen, {failed} fehlgeschlagen – die fehlgeschlagenen bleiben ausgewählt"
     },
     "newVersion": {
       "title": "Neue Version hochladen",
@@ -4050,7 +4064,10 @@
       "primaryBadge": "Primär",
       "viaLinked": "via {source}",
       "moreInvoices": "{count} weitere Rechnungen nicht angezeigt",
-      "moreDocuments": "{count} weitere Dokumente nicht angezeigt"
+      "moreDocuments": "{count} weitere Dokumente nicht angezeigt",
+      "invoiceSourceRecipient": "Rechnungsempfänger",
+      "invoiceSourceLease": "Pachtvertrag",
+      "invoiceSourceShareholder": "Beteiligung"
     },
     "templates": {
       "redirectMessage": "Weiterleitung zur E-Mail-Einstellungsseite…"
@@ -9891,7 +9908,9 @@
         "account": "Konto",
         "accountName": "Bezeichnung",
         "debit": "Soll (€)",
-        "credit": "Haben (€)"
+        "credit": "Haben (€)",
+        "taxKey": "StSchl.",
+        "costCenter": "Kostenstelle"
       },
       "accountPlaceholder": "4210",
       "accountNamePlaceholder": "Pachtaufwand",
@@ -9911,7 +9930,12 @@
       "connectionError": "Verbindungsfehler",
       "savedDraft": "Buchung gespeichert",
       "updated": "Buchung aktualisiert",
-      "postedSuccess": "Buchung erfolgreich gebucht"
+      "postedSuccess": "Buchung erfolgreich gebucht",
+      "accountSearchPlaceholder": "Nummer oder Name …",
+      "accountEmpty": "Kein Konto gefunden",
+      "accountNotInChart": "Konto {account} steht nicht im Kontenrahmen",
+      "taxKeyPlaceholder": "z. B. 9",
+      "costCenterPlaceholder": "optional"
     },
     "delete": {
       "success": "Buchung gelöscht",
@@ -9944,6 +9968,9 @@
       "success": "Buchung storniert",
       "error": "Storno fehlgeschlagen",
       "pendingApproval": "Vier-Augen-Prinzip: der Storno wartet auf eine zweite Freigabe."
+    },
+    "duplicate": {
+      "title": "Als Vorlage für neue Buchung"
     }
   },
   "serviceEvents": {

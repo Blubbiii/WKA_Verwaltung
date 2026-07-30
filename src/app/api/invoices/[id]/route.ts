@@ -19,6 +19,8 @@ const invoiceUpdateSchema = z.object({
   recipientType: z.string().optional(),
   recipientName: z.string().optional(),
   recipientAddress: z.string().optional(),
+  // Bedienaufwand #11: Verweis auf den CRM-Kontakt, nullable zum Loesen.
+  recipientPersonId: z.string().uuid().nullable().optional(),
   serviceStartDate: z.string().optional().nullable(),
   serviceEndDate: z.string().optional().nullable(),
   paymentReference: z.string().optional(),
@@ -225,6 +227,20 @@ export async function PATCH(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Nur Entwürfe können bearbeitet werden" });
     }
 
+    // Bedienaufwand #11: dieselbe Pruefung wie beim Anlegen — ohne sie liesse
+    // sich eine Rechnung nachtraeglich an einen fremden Kontakt haengen.
+    if (validatedData.recipientPersonId) {
+      const person = await prisma.person.findFirst({
+        where: { id: validatedData.recipientPersonId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!person) {
+        return apiError("BAD_REQUEST", 400, {
+          message: "Rechnungsempfänger nicht gefunden",
+        });
+      }
+    }
+
     // F15-Compliance: Optimistic Locking Check.
     // Wenn Client `expectedUpdatedAt` mitgibt und die DB-Zeit davon abweicht,
     // hat jemand anderes den Datensatz zwischenzeitlich verändert.
@@ -355,6 +371,9 @@ export async function PATCH(
               }),
               ...(validatedData.recipientAddress !== undefined && {
                 recipientAddress: validatedData.recipientAddress,
+              }),
+              ...(validatedData.recipientPersonId !== undefined && {
+                recipientPersonId: validatedData.recipientPersonId,
               }),
               ...(validatedData.serviceStartDate !== undefined && {
                 serviceStartDate: validatedData.serviceStartDate

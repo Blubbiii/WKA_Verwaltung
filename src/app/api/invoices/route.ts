@@ -44,6 +44,9 @@ const invoiceCreateSchema = z.object({
   recipientType: z.string().optional().nullable(),
   recipientName: z.string().optional().nullable(),
   recipientAddress: z.string().optional().nullable(),
+  // Bedienaufwand #11: Verweis auf den CRM-Kontakt. Die Mandantenzugehoerig-
+  // keit wird unten geprueft — die ID kommt vom Client.
+  recipientPersonId: z.string().uuid().optional().nullable(),
   serviceStartDate: z.string().optional().nullable(),
   serviceEndDate: z.string().optional().nullable(),
   paymentReference: z.string().optional().nullable(),
@@ -219,6 +222,22 @@ async function postHandler(request: NextRequest) {
       };
     });
 
+    // Bedienaufwand #11: Der Verweis kommt aus dem Auswahldialog, kaeme aber
+    // genauso durch einen direkten POST. Ohne diese Pruefung liesse sich eine
+    // Rechnung an einen Kontakt eines fremden Mandanten haengen — und die
+    // 360-Grad-Sicht des fremden Mandanten zeigte sie dann an.
+    if (validatedData.recipientPersonId) {
+      const person = await prisma.person.findFirst({
+        where: { id: validatedData.recipientPersonId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!person) {
+        return apiError("BAD_REQUEST", 400, {
+          message: "Rechnungsempfaenger nicht gefunden",
+        });
+      }
+    }
+
     const totalNet = totalNetDec.toDecimalPlaces(2).toNumber();
     const totalTax = totalTaxDec.toDecimalPlaces(2).toNumber();
     const totalGross = totalGrossDec.toDecimalPlaces(2).toNumber();
@@ -261,6 +280,7 @@ async function postHandler(request: NextRequest) {
           recipientType: validatedData.recipientType,
           recipientName: validatedData.recipientName,
           recipientAddress: validatedData.recipientAddress,
+          recipientPersonId: validatedData.recipientPersonId ?? null,
           serviceStartDate: validatedData.serviceStartDate
             ? new Date(validatedData.serviceStartDate)
             : null,

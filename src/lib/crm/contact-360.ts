@@ -81,7 +81,7 @@ export interface InvoiceItem {
   status: string;
   invoiceType: string;
   /** Why is this invoice linked to this person? */
-  linkedVia: "LEASE" | "SHAREHOLDER";
+  linkedVia: "RECIPIENT" | "LEASE" | "SHAREHOLDER";
   linkedEntityId: string;
 }
 
@@ -119,6 +119,16 @@ function toNumber(v: Prisma.Decimal | number | null | undefined): number | null 
   if (v === null || v === undefined) return null;
   if (typeof v === "number") return v;
   return Number(v);
+}
+
+/** Behaelt je Rechnung das erste Vorkommen — die Reihenfolge legt den Vorrang fest. */
+function dedupeById(items: InvoiceItem[]): InvoiceItem[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 function daysUntil(date: Date | null): number | null {
@@ -291,7 +301,24 @@ export async function loadContact360(
   const fundIds = shareholderRows.map((s) => s.fundId);
   const parkRoleIds = linkedParks.map((p) => p.id);
 
-  const [leaseInvoices, shareholderInvoices, documents] = await Promise.all([
+  const [recipientInvoices, leaseInvoices, shareholderInvoices, documents] = await Promise.all([
+    // Bedienaufwand #11: direkt auf den Kontakt ausgestellte Rechnungen.
+    // Bisher tauchten hier nur Rechnungen auf, die ueber einen Pachtvertrag
+    // oder eine Beteiligung erreichbar waren — eine frei erfasste Rechnung
+    // an denselben Kontakt fehlte in der 360-Grad-Sicht komplett.
+    prisma.invoice.findMany({
+      where: { recipientPersonId: personId, tenantId, deletedAt: null },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        invoiceDate: true,
+        grossAmount: true,
+        status: true,
+        invoiceType: true,
+      },
+      orderBy: { invoiceDate: "desc" },
+      take: PAGE_SIZE_LARGE,
+    }),
     allLeaseIds.length
       ? prisma.invoice.findMany({
           where: {
@@ -451,7 +478,22 @@ export async function loadContact360(
     };
   });
 
-  const invoiceItems: InvoiceItem[] = [
+  // Die drei Quellen ueberschneiden sich: eine Pachtrechnung an den Verpaechter
+  // traegt jetzt sowohl leaseId als auch recipientPersonId. Ohne Entdopplung
+  // stuende sie zweimal in der Liste und zaehlte doppelt in invoiceCount.
+  // Reihenfolge = Vorrang: der direkte Empfaengerbezug ist die genaueste
+  // Aussage darueber, warum die Rechnung zu diesem Kontakt gehoert.
+  const invoiceItems: InvoiceItem[] = dedupeById([
+    ...recipientInvoices.map<InvoiceItem>((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      invoiceDate: inv.invoiceDate,
+      grossAmount: Number(inv.grossAmount),
+      status: inv.status,
+      invoiceType: inv.invoiceType,
+      linkedVia: "RECIPIENT",
+      linkedEntityId: personId,
+    })),
     ...leaseInvoices.map<InvoiceItem>((inv) => ({
       id: inv.id,
       invoiceNumber: inv.invoiceNumber,
@@ -472,7 +514,7 @@ export async function loadContact360(
       linkedVia: "SHAREHOLDER",
       linkedEntityId: inv.shareholderId!,
     })),
-  ].sort((a, b) => b.invoiceDate.getTime() - a.invoiceDate.getTime());
+  ]).sort((a, b) => b.invoiceDate.getTime() - a.invoiceDate.getTime());
 
   const documentItems: DocumentItem[] = documents.map<DocumentItem>((d) => ({
     id: d.id,

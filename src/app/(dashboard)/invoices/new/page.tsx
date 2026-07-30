@@ -94,6 +94,7 @@ function NewInvoiceContent() {
   const [formData, setFormData] = useState({
     invoiceDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+    recipientPersonId: null as string | null,
     recipientType: "PERSON",
     recipientName: "",
     recipientStreet: "",
@@ -135,6 +136,87 @@ function NewInvoiceContent() {
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTargetItemId, setTemplateTargetItemId] = useState<string | null>(null);
+
+  /**
+   * Bedienaufwand #12: Kontext-Vorbelegung.
+   *
+   * Die Seite las bisher NUR `?type=`. Alle vier Links hierher uebergaben
+   * keinerlei Kontext, und von Pachtvertrag, Vertrag, Fonds oder Park gab es
+   * gar keinen Einstieg "Rechnung erstellen". Das Muster ist etabliert —
+   * documents/upload liest parkId/fundId und belegt vor.
+   */
+  useEffect(() => {
+    const parkId = searchParams.get("parkId");
+    const fundId = searchParams.get("fundId");
+    if (!parkId && !fundId) return;
+    setFormData((prev) => ({
+      ...prev,
+      ...(parkId ? { parkId } : {}),
+      ...(fundId ? { fundId } : {}),
+    }));
+  }, [searchParams]);
+
+  /**
+   * Bedienaufwand #9: "Rechnung duplizieren".
+   *
+   * Die Detailseite bot Bearbeiten, Stornieren, PDF, XRechnung, Zahlung und
+   * Korrektur — kein Duplizieren. RecurringInvoicesManager deckt nur echte
+   * Serien ab, nicht den "so wie letztes Mal, aber anders"-Fall.
+   *
+   * Bewusst NICHT uebernommen: Rechnungsnummer (zieht der Server), Datum
+   * (heute + Zahlungsziel), Status und Zahlungsdaten. Alles andere waere eine
+   * Kopie, die man an drei Stellen wieder korrigieren muss.
+   */
+  useEffect(() => {
+    const duplicateFrom = searchParams.get("duplicateFrom");
+    if (!duplicateFrom) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/invoices/${duplicateFrom}`);
+        if (!res.ok) throw new Error();
+        const src = await res.json();
+        if (cancelled) return;
+
+        setFormData((prev) => ({
+          ...prev,
+          recipientPersonId: src.recipientPersonId ?? null,
+          recipientType: src.recipientType ?? prev.recipientType,
+          recipientName: src.recipientName ?? "",
+          recipientStreet: src.recipientStreet ?? "",
+          recipientHouseNumber: src.recipientHouseNumber ?? "",
+          recipientPostalCode: src.recipientPostalCode ?? "",
+          recipientCity: src.recipientCity ?? "",
+          notes: src.notes ?? "",
+          parkId: src.parkId ?? "",
+          fundId: src.fundId ?? "",
+        }));
+
+        if (Array.isArray(src.items) && src.items.length > 0) {
+          setItems(
+            src.items.map((it: Record<string, unknown>) => ({
+              // Frische Client-ID: die Positions-ID der Vorlage wuerde der
+              // Server als bestehende Position deuten.
+              id: Math.random().toString(36).slice(2),
+              description: String(it.description ?? ""),
+              quantity: Number(it.quantity ?? 1),
+              unit: String(it.unit ?? "Stueck"),
+              unitPrice: Number(it.unitPrice ?? 0),
+              taxType: (it.taxType as InvoiceItem["taxType"]) ?? "EXEMPT",
+            })),
+          );
+        }
+        toast.success(t("duplicatedFrom", { number: src.invoiceNumber ?? "" }));
+      } catch {
+        if (!cancelled) toast.error(t("duplicateLoadError"));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, t]);
 
   useEffect(() => {
     // Lade Parks und Gesellschaften für Dropdown
@@ -209,26 +291,20 @@ function NewInvoiceContent() {
   }
 
   function handleRecipientSelect(recipient: RecipientSelection) {
-    // Address comes as "Straße Hausnr\nPLZ Ort"
-    const lines = (recipient.recipientAddress || "").split("\n").map(l => l.trim()).filter(Boolean);
-    const streetLine = lines[0] || "";
-    const plzCity = lines[1] || "";
-    const plzMatch = plzCity.match(/^(\d{4,5})\s*(.*)/);
-    // Split street line into street + housenumber (last token if it looks like a number)
-    const streetParts = streetLine.split(/\s+/);
-    const lastPart = streetParts[streetParts.length - 1] || "";
-    const looksLikeNumber = /^\d/.test(lastPart);
-    const street = looksLikeNumber ? streetParts.slice(0, -1).join(" ") : streetLine;
-    const houseNumber = looksLikeNumber ? lastPart : "";
-
+    // Bedienaufwand #11: Der Dialog liefert die Adresse jetzt in Einzelfeldern.
+    // Vorher wurde hier der zusammengesetzte Adresstext wieder zerlegt: erste
+    // Zeile als Strasse, letztes Wort als Hausnummer, sobald es mit einer
+    // Ziffer beginnt. Das verlor die Hausnummer bei jeder Strasse, die selbst
+    // auf eine Zahl endet, und verschluckte jeden dreizeiligen Zusatz — still.
     setFormData({
       ...formData,
+      recipientPersonId: recipient.personId || null,
       recipientType: recipient.recipientType,
       recipientName: recipient.recipientName,
-      recipientStreet: street,
-      recipientHouseNumber: houseNumber,
-      recipientPostalCode: plzMatch ? plzMatch[1] : "",
-      recipientCity: plzMatch ? plzMatch[2] : plzCity,
+      recipientStreet: recipient.recipientStreet,
+      recipientHouseNumber: recipient.recipientHouseNumber,
+      recipientPostalCode: recipient.recipientPostalCode,
+      recipientCity: recipient.recipientCity,
     });
   }
 
@@ -300,6 +376,7 @@ function NewInvoiceContent() {
         invoiceType: type,
         invoiceDate: new Date(formData.invoiceDate).toISOString(),
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
+        recipientPersonId: formData.recipientPersonId,
         recipientType: formData.recipientType,
         recipientName: formData.recipientName,
         recipientAddress: [

@@ -15,6 +15,7 @@ import {
   Send,
   CheckCircle,
   XCircle,
+  Copy,
   Download,
   Loader2,
   Trash2,
@@ -113,6 +114,7 @@ interface Invoice {
   recipientType: string | null;
   recipientName: string | null;
   recipientAddress: string | null;
+  recipientPersonId: string | null;
   serviceStartDate: string | null;
   serviceEndDate: string | null;
   paymentReference: string | null;
@@ -746,6 +748,15 @@ export default function InvoiceDetailPage({
               {t("pdf")}
             </a>
           </Button>
+          {/* Bedienaufwand #9: "so wie letztes Mal, aber anders".
+              Bewusst fuer JEDEN Status verfuegbar — auch eine stornierte
+              Rechnung ist eine brauchbare Vorlage. */}
+          <Button variant="outline" asChild>
+            <Link href={`/invoices/new?duplicateFrom=${id}`}>
+              <Copy className="mr-2 h-4 w-4" />
+              {t("duplicate")}
+            </Link>
+          </Button>
           {/* XRechnung / ZUGFeRD Download */}
           {invoice.status !== "CANCELLED" && (
             <DropdownMenu>
@@ -917,6 +928,19 @@ export default function InvoiceDetailPage({
                 </p>
               ) : (
                 <p className="text-xs text-amber-600">{t("noAddress")}</p>
+              )}
+              {/* Bedienaufwand #11: Ruecksprung ins CRM. Name und Anschrift
+                  darueber bleiben bewusst die Fassung zum Rechnungsdatum — der
+                  Link fuehrt zum heutigen Stammsatz, nicht umgekehrt. */}
+              {invoice.recipientPersonId && (
+                <p className="text-xs pt-1">
+                  <Link
+                    href={`/crm/contacts/${invoice.recipientPersonId}`}
+                    className="text-primary hover:underline"
+                  >
+                    {t("openContact")}
+                  </Link>
+                </p>
               )}
               {invoice.fund && (
                 <p className="text-xs text-muted-foreground pt-1 border-t mt-2">

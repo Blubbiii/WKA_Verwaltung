@@ -41,7 +41,28 @@ interface Person {
 export interface RecipientSelection {
   recipientType: "PERSON" | "COMPANY";
   recipientName: string;
+  /**
+   * Adresse als zweizeiliger Text — weiterhin fuer Formulare, die genau ein
+   * Adressfeld haben (Rechnung bearbeiten).
+   */
   recipientAddress: string;
+  /**
+   * Bedienaufwand #11 (Audit 2026-07): Verweis auf den CRM-Kontakt. Der Dialog
+   * kannte die ID bisher, gab sie aber nicht weiter — deshalb liess sich von
+   * einer Rechnung nicht auf den Kontakt zurueckspringen.
+   */
+  personId: string;
+  /**
+   * Die Adresse zusaetzlich in Einzelfeldern. Der Aufrufer hat sie bisher aus
+   * `recipientAddress` per Zeilenumbruch und Hausnummern-Regex zurueckgewonnen.
+   * Das ging bei "Am Hang 12a", bei Strassennamen mit Zahl und bei jedem
+   * dreizeiligen Zusatz schief. Die Quelle hat die Felder einzeln — es gibt
+   * keinen Grund, sie erst zusammenzukleben.
+   */
+  recipientStreet: string;
+  recipientHouseNumber: string;
+  recipientPostalCode: string;
+  recipientCity: string;
 }
 
 interface RecipientSearchDialogProps {
@@ -156,6 +177,11 @@ export function RecipientSearchDialog({
       recipientType: isCompany ? "COMPANY" : "PERSON",
       recipientName: getPersonDisplayName(person),
       recipientAddress: getPersonAddress(person),
+      personId: person.id,
+      recipientStreet: person.street ?? "",
+      recipientHouseNumber: person.houseNumber ?? "",
+      recipientPostalCode: person.postalCode ?? "",
+      recipientCity: person.city ?? "",
     });
     onOpenChange(false);
   }
@@ -194,7 +220,10 @@ export function RecipientSearchDialog({
         throw new Error(error.error || t("toast.createError"));
       }
 
-      const _created = await response.json();
+      const created = (await response.json()) as { id?: string; data?: { id?: string } };
+      // Die ID der frisch angelegten Person wurde bisher verworfen — dabei ist
+      // genau hier die Verknuepfung garantiert richtig.
+      const createdId = created?.id ?? created?.data?.id ?? "";
       toast.success(t("toast.created"));
 
       // Select the newly created person
@@ -213,6 +242,11 @@ export function RecipientSearchDialog({
         recipientType: isCompany ? "COMPANY" : "PERSON",
         recipientName: name,
         recipientAddress: addressParts.join("\n"),
+        personId: createdId,
+        recipientStreet: newStreet.trim(),
+        recipientHouseNumber: newHouseNumber.trim(),
+        recipientPostalCode: newPostalCode.trim(),
+        recipientCity: newCity.trim(),
       });
       onOpenChange(false);
     } catch (error) {

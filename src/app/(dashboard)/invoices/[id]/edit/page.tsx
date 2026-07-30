@@ -83,6 +83,7 @@ interface Invoice {
   recipientType: string | null;
   recipientName: string | null;
   recipientAddress: string | null;
+  recipientPersonId: string | null;
   serviceStartDate: string | null;
   serviceEndDate: string | null;
   paymentReference: string | null;
@@ -147,6 +148,7 @@ export default function EditInvoicePage({
   const [formData, setFormData] = useState({
     invoiceDate: "",
     dueDate: "",
+    recipientPersonId: null as string | null,
     recipientType: "PERSON",
     recipientName: "",
     recipientAddress: "",
@@ -202,6 +204,7 @@ export default function EditInvoicePage({
         setFormData({
           invoiceDate: formatDateForInput(data.invoiceDate),
           dueDate: formatDateForInput(data.dueDate),
+          recipientPersonId: data.recipientPersonId ?? null,
           recipientType: data.recipientType || "PERSON",
           recipientName: data.recipientName || "",
           recipientAddress: data.recipientAddress || "",
@@ -313,6 +316,7 @@ export default function EditInvoicePage({
   function handleRecipientSelect(recipient: RecipientSelection) {
     setFormData({
       ...formData,
+      recipientPersonId: recipient.personId || null,
       recipientType: recipient.recipientType,
       recipientName: recipient.recipientName,
       recipientAddress: recipient.recipientAddress,
@@ -367,6 +371,7 @@ export default function EditInvoicePage({
       const invoicePayload = {
         invoiceDate: new Date(formData.invoiceDate).toISOString(),
         dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : null,
+        recipientPersonId: formData.recipientPersonId,
         recipientType: formData.recipientType,
         recipientName: formData.recipientName,
         recipientAddress: formData.recipientAddress || null,

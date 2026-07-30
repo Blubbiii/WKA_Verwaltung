@@ -179,6 +179,11 @@
       "saveError": "Failed to save filter",
       "updateError": "Failed to update filter",
       "deleteError": "Failed to delete filter"
+    },
+    "combobox": {
+      "placeholder": "Please select",
+      "searchPlaceholder": "Search …",
+      "empty": "No match"
     }
   },
   "statusLabels": {
@@ -1143,7 +1148,9 @@
       "xrechnungUBL": "XRechnung (UBL 2.1)",
       "zugferdCII": "ZUGFeRD (CII)",
       "leaseContract": "Lease contract:",
-      "openLeaseContract": "Open contract"
+      "openLeaseContract": "Open contract",
+      "duplicate": "Duplicate",
+      "openContact": "Open contact"
     },
     "new": {
       "titleInvoice": "New invoice",
@@ -1221,7 +1228,9 @@
       "toastPriceRequired": "All items need a positive price",
       "toastSaveError": "Failed to save",
       "toastCreateSuccessInvoice": "Invoice created!",
-      "toastCreateSuccessCreditNote": "Credit note created!"
+      "toastCreateSuccessCreditNote": "Credit note created!",
+      "duplicatedFrom": "Copied from invoice {number}",
+      "duplicateLoadError": "Could not load template"
     },
     "list": {
       "pageTitle": "Invoices",
@@ -3553,7 +3562,12 @@
         "SOFTWARE_UPDATE": "Software Update",
         "EMERGENCY": "Emergency",
         "OTHER": "Other"
-      }
+      },
+      "removeFile": "Remove {name}",
+      "batchTitleHint": "{count} files selected - each title is taken from its file name.",
+      "batchProgress": "{done} of {total} uploaded",
+      "batchSuccess": "{count} documents uploaded",
+      "batchPartial": "{ok} uploaded, {failed} failed - the failed ones stay selected"
     },
     "newVersion": {
       "title": "Upload New Version",
@@ -4050,7 +4064,10 @@
       "primaryBadge": "Primary",
       "viaLinked": "via {source}",
       "moreInvoices": "{count} more invoices not shown",
-      "moreDocuments": "{count} more documents not shown"
+      "moreDocuments": "{count} more documents not shown",
+      "invoiceSourceRecipient": "invoice recipient",
+      "invoiceSourceLease": "lease",
+      "invoiceSourceShareholder": "shareholding"
     },
     "templates": {
       "redirectMessage": "Redirecting to email settings page…"
@@ -9891,7 +9908,9 @@
         "account": "Account",
         "accountName": "Name",
         "debit": "Debit (€)",
-        "credit": "Credit (€)"
+        "credit": "Credit (€)",
+        "taxKey": "Tax key",
+        "costCenter": "Cost center"
       },
       "accountPlaceholder": "4210",
       "accountNamePlaceholder": "Lease expense",
@@ -9911,7 +9930,12 @@
       "connectionError": "Connection error",
       "savedDraft": "Entry saved",
       "updated": "Entry updated",
-      "postedSuccess": "Entry posted successfully"
+      "postedSuccess": "Entry posted successfully",
+      "accountSearchPlaceholder": "Number or name …",
+      "accountEmpty": "No account found",
+      "accountNotInChart": "Account {account} is not in the chart of accounts",
+      "taxKeyPlaceholder": "e.g. 9",
+      "costCenterPlaceholder": "optional"
     },
     "delete": {
       "success": "Entry deleted",
@@ -9944,6 +9968,9 @@
       "success": "Entry reversed",
       "error": "Reversal failed",
       "pendingApproval": "Four-eyes principle: the reversal is waiting for a second approval."
+    },
+    "duplicate": {
+      "title": "Use as template for new entry"
     }
   },
   "serviceEvents": {

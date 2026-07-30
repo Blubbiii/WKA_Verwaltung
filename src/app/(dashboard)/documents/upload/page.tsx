@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -103,12 +103,28 @@ function DocumentUploadForm() {
   const [turbines, setTurbines] = useState<SelectOption[]>([]);
   const [serviceEvents, setServiceEvents] = useState<ServiceEventOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  /**
+   * Bedienaufwand #10: mehrere Dateien pro Durchgang.
+   *
+   * Vorher `files?.[0]` — 20 Vertraege bedeuteten 20 x (Datei → Kategorie →
+   * Park → Fonds → Tags → Speichern), also rund 120 Interaktionen. Die
+   * Metadaten gelten fuer alle gewaehlten Dateien; der Titel kommt je Datei
+   * aus dem Dateinamen, sobald mehr als eine gewaehlt ist.
+   */
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  /** Fortschritt ueber alle Dateien, z. B. "3 / 20". */
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
   const [newTag, setNewTag] = useState("");
   const [preselectedInfo, setPreselectedInfo] = useState<string | null>(null);
 
+  // Im Stapelbetrieb wuerde der Hook je Datei einen Toast werfen — bei 20
+  // gescheiterten Dateien 20 Meldungen plus die Zusammenfassung. Stattdessen
+  // wird die erste Ursache gemerkt und einmal am Ende gezeigt.
+  const batchModeRef = useRef(false);
   const { upload, isUploading: isFileUploading, progress: uploadProgress, cancel: cancelUpload } = useFileUpload({
-    onError: (msg) => toast.error(msg),
+    onError: (msg) => {
+      if (!batchModeRef.current) toast.error(msg);
+    },
   });
 
   const form = useForm<DocumentFormValues>({
@@ -224,18 +240,30 @@ function DocumentUploadForm() {
     }
   }, [loadingOptions, preselectedParkId, preselectedFundId, preselectedContractId, preselectedShareholderId, preselectedTurbineId, preselectedServiceEventId, form]);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      if (!form.getValues("title")) {
-        form.setValue("title", file.name.replace(/\.[^/.]+$/, ""));
-      }
-    }
+  /** Dateiname ohne Endung — dient als Titel-Vorschlag. */
+  function titleFromFile(file: File): string {
+    return file.name.replace(/\.[^/.]+$/, "");
   }
 
-  function removeFile() {
-    setSelectedFile(null);
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+    if (picked.length === 0) return;
+    setSelectedFiles(picked);
+    // Nur bei genau EINER Datei den Titel vorbelegen. Bei mehreren waere ein
+    // gemeinsamer Titel irrefuehrend — dort gewinnt der jeweilige Dateiname.
+    if (picked.length === 1 && !form.getValues("title")) {
+      form.setValue("title", titleFromFile(picked[0]));
+    }
+    // Zuruecksetzen, damit dieselbe Auswahl erneut ein change-Event ausloest.
+    e.target.value = "";
+  }
+
+  function removeFile(index?: number) {
+    if (index === undefined) {
+      setSelectedFiles([]);
+      return;
+    }
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   function addTag() {
@@ -261,12 +289,76 @@ function DocumentUploadForm() {
     return "/documents";
   }
 
+  /** Baut das FormData fuer EINE Datei; Metadaten sind fuer alle gleich. */
+  function buildFormData(data: DocumentFormValues, file: File, title: string): FormData {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("category", data.category);
+    if (data.description) formData.append("description", data.description);
+    if (data.tags.length > 0) formData.append("tags", JSON.stringify(data.tags));
+    if (data.parkId && data.parkId !== "_none") formData.append("parkId", data.parkId);
+    if (data.fundId && data.fundId !== "_none") formData.append("fundId", data.fundId);
+    if (data.contractId && data.contractId !== "_none") formData.append("contractId", data.contractId);
+    if (data.shareholderId && data.shareholderId !== "_none") formData.append("shareholderId", data.shareholderId);
+    if (data.turbineId && data.turbineId !== "_none") formData.append("turbineId", data.turbineId);
+    if (data.serviceEventId && data.serviceEventId !== "_none") formData.append("serviceEventId", data.serviceEventId);
+    return formData;
+  }
+
   async function onSubmit(data: DocumentFormValues) {
-    if (!selectedFile) {
+    if (selectedFiles.length === 0) {
       toast.error(t("selectFile"));
       return;
     }
 
+    // Mehrere Dateien: nacheinander hochladen. Bewusst sequenziell — der
+    // Fortschrittsbalken zeigt eine Datei, und paralleles Hochladen von 20
+    // Dateien belastet Server und Storage ohne spuerbaren Gewinn.
+    if (selectedFiles.length > 1) {
+      setIsLoading(true);
+      batchModeRef.current = true;
+      setBatchProgress({ done: 0, total: selectedFiles.length });
+      const failed: string[] = [];
+      let firstError: string | null = null;
+      try {
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          try {
+            await upload("/api/documents", buildFormData(data, file, titleFromFile(file)));
+          } catch (err) {
+            failed.push(file.name);
+            if (!firstError) firstError = err instanceof Error ? err.message : String(err);
+          }
+          setBatchProgress({ done: i + 1, total: selectedFiles.length });
+        }
+
+        // Teilerfolg NICHT als Erfolg melden — dasselbe Muster, das im
+        // Worker-Audit als "stiller Fehlschlag" auffiel.
+        if (failed.length === 0) {
+          toast.success(t("batchSuccess", { count: selectedFiles.length }));
+          router.push("/documents");
+        } else {
+          toast.warning(
+            t("batchPartial", {
+              ok: selectedFiles.length - failed.length,
+              failed: failed.length,
+            }),
+            { description: firstError ?? undefined },
+          );
+          // Nur die gescheiterten stehen lassen, damit ein zweiter Versuch
+          // keine Duplikate der bereits hochgeladenen erzeugt.
+          setSelectedFiles((prev) => prev.filter((f) => failed.includes(f.name)));
+        }
+      } finally {
+        batchModeRef.current = false;
+        setIsLoading(false);
+        setBatchProgress(null);
+      }
+      return;
+    }
+
+    const selectedFile = selectedFiles[0];
     try {
       setIsLoading(true);
 
@@ -334,29 +426,53 @@ function DocumentUploadForm() {
               <CardTitle>{t("fileCard")}</CardTitle>
             </CardHeader>
             <CardContent>
-              {selectedFile ? (
+              {selectedFiles.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <File className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{selectedFile.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={removeFile}
-                      disabled={isFileUploading}
+                  {selectedFiles.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between p-4 border rounded-lg bg-muted/50"
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {isFileUploading && (
+                      <div className="flex items-center gap-3 min-w-0">
+                        <File className="h-8 w-8 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{file.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {(file.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeFile(index)}
+                        disabled={isFileUploading || isLoading}
+                        aria-label={t("removeFile", { name: file.name })}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+
+                  {selectedFiles.length > 1 && (
+                    <p className="text-xs text-muted-foreground">
+                      {t("batchTitleHint", { count: selectedFiles.length })}
+                    </p>
+                  )}
+
+                  {batchProgress && (
+                    <div className="space-y-2">
+                      <Progress
+                        value={Math.round((batchProgress.done / batchProgress.total) * 100)}
+                        className="h-2"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        {t("batchProgress", batchProgress)}
+                      </p>
+                    </div>
+                  )}
+                  {isFileUploading && !batchProgress && (
                     <div className="space-y-2">
                       <Progress value={uploadProgress} className="h-2" />
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -388,6 +504,7 @@ function DocumentUploadForm() {
                   </div>
                   <input
                     type="file"
+                    multiple
                     className="hidden"
                     onChange={handleFileChange}
                     accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
@@ -717,7 +834,7 @@ function DocumentUploadForm() {
             >
               {tCommon("cancel")}
             </Button>
-            <Button type="submit" disabled={isLoading || isFileUploading || !selectedFile}>
+            <Button type="submit" disabled={isLoading || isFileUploading || selectedFiles.length === 0}>
               {(isLoading || isFileUploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isFileUploading ? t("uploading", { progress: uploadProgress }) : t("uploadButton")}
             </Button>

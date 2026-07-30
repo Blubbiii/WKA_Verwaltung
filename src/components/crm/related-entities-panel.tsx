@@ -81,7 +81,7 @@ export interface InvoiceItemDto {
   grossAmount: number;
   status: string;
   invoiceType: string;
-  linkedVia: "LEASE" | "SHAREHOLDER";
+  linkedVia: "RECIPIENT" | "LEASE" | "SHAREHOLDER";
   linkedEntityId: string;
 }
 
@@ -234,6 +234,24 @@ export function RelatedEntitiesPanel({
   onAddContactLink,
 }: RelatedEntitiesPanelProps) {
   const t = useTranslations("crm.relatedEntities");
+
+  /**
+   * Die Herkunft stand bisher als rohes Enum in der Zeile ("via LEASE"). Mit
+   * der dritten Quelle (Bedienaufwand #11) wird daraus ein lesbarer Text.
+   * Bewusst ein switch statt `t(`source${x}`)`: so faellt eine fehlende
+   * Uebersetzung beim Typecheck auf und nicht erst zur Laufzeit.
+   */
+  function invoiceSourceLabel(source: InvoiceItemDto["linkedVia"]): string {
+    switch (source) {
+      case "RECIPIENT":
+        return t("invoiceSourceRecipient");
+      case "LEASE":
+        return t("invoiceSourceLease");
+      case "SHAREHOLDER":
+        return t("invoiceSourceShareholder");
+    }
+  }
+
   const {
     leases,
     shareholders,
@@ -466,7 +484,7 @@ export function RelatedEntitiesPanel({
               subtitle={
                 <>
                   {formatDate(inv.invoiceDate)} ·{" "}
-                  {t("viaLinked", { source: inv.linkedVia })}
+                  {t("viaLinked", { source: invoiceSourceLabel(inv.linkedVia) })}
                 </>
               }
               right={

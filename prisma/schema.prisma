@@ -677,6 +677,8 @@ model Person {
   contactLinks                   ContactLink[]
   tags                           PersonTag[]                      @relation("PersonToPersonTag")
   pendingBankUpdates             PendingBankUpdate[]
+  // Bedienaufwand #11: Rechnungen, deren Empfaenger dieser Kontakt ist.
+  recipientInvoices              Invoice[]                        @relation("InvoiceRecipient")
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -1028,6 +1030,13 @@ model Invoice {
   recipientAddress                                                                            String?
   recipientCountry                                                                            String?                         @db.VarChar(2)
   recipientVatId                                                                              String?                         @db.VarChar(50)
+  // Bedienaufwand #11 (Audit 2026-07): Verweis auf den CRM-Kontakt.
+  // recipientName/-Address bleiben als Momentaufnahme bestehen — eine
+  // Rechnung muss den Empfaenger so zeigen, wie er zum Rechnungsdatum hiess
+  // (AO §147: Belege sind unveraenderbar aufzubewahren). Deshalb SetNull und
+  // nicht Cascade: wird der Kontakt geloescht, verliert die Rechnung nur den
+  // Ruecksprung ins CRM, nicht ihren Inhalt.
+  recipientPersonId                                                                           String?
   netAmount                                                                                   Decimal                         @db.Decimal(15, 2)
   taxRate                                                                                     Decimal                         @default(19.00) @db.Decimal(5, 2)
   taxAmount                                                                                   Decimal?                        @db.Decimal(15, 2)
@@ -1128,6 +1137,7 @@ model Invoice {
   bankTransactions                 BankTransaction[]       @relation("BankTxMatchedInvoice")
   dunningItems                     DunningItem[]           @relation("DunningItemInvoice")
   sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
+  recipientPerson                  Person?                 @relation("InvoiceRecipient", fields: [recipientPersonId], references: [id], onDelete: SetNull)
   sourceQuote                      Quote?
 
   @@unique([tenantId, invoiceNumber])
@@ -1141,6 +1151,7 @@ model Invoice {
   @@index([parkId])
   @@index([settlementPeriodId])
   @@index([shareholderId])
+  @@index([recipientPersonId])
   @@index([tenantId, status, createdAt(sort: Desc)])
   // Composite-Index (Phase 7 M4): Dunning-Filter mit tenantId-Prefix
   // (vorher [dueDate, status] ohne tenantId = schlechte Selektivität).
