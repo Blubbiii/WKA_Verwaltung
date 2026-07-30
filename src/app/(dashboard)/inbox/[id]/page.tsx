@@ -79,6 +79,8 @@ interface InvoiceDetail {
   notes: string | null;
   fileUrl: string;
   fileName: string;
+  /** Bedienaufwand #6: entscheidet, ob die Datei eingebettet werden kann. */
+  mimeType: string | null;
   paidAt: string | null;
   paidAmount: string | null;
   vendor: { id: string; name: string; iban: string | null; bic: string | null } | null;
@@ -277,6 +279,18 @@ export default function InboxDetailPage() {
   const canPay = invoice.status === "APPROVED";
   const canSepa = invoice.status === "APPROVED" && !!invoice.iban;
 
+  // Bedienaufwand #6: Belegvorschau.
+  // Die ID-basierte Route ersetzt den frueheren Link auf /api/documents/file
+  // (existiert nicht) und prueft Mandant und Recht serverseitig.
+  const fileHref = `/api/inbox/${id}/file`;
+  // Auf den Dateinamen zurueckfallen, falls mimeType fehlt — Altbestaende
+  // haben das Feld teils nicht gesetzt.
+  const mime = (invoice.mimeType ?? "").toLowerCase();
+  const isPdf = mime === "application/pdf" || invoice.fileName.toLowerCase().endsWith(".pdf");
+  // SVG bewusst NICHT einbetten: die Route liefert es als attachment aus
+  // (Skript-Kontext), ein <img> waere hier wirkungslos.
+  const isImage = mime.startsWith("image/") && mime !== "image/svg+xml";
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -301,24 +315,50 @@ export default function InboxDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: PDF preview + field editor */}
         <div className="space-y-4">
-          {/* PDF link */}
+          {/* Beleg-Vorschau (Bedienaufwand #6).
+              Vorher stand hier nur ein Download-Link — und der zeigte auf
+              /api/documents/file, eine Route die es nicht gibt (404).
+              Pruefen hiess: neuer Tab, Alt-Tab hin, Alt-Tab her, pro Feld. */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Inbox className="h-4 w-4" />
                 {t("file")}
               </CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <a href={fileHref} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  {t("open")}
+                </a>
+              </Button>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <span className="text-sm truncate text-muted-foreground">{invoice.fileName}</span>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`/api/documents/file?url=${encodeURIComponent(invoice.fileUrl)}`} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    {t("open")}
-                  </a>
-                </Button>
-              </div>
+            <CardContent className="space-y-2">
+              <p className="text-xs truncate text-muted-foreground">{invoice.fileName}</p>
+              {isPdf ? (
+                // <object> statt <iframe>: zeigt bei fehlendem PDF-Plugin den
+                // Fallback-Inhalt an, statt einen leeren Rahmen zu rendern.
+                <object
+                  data={fileHref}
+                  type="application/pdf"
+                  className="h-[70vh] w-full rounded-md border"
+                  aria-label={invoice.fileName}
+                >
+                  <div className="p-4 text-sm text-muted-foreground">
+                    {t("previewUnavailable")}
+                  </div>
+                </object>
+              ) : isImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fileHref}
+                  alt={invoice.fileName}
+                  className="max-h-[70vh] w-full rounded-md border object-contain"
+                />
+              ) : (
+                <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  {t("previewUnsupported")}
+                </p>
+              )}
             </CardContent>
           </Card>
 

@@ -1141,7 +1141,9 @@
       "leitwegHelp": "Die Leitweg-ID wird als Käufer-Referenz (BT-10) in der XRechnung verwendet.",
       "leitwegHelpDraftOnly": "Änderung nur im Entwurfs-Status möglich.",
       "xrechnungUBL": "XRechnung (UBL 2.1)",
-      "zugferdCII": "ZUGFeRD (CII)"
+      "zugferdCII": "ZUGFeRD (CII)",
+      "leaseContract": "Pachtvertrag:",
+      "openLeaseContract": "Vertrag öffnen"
     },
     "new": {
       "titleInvoice": "Neue Rechnung",
@@ -1770,7 +1772,15 @@
       "invoice": "Rechnung",
       "pdfGenerationError": "PDF konnte nicht generiert werden",
       "pdfLoadError": "PDF konnte nicht geladen werden"
-    }
+    },
+    "filterFund": "Gesellschaft",
+    "filterAllFunds": "Alle Gesellschaften",
+    "filterFrom": "Rechnungsdatum von",
+    "filterTo": "Rechnungsdatum bis",
+    "filterClearDates": "Zeitraum zurücksetzen",
+    "statsInvoicesAria": "Nur Rechnungen anzeigen",
+    "statsCreditNotesAria": "Nur Gutschriften anzeigen",
+    "statsOpenAria": "Nur offene Rechnungen anzeigen"
   },
   "energy": {
     "title": "Energiedaten",
@@ -9813,7 +9823,9 @@
       "loadError": "Fehler beim Laden",
       "approved": "Rechnung genehmigt",
       "sepaDownloaded": "SEPA XML heruntergeladen",
-      "error": "Fehler"
+      "error": "Fehler",
+      "previewUnavailable": "Vorschau im Browser nicht möglich — bitte über „Öffnen\" ansehen.",
+      "previewUnsupported": "Für diesen Dateityp gibt es keine Vorschau."
     },
     "payDialog": {
       "title": "Als bezahlt markieren",
@@ -10303,7 +10315,8 @@
       "colLabel": "Position",
       "colBefore": "Vorher",
       "colAfter": "Nachher",
-      "colDelta": "Δ"
+      "colDelta": "Δ",
+      "openEntity": "Beleg öffnen"
     }
   },
   "liquidity": {

@@ -19,11 +19,14 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  FileSearch,
+  ExternalLink,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
 import type { ApprovalDiff } from "@/lib/approvals/compute-diff";
+import { getAuditEntityHref } from "@/lib/audit-entity-urls";
 
 /**
  * Redesign 2026-06 — Phase 2: ApprovalCard
@@ -74,6 +77,20 @@ export interface ApprovalCardProps {
    * "Details anzeigen" klickt.
    */
   approvalId?: string;
+  /**
+   * Der zu genehmigende Beleg — Typ und ID.
+   *
+   * Bedienaufwand #5 (Audit 2026-07): Die Seite lud entityType und entityId,
+   * reichte sie aber nicht weiter. Der Genehmiger sah nur
+   * "Max Schmidt will JOURNAL_POST freigeben · 50.000 €" und musste blind
+   * zustimmen oder in einem zweiten Tab suchen.
+   *
+   * Das Ziel wird über getAuditEntityHref() aufgelöst — dieselbe Zuordnung wie
+   * im Audit-Log, die nur Pfade liefert, die im App-Router existieren. Gibt es
+   * kein Ziel, erscheint kein Link (statt eines 404).
+   */
+  entityType?: string;
+  entityId?: string;
   className?: string;
 }
 
@@ -98,11 +115,15 @@ export function ApprovalCard({
   onDetails,
   isPending = false,
   approvalId,
+  entityType,
+  entityId,
   className,
 }: ApprovalCardProps) {
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
   const tDiff = useTranslations("approvals.diff");
+  // Kein Link, wenn die Entity keine erreichbare Detailseite hat.
+  const entityHref = entityType ? getAuditEntityHref(entityType, entityId) : null;
 
   // Diff-Vorschau: lazy-loaded beim Öffnen via approvalId
   const [diffOpen, setDiffOpen] = useState(false);
@@ -350,6 +371,23 @@ export function ApprovalCard({
 
       {/* Action row */}
       <div className="flex items-center justify-end gap-1.5 border-t border-border/60 px-3 py-2.5">
+        {entityHref && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            asChild
+            className="mr-auto text-muted-foreground hover:text-foreground"
+          >
+            {/* Neuer Tab: der Genehmiger soll die Liste nicht verlassen und
+                nach dem Pruefen direkt entscheiden koennen. */}
+            <a href={entityHref} target="_blank" rel="noopener noreferrer">
+              <FileSearch className="h-3.5 w-3.5 mr-1.5" aria-hidden />
+              {tDiff("openEntity")}
+              <ExternalLink className="h-3 w-3 ml-1.5 opacity-60" aria-hidden />
+            </a>
+          </Button>
+        )}
         {onDetails && (
           <Button
             type="button"

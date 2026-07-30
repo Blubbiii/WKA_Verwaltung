@@ -77,6 +77,12 @@ async function getHandler(request: NextRequest) {
     const fundId = searchParams.get("fundId");
     const parkId = searchParams.get("parkId");
     const leaseId = searchParams.get("leaseId");
+    // Bedienaufwand #3: Zeitraumfilter auf das Rechnungsdatum.
+    // Der Auditbericht ging davon aus, dass die API das schon kann — sie kannte
+    // nur fundId/parkId/leaseId. Ohne Zeitraum exportiert der Verwalter CSV und
+    // filtert in Excel.
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
     const { page, limit, skip } = parsePaginationParams(searchParams, {
       defaultLimit: 50,
       maxLimit: 100,
@@ -90,6 +96,18 @@ async function getHandler(request: NextRequest) {
       ...(fundId && { fundId }),
       ...(parkId && { parkId }),
       ...(leaseId && { leaseId }),
+      // Nur setzen, wenn mindestens eine Grenze angegeben ist — sonst wuerde
+      // ein leeres invoiceDate-Objekt alle Rechnungen ohne Datum ausschliessen.
+      ...(from || to
+        ? {
+            invoiceDate: {
+              ...(from ? { gte: new Date(from) } : {}),
+              // `to` ist ein Tagesdatum; ohne Tagesende-Korrektur fielen alle
+              // Rechnungen des Endtages heraus.
+              ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}),
+            },
+          }
+        : {}),
     };
 
     const [invoices, total] = await Promise.all([

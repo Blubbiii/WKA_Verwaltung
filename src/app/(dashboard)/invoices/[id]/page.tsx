@@ -1123,6 +1123,20 @@ export default function InvoiceDetailPage({
                 </Link>
               </div>
             )}
+            {/* Bedienaufwand #14: `lease` wurde geladen (siehe Typ oben) und nie
+                gerendert — verlinkt waren nur Park und Fonds. Von einer
+                Pachtrechnung fuehrte damit kein Weg zurueck zum Vertrag. */}
+            {invoice.lease && (
+              <div>
+                <span className="text-muted-foreground">{t("leaseContract")} </span>
+                <Link
+                  href={`/leases/${invoice.lease.id}`}
+                  className="text-primary hover:underline"
+                >
+                  {t("openLeaseContract")}
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 

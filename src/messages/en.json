@@ -1141,7 +1141,9 @@
       "leitwegHelp": "The Leitweg ID is used as buyer reference (BT-10) in the XRechnung.",
       "leitwegHelpDraftOnly": "Only editable in draft status.",
       "xrechnungUBL": "XRechnung (UBL 2.1)",
-      "zugferdCII": "ZUGFeRD (CII)"
+      "zugferdCII": "ZUGFeRD (CII)",
+      "leaseContract": "Lease contract:",
+      "openLeaseContract": "Open contract"
     },
     "new": {
       "titleInvoice": "New invoice",
@@ -1770,7 +1772,15 @@
       "invoice": "Invoice",
       "pdfGenerationError": "PDF could not be generated",
       "pdfLoadError": "PDF could not be loaded"
-    }
+    },
+    "filterFund": "Fund",
+    "filterAllFunds": "All funds",
+    "filterFrom": "Invoice date from",
+    "filterTo": "Invoice date to",
+    "filterClearDates": "Clear date range",
+    "statsInvoicesAria": "Show invoices only",
+    "statsCreditNotesAria": "Show credit notes only",
+    "statsOpenAria": "Show open invoices only"
   },
   "energy": {
     "title": "Energy Data",
@@ -9813,7 +9823,9 @@
       "loadError": "Failed to load",
       "approved": "Invoice approved",
       "sepaDownloaded": "SEPA XML downloaded",
-      "error": "Error"
+      "error": "Error",
+      "previewUnavailable": "Preview not available in this browser — use \"Open\" instead.",
+      "previewUnsupported": "No preview available for this file type."
     },
     "payDialog": {
       "title": "Mark as paid",
@@ -10303,7 +10315,8 @@
       "colLabel": "Field",
       "colBefore": "Before",
       "colAfter": "After",
-      "colDelta": "Δ"
+      "colDelta": "Δ",
+      "openEntity": "Open document"
     }
   },
   "liquidity": {

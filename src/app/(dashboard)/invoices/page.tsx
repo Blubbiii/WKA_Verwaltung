@@ -9,7 +9,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
-import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
+import { PAGE_SIZE_BULK_LIST, PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
@@ -65,6 +65,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
+import { Input } from "@/components/ui/input";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { cn } from "@/lib/utils";
@@ -154,17 +155,29 @@ export default function InvoicesPage() {
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
   // F-6: Persistent Filter-State (URL + LocalStorage)
+  // Bedienaufwand #3: fund und Zeitraum kommen dazu. Sie laufen bewusst ueber
+  // denselben persistierten State — sonst waeren sie nach einem Seitenwechsel
+  // wieder weg, waehrend Typ und Status erhalten bleiben.
   const [tableState, setTableState] = usePersistedTableState("invoices", {
     status: "all",
     type: "all",
     search: "",
+    fund: "all",
+    from: "",
+    to: "",
   });
   const statusFilter = tableState.status;
   const typeFilter = tableState.type;
+  const fundFilter = tableState.fund;
+  const fromFilter = tableState.from;
+  const toFilter = tableState.to;
   const search = tableState.search;
   const setSearch = (s: string) => setTableState({ search: s });
   const setStatusFilter = (s: string) => setTableState({ status: s });
   const setTypeFilter = (s: string) => setTableState({ type: s });
+  const setFundFilter = (s: string) => setTableState({ fund: s });
+  const setFromFilter = (s: string) => setTableState({ from: s });
+  const setToFilter = (s: string) => setTableState({ to: s });
   const debouncedSearch = useDebounce(search, 300);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDatevExport, setShowDatevExport] = useState(false);
@@ -183,12 +196,25 @@ export default function InvoicesPage() {
     limit: String(PAGE_SIZE_BULK_LIST),
     ...(statusFilter !== "all" && { status: statusFilter }),
     ...(typeFilter !== "all" && { invoiceType: typeFilter }),
+    ...(fundFilter !== "all" && { fundId: fundFilter }),
+    ...(fromFilter && { from: fromFilter }),
+    ...(toFilter && { to: toFilter }),
   });
 
   const { data: invoicesData, isLoading: loading, error, refetch } = useApiQuery<InvoicesResponse>(
-    ["invoices", statusFilter, typeFilter],
+    // Der Query-Key MUSS alle Filter enthalten — sonst liefert react-query den
+    // Cache-Eintrag des vorherigen Filters zurueck.
+    ["invoices", statusFilter, typeFilter, fundFilter, fromFilter, toFilter],
     `/api/invoices?${queryParams}`
   );
+
+  // Fondsliste fuer den Filter. Eigener Query, damit die Rechnungsliste nicht
+  // darauf wartet.
+  const { data: fundsData } = useApiQuery<{ data: Array<{ id: string; name: string }> }>(
+    ["funds", "filter-options"],
+    `/api/funds?limit=${PAGE_SIZE_DROPDOWN}`
+  );
+  const fundOptions = fundsData?.data ?? [];
 
   const invoices = invoicesData?.data ?? [];
 
@@ -537,11 +563,45 @@ export default function InvoicesPage() {
 
       {/* Stats Cards */}
       <StatsCards
+        // Bedienaufwand #4: Die Karten setzen jetzt den passenden Filter.
+        // Vorher sahen sie durch den Hover-Schatten klickbar aus, waren es
+        // aber nicht — nach "12 offen" musste man das Status-Dropdown selbst
+        // bedienen. onClick statt href, weil der Filter lokaler State ist.
         stats={[
-          { label: t("statsInvoices"), value: invoicesOnly.length, icon: Receipt, subtitle: t("statsInvoicesSubtitle", { count: invoicesOnly.filter((i) => i.status === "PAID").length }) },
-          { label: t("statsCreditNotes"), value: creditNotesOnly.length, icon: FileText, subtitle: t("statsCreditNotesSubtitle") },
-          { label: t("statsOpen"), value: openInvoices.length, icon: Send, subtitle: t("statsOpenSubtitle") },
-          { label: t("statsOpenAmount"), value: formatCurrency(totalOpen), icon: Receipt, subtitle: t("statsOpenAmountSubtitle") },
+          {
+            label: t("statsInvoices"),
+            value: invoicesOnly.length,
+            icon: Receipt,
+            subtitle: t("statsInvoicesSubtitle", { count: invoicesOnly.filter((i) => i.status === "PAID").length }),
+            onClick: () => { setTypeFilter("INVOICE"); setStatusFilter("all"); },
+            ariaLabel: t("statsInvoicesAria"),
+          },
+          {
+            label: t("statsCreditNotes"),
+            value: creditNotesOnly.length,
+            icon: FileText,
+            subtitle: t("statsCreditNotesSubtitle"),
+            onClick: () => { setTypeFilter("CREDIT_NOTE"); setStatusFilter("all"); },
+            ariaLabel: t("statsCreditNotesAria"),
+          },
+          {
+            label: t("statsOpen"),
+            value: openInvoices.length,
+            icon: Send,
+            subtitle: t("statsOpenSubtitle"),
+            onClick: () => { setStatusFilter("SENT"); setTypeFilter("all"); },
+            ariaLabel: t("statsOpenAria"),
+          },
+          {
+            // Die Betragskarte fuehrt auf dieselbe Auswahl wie "offen" — der
+            // Betrag ist die Summe genau dieser Rechnungen.
+            label: t("statsOpenAmount"),
+            value: formatCurrency(totalOpen),
+            icon: Receipt,
+            subtitle: t("statsOpenAmountSubtitle"),
+            onClick: () => { setStatusFilter("SENT"); setTypeFilter("all"); },
+            ariaLabel: t("statsOpenAria"),
+          },
         ]}
       />
 
@@ -582,8 +642,56 @@ export default function InvoicesPage() {
                   { value: "CANCELLED", label: t("statusCancelled") },
                 ],
               },
+              // Bedienaufwand #3: Bei mehreren Gesellschaften ist das der
+              // Standardeinstieg. Die API konnte fundId schon, die Liste bot
+              // ihn nicht an — stattdessen wurde CSV exportiert und in Excel
+              // gefiltert.
+              {
+                value: fundFilter,
+                onChange: setFundFilter,
+                placeholder: t("filterFund"),
+                width: "w-[200px]",
+                options: [
+                  { value: "all", label: t("filterAllFunds") },
+                  ...fundOptions.map((f) => ({ value: f.id, label: f.name })),
+                ],
+              },
             ]}
-          />
+          >
+            {/* Zeitraum ueber das Rechnungsdatum. Bewusst zwei einfache
+                Date-Inputs statt eines Pickers — eine DateRangePicker-Komponente
+                gibt es im Repo nicht, und sie hier einzufuehren waere ein
+                eigener Vorgang (Bedienaufwand #18). */}
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={fromFilter}
+                onChange={(e) => setFromFilter(e.target.value)}
+                aria-label={t("filterFrom")}
+                className="w-full sm:w-[150px]"
+              />
+              <span className="text-muted-foreground text-sm">–</span>
+              <Input
+                type="date"
+                value={toFilter}
+                onChange={(e) => setToFilter(e.target.value)}
+                aria-label={t("filterTo")}
+                className="w-full sm:w-[150px]"
+              />
+              {(fromFilter || toFilter) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFromFilter("");
+                    setToFilter("");
+                  }}
+                >
+                  {t("filterClearDates")}
+                </Button>
+              )}
+            </div>
+          </SearchFilter>
 
           <div className={cn("mt-4 rounded-md border overflow-x-auto transition-opacity", loading && invoices.length > 0 && "opacity-50 pointer-events-none")}>
             <Table>

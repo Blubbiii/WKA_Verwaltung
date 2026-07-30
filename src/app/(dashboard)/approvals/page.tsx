@@ -225,6 +225,8 @@ export default function ApprovalsPage() {
                   actionText={t(`actions.${it.action}`)}
                   amount={it.amountEur !== null ? fmtEur(it.amountEur) : undefined}
                   reason={it.requestReason ?? undefined}
+                  entityType={it.entityType}
+                  entityId={it.entityId}
                   requestedAt={new Date(it.requestedAt)}
                   expiresAt={new Date(it.expiresAt)}
                   onApprove={() => openDialog(it, "APPROVED")}
