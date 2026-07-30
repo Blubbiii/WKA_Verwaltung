@@ -10,6 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const DatevContent = dynamic(() => import("./tabs/datev"), { ssr: false });
 const JahresabschlussContent = dynamic(() => import("./tabs/jahresabschluss"), { ssr: false });
+// TF-11: Drei fertige Compliance-Endpunkte, die keinen UI-Aufrufer hatten.
+const EBilanzContent = dynamic(() => import("./tabs/ebilanz"), { ssr: false });
+const BundesanzeigerContent = dynamic(() => import("./tabs/bundesanzeiger"), { ssr: false });
+const VerfahrensdokumentationContent = dynamic(
+  () => import("./tabs/verfahrensdokumentation"),
+  { ssr: false },
+);
 
 function LoadingSkeleton() {
   return (
@@ -37,12 +44,24 @@ function AbschlussPageInner() {
         <TabsList>
           <TabsTrigger value="datev">{t("tabDatev")}</TabsTrigger>
           <TabsTrigger value="jahresabschluss">{t("tabJahresabschluss")}</TabsTrigger>
+          <TabsTrigger value="ebilanz">{t("tabEbilanz")}</TabsTrigger>
+          <TabsTrigger value="bundesanzeiger">{t("tabBundesanzeiger")}</TabsTrigger>
+          <TabsTrigger value="verfahrensdoku">{t("tabVerfahrensdoku")}</TabsTrigger>
         </TabsList>
         <TabsContent value="datev">
           <Suspense fallback={<LoadingSkeleton />}><DatevContent /></Suspense>
         </TabsContent>
         <TabsContent value="jahresabschluss">
           <Suspense fallback={<LoadingSkeleton />}><JahresabschlussContent /></Suspense>
+        </TabsContent>
+        <TabsContent value="ebilanz">
+          <Suspense fallback={<LoadingSkeleton />}><EBilanzContent /></Suspense>
+        </TabsContent>
+        <TabsContent value="bundesanzeiger">
+          <Suspense fallback={<LoadingSkeleton />}><BundesanzeigerContent /></Suspense>
+        </TabsContent>
+        <TabsContent value="verfahrensdoku">
+          <Suspense fallback={<LoadingSkeleton />}><VerfahrensdokumentationContent /></Suspense>
         </TabsContent>
       </Tabs>
     </div>

@@ -15,9 +15,13 @@ import {
   Building2,
   CheckSquare,
   ClipboardList,
+  ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { usePermissions } from "@/hooks/usePermissions";
+import { downloadFromResponse } from "@/lib/download";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,6 +129,32 @@ export default function CrmContactDetailPage({
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
+  const { hasPermission } = usePermissions();
+
+  /**
+   * TF-11: DSGVO-Art.-15-Auskunft herunterladen.
+   *
+   * Der Endpunkt liefert JSON mit allen zur Person gespeicherten Daten
+   * (Stammdaten, Pachtvertraege, Vertraege, Rechnungen, CRM-Aktivitaeten und
+   * die Audit-Spur) und setzt Content-Disposition selbst.
+   */
+  async function handleDataExport() {
+    setExportingData(true);
+    try {
+      const res = await fetch(`/api/admin/persons/${id}/data-export`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.message ?? json?.error ?? t("dataExportError"));
+      }
+      await downloadFromResponse(res, `dsgvo-auskunft-${id}.json`);
+      toast.success(t("dataExportSuccess"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("dataExportError"));
+    } finally {
+      setExportingData(false);
+    }
+  }
 
   // AbortController um stale Requests bei id-Wechsel zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
@@ -264,6 +294,25 @@ export default function CrmContactDetailPage({
             <Pencil className="mr-2 h-4 w-4" />
             {t("editButton")}
           </Button>
+          {/* TF-11: /api/admin/persons/[id]/data-export war vollstaendig
+              implementiert und hatte keinen UI-Aufrufer — eine
+              Compliance-Pflicht (DSGVO Art. 15) ohne Oberflaeche. Der Endpunkt
+              verlangt admin:audit, deshalb nur fuer Berechtigte sichtbar. */}
+          {hasPermission("admin:audit") && (
+            <Button
+              variant="outline"
+              onClick={handleDataExport}
+              disabled={exportingData}
+              title={t("dataExportHint")}
+            >
+              {exportingData ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              )}
+              {t("dataExportButton")}
+            </Button>
+          )}
         </div>
       </div>
 

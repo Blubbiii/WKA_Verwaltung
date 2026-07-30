@@ -3778,7 +3778,11 @@
         "Partner": "Partner",
         "Dienstleister": "Service provider",
         "Sonstiges": "Other"
-      }
+      },
+      "dataExportButton": "GDPR data export",
+      "dataExportHint": "All data stored about this person as JSON (GDPR Art. 15)",
+      "dataExportSuccess": "Data export downloaded",
+      "dataExportError": "Could not generate data export"
     },
     "labels": {
       "LESSOR": "Lessor",
@@ -4543,7 +4547,10 @@
       "title": "Export & Year-end",
       "description": "DATEV export and year-end closing",
       "tabDatev": "DATEV export",
-      "tabJahresabschluss": "Year-end"
+      "tabJahresabschluss": "Year-end",
+      "tabEbilanz": "E-Bilanz",
+      "tabBundesanzeiger": "Bundesanzeiger",
+      "tabVerfahrensdoku": "Process documentation"
     },
     "banking": {
       "title": "Banking",
@@ -5162,6 +5169,55 @@
       "toastActionError": "Error during action",
       "toastDeleteSuccess": "Quote deleted",
       "toastDeleteError": "Quote could not be deleted"
+    },
+    "abschlussEbilanz": {
+      "info": "Generates the XBRL record for electronic submission of the balance sheet under §5b EStG to ELSTER. The file is not submitted automatically — file it via the ELSTER portal or your tax software.",
+      "fiscalYear": "Fiscal year",
+      "asOf": "Balance sheet date",
+      "legalForm": "Legal form",
+      "legalForms": {
+        "KS": "Corporation",
+        "PE": "Partnership",
+        "EU": "Sole proprietorship"
+      },
+      "taxNumber": "Tax number",
+      "taxNumberPlaceholder": "e.g. 1234567890",
+      "taxNumberTooShort": "At least 5 characters required",
+      "vatId": "VAT ID (optional)",
+      "companyName": "Company name (optional)",
+      "companyNamePlaceholder": "Empty = tenant name",
+      "export": "Generate XBRL",
+      "successExport": "E-Bilanz {year} generated",
+      "errorExport": "Could not generate E-Bilanz"
+    },
+    "abschlussBundesanzeiger": {
+      "info": "Generates the XBRL record for disclosure in the Bundesanzeiger under §325 HGB. Scope depends on the size class (§267 HGB). Submission happens separately via the Bundesanzeiger portal.",
+      "fiscalYear": "Fiscal year",
+      "asOf": "Balance sheet date",
+      "companySize": "Size class",
+      "companySizes": {
+        "kleinst": "Micro entity (§267a HGB)",
+        "klein": "Small entity",
+        "mittel": "Medium-sized entity",
+        "gross": "Large entity"
+      },
+      "companyName": "Company name",
+      "companyNamePlaceholder": "Name as in the commercial register",
+      "companyNameRequired": "Company name is required",
+      "handelsregisterNummer": "Commercial register number",
+      "handelsregisterPlaceholder": "e.g. HRB 12345",
+      "registeredOffice": "Registered office",
+      "export": "Generate XBRL",
+      "successExport": "Disclosure record {year} generated",
+      "errorExport": "Could not generate record"
+    },
+    "abschlussVerfahrensdoku": {
+      "info": "Generates the process documentation under §145 AO / GoBD with current tenant data and system status. During a tax audit this is usually the first document requested.",
+      "preview": "Show preview",
+      "previewLabel": "Preview (raw Markdown)",
+      "download": "Download as Markdown",
+      "success": "Process documentation downloaded",
+      "error": "Could not generate process documentation"
     }
   },
   "leases": {

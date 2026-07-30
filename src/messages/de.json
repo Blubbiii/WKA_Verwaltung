@@ -3778,7 +3778,11 @@
         "Partner": "Partner",
         "Dienstleister": "Dienstleister",
         "Sonstiges": "Sonstiges"
-      }
+      },
+      "dataExportButton": "DSGVO-Auskunft",
+      "dataExportHint": "Alle zu dieser Person gespeicherten Daten als JSON (DSGVO Art. 15)",
+      "dataExportSuccess": "Auskunft heruntergeladen",
+      "dataExportError": "Auskunft konnte nicht erzeugt werden"
     },
     "labels": {
       "LESSOR": "Verpächter",
@@ -4543,7 +4547,10 @@
       "title": "Export & Abschluss",
       "description": "DATEV-Export und Jahresabschluss",
       "tabDatev": "DATEV-Export",
-      "tabJahresabschluss": "Jahresabschluss"
+      "tabJahresabschluss": "Jahresabschluss",
+      "tabEbilanz": "E-Bilanz",
+      "tabBundesanzeiger": "Bundesanzeiger",
+      "tabVerfahrensdoku": "Verfahrensdokumentation"
     },
     "banking": {
       "title": "Banking",
@@ -5162,6 +5169,55 @@
       "toastActionError": "Fehler bei der Aktion",
       "toastDeleteSuccess": "Angebot gelöscht",
       "toastDeleteError": "Angebot konnte nicht gelöscht werden"
+    },
+    "abschlussEbilanz": {
+      "info": "Erzeugt den XBRL-Datensatz für die elektronische Übermittlung der Bilanz nach §5b EStG an ELSTER. Die Datei wird nicht automatisch übermittelt — sie muss im ELSTER-Portal oder in Ihrer Steuersoftware eingereicht werden.",
+      "fiscalYear": "Geschäftsjahr",
+      "asOf": "Bilanzstichtag",
+      "legalForm": "Rechtsform",
+      "legalForms": {
+        "KS": "Kapitalgesellschaft",
+        "PE": "Personengesellschaft",
+        "EU": "Einzelunternehmen"
+      },
+      "taxNumber": "Steuernummer",
+      "taxNumberPlaceholder": "z. B. 1234567890",
+      "taxNumberTooShort": "Mindestens 5 Zeichen erforderlich",
+      "vatId": "USt-IdNr. (optional)",
+      "companyName": "Firmenname (optional)",
+      "companyNamePlaceholder": "Leer = Mandantenname",
+      "export": "XBRL erzeugen",
+      "successExport": "E-Bilanz {year} erzeugt",
+      "errorExport": "E-Bilanz konnte nicht erzeugt werden"
+    },
+    "abschlussBundesanzeiger": {
+      "info": "Erzeugt den XBRL-Datensatz für die Offenlegung im Bundesanzeiger nach §325 HGB. Der Umfang richtet sich nach der Größenklasse (§267 HGB). Die Einreichung erfolgt separat über das Bundesanzeiger-Portal.",
+      "fiscalYear": "Geschäftsjahr",
+      "asOf": "Bilanzstichtag",
+      "companySize": "Größenklasse",
+      "companySizes": {
+        "kleinst": "Kleinstgesellschaft (§267a HGB)",
+        "klein": "Kleine Gesellschaft",
+        "mittel": "Mittelgroße Gesellschaft",
+        "gross": "Große Gesellschaft"
+      },
+      "companyName": "Firmenname",
+      "companyNamePlaceholder": "Firmenname wie im Handelsregister",
+      "companyNameRequired": "Firmenname ist erforderlich",
+      "handelsregisterNummer": "Handelsregister-Nummer",
+      "handelsregisterPlaceholder": "z. B. HRB 12345",
+      "registeredOffice": "Sitz der Gesellschaft",
+      "export": "XBRL erzeugen",
+      "successExport": "Offenlegungsdatensatz {year} erzeugt",
+      "errorExport": "Datensatz konnte nicht erzeugt werden"
+    },
+    "abschlussVerfahrensdoku": {
+      "info": "Erzeugt die Verfahrensdokumentation nach §145 AO / GoBD mit den aktuellen Mandantendaten und dem System-Status. Bei einer Betriebsprüfung ist das in der Regel das erste angeforderte Dokument.",
+      "preview": "Vorschau anzeigen",
+      "previewLabel": "Vorschau (Markdown, ungerendert)",
+      "download": "Als Markdown herunterladen",
+      "success": "Verfahrensdokumentation heruntergeladen",
+      "error": "Verfahrensdokumentation konnte nicht erzeugt werden"
     }
   },
   "leases": {
