@@ -5801,6 +5801,12 @@
         "sentToast": "Zahlungserinnerung an {name} gesendet",
         "errorFallback": "Fehler beim Senden der Zahlungserinnerung",
         "titleAttr": "Zahlungserinnerung senden"
+      },
+      "leaseFilter": {
+        "active": "Gefiltert auf den Pachtvertrag von {lease}",
+        "activeUnknown": "Gefiltert auf einen Pachtvertrag – in diesem Jahr keine Fälligkeit",
+        "openLease": "Vertrag öffnen",
+        "clear": "Filter aufheben"
       }
     },
     "costAllocationDetail": {
@@ -5947,6 +5953,26 @@
         "once": "Einmalig",
         "monthly": "Monatlich",
         "yearly": "Jährlich"
+      },
+      "payments": {
+        "title": "Zahlungen",
+        "tooltip": "Aus Pachtzins, Zahlungsrhythmus und zugeordneten Rechnungen abgeleitet – keine eigene Erfassung.",
+        "previousYear": "Vorjahr",
+        "nextYear": "Folgejahr",
+        "loadError": "Zahlungen konnten nicht geladen werden",
+        "emptyYear": "Keine Fälligkeiten in {year}",
+        "summaryTotal": "Gesamt",
+        "summaryPaid": "Bezahlt",
+        "summaryPending": "Offen",
+        "summaryOverdue": "Überfällig",
+        "openInvoice": "Rechnung",
+        "openAll": "Alle Zahlungen",
+        "moreRows": "+{count} weitere",
+        "status": {
+          "paid": "Bezahlt",
+          "pending": "Offen",
+          "overdue": "Überfällig"
+        }
       }
     },
     "advances": {

@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface VoteDetail {
   id: string;
@@ -93,7 +94,11 @@ interface VoteDetail {
 }
 
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["voted", "pending", "all"] as const;
+
 export default function VoteDetailPage() {
+  const [activeTab, setActiveTab] = useTabParam("voted", { allowed: TAB_VALUES });
   const params = useParams();
   const _router = useRouter();
   const [vote, setVote] = useState<VoteDetail | null>(null);
@@ -427,7 +432,7 @@ export default function VoteDetailPage() {
       )}
 
       {/* Tabs for Voters */}
-      <Tabs defaultValue="voted">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="voted">
             Abgestimmt ({vote.stats.totalResponses})

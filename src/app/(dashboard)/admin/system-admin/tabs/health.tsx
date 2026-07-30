@@ -54,6 +54,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MaintenanceModeTab } from "@/components/admin/maintenance-mode-tab";
 import { LOCALE_DE } from "@/lib/format";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // Types
 interface ServerStatus { status: "online" | "offline" | "degraded"; uptime: number; uptimeFormatted: string; }
@@ -98,7 +99,11 @@ const tableIcons: Record<string, React.ReactNode> = {
 
 const tableDisplayNames: Record<string, string> = { tenants: "Mandanten", users: "Benutzer", parks: "Windparks", turbines: "Windenergieanlagen", funds: "Gesellschaften", shareholders: "Gesellschafter", plots: "Flurstuecke", leases: "Pachtverträge", contracts: "Verträge", documents: "Dokumente", invoices: "Rechnungen", auditLogs: "Audit-Logs", votes: "Abstimmungen", persons: "Personen" };
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["health", "maintenance"] as const;
+
 export default function SystemHealthTab() {
+  const [activeTab, setActiveTab] = useTabParam("health", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +148,7 @@ export default function SystemHealthTab() {
         </div>
       </div>
 
-      <Tabs defaultValue="health" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="health" className="flex items-center gap-2"><Activity className="h-4 w-4" />System-Gesundheit</TabsTrigger>
           <TabsTrigger value="maintenance" className="flex items-center gap-2"><Wrench className="h-4 w-4" />Wartungsmodus</TabsTrigger>

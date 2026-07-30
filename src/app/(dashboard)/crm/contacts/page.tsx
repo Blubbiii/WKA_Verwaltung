@@ -66,6 +66,7 @@ import {
 import { EditableCell } from "@/components/ui/editable-cell";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { downloadBlob } from "@/lib/download";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 
 // ============================================================================
 // Types
@@ -181,7 +182,12 @@ export default function CrmContactsPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState("");
+  // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
+  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
+  const [tableState, setTableState] = usePersistedTableState("crmContacts", { search: "" });
+  const search = tableState.search;
+  const setSearch = (v: string) => setTableState({ search: v });
   // Debounce search so we do not fire a request on every keystroke.
   const debouncedSearch = useDebounce(search, 300);
   const [activeLabels, setActiveLabels] = useState<string[]>([]);

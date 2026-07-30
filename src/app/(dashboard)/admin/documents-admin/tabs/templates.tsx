@@ -4,10 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentTemplatesSettings } from "@/components/settings/DocumentTemplatesSettings";
 import { LetterheadSettings } from "@/components/settings/LetterheadSettings";
 import { Layout, ImageIcon } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
+
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["documents", "letterhead"] as const;
 
 export default function TemplatesTab() {
+  const [activeTab, setActiveTab] = useTabParam("documents", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   return (
-    <Tabs defaultValue="documents" className="space-y-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="documents" className="flex items-center gap-2">
           <Layout className="h-4 w-4" />

@@ -69,6 +69,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Plus, Trash2, Users, Info } from "lucide-react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { SUPPORTED_TOKENS } from "@/lib/crm/template-renderer";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // Dynamic import for Rich Text Editor (SSR-incompatible)
 const RichTextEditor = dynamic(
@@ -154,7 +155,11 @@ const defaultNotificationSettings: NotificationSettings = {
 // MAIN COMPONENT
 // =============================================================================
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["templates", "smtp", "notifications", "test"] as const;
+
 export default function EmailConfigPage() {
+  const [activeTab, setActiveTab] = useTabParam("templates", { allowed: TAB_VALUES });
   const tDelete = useTranslations("common.pageDelete");
   const t = useTranslations("emailConfig");
   const { flags, loading: flagsLoading } = useFeatureFlags();
@@ -602,7 +607,7 @@ export default function EmailConfigPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="templates" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />

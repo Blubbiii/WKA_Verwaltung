@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { WeatherChart } from "@/components/parks/weather-chart-dynamic";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // =============================================================================
 // Types
@@ -166,11 +167,15 @@ function formatWindSpeedKmh(ms: number): string {
 // Component
 // =============================================================================
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["overview", "forecast", "history", "statistics"] as const;
+
 export default function ParkWeatherPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const [activeTab, setActiveTab] = useTabParam("overview", { allowed: TAB_VALUES });
   const { id: parkId } = use(params);
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -425,7 +430,7 @@ export default function ParkWeatherPage({
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
           <TabsTrigger value="forecast">14-Tage Vorhersage</TabsTrigger>

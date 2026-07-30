@@ -44,6 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { downloadBlob } from "@/lib/download";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 
 // ============================================================================
 // Types
@@ -248,7 +249,12 @@ export default function VendorsPage() {
   const { flags, loading: flagsLoading } = useFeatureFlags();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
+  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
+  const [tableState, setTableState] = usePersistedTableState("vendors", { search: "" });
+  const search = tableState.search;
+  const setSearch = (v: string) => setTableState({ search: v });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editVendor, setEditVendor] = useState<Vendor | null>(null);
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);

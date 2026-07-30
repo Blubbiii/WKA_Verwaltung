@@ -60,6 +60,7 @@ import { SearchFilter } from "@/components/ui/search-filter";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { downloadBlob } from "@/lib/download";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 
 interface Park {
   id: string;
@@ -95,9 +96,15 @@ interface ParksResponse {
 export default function ParksPage() {
   const router = useRouter();
   const t = useTranslations("parks.list");
-  const [search, setSearch] = useState("");
+  // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
+  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
+  const [tableState, setTableState] = usePersistedTableState("parks", { search: "", status: "all" });
+  const search = tableState.search;
+  const statusFilter = tableState.status;
+  const setSearch = (v: string) => setTableState({ search: v });
+  const setStatusFilter = (v: string) => setTableState({ status: v });
   const debouncedSearch = useDebounce(search, 300);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"table" | "map">("table");
   const [page, setPage] = useState(1);
   const limit = 20;

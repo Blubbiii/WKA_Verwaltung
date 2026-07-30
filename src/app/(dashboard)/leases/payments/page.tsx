@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { format } from "date-fns";
 import { de, enUS } from "date-fns/locale";
@@ -97,7 +98,7 @@ const paymentStatusExtras: Record<string, { borderColor: string; icon: React.Ele
   overdue: { borderColor: "border-red-300", icon: AlertTriangle },
 };
 
-export default function LeasePaymentsPage() {
+function LeasePaymentsPageContent() {
   const t = useTranslations("leases.payments");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
@@ -113,6 +114,12 @@ export default function LeasePaymentsPage() {
   const [parkFilter, setParkFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // Bedienaufwand #13: Einsprung von der Vertragsdetailseite. Bewusst aus der
+  // URL gelesen und nicht in einen State kopiert — so bleibt der gefilterte
+  // Blick teilbar und der Zurueck-Knopf hebt den Filter auf.
+  const searchParams = useSearchParams();
+  const leaseFilter = searchParams.get("leaseId");
+
   // Available years (current year +/- 2)
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
@@ -127,6 +134,7 @@ export default function LeasePaymentsPage() {
       setLoading(true);
       const params = new URLSearchParams({
         year: year.toString(),
+        ...(leaseFilter ? { leaseId: leaseFilter } : {}),
         ...(parkFilter !== "all" && { parkId: parkFilter }),
         ...(statusFilter !== "all" && { status: statusFilter }),
       });
@@ -145,7 +153,7 @@ export default function LeasePaymentsPage() {
     } finally {
       if (!ac.signal.aborted) setLoading(false);
     }
-  }, [year, parkFilter, statusFilter, t]);
+  }, [year, leaseFilter, parkFilter, statusFilter, t]);
 
   const fetchParks = useCallback(async () => {
     try {
@@ -166,6 +174,13 @@ export default function LeasePaymentsPage() {
   useEffect(() => {
     fetchParks();
   }, [fetchParks]);
+
+  // Der Name des gefilterten Vertrags steht in keiner eigenen Antwort — er
+  // kommt aus der ersten Zahlung. Ist die Liste leer (Vertrag hat in diesem
+  // Jahr keine Faelligkeit), bleibt er null und der Hinweis wird allgemeiner.
+  const filteredLeaseLabel = leaseFilter
+    ? (payments.find((p) => p.leaseId === leaseFilter)?.lessorName ?? null)
+    : null;
 
   // Filter by search
   const filteredPayments = payments.filter((payment) => {
@@ -227,6 +242,31 @@ export default function LeasePaymentsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Bedienaufwand #13: Sichtbar machen, DASS gefiltert wird. Ohne diesen
+          Hinweis waere eine leere Tabelle nicht von "keine Zahlungen vorhanden"
+          zu unterscheiden — und genau das passiert, wenn der Vertrag im
+          gewaehlten Jahr keine Faelligkeit hat. */}
+      {leaseFilter && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/50 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <Filter className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span>
+              {filteredLeaseLabel
+                ? t("leaseFilter.active", { lease: filteredLeaseLabel })
+                : t("leaseFilter.activeUnknown")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/leases/${leaseFilter}`}>{t("leaseFilter.openLease")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/leases/payments">{t("leaseFilter.clear")}</Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Year Navigation */}
       <div className="flex items-center justify-center gap-4">
@@ -541,5 +581,21 @@ export default function LeasePaymentsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+// useSearchParams braucht eine Suspense-Grenze.
+export default function LeasePaymentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="h-9 w-64 animate-pulse rounded bg-muted" />
+          <div className="h-64 animate-pulse rounded bg-muted" />
+        </div>
+      }
+    >
+      <LeasePaymentsPageContent />
+    </Suspense>
   );
 }

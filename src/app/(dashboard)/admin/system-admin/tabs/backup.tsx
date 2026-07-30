@@ -63,6 +63,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BACKUP_RETENTION_DAYS } from "@/lib/config/business-thresholds";
 import { LOCALE_DE } from "@/lib/format";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // Types
 interface Backup {
@@ -125,7 +126,11 @@ const exportTables = [
   { id: "votes", label: "Abstimmungen" },
 ];
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["backups", "storage", "export"] as const;
+
 export default function BackupTab() {
+  const [activeTab, setActiveTab] = useTabParam("backups", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   const [data, setData] = useState<BackupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -200,7 +205,7 @@ export default function BackupTab() {
 
       {error && (<div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800"><p className="font-medium">Fehler</p><p className="text-sm">{error}</p><Button variant="outline" size="sm" className="mt-2" onClick={() => setError(null)}>Schliessen</Button></div>)}
 
-      <Tabs defaultValue="backups" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="backups" className="flex items-center gap-2"><Database className="h-4 w-4" />Backups</TabsTrigger>
           <TabsTrigger value="storage" className="flex items-center gap-2"><HardDrive className="h-4 w-4" />Speicher-Verwaltung</TabsTrigger>

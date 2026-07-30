@@ -45,6 +45,7 @@ import { ContactLinkDialog } from "@/components/crm/contact-link-dialog";
 import { PersonTags, type PersonTag } from "@/components/crm/person-tags";
 import { EmailLogDialog } from "@/components/crm/email-log-dialog";
 import { isDerivedLabel } from "@/lib/crm/label-constants";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // ============================================================================
 // Types
@@ -112,11 +113,15 @@ function StatTile({
 // Page
 // ============================================================================
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["overview", "relations", "activities", "tasks", "documents"] as const;
+
 export default function CrmContactDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const [activeTab, setActiveTab] = useTabParam("overview", { allowed: TAB_VALUES });
   const { id } = use(params);
   const router = useRouter();
   const { flags } = useFeatureFlags();
@@ -341,7 +346,7 @@ export default function CrmContactDetailPage({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">{t("tabOverview")}</TabsTrigger>
           <TabsTrigger value="relations">

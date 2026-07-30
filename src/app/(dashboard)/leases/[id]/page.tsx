@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
+import { LeasePaymentsCard } from "@/components/leases/lease-payments-card";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
@@ -563,6 +564,9 @@ export default function LeaseDetailPage({
             </div>
           </CardContent>
         </Card>
+
+        {/* Bedienaufwand #13: Zahlungen des Vertrags. */}
+        <LeasePaymentsCard leaseId={lease.id} />
 
         {/* CRM Activities */}
         {flags.crm && (

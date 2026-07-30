@@ -62,6 +62,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 
 // -- Types --
 
@@ -182,10 +183,17 @@ export default function ServiceEventsPage() {
   const router = useRouter();
 
   // Filter state
-  const [search, setSearch] = useState("");
+  // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
+  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
+  const [tableState, setTableState] = usePersistedTableState("serviceEvents", { search: "", park: "all", type: "all" });
+  const search = tableState.search;
+  const parkFilter = tableState.park;
+  const typeFilter = tableState.type;
+  const setSearch = (v: string) => setTableState({ search: v });
+  const setParkFilter = (v: string) => setTableState({ park: v });
+  const setTypeFilter = (v: string) => setTableState({ type: v });
   const debouncedSearch = useDebounce(search, 300);
-  const [parkFilter, setParkFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const limit = 20;
 

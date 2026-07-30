@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface DunningCandidate {
   invoiceId: string;
@@ -44,7 +45,11 @@ function fmt(n: number): string {
   return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["candidates", "history"] as const;
+
 export default function MahnwesenContent() {
+  const [activeTab, setActiveTab] = useTabParam("candidates", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   const t = useTranslations("buchhaltung.zahlungenMahnwesen");
   const [candidates, setCandidates] = useState<DunningCandidate[]>([]);
   const [runs, setRuns] = useState<DunningRun[]>([]);
@@ -116,7 +121,7 @@ export default function MahnwesenContent() {
   }
 
   return (
-    <Tabs defaultValue="candidates">
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList>
         <TabsTrigger value="candidates">{t("tabCandidates", { count: candidates.length })}</TabsTrigger>
         <TabsTrigger value="history">{t("tabHistory", { count: runs.length })}</TabsTrigger>

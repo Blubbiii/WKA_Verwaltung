@@ -537,6 +537,10 @@ function AuditLogsContent() {
                   surface="auditLogs"
                   currentFilters={currentFilterPayload}
                   onApply={applySavedFilter}
+                  // Bedienaufwand #16: Diese Seite haelt keinen persistierten
+                  // Filterstand — hier darf der Standardfilter beim Oeffnen
+                  // greifen, ohne eine vorherige Auswahl zu ueberschreiben.
+                  applyDefaultOnMount
                 />
                 {hasActiveFilters && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>

@@ -9,6 +9,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
+import { SavedFilterPicker } from "@/components/ui/saved-filter-picker";
 import { PAGE_SIZE_BULK_LIST, PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
@@ -178,6 +179,33 @@ export default function InvoicesPage() {
   const setFundFilter = (s: string) => setTableState({ fund: s });
   const setFromFilter = (s: string) => setTableState({ from: s });
   const setToFilter = (s: string) => setTableState({ to: s });
+
+  // Bedienaufwand #16: Gespeicherte Filter gab es nur auf der Audit-Log-Seite —
+  // ausgerechnet der Seite, die Buchhalter am seltensten oeffnen. Hier tragen
+  // sie mehr: "offene Rechnungen Gesellschaft X" ist eine wiederkehrende Frage.
+  const savedFilterPayload = {
+    status: statusFilter,
+    type: typeFilter,
+    fund: fundFilter,
+    from: fromFilter,
+    to: toFilter,
+    search,
+  };
+
+  const applySavedFilter = (payload: Record<string, unknown>) => {
+    // Fremde oder veraltete Nutzlast darf die Tabelle nicht in einen Zustand
+    // bringen, den die Filterfelder nicht abbilden koennen.
+    const str = (v: unknown, fallback: string) => (typeof v === "string" ? v : fallback);
+    setTableState({
+      status: str(payload.status, "all"),
+      type: str(payload.type, "all"),
+      fund: str(payload.fund, "all"),
+      from: str(payload.from, ""),
+      to: str(payload.to, ""),
+      search: str(payload.search, ""),
+    });
+  };
+
   const debouncedSearch = useDebounce(search, 300);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDatevExport, setShowDatevExport] = useState(false);
@@ -612,6 +640,18 @@ export default function InvoicesPage() {
           <CardDescription>{t("documentsDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex justify-end">
+            {/* Kein applyDefaultOnMount: diese Liste stellt ueber
+                usePersistedTableState den zuletzt benutzten Filter wieder her.
+                Ein automatisch angewendeter Standardfilter wuerde genau den
+                ueberschreiben. */}
+            <SavedFilterPicker
+              surface="invoices"
+              currentFilters={savedFilterPayload}
+              onApply={applySavedFilter}
+            />
+          </div>
+
           <SearchFilter
             search={search}
             onSearchChange={setSearch}

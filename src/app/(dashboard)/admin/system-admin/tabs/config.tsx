@@ -32,6 +32,7 @@ import { WeatherConfigForm } from "@/components/admin/system-config/weather-conf
 import { StorageConfigForm } from "@/components/admin/system-config/storage-config-form";
 import { GeneralConfigForm } from "@/components/admin/system-config/general-config-form";
 import { FeaturesConfigForm } from "@/components/admin/system-config/features-config-form";
+import { useTabParam } from "@/hooks/useTabParam";
 
 interface ConfigValue {
   key: string;
@@ -56,7 +57,11 @@ interface ConfigResponse {
   }>;
 }
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["email", "weather", "storage", "general", "features"] as const;
+
 export default function SystemConfigTab() {
+  const [activeTab, setActiveTab] = useTabParam("email", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   const [loading, setLoading] = useState(true);
   const [grouped, setGrouped] = useState<Record<string, ConfigValue[]>>({});
   const [availableKeys, setAvailableKeys] = useState<ConfigResponse["availableKeys"]>([]);
@@ -111,7 +116,7 @@ export default function SystemConfigTab() {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="email" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="email" className="flex items-center gap-2"><Mail className="h-4 w-4" />E-Mail</TabsTrigger>
           <TabsTrigger value="weather" className="flex items-center gap-2"><Cloud className="h-4 w-4" />Wetter</TabsTrigger>

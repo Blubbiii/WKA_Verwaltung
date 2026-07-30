@@ -14,7 +14,7 @@
  * />
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Bookmark, Plus, Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -56,9 +56,24 @@ interface SavedFilterPickerProps {
   currentFilters: Record<string, unknown>;
   /** Called when the user picks a saved filter — caller applies the payload. */
   onApply: (filters: Record<string, unknown>) => void;
+  /**
+   * Standardfilter beim ersten Laden automatisch anwenden.
+   *
+   * Bedienaufwand #16 (Audit 2026-07): Der Stern liess sich setzen und wurde
+   * gespeichert — angewendet hat ihn nichts. "Als Standard" war also reine
+   * Zierde. Aufrufer, die schon eine Vorbelegung aus der URL lesen, schalten
+   * das ab, damit der gespeicherte Filter einen geteilten Link nicht
+   * ueberschreibt.
+   */
+  applyDefaultOnMount?: boolean;
 }
 
-export function SavedFilterPicker({ surface, currentFilters, onApply }: SavedFilterPickerProps) {
+export function SavedFilterPicker({
+  surface,
+  currentFilters,
+  onApply,
+  applyDefaultOnMount = false,
+}: SavedFilterPickerProps) {
   const t = useTranslations("common.savedFilters");
   const { filters, save, update, remove, isLoading, isSaving } = useSavedFilters(surface);
 
@@ -67,6 +82,19 @@ export function SavedFilterPicker({ surface, currentFilters, onApply }: SavedFil
   const [setDefaultOnSave, setSetDefaultOnSave] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState<SavedFilter | null>(null);
+
+  // Genau einmal je Mount anwenden. Ohne diese Sperre wuerde jede Aenderung an
+  // der Filterliste (z. B. nach dem Speichern eines neuen Filters) die aktuelle
+  // Auswahl des Nutzers wieder auf den Standard zuruecksetzen.
+  const defaultApplied = useRef(false);
+
+  useEffect(() => {
+    if (!applyDefaultOnMount || defaultApplied.current || isLoading) return;
+    const preset = filters.find((f) => f.isDefault);
+    if (!preset) return;
+    defaultApplied.current = true;
+    onApply(preset.filters);
+  }, [applyDefaultOnMount, filters, isLoading, onApply]);
 
   async function handleSaveCurrent() {
     if (!nameInput.trim()) return;

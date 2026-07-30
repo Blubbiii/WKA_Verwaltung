@@ -34,8 +34,19 @@ function catalogNames(): string[] {
   return [...source.matchAll(/\{ name: "([^"]+)"/g)].map((m) => m[1]);
 }
 
-/** Quelltext aller Dateien ausser Katalog und Konstanten-Map. */
+/**
+ * Quelltext aller Dateien ausser Katalog und Konstanten-Map.
+ *
+ * Der Baumdurchlauf liest ueber tausend Dateien und dauert einige Sekunden.
+ * Beide Invarianten-Tests brauchen dasselbe Ergebnis — ohne diesen
+ * Zwischenspeicher lief der Scan zweimal und riss die 5-Sekunden-Grenze von
+ * vitest, sobald der Baum wuchs. Das las sich wie ein inhaltlicher
+ * Fehlschlag, war aber keiner.
+ */
+let projectSourceCache: string | null = null;
+
 function projectSource(): string {
+  if (projectSourceCache !== null) return projectSourceCache;
   const parts: string[] = [];
   const skip = new Set(["permissions.catalog.ts", "permissions.ts"]);
 
@@ -53,7 +64,8 @@ function projectSource(): string {
     }
   };
   walk(SRC);
-  return parts.join("\n");
+  projectSourceCache = parts.join("\n");
+  return projectSourceCache;
 }
 
 /** Konstantenname → Permission-String, invertiert. */
@@ -66,11 +78,14 @@ function constantByPermission(): Map<string, string> {
   return map;
 }
 
+let uncheckedCache: string[] | null = null;
+
 function uncheckedPermissions(): string[] {
+  if (uncheckedCache !== null) return uncheckedCache;
   const blob = projectSource();
   const byPermission = constantByPermission();
 
-  return catalogNames().filter((name) => {
+  const result = catalogNames().filter((name) => {
     // Direkt als String geprüft — ALLE Quote-Varianten.
     //
     // Der erste Wurf dieses Tests suchte nur nach doppelten Anführungszeichen
@@ -86,6 +101,9 @@ function uncheckedPermissions(): string[] {
     if (constant && new RegExp(`PERMISSIONS\\.${constant}\\b`).test(blob)) return false;
     return true;
   });
+
+  uncheckedCache = result;
+  return result;
 }
 
 /**
@@ -112,12 +130,18 @@ function permissionsWithReason(): Set<string> {
   return withReason;
 }
 
+// Der Scan laeuft beim Laden des Moduls, nicht im ersten Test. vitest misst
+// sein 5-Sekunden-Limit pro `it` — ein Baumdurchlauf ueber tausend Dateien
+// passte da unter Last nicht mehr hinein und meldete Timeout statt Ergebnis.
+// Beim Modul-Laden gilt die Grenze nicht.
+const UNCHECKED = uncheckedPermissions();
+
 describe("Permission-Katalog (TF-12)", () => {
   it("jedes ungeprüfte Recht hat einen dokumentierten Grund", () => {
     // Das ist der Kern von TF-12: nicht die Zahl zählt, sondern dass kein
     // Eintrag mehr unbemerkt wirkungslos ist. Wer ein neues Recht in den
     // Katalog schreibt, muss es entweder prüfen oder begründen.
-    const unchecked = uncheckedPermissions();
+    const unchecked = UNCHECKED;
     const documented = permissionsWithReason();
     const undocumented = unchecked.filter((p) => !documented.has(p));
 
@@ -130,7 +154,7 @@ describe("Permission-Katalog (TF-12)", () => {
   it("kein Recht traegt einen Grund, obwohl es geprüft wird", () => {
     // Gegenrichtung: ein `unenforcedReason` an einem verdrahteten Recht ist ein
     // veralteter Kommentar und führt Leser in die Irre.
-    const unchecked = new Set(uncheckedPermissions());
+    const unchecked = new Set(UNCHECKED);
     const stale = [...permissionsWithReason()].filter((p) => !unchecked.has(p));
     expect(stale, `Grund gesetzt, obwohl geprüft: ${stale.join(", ")}`).toEqual([]);
   });
@@ -138,7 +162,7 @@ describe("Permission-Katalog (TF-12)", () => {
   it("der kritische Accounting-Block ist vollständig verdrahtet", () => {
     // Das war der im Audit hervorgehobene Teil: 15 feingranulare Rechte, u. a.
     // year-end-close:execute (im Katalog mit requiresApproval: true).
-    const unchecked = new Set(uncheckedPermissions());
+    const unchecked = new Set(UNCHECKED);
     const mustBeChecked = [
       "accounting:year-end-close:execute",
       "accounting:gobd-export:create",

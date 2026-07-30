@@ -60,6 +60,7 @@ import {
   type LeaseRevenueSettlementItemResponse,
   type ParkCostAllocationResponse,
 } from "@/types/billing";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -122,11 +123,15 @@ function getLessorName(
 // PAGE COMPONENT
 // =============================================================================
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["positions", "allocations"] as const;
+
 export default function UsageFeeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const [activeTab, setActiveTab] = useTabParam("positions", { allowed: TAB_VALUES });
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -699,7 +704,7 @@ export default function UsageFeeDetailPage({
       </div>
 
       {/* Tabs: Positionen & Kostenaufteilungen */}
-      <Tabs defaultValue="positions">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="positions">
             {t("tabPositions", { count: items.length })}

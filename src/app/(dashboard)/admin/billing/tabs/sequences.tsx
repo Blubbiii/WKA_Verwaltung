@@ -6,10 +6,15 @@ import { TenantInvoiceSettings } from "@/components/settings/TenantInvoiceSettin
 import { InvoiceTemplateSettings } from "@/components/settings/InvoiceTemplateSettings";
 import { PositionTemplatesSettings } from "@/components/settings/PositionTemplatesSettings";
 import { FileText, Receipt, PenTool, List } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
+
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["sequences", "billing", "invoice-templates", "positions"] as const;
 
 export default function SequencesTab() {
+  const [activeTab, setActiveTab] = useTabParam("sequences", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   return (
-    <Tabs defaultValue="sequences" className="space-y-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="sequences" className="flex items-center gap-2">
           <FileText className="h-4 w-4" />

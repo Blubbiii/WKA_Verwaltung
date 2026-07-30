@@ -64,6 +64,7 @@ import { CalendarExportButton } from "@/components/calendar-export-button";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { CONTRACT_WARNING_DAYS, CONTRACT_CALENDAR_LOOKAHEAD_DAYS } from "@/lib/config/business-thresholds";
 import { downloadBlob } from "@/lib/download";
+import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 
 interface ContractItem {
   id: string;
@@ -111,10 +112,17 @@ const statusIcons: Record<string, React.ElementType> = {
 export default function ContractsPage() {
   const router = useRouter();
   const t = useTranslations("contracts");
-  const [search, setSearch] = useState("");
+  // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
+  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
+  const [tableState, setTableState] = usePersistedTableState("contracts", { search: "", type: "all", status: "all" });
+  const search = tableState.search;
+  const typeFilter = tableState.type;
+  const statusFilter = tableState.status;
+  const setSearch = (v: string) => setTableState({ search: v });
+  const setTypeFilter = (v: string) => setTableState({ type: v });
+  const setStatusFilter = (v: string) => setTableState({ status: v });
   const debouncedSearch = useDebounce(search, 300);
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Delete Dialog State
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

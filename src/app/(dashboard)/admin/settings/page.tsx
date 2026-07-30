@@ -8,12 +8,17 @@ import { TenantEmailSettings } from "@/components/settings/TenantEmailSettings";
 import { BusinessThresholds } from "@/components/settings/BusinessThresholds";
 import { HgbComplianceSettings } from "@/components/settings/HgbComplianceSettings";
 import { Settings, Globe, Mail, Sliders, ShieldCheck } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // =============================================================================
 // Component
 // =============================================================================
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["general", "portal", "email", "thresholds", "hgb"] as const;
+
 export default function AdminSettingsPage() {
+  const [activeTab, setActiveTab] = useTabParam("general", { allowed: TAB_VALUES });
   const t = useTranslations("admin.settings");
   return (
     <div className="space-y-6">
@@ -22,7 +27,7 @@ export default function AdminSettingsPage() {
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />

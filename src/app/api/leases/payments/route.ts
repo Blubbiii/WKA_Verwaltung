@@ -157,6 +157,10 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString(), 10);
     const parkId = searchParams.get("parkId");
     const status = searchParams.get("status") as "pending" | "paid" | "overdue" | null;
+    // Bedienaufwand #13 (Audit 2026-07): Einsprung von der Vertragsdetailseite.
+    // Ohne diesen Parameter musste man den Park erraten und die Gesamtliste
+    // durchscrollen, um die Zahlungen EINES Vertrags zu sehen.
+    const leaseId = searchParams.get("leaseId");
 
     const today = new Date();
 
@@ -164,7 +168,13 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     const leases = await prisma.lease.findMany({
       where: {
         tenantId: check.tenantId,
-        status: { in: ["ACTIVE", "EXPIRING"] },
+        ...(leaseId ? { id: leaseId } : {}),
+        // Die Uebersicht zeigt bewusst nur laufende Vertraege. Wird dagegen EIN
+        // Vertrag angefragt, ist der Status keine sinnvolle Einschraenkung mehr:
+        // die Zahlungshistorie eines beendeten Vertrags ist genau das, was man
+        // von dessen Detailseite aus sehen will — sonst kaeme eine leere Liste
+        // ohne erkennbaren Grund zurueck.
+        ...(leaseId ? {} : { status: { in: ["ACTIVE", "EXPIRING"] } }),
         startDate: { lte: endOfYear(new Date(year, 0, 1)) },
         OR: [
           { endDate: null },

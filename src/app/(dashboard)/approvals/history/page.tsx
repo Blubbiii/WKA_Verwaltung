@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { LOCALE_DE } from "@/lib/format";
+import { useTabParam } from "@/hooks/useTabParam";
 
 type ApprovalAction =
   | "JOURNAL_POST"
@@ -151,7 +152,11 @@ function StatusBadge({ status }: { status: ApprovalStatus }) {
   );
 }
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["requests", "decisions"] as const;
+
 export default function ApprovalsHistoryPage() {
+  const [activeTab, setActiveTab] = useTabParam("requests", { allowed: TAB_VALUES });
   const [myRequests, setMyRequests] = useState<MyRequest[]>([]);
   const [myDecisions, setMyDecisions] = useState<MyDecision[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
@@ -233,7 +238,7 @@ export default function ApprovalsHistoryPage() {
         }
       />
 
-      <Tabs defaultValue="requests" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="requests">
             Meine Anfragen ({myRequests.length})

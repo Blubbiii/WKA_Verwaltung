@@ -5801,6 +5801,12 @@
         "sentToast": "Payment reminder sent to {name}",
         "errorFallback": "Error sending payment reminder",
         "titleAttr": "Send payment reminder"
+      },
+      "leaseFilter": {
+        "active": "Filtered to the lease of {lease}",
+        "activeUnknown": "Filtered to one lease – no due date in this year",
+        "openLease": "Open lease",
+        "clear": "Clear filter"
       }
     },
     "costAllocationDetail": {
@@ -5947,6 +5953,26 @@
         "once": "One-time",
         "monthly": "Monthly",
         "yearly": "Annual"
+      },
+      "payments": {
+        "title": "Payments",
+        "tooltip": "Derived from rent, payment schedule and matched invoices – not entered separately.",
+        "previousYear": "Previous year",
+        "nextYear": "Next year",
+        "loadError": "Payments could not be loaded",
+        "emptyYear": "No due dates in {year}",
+        "summaryTotal": "Total",
+        "summaryPaid": "Paid",
+        "summaryPending": "Open",
+        "summaryOverdue": "Overdue",
+        "openInvoice": "Invoice",
+        "openAll": "All payments",
+        "moreRows": "+{count} more",
+        "status": {
+          "paid": "Paid",
+          "pending": "Open",
+          "overdue": "Overdue"
+        }
       }
     },
     "advances": {

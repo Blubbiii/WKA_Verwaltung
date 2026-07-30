@@ -62,6 +62,7 @@ import { ToggleLeft, FileArchive } from "lucide-react";
 import { toast } from "sonner";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { LOCALE_DE } from "@/lib/format";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // =============================================================================
 // Types
@@ -1078,7 +1079,11 @@ interface PaperlessAvailableKey {
   defaultValue?: string;
 }
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features"] as const;
+
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useTabParam("profile", { allowed: TAB_VALUES });
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [_isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1177,7 +1182,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />

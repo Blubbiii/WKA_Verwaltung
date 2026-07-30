@@ -10,11 +10,16 @@ import { FeatureFlagsTab } from "@/components/admin/feature-flags-tab";
 import { TenantLimitsTab } from "@/components/admin/tenant-limits-tab";
 import { MaintenanceModeTab } from "@/components/admin/maintenance-mode-tab";
 import { ToggleLeft, Gauge, Wrench } from "lucide-react";
+import { useTabParam } from "@/hooks/useTabParam";
+
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+const SUBTAB_VALUES = ["feature-flags", "tenant-limits", "maintenance"] as const;
 
 export default function FlagsTab() {
+  const [activeTab, setActiveTab] = useTabParam("feature-flags", { allowed: SUBTAB_VALUES, paramName: "subtab" });
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="feature-flags" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="feature-flags" className="flex items-center gap-2">
             <ToggleLeft className="h-4 w-4" />

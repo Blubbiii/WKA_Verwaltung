@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { useTabParam } from "@/hooks/useTabParam";
 
 // Types
 interface BillingRuleDetail {
@@ -121,11 +122,15 @@ function ParameterDisplay({ parameters }: { parameters: Record<string, unknown>;
   );
 }
 
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["overview", "history"] as const;
+
 export default function BillingRuleDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const [activeTab, setActiveTab] = useTabParam("overview", { allowed: TAB_VALUES });
   const { id } = use(params);
   const t = useTranslations("admin.billingRuleDetail");
   const router = useRouter();
@@ -393,7 +398,7 @@ export default function BillingRuleDetailPage({
       )}
 
       {/* Main Content */}
-      <Tabs defaultValue="overview">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />

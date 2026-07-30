@@ -7,8 +7,13 @@ import ScadaMappingsTab from "@/components/energy/scada/ScadaMappingsTab";
 import ScadaImportTab from "@/components/energy/scada/ScadaImportTab";
 import ScadaAutoImportTab from "@/components/energy/scada/ScadaAutoImportTab";
 import ScadaLogsTab from "@/components/energy/scada/ScadaLogsTab";
+import { useTabParam } from "@/hooks/useTabParam";
+
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+const TAB_VALUES = ["mappings", "import", "auto-import", "logs"] as const;
 
 export default function ScadaPage() {
+  const [activeTab, setActiveTab] = useTabParam("mappings", { allowed: TAB_VALUES });
   const t = useTranslations("energy.scada");
   return (
     <div className="space-y-6">
@@ -26,7 +31,7 @@ export default function ScadaPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="mappings">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="mappings">{t("tabs.mappings")}</TabsTrigger>
           <TabsTrigger value="import">{t("tabs.import")}</TabsTrigger>
