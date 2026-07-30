@@ -266,6 +266,13 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "management-billing:calculate", module: "management-billing", action: "calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen fuer Betriebsfuehrung kalkulieren",      sortOrder: 244 },
   { name: "management-billing:invoice",   module: "management-billing", action: "invoice",   displayName: "BF-Rechnungen generieren", description: "Rechnungen aus BF-Abrechnungen erstellen",             sortOrder: 245 },
 
+  // ── Stoerungsvorgaenge (A1, Audit 2026-07) ─────────────────────────────
+  { name: "faults:read",    module: "faults", action: "read",    displayName: "Stoerungsvorgaenge anzeigen",  description: "Stoerungen mit bewertetem Ertragsausfall einsehen",       sortOrder: 246 },
+  { name: "faults:create",  module: "faults", action: "create",  displayName: "Stoerungsvorgang anlegen",     description: "Neuen Stoerungsvorgang erfassen",                          sortOrder: 247 },
+  { name: "faults:update",  module: "faults", action: "update",  displayName: "Stoerungsvorgang bearbeiten",  description: "Ursache, Ausfall und Anspruch pflegen",                     sortOrder: 248 },
+  { name: "faults:delete",  module: "faults", action: "delete",  displayName: "Stoerungsvorgang loeschen",    description: "Stoerungsvorgang entfernen",                               sortOrder: 249 },
+  { name: "faults:valuate", module: "faults", action: "valuate", displayName: "Ertragsausfall berechnen",     description: "Ausfall aus Referenzanlagen ermitteln und bewerten",       sortOrder: 250 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },

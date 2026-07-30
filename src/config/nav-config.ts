@@ -287,6 +287,14 @@ export const navGroups: NavGroup[] = [
         permission: "service-events:read",
       },
       {
+        // A1 (Audit 2026-07): Stoerungsvorgaenge mit bewertetem Ertragsausfall.
+        title: "Störungen",
+        titleKey: "faults",
+        href: "/faults",
+        icon: AlertTriangle,
+        permission: "faults:read",
+      },
+      {
         title: "Energie",
         titleKey: "energy",
         href: "/energy",

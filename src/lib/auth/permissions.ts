@@ -562,6 +562,13 @@ export const PERMISSIONS = {
   MANAGEMENT_BILLING_DELETE: "management-billing:delete",
   MANAGEMENT_BILLING_CALCULATE: "management-billing:calculate",
   MANAGEMENT_BILLING_INVOICE: "management-billing:invoice",
+
+  // A1 (Audit 2026-07): Stoerungsvorgaenge.
+  FAULTS_READ: "faults:read",
+  FAULTS_CREATE: "faults:create",
+  FAULTS_UPDATE: "faults:update",
+  FAULTS_DELETE: "faults:delete",
+  FAULTS_VALUATE: "faults:valuate",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

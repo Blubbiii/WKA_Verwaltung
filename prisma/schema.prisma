@@ -140,6 +140,7 @@ model Tenant {
   approvalRequests          ApprovalRequest[]
   savedFilters              UserSavedFilter[]
   entityPresence            EntityPresence[]
+  faultCases                FaultCase[]
 
   @@map("tenants")
 }
@@ -283,6 +284,8 @@ model User {
   bankUpdatesDecided                                                      PendingBankUpdate[]        @relation("BankUpdateDecidedBy")
   savedFilters                                                            UserSavedFilter[]
   entityPresence                                                          EntityPresence[]
+  faultCasesAssigned                                                      FaultCase[]                @relation("FaultCaseAssignee")
+  faultCasesCreated                                                       FaultCase[]                @relation("FaultCaseCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -476,6 +479,7 @@ model Turbine {
   inspectionReports              InspectionReport[]
   defects                        Defect[]
   insuranceClaims                InsuranceClaim[]
+  faultCases                     FaultCase[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -500,6 +504,7 @@ model ServiceEvent {
   createdBy          User?      @relation("ServiceEventCreatedBy", fields: [createdById], references: [id])
   turbine            Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
   inspectionReports  InspectionReport[]
+  faultCases         FaultCase[]
 
   @@index([turbineId])
   @@index([eventDate])
@@ -2624,6 +2629,7 @@ model ScadaStatusCode {
   messageType     String   // "S", "W", "I"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  faultCases      FaultCase[]
 
   @@unique([controllerType, codeType, mainCode, subCode])
   @@index([controllerType, codeType])
@@ -4865,6 +4871,7 @@ model OperationalTask {
   createdBy       User                  @relation("OperationalTaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
+  faultCases      FaultCase[]
 
   @@index([tenantId])
   @@index([parkId])
@@ -4954,6 +4961,7 @@ model Defect {
   createdBy          User                  @relation("DefectCreator", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt          DateTime              @default(now())
   updatedAt          DateTime              @updatedAt
+  faultCases         FaultCase[]
 
   insuranceClaims    InsuranceClaim[]
 
@@ -5229,4 +5237,185 @@ model EntityPresence {
   @@index([entityType, entityId, lastSeenAt])
   @@index([tenantId])
   @@map("entity_presence")
+}
+
+// ---------------------------------------------------------------------------
+// A1: Störungsvorgang mit bewertetem Ertragsausfall (Audit 2026-07)
+//
+// Die Störungsdaten waren vollständig da (ScadaStateEvent, ScadaStatusCode,
+// ScadaAvailability), die Auswertung auch. Es fehlte der VORGANG: kein Bezug
+// von einem SCADA-Ereignis auf einen bearbeitbaren Fall, keine
+// Verursacherkategorie, kein bezifferter Ertragsausfall, keine Wiedervorlage.
+// Folge laut Audit: Ansprüche gegen den Hersteller verjähren unbemerkt.
+// ---------------------------------------------------------------------------
+
+/// Wer die Störung zu verantworten hat. Bestimmt, gegen wen ein Anspruch geht.
+enum FaultCauseCategory {
+  /// Anlagenhersteller — Gewährleistung oder Wartungsvertrag.
+  MANUFACTURER
+  /// Netzbetreiber — Abschaltung, Netzfehler, Einspeisemanagement.
+  GRID
+  /// Wetter (Sturmabschaltung, Vereisung). Kein Anspruchsgegner.
+  WEATHER
+  /// Eigenverschulden des Betreibers.
+  OWN_FAULT
+  /// Behördliche Auflage (Schallschutz, Schattenwurf, Artenschutz).
+  AUTHORITY
+  /// Dritte (Bauarbeiten, Vandalismus).
+  THIRD_PARTY
+  /// Noch nicht zugeordnet. Bewusst als eigener Wert und NICHT als null:
+  /// "noch nicht geprüft" ist eine Aussage, "kein Wert" wäre keine.
+  UNKNOWN
+}
+
+enum FaultCaseStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+/// Stand des Anspruchs gegen den Verursacher.
+enum FaultClaimStatus {
+  /// Kein Anspruch verfolgt (z. B. bei Wetter).
+  NONE
+  /// Anspruch erkannt, aber noch nicht gestellt.
+  PENDING
+  /// Geltend gemacht.
+  ASSERTED
+  /// Anerkannt.
+  ACCEPTED
+  /// Abgelehnt.
+  REJECTED
+  /// Erledigt (gezahlt oder verrechnet).
+  SETTLED
+  /// Verjährt. Der Wert existiert, damit ein versäumter Anspruch im Bestand
+  /// sichtbar bleibt, statt still auf ASSERTED stehenzubleiben.
+  TIME_BARRED
+}
+
+/// Wie der Ertragsausfall ermittelt wurde. Steht am Datensatz, weil eine
+/// Forderung gegen den Hersteller nur so viel wert ist wie ihre Herleitung.
+enum LostEnergyMethod {
+  /// Referenzanlagen desselben Parks im selben Zeitfenster.
+  REFERENCE_TURBINE
+  /// Von Hand beziffert — dann trägt lostEnergyNotes die Begründung.
+  MANUAL
+}
+
+model FaultCase {
+  id          String  @id @default(uuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  /// Fortlaufend je Mandant und Jahr, z. B. "ST-2026-0007". Wird in der
+  /// Korrespondenz mit dem Hersteller referenziert. Eine Lücke ist hier —
+  /// anders als bei Rechnungsnummern — ohne rechtliche Folge.
+  caseNumber  String
+
+  turbineId   String
+  turbine     Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  title       String  @db.VarChar(200)
+  description String? @db.Text
+
+  /// Beginn der Störung. Ende offen, solange sie andauert.
+  startAt     DateTime
+  endAt       DateTime?
+
+  status         FaultCaseStatus    @default(OPEN)
+  causeCategory  FaultCauseCategory @default(UNKNOWN)
+
+  /// Störcode im Klartext, sofern zuordenbar.
+  statusCodeId String?
+  statusCode   ScadaStatusCode? @relation(fields: [statusCodeId], references: [id], onDelete: SetNull)
+
+  // --- Bewerteter Ertragsausfall ---------------------------------------
+  /// Entgangene Menge. Null heisst "noch nicht ermittelt" — NICHT null.
+  lostEnergyKwh     Decimal?          @db.Decimal(15, 3)
+  lostEnergyMethod  LostEnergyMethod?
+  /// Herleitung: verwendete Referenzanlagen, Intervallzahl, Hinweise.
+  /// Als Json, weil es Beleg und nicht Auswertungsgrundlage ist.
+  lostEnergyBasis   Json?
+  lostEnergyNotes   String?           @db.Text
+  /// Zeitpunkt der Berechnung — eine Bewertung altert mit den Rohdaten.
+  lostEnergyComputedAt DateTime?
+
+  /// Angesetzter Satz in EUR/kWh. Wird MITGESPEICHERT und nicht bei Bedarf
+  /// nachgeschlagen: sonst ändert sich der bezifferte Schaden rückwirkend,
+  /// wenn jemand einen Monatssatz korrigiert.
+  ratePerKwh      Decimal? @db.Decimal(10, 4)
+  /// Woher der Satz stammt ("EnergyMonthlyRate 2026-03", "manuell").
+  rateSource      String?  @db.VarChar(100)
+  /// lostEnergyKwh × ratePerKwh, festgehalten statt bei jeder Anzeige neu
+  /// gerechnet.
+  lostRevenueEur  Decimal? @db.Decimal(15, 2)
+
+  // --- Anspruch --------------------------------------------------------
+  claimStatus     FaultClaimStatus @default(NONE)
+  /// Verjährungsdatum. Bewusst ein Feld und keine Berechnung: die Frist hängt
+  /// vom Vertragstyp ab (§ 195 BGB, § 438 BGB, abweichende Wartungsverträge).
+  /// Eine automatisch gesetzte Frist wäre eine Rechtsauskunft im Code.
+  claimDeadline   DateTime?
+  claimAmountEur  Decimal? @db.Decimal(15, 2)
+  claimNotes      String?  @db.Text
+
+  /// Wiedervorlage. Der eigentliche Zweck des Vorgangs: nicht vergessen.
+  followUpAt      DateTime?
+
+  // --- Verknüpfungen ---------------------------------------------------
+  serviceEventId    String?
+  serviceEvent      ServiceEvent?    @relation(fields: [serviceEventId], references: [id], onDelete: SetNull)
+  operationalTaskId String?
+  operationalTask   OperationalTask? @relation(fields: [operationalTaskId], references: [id], onDelete: SetNull)
+  defectId          String?
+  defect            Defect?          @relation(fields: [defectId], references: [id], onDelete: SetNull)
+
+  assignedToId String?
+  assignedTo   User?  @relation("FaultCaseAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdById  String?
+  createdBy    User?  @relation("FaultCaseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  resolutionNotes String? @db.Text
+  resolvedAt      DateTime?
+
+  scadaEvents FaultCaseScadaEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, caseNumber])
+  @@index([tenantId])
+  @@index([turbineId, startAt])
+  @@index([tenantId, status])
+  @@index([tenantId, causeCategory])
+  /// Trägt die beiden Listen, die der Betriebsführer täglich braucht:
+  /// offene Wiedervorlagen und ablaufende Ansprüche.
+  @@index([tenantId, followUpAt])
+  @@index([tenantId, claimDeadline])
+  @@map("fault_cases")
+}
+
+/// Welche SCADA-Ereignisse zu diesem Vorgang gehören. Eigene Tabelle, weil ein
+/// Vorgang mehrere Ereignisse bündelt (Störung, Quittierung, erneuter Ausfall)
+/// und ein Ereignis theoretisch in mehreren Auswertungen auftaucht.
+model FaultCaseScadaEvent {
+  id          String @id @default(uuid())
+  faultCaseId String
+  faultCase   FaultCase @relation(fields: [faultCaseId], references: [id], onDelete: Cascade)
+  /// Kein FK auf ScadaStateEvent: die Tabelle ist eine Hypertable mit
+  /// zusammengesetztem Schlüssel und wird nach Aufbewahrungsfrist beschnitten.
+  /// Ein FK würde entweder das Beschneiden blockieren oder den Vorgang mit
+  /// löschen — beides falsch. Der Vorgang muss den Rohdatenstand überleben.
+  scadaEventId String
+  /// Momentaufnahme der Kennzahlen zum Zeitpunkt der Zuordnung, damit der
+  /// Vorgang auch nach dem Beschneiden lesbar bleibt.
+  eventTimestamp DateTime
+  state          Int
+  subState       Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([faultCaseId, scadaEventId])
+  @@index([faultCaseId])
+  @@map("fault_case_scada_events")
 }

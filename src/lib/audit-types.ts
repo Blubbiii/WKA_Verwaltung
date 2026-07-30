@@ -27,6 +27,8 @@ export type AuditEntityType =
   | "Invoice"
   | "Vote"
   | "ServiceEvent"
+  // A1 (Audit 2026-07): Stoerungsvorgang.
+  | "FaultCase"
   | "News"
   | "Person"
   // Bedienaufwand #22: Der CSV-Import protokolliert auch Lieferanten.
@@ -64,6 +66,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     Invoice: "Rechnung",
     Vote: "Abstimmung",
     ServiceEvent: "Service-Event",
+    FaultCase: "Störungsvorgang",
     News: "Neuigkeit",
     Person: "Person",
     Vendor: "Lieferant",
