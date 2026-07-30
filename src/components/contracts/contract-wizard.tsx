@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -220,6 +221,21 @@ export function ContractWizard() {
     reminderDays: [...CONTRACT_REMINDER_DAYS_DEFAULT],
   });
 
+  // Bedienaufwand #20 (Audit 2026-07): Bis hierher gab es im ganzen Repo kein
+  // einziges beforeunload. Ein F5 in Schritt 3 loeschte alles ohne Rueckfrage.
+  const [saved, setSaved] = useState(false);
+  const hasEntries =
+    !saved &&
+    (currentStep > 0 ||
+      formData.title !== "" ||
+      formData.contractType !== "" ||
+      formData.contractNumber !== "");
+
+  const { confirmLeave } = useUnsavedChanges({
+    when: hasEntries,
+    message: tToast("unsavedWarning"),
+  });
+
   // Load dropdown data on mount
   useEffect(() => {
     async function fetchData() {
@@ -393,6 +409,7 @@ export function ContractWizard() {
 
       const contract = await response.json();
       toast.success(tToast("contractCreated"));
+      setSaved(true);
       router.push(`/contracts/${contract.id}`);
     } catch (error) {
       toast.error(
@@ -1332,7 +1349,11 @@ export function ContractWizard() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => router.push("/contracts")}
+            onClick={() => {
+              // Programmatische Navigation — der Verlustschutz greift dort
+              // nicht, deshalb hier die eigene Rueckfrage.
+              if (confirmLeave()) router.push("/contracts");
+            }}
           >
             Abbrechen
           </Button>

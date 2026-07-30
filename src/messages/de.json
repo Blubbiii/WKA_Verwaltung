@@ -1236,7 +1236,8 @@
       "toastCreateSuccessInvoice": "Rechnung erstellt!",
       "toastCreateSuccessCreditNote": "Gutschrift erstellt!",
       "duplicatedFrom": "Vorlage aus Rechnung {number} übernommen",
-      "duplicateLoadError": "Vorlage konnte nicht geladen werden"
+      "duplicateLoadError": "Vorlage konnte nicht geladen werden",
+      "unsavedWarning": "Es gibt ungespeicherte Eingaben. Rechnung trotzdem verlassen?"
     },
     "list": {
       "pageTitle": "Abrechnungen",
@@ -4274,7 +4275,8 @@
       "startDateFirst": "Bitte zuerst Vertragsbeginn waehlen",
       "validDaysRequired": "Bitte eine gültige Anzahl Tage eingeben",
       "reminderExists": "Diese Erinnerung existiert bereits",
-      "contractCreated": "Vertrag erfolgreich erstellt"
+      "contractCreated": "Vertrag erfolgreich erstellt",
+      "unsavedWarning": "Es gibt ungespeicherte Eingaben. Assistent trotzdem verlassen?"
     },
     "documents": {
       "title": "Dokumente",
@@ -5428,7 +5430,8 @@
         "create": "Pachtvertrag erstellen",
         "createSuccess": "Pachtvertrag erfolgreich erstellt",
         "createError": "Fehler beim Erstellen des Pachtvertrags",
-        "genericError": "Fehler beim Erstellen"
+        "genericError": "Fehler beim Erstellen",
+        "unsavedWarning": "Es gibt ungespeicherte Eingaben. Assistent trotzdem verlassen?"
       }
     },
     "importShp": {

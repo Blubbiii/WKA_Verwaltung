@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { parseAmount } from "@/lib/parse-amount";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -127,6 +129,10 @@ export default function NewLeaseWizardPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  // Bedienaufwand #20: Erst nach erfolgreichem Speichern darf der
+  // Verlustschutz schweigen — sonst warnt er beim Weiterleiten auf die
+  // Detailseite des gerade angelegten Vertrags.
+  const [saved, setSaved] = useState(false);
 
   // Data
   const [persons, setPersons] = useState<Person[]>([]);
@@ -156,6 +162,26 @@ export default function NewLeaseWizardPage() {
   // Step 2: Plots
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [newPlots, setNewPlots] = useState<NewPlot[]>([]);
+
+  /**
+   * Bedienaufwand #20: Der Assistent gilt als angefasst, sobald der Benutzer
+   * ueber Schritt 1 hinaus ist oder irgendwo etwas eingetragen hat. Bewusst
+   * grob geschnitten: eine feinere Schmutz-Erkennung ueber 1.700 Zeilen
+   * Formular waere aufwendiger als sie nuetzt, und lieber einmal zu viel
+   * gefragt als einmal vier Schritte verloren.
+   */
+  const hasEntries =
+    !saved &&
+    (currentStep > 0 ||
+      selectedLessorId !== "" ||
+      selectedPlotIds.length > 0 ||
+      newPlots.length > 0 ||
+      Object.values(newLessor).some((v) => typeof v === "string" && v !== ""));
+
+  const { confirmLeave } = useUnsavedChanges({
+    when: hasEntries,
+    message: t("actions.unsavedWarning"),
+  });
   const [showNewPlotForm, setShowNewPlotForm] = useState(false);
   const [showOnlyAvailable, setShowOnlyAvailable] = useState(true); // Filter für verfügbare Flurstücke
   const [currentNewPlot, setCurrentNewPlot] = useState<NewPlot>({
@@ -318,76 +344,55 @@ export default function NewLeaseWizardPage() {
     );
   }
 
-  // Submit
+  /**
+   * Bedienaufwand #21 (Audit 2026-07): EIN Request statt drei.
+   *
+   * Vorher lief nacheinander POST /api/persons, n x POST /api/plots und
+   * POST /api/leases. Schlug der letzte fehl, waren Verpaechter und
+   * Flurstuecke bereits angelegt — die Fehlermeldung sagte das nicht, und ein
+   * zweiter Speicherversuch legte die Person ein zweites Mal an. Genau solche
+   * Stammdaten-Dubletten tauchen spaeter in den Abrechnungen wieder auf.
+   *
+   * Die Lease-Route nimmt die neuen Stammdaten jetzt mit entgegen und schreibt
+   * alles in einer Transaktion. Faellt etwas um, faellt alles um.
+   */
   async function handleSubmit() {
     setLoading(true);
     try {
-      // Step 1: Create lessor if needed
-      let lessorId = selectedLessorId;
-      if (lessorMode === "create") {
-        const lessorPayload = {
-          personType: newLessor.personType,
-          firstName: newLessor.personType === "natural" ? newLessor.firstName : undefined,
-          lastName: newLessor.personType === "natural" ? newLessor.lastName : undefined,
-          companyName: newLessor.personType === "legal" ? newLessor.companyName : undefined,
-          email: newLessor.email || undefined,
-          phone: newLessor.phone || undefined,
-          street: newLessor.street || undefined,
-          houseNumber: newLessor.houseNumber || undefined,
-          postalCode: newLessor.postalCode || undefined,
-          city: newLessor.city || undefined,
-          bankIban: newLessor.bankIban || undefined,
-          bankBic: newLessor.bankBic || undefined,
-          bankName: newLessor.bankName || undefined,
-        };
-
-        const lessorRes = await fetch("/api/persons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(lessorPayload),
-        });
-
-        if (!lessorRes.ok) {
-          throw new Error(t("lessor.createError"));
-        }
-
-        const lessorData = await lessorRes.json();
-        lessorId = lessorData.id;
-      }
-
-      // Step 2: Create new plots if needed
-      const plotIds = [...selectedPlotIds];
-      for (const newPlot of newPlots) {
-        const plotPayload = {
-          cadastralDistrict: newPlot.cadastralDistrict,
-          fieldNumber: newPlot.fieldNumber || "0",
-          plotNumber: newPlot.plotNumber,
-          areaSqm: newPlot.areaSqm ? parseFloat(newPlot.areaSqm) : undefined,
-          county: newPlot.county || undefined,
-          municipality: newPlot.municipality || undefined,
-          parkId: newPlot.parkId || undefined,
-          notes: newPlot.notes || undefined,
-        };
-
-        const plotRes = await fetch("/api/plots", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(plotPayload),
-        });
-
-        if (!plotRes.ok) {
-          const errorData = await plotRes.json();
-          throw new Error(errorData.error || t("plots.createError"));
-        }
-
-        const plotData = await plotRes.json();
-        plotIds.push(plotData.id);
-      }
-
-      // Step 3: Create lease
-      const leasePayload = {
-        lessorId,
-        plotIds,
+      const payload = {
+        // Entweder ein bestehender Verpaechter ODER ein neu anzulegender —
+        // die Route weist beides gleichzeitig zurueck, statt still eines zu
+        // bevorzugen.
+        ...(lessorMode === "create"
+          ? {
+              newLessor: {
+                personType: newLessor.personType,
+                firstName: newLessor.personType === "natural" ? newLessor.firstName : undefined,
+                lastName: newLessor.personType === "natural" ? newLessor.lastName : undefined,
+                companyName: newLessor.personType === "legal" ? newLessor.companyName : undefined,
+                email: newLessor.email || undefined,
+                phone: newLessor.phone || undefined,
+                street: newLessor.street || undefined,
+                houseNumber: newLessor.houseNumber || undefined,
+                postalCode: newLessor.postalCode || undefined,
+                city: newLessor.city || undefined,
+                bankIban: newLessor.bankIban || undefined,
+                bankBic: newLessor.bankBic || undefined,
+                bankName: newLessor.bankName || undefined,
+              },
+            }
+          : { lessorId: selectedLessorId }),
+        plotIds: selectedPlotIds,
+        newPlots: newPlots.map((plot) => ({
+          cadastralDistrict: plot.cadastralDistrict,
+          fieldNumber: plot.fieldNumber || "0",
+          plotNumber: plot.plotNumber,
+          areaSqm: parseAmount(plot.areaSqm) ?? undefined,
+          county: plot.county || undefined,
+          municipality: plot.municipality || undefined,
+          parkId: plot.parkId || undefined,
+          notes: plot.notes || undefined,
+        })),
         signedDate: contractData.signedDate
           ? format(contractData.signedDate, "yyyy-MM-dd")
           : undefined,
@@ -401,7 +406,7 @@ export default function NewLeaseWizardPage() {
         extensionDetails: contractData.extensionDetails || undefined,
         hasWaitingMoney: contractData.hasWaitingMoney,
         waitingMoneyAmount: contractData.waitingMoneyAmount
-          ? parseFloat(contractData.waitingMoneyAmount)
+          ? parseAmount(contractData.waitingMoneyAmount) ?? undefined
           : undefined,
         waitingMoneyUnit: contractData.hasWaitingMoney
           ? contractData.waitingMoneyUnit
@@ -417,15 +422,18 @@ export default function NewLeaseWizardPage() {
       const leaseRes = await fetch("/api/leases", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(leasePayload),
+        body: JSON.stringify(payload),
       });
 
       if (!leaseRes.ok) {
-        const errorData = await leaseRes.json();
-        throw new Error(errorData.error || t("actions.createError"));
+        const errorData = await leaseRes.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || t("actions.createError"));
       }
 
       const leaseData = await leaseRes.json();
+      // Erst jetzt gilt das Formular als gespeichert — sonst warnt der
+      // Verlustschutz beim Weiterleiten.
+      setSaved(true);
       toast.success(t("actions.createSuccess"));
       router.push(`/leases/${leaseData.id}`);
     } catch (error) {
@@ -434,6 +442,7 @@ export default function NewLeaseWizardPage() {
       setLoading(false);
     }
   }
+
 
   // Render step content
   function renderStepContent() {
@@ -1655,7 +1664,12 @@ export default function NewLeaseWizardPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            // router.back() ist eine programmatische Navigation — die faengt
+            // der Verlustschutz nicht ab, dafuer gibt es im App-Router keinen
+            // Aufhaenger. Hier wird deshalb selbst gefragt.
+            onClick={() => {
+              if (confirmLeave()) router.back();
+            }}
           >
             {tCommon("cancel")}
           </Button>

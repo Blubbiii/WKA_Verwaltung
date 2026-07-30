@@ -54,6 +54,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { RecipientSearchDialog, type RecipientSelection, PositionTemplateDialog, type PositionTemplateSelection } from "@/components/invoices";
 import { AmountInput } from "@/components/ui/amount-input";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 
 interface InvoiceItem {
@@ -92,6 +93,8 @@ function NewInvoiceContent() {
   const tCommon = useTranslations("common");
 
   const [saving, setSaving] = useState(false);
+  // Bedienaufwand #20: 898 Zeilen Formular ohne jede Warnung beim Verlassen.
+  const [saved, setSaved] = useState(false);
   const [formData, setFormData] = useState({
     invoiceDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
@@ -121,6 +124,19 @@ function NewInvoiceContent() {
       taxType: "EXEMPT",
     },
   ]);
+
+  /**
+   * Bedienaufwand #20: Als angefasst gilt das Formular, sobald ein Empfaenger
+   * oder eine Position mit Inhalt darin steht. Der Kontext-Prefill aus der URL
+   * (#12) zaehlt bewusst NICHT — sonst warnte die Seite schon beim Oeffnen
+   * eines vorbelegten Links, ohne dass jemand etwas eingetippt hat.
+   */
+  const hasEntries =
+    !saved &&
+    (formData.recipientName.trim() !== "" ||
+      items.some((item) => item.description.trim() !== "" || item.unitPrice !== 0));
+
+  useUnsavedChanges({ when: hasEntries, message: t("unsavedWarning") });
 
   // Skonto state — initial values come from TenantSettings (defaultSkontoPercent/Days)
   const [skontoEnabled, setSkontoEnabled] = useState(false);
@@ -420,6 +436,7 @@ function NewInvoiceContent() {
       const invoice = await response.json();
       const { celebrationToast } = await import("@/lib/celebration-toast");
       celebrationToast(type === "INVOICE" ? t("toastCreateSuccessInvoice") : t("toastCreateSuccessCreditNote"));
+      setSaved(true);
       router.push(`/invoices/${invoice.id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("toastSaveError"));

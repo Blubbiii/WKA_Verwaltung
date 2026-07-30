@@ -8,9 +8,51 @@ import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
+/**
+ * Bedienaufwand #21 (Audit 2026-07): Der Pacht-Assistent legte Verpaechter,
+ * Flurstuecke und Vertrag in DREI aufeinanderfolgenden Requests an. Schlug der
+ * letzte fehl, existierten Person und Flurstuecke bereits — die Fehlermeldung
+ * sagte das nicht, und wer erneut speicherte, legte die Person ein zweites Mal
+ * an. Stammdaten-Dubletten tauchen spaeter in Abrechnungen wieder auf.
+ *
+ * Deshalb nimmt diese Route die neu anzulegenden Stammdaten optional gleich
+ * mit entgegen und schreibt alles in EINER Transaktion. Faellt irgendetwas um,
+ * faellt alles um — nichts bleibt halb angelegt zurueck.
+ */
+const newLessorSchema = z.object({
+  personType: z.enum(["natural", "legal"]),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  companyName: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  street: z.string().optional(),
+  houseNumber: z.string().optional(),
+  postalCode: z.string().optional(),
+  city: z.string().optional(),
+  bankIban: z.string().optional(),
+  bankBic: z.string().optional(),
+  bankName: z.string().optional(),
+});
+
+const newPlotSchema = z.object({
+  cadastralDistrict: z.string().min(1, "Gemarkung ist erforderlich"),
+  fieldNumber: z.string().default("0"),
+  plotNumber: z.string().min(1, "Flurstücknummer ist erforderlich"),
+  areaSqm: z.number().optional(),
+  county: z.string().optional(),
+  municipality: z.string().optional(),
+  parkId: z.string().uuid().optional(),
+  notes: z.string().optional(),
+});
+
 const leaseCreateSchema = z.object({
-  plotIds: z.array(z.string().uuid("Ungültige Flurstück-ID")).min(1, "Mindestens ein Flurstück erforderlich"),
-  lessorId: z.string().uuid("Ungültige Verpächter-ID"),
+  // Bestehende Flurstuecke bzw. Verpaechter. Mindestens eine der beiden
+  // Quellen muss etwas liefern — geprueft im superRefine unten.
+  plotIds: z.array(z.string().uuid("Ungültige Flurstück-ID")).default([]),
+  lessorId: z.string().uuid("Ungültige Verpächter-ID").optional(),
+  newLessor: newLessorSchema.optional(),
+  newPlots: z.array(newPlotSchema).default([]),
   signedDate: z.string().optional(), // Vertragsabschluss (Unterschrift)
   startDate: z.string(), // Vertragsbeginn (Baubeginn)
   endDate: z.string().optional(),
@@ -31,6 +73,30 @@ const leaseCreateSchema = z.object({
   // Anhänge & Notizen
   contractDocumentUrl: z.url().optional(),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (!data.lessorId && !data.newLessor) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["lessorId"],
+      message: "Verpächter erforderlich: entweder lessorId oder newLessor",
+    });
+  }
+  if (data.lessorId && data.newLessor) {
+    // Beides gleichzeitig ist keine sinnvolle Absicht — und stillschweigend
+    // eines zu bevorzugen wuerde den Fehler verstecken.
+    ctx.addIssue({
+      code: "custom",
+      path: ["lessorId"],
+      message: "Entweder lessorId ODER newLessor angeben, nicht beides",
+    });
+  }
+  if (data.plotIds.length === 0 && data.newPlots.length === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["plotIds"],
+      message: "Mindestens ein Flurstück erforderlich",
+    });
+  }
 });
 
 // GET /api/leases
@@ -185,6 +251,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = leaseCreateSchema.parse(body);
 
+    // Neue Flurstuecke anzulegen ist ein eigenes Recht. Ohne diese Pruefung
+    // koennte jemand mit leases:create ueber den Umweg dieser Route Flurstuecke
+    // erzeugen, obwohl ihm plots:create fehlt — die Plot-Route prueft es.
+    if (validatedData.newPlots.length > 0) {
+      const plotCheck = await requirePermission(PERMISSIONS.PLOTS_CREATE);
+      if (!plotCheck.authorized) return plotCheck.error!;
+    }
+
     // Prüfe ob alle Plots zum Tenant gehören
     const plots = await prisma.plot.findMany({
       where: {
@@ -197,20 +271,85 @@ export async function POST(request: NextRequest) {
       return apiError("NOT_FOUND", undefined, { message: "Ein oder mehrere Flurstücke nicht gefunden" });
     }
 
-    // Prüfe ob Lessor zum Tenant gehört
-    const lessor = await prisma.person.findFirst({
-      where: {
-        id: validatedData.lessorId,
-        tenantId: check.tenantId,
-      },
-    });
+    // Prüfe ob Lessor zum Tenant gehört — nur wenn ein bestehender referenziert
+    // wird. Ein neu anzulegender existiert naturgemaess noch nicht.
+    if (validatedData.lessorId) {
+      const lessor = await prisma.person.findFirst({
+        where: {
+          id: validatedData.lessorId,
+          tenantId: check.tenantId,
+        },
+      });
 
-    if (!lessor) {
-      return apiError("NOT_FOUND", undefined, { message: "Verpächter nicht gefunden" });
+      if (!lessor) {
+        return apiError("NOT_FOUND", undefined, { message: "Verpächter nicht gefunden" });
+      }
     }
 
-    // Create lease with plots in a transaction
+    // Park-Zugehoerigkeit der neuen Flurstuecke pruefen, bevor die Transaktion
+    // startet — dieselbe Pruefung macht die Plot-Route.
+    const newPlotParkIds = [...new Set(validatedData.newPlots.map((p) => p.parkId).filter(Boolean))] as string[];
+    if (newPlotParkIds.length > 0) {
+      const parks = await prisma.park.findMany({
+        where: { id: { in: newPlotParkIds }, tenantId: check.tenantId },
+        select: { id: true },
+      });
+      if (parks.length !== newPlotParkIds.length) {
+        return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
+      }
+    }
+
+    // Alles in EINER Transaktion: Verpaechter, Flurstuecke, Vertrag. Faellt
+    // etwas um, faellt alles um — genau das fehlte in #21.
     const lease = await prisma.$transaction(async (tx) => {
+      let lessorId = validatedData.lessorId;
+
+      if (validatedData.newLessor) {
+        const created = await tx.person.create({
+          data: {
+            ...validatedData.newLessor,
+            tenantId: check.tenantId!,
+          },
+          select: { id: true },
+        });
+        lessorId = created.id;
+      }
+
+      const plotIds = [...validatedData.plotIds];
+
+      for (const newPlot of validatedData.newPlots) {
+        const fieldNumber = newPlot.fieldNumber || "0";
+
+        // Vorhandenes Flurstueck wiederverwenden statt am Unique-Index
+        // aufzulaufen. Gemarkung + Flur + Flurstuecknummer identifizieren es
+        // eindeutig; wer dieselbe Kombination noch einmal eintippt, meint
+        // dasselbe Grundstueck und nicht ein zweites daneben.
+        const existing = await tx.plot.findFirst({
+          where: {
+            tenantId: check.tenantId!,
+            cadastralDistrict: newPlot.cadastralDistrict,
+            fieldNumber,
+            plotNumber: newPlot.plotNumber,
+          },
+          select: { id: true },
+        });
+
+        if (existing) {
+          plotIds.push(existing.id);
+          continue;
+        }
+
+        const createdPlot = await tx.plot.create({
+          data: { ...newPlot, fieldNumber, tenantId: check.tenantId! },
+          select: { id: true },
+        });
+        plotIds.push(createdPlot.id);
+      }
+
+      // Dasselbe Flurstueck zweimal zu verknuepfen bricht am Unique-Index von
+      // LeasePlot — bei Auswahl UND Neuanlage derselben Parzelle erreichbar.
+      const uniquePlotIds = [...new Set(plotIds)];
+
       // Create the lease
       const newLease = await tx.lease.create({
         data: {
@@ -229,14 +368,14 @@ export async function POST(request: NextRequest) {
           linkedTurbineId: validatedData.linkedTurbineId || null,
           contractDocumentUrl: validatedData.contractDocumentUrl,
           notes: validatedData.notes,
-          lessorId: validatedData.lessorId,
+          lessorId: lessorId!,
           contractPartnerFundId: validatedData.contractPartnerFundId || null,
         },
       });
 
       // Create LeasePlot entries
       await tx.leasePlot.createMany({
-        data: validatedData.plotIds.map((plotId) => ({
+        data: uniquePlotIds.map((plotId) => ({
           leaseId: newLease.id,
           plotId,
         })),

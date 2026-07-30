@@ -1236,7 +1236,8 @@
       "toastCreateSuccessInvoice": "Invoice created!",
       "toastCreateSuccessCreditNote": "Credit note created!",
       "duplicatedFrom": "Copied from invoice {number}",
-      "duplicateLoadError": "Could not load template"
+      "duplicateLoadError": "Could not load template",
+      "unsavedWarning": "There are unsaved entries. Leave the invoice anyway?"
     },
     "list": {
       "pageTitle": "Invoices",
@@ -4274,7 +4275,8 @@
       "startDateFirst": "Please select contract start first",
       "validDaysRequired": "Please enter a valid number of days",
       "reminderExists": "This reminder already exists",
-      "contractCreated": "Contract created successfully"
+      "contractCreated": "Contract created successfully",
+      "unsavedWarning": "There are unsaved entries. Leave the wizard anyway?"
     },
     "documents": {
       "title": "Documents",
@@ -5428,7 +5430,8 @@
         "create": "Create lease agreement",
         "createSuccess": "Lease agreement created successfully",
         "createError": "Failed to create lease agreement",
-        "genericError": "Failed to create"
+        "genericError": "Failed to create",
+        "unsavedWarning": "There are unsaved entries. Leave the wizard anyway?"
       }
     },
     "importShp": {
