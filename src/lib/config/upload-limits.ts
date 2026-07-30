@@ -43,6 +43,8 @@ export const UPLOAD_LIMITS = {
   marketingVideo: envMB("UPLOAD_LIMIT_MARKETING_VIDEO_MB", 100),
   /** GIS-Import (Shapefile, KML, GeoJSON — 20 MB) */
   gisImport: envMB("UPLOAD_LIMIT_GIS_IMPORT_MB", 20),
+  /** Bedienaufwand #22: Stammdaten-Import aus CSV (Kontakte, Lieferanten). */
+  csvImport: envMB("UPLOAD_LIMIT_CSV_IMPORT_MB", 10),
   /** SCADA-Upload total (Sum-aller-Dateien, 500 MB) */
   scadaTotal: envMB("UPLOAD_LIMIT_SCADA_TOTAL_MB", 500),
   /** SCADA-Upload single-file (100 MB) */

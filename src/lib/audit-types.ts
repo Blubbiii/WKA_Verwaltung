@@ -29,6 +29,8 @@ export type AuditEntityType =
   | "ServiceEvent"
   | "News"
   | "Person"
+  // Bedienaufwand #22: Der CSV-Import protokolliert auch Lieferanten.
+  | "Vendor"
   | "User"
   | "Role"
   | "Tenant"
@@ -64,6 +66,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     ServiceEvent: "Service-Event",
     News: "Neuigkeit",
     Person: "Person",
+    Vendor: "Lieferant",
     User: "Benutzer",
     Role: "Rolle",
     Tenant: "Mandant",

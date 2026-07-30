@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Building2, Plus, Search, Pencil, Trash2, Download } from "lucide-react";
+import { Building2, Plus, Search, Pencil, Trash2, Download, Upload } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 import { PaginationBar, type PaginationInfo } from "@/components/ui/pagination-bar";
+import { CsvImportDialog } from "@/components/import/csv-import-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -266,6 +267,7 @@ export default function VendorsPage() {
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [batchDeleting, setBatchDeleting] = useState(false);
 
   // Batch selection
@@ -406,10 +408,18 @@ export default function VendorsPage() {
         title="Lieferanten"
         description="Lieferanten für Eingangsrechnungen verwalten"
         actions={
-          <Button onClick={() => { setEditVendor(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Neuer Lieferant
-          </Button>
+          <div className="flex gap-2">
+            {/* Bedienaufwand #22: Lieferanten waren exportierbar, aber nicht
+                importierbar — beim Onboarding hiess das abtippen. */}
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importieren
+            </Button>
+            <Button onClick={() => { setEditVendor(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Neuer Lieferant
+            </Button>
+          </div>
         }
       />
 
@@ -548,6 +558,13 @@ export default function VendorsPage() {
           />
         </CardContent>
       </Card>
+
+      <CsvImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        target="vendors"
+        onImported={load}
+      />
 
       <VendorDialog
         open={dialogOpen}

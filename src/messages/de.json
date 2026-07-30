@@ -10486,5 +10486,73 @@
     "errorDeleting": "Fehler beim Löschen",
     "errorLoadingConfig": "Fehler beim Laden der E-Mail-Konfiguration",
     "errorEmailRequired": "Bitte geben Sie eine E-Mail-Adresse ein"
+  },
+  "csvImport": {
+    "title": {
+      "persons": "Kontakte importieren",
+      "vendors": "Lieferanten importieren"
+    },
+    "description": "CSV-Datei auswählen, Spalten zuordnen, prüfen und übernehmen. Bereits vorhandene Datensätze werden übersprungen.",
+    "steps": {
+      "file": "Datei",
+      "mapping": "Spalten zuordnen",
+      "check": "Prüfen"
+    },
+    "file": {
+      "pick": "CSV-Datei auswählen",
+      "hint": "Semikolon oder Komma als Trennzeichen, erste Zeile als Überschrift. Excel-Exporte funktionieren direkt."
+    },
+    "mapping": {
+      "summary": "{file} – {rows} Zeilen gelesen",
+      "unmapped": "— nicht zuordnen —",
+      "missingRequired": "Pflichtfelder ohne Zuordnung: {fields}"
+    },
+    "fields": {
+      "personType": "Art (natural/legal)",
+      "salutation": "Anrede",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "companyName": "Firma",
+      "vendorName": "Name",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "mobile": "Mobil",
+      "street": "Straße",
+      "houseNumber": "Hausnummer",
+      "postalCode": "PLZ",
+      "city": "Ort",
+      "country": "Land",
+      "taxId": "Steuernummer",
+      "vatId": "USt-IdNr.",
+      "bankIban": "IBAN",
+      "bankBic": "BIC",
+      "bankName": "Bank",
+      "notes": "Notizen"
+    },
+    "result": {
+      "importable": "Übernehmbar",
+      "skipped": "Übersprungen",
+      "failed": "Fehlerhaft",
+      "problemsTitle": "Zeilen mit Problemen",
+      "row": "Zeile {row}",
+      "moreProblems": "… und {count} weitere",
+      "duplicatesHint": "{count} Datensätze sind bereits vorhanden und werden übersprungen.",
+      "done": "{count} Datensätze übernommen",
+      "success": "{count} Datensätze importiert",
+      "partial": "{imported} importiert, {failed} fehlerhaft – bitte die Meldungen prüfen",
+      "nothing": "Nichts importiert"
+    },
+    "actions": {
+      "back": "Zurück",
+      "check": "Prüfen",
+      "import": "{count} übernehmen",
+      "close": "Schließen"
+    },
+    "errors": {
+      "tooLarge": "Datei ist zu groß",
+      "noRows": "Keine Datenzeilen gefunden",
+      "unreadable": "Datei konnte nicht gelesen werden",
+      "failed": "Import fehlgeschlagen"
+    }
   }
 }

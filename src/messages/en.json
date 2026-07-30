@@ -10486,5 +10486,73 @@
     "errorDeleting": "Error deleting",
     "errorLoadingConfig": "Error loading email configuration",
     "errorEmailRequired": "Please enter an email address"
+  },
+  "csvImport": {
+    "title": {
+      "persons": "Import contacts",
+      "vendors": "Import vendors"
+    },
+    "description": "Pick a CSV file, map the columns, check and import. Existing records are skipped.",
+    "steps": {
+      "file": "File",
+      "mapping": "Map columns",
+      "check": "Check"
+    },
+    "file": {
+      "pick": "Select CSV file",
+      "hint": "Semicolon or comma separated, first row as header. Excel exports work as-is."
+    },
+    "mapping": {
+      "summary": "{file} – {rows} rows read",
+      "unmapped": "— not mapped —",
+      "missingRequired": "Required fields not mapped: {fields}"
+    },
+    "fields": {
+      "personType": "Type (natural/legal)",
+      "salutation": "Salutation",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "companyName": "Company",
+      "vendorName": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "mobile": "Mobile",
+      "street": "Street",
+      "houseNumber": "House number",
+      "postalCode": "Postal code",
+      "city": "City",
+      "country": "Country",
+      "taxId": "Tax ID",
+      "vatId": "VAT ID",
+      "bankIban": "IBAN",
+      "bankBic": "BIC",
+      "bankName": "Bank",
+      "notes": "Notes"
+    },
+    "result": {
+      "importable": "Importable",
+      "skipped": "Skipped",
+      "failed": "Failed",
+      "problemsTitle": "Rows with problems",
+      "row": "Row {row}",
+      "moreProblems": "… and {count} more",
+      "duplicatesHint": "{count} records already exist and will be skipped.",
+      "done": "{count} records imported",
+      "success": "{count} records imported",
+      "partial": "{imported} imported, {failed} failed – please check the messages",
+      "nothing": "Nothing imported"
+    },
+    "actions": {
+      "back": "Back",
+      "check": "Check",
+      "import": "Import {count}",
+      "close": "Close"
+    },
+    "errors": {
+      "tooLarge": "File is too large",
+      "noRows": "No data rows found",
+      "unreadable": "File could not be read",
+      "failed": "Import failed"
+    }
   }
 }

@@ -10,6 +10,7 @@ import {
   Plus,
   Users,
   Download,
+  Upload,
   Tag as TagIcon,
   X,
   Check,
@@ -67,6 +68,7 @@ import { EditableCell } from "@/components/ui/editable-cell";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { downloadBlob } from "@/lib/download";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
+import { CsvImportDialog } from "@/components/import/csv-import-dialog";
 
 // ============================================================================
 // Types
@@ -173,6 +175,7 @@ export default function CrmContactsPage() {
   const t = useTranslations("crm.contacts");
   const tLabels = useTranslations("crm.labels");
   const tCommon = useTranslations("common");
+  const tImport = useTranslations("csvImport");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
 
@@ -215,6 +218,7 @@ export default function CrmContactsPage() {
   const [bulkTagging, setBulkTagging] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
   const [dedupMatch, setDedupMatch] = useState<ExistingMatch | null>(null);
@@ -525,10 +529,18 @@ export default function CrmContactsPage() {
         title={t("title")}
         description={t("description", { count: total })}
         actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("newButton")}
-          </Button>
+          <div className="flex gap-2">
+            {/* Bedienaufwand #22: Kontakte waren exportierbar, aber nicht
+                importierbar. */}
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              {tImport("title.persons")}
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t("newButton")}
+            </Button>
+          </div>
         }
       />
 
@@ -945,6 +957,13 @@ export default function CrmContactsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CsvImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        target="persons"
+        onImported={() => load()}
+      />
 
       {/* Create Dialog */}
       <Dialog
