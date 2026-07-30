@@ -10674,5 +10674,69 @@
       "createError": "Case could not be created",
       "unsavedWarning": "There are unsaved entries. Leave the page anyway?"
     }
+  },
+  "availability": {
+    "cardTitle": "Availability guarantee",
+    "cardTooltip": "Contractual availability is defined in the maintenance contract, not by a standard. Which time categories count and what is excluded determines the bonus/malus.",
+    "noGuarantee": "No availability guarantee recorded for this contract.",
+    "addGuarantee": "Add guarantee",
+    "addGuaranteeHint": "The entry form is still to come. The guarantee can already be created via the API (POST /api/availability/guarantees).",
+    "inactive": "Inactive",
+    "target": "Guaranteed availability",
+    "method": "Method",
+    "validity": "Validity",
+    "openEnded": "open",
+    "pointRounding": "Point rounding",
+    "definition": "Definition",
+    "definitionLine": "Available: {available} · Excluded: {excluded}",
+    "noExclusions": "none",
+    "tiers": "Bonus/malus tiers",
+    "maxMalus": "Penalty capped at {amount}",
+    "maxBonus": "Bonus capped at {amount}",
+    "settlementTitle": "Annual reconciliation",
+    "settleYear": "Year",
+    "vendorReported": "Vendor reported (%)",
+    "settle": "Reconcile",
+    "settled": "Reconciliation computed",
+    "settledWithWarnings": "Reconciliation computed – please review the notes",
+    "settleError": "Reconciliation failed",
+    "vendorDeviation": "Deviation from vendor report: {deviation} percentage points",
+    "noSettlements": "No reconciliation computed yet.",
+    "notComputable": "not computable",
+    "claim": "claim",
+    "owed": "bonus",
+    "independentHint": "This calculation is independent of the vendor's own report. A deviation is a reason to ask, not an error.",
+    "methods": {
+      "TIME_BASED": "Time-based",
+      "ENERGY_BASED": "Energy-based"
+    },
+    "rounding": {
+      "UP": "per started percentage point",
+      "DOWN": "per full percentage point",
+      "EXACT": "pro rata"
+    },
+    "kinds": {
+      "BONUS": "Bonus",
+      "MALUS": "Penalty"
+    },
+    "modes": {
+      "PER_PERCENTAGE_POINT": "€{amount} per percentage point",
+      "FIXED_EUR": "€{amount} flat",
+      "PERCENT_OF_ANNUAL_VALUE": "{amount}% of annual value"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "CONFIRMED": "Confirmed",
+      "INVOICED": "Invoiced",
+      "DISPUTED": "Disputed"
+    },
+    "table": {
+      "period": "Year",
+      "actual": "Own calculation",
+      "vendor": "Vendor",
+      "deviation": "Deviation",
+      "bonusMalus": "Bonus/penalty",
+      "status": "Status"
+    }
   }
 }

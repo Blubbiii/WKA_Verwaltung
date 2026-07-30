@@ -10674,5 +10674,69 @@
       "createError": "Vorgang konnte nicht angelegt werden",
       "unsavedWarning": "Es gibt ungespeicherte Eingaben. Seite trotzdem verlassen?"
     }
+  },
+  "availability": {
+    "cardTitle": "Verfügbarkeitsgarantie",
+    "cardTooltip": "Die vertragliche Verfügbarkeit steht im Wartungsvertrag, nicht in einer Norm. Welche Zeitkategorien zählen und was ausgeschlossen ist, entscheidet über den Bonus/Malus.",
+    "noGuarantee": "Für diesen Vertrag ist keine Verfügbarkeitsgarantie erfasst.",
+    "addGuarantee": "Garantie erfassen",
+    "addGuaranteeHint": "Das Erfassungsformular folgt. Die Garantie lässt sich bereits über die API anlegen (POST /api/availability/guarantees).",
+    "inactive": "Inaktiv",
+    "target": "Garantierte Verfügbarkeit",
+    "method": "Methode",
+    "validity": "Laufzeit",
+    "openEnded": "offen",
+    "pointRounding": "Punkte-Rundung",
+    "definition": "Definition",
+    "definitionLine": "Verfügbar: {available} · Ausgeschlossen: {excluded}",
+    "noExclusions": "keine",
+    "tiers": "Bonus-/Malus-Staffel",
+    "maxMalus": "Pönale höchstens {amount}",
+    "maxBonus": "Bonus höchstens {amount}",
+    "settlementTitle": "Jahresabgleich",
+    "settleYear": "Jahr",
+    "vendorReported": "Hersteller meldet (%)",
+    "settle": "Abgleich rechnen",
+    "settled": "Abgleich gerechnet",
+    "settledWithWarnings": "Abgleich gerechnet – bitte Hinweise prüfen",
+    "settleError": "Abgleich fehlgeschlagen",
+    "vendorDeviation": "Abweichung zur Herstellermeldung: {deviation} Prozentpunkte",
+    "noSettlements": "Noch kein Abgleich gerechnet.",
+    "notComputable": "nicht berechenbar",
+    "claim": "Forderung",
+    "owed": "Bonus",
+    "independentHint": "Diese Rechnung ist unabhängig von der Abrechnung des Herstellers. Weicht sie ab, ist das der Anlass für eine Nachfrage – nicht ein Fehler.",
+    "methods": {
+      "TIME_BASED": "Zeitbasiert",
+      "ENERGY_BASED": "Energiebasiert"
+    },
+    "rounding": {
+      "UP": "je angefangenem Prozentpunkt",
+      "DOWN": "je vollem Prozentpunkt",
+      "EXACT": "anteilig"
+    },
+    "kinds": {
+      "BONUS": "Bonus",
+      "MALUS": "Pönale"
+    },
+    "modes": {
+      "PER_PERCENTAGE_POINT": "{amount} € je Prozentpunkt",
+      "FIXED_EUR": "{amount} € pauschal",
+      "PERCENT_OF_ANNUAL_VALUE": "{amount} % der Jahresvergütung"
+    },
+    "statuses": {
+      "DRAFT": "Entwurf",
+      "CONFIRMED": "Bestätigt",
+      "INVOICED": "Abgerechnet",
+      "DISPUTED": "Strittig"
+    },
+    "table": {
+      "period": "Jahr",
+      "actual": "Eigene Rechnung",
+      "vendor": "Hersteller",
+      "deviation": "Abweichung",
+      "bonusMalus": "Bonus/Pönale",
+      "status": "Status"
+    }
   }
 }

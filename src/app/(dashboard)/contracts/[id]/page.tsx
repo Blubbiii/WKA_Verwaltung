@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ContractDocuments, ReminderSettings } from "@/components/contracts";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
+import { AvailabilityGuaranteeCard } from "@/components/contracts/availability-guarantee-card";
 
 interface ContractDetail {
   id: string;
@@ -415,6 +416,15 @@ export default function ContractDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* A2 (Audit 2026-07): Verfuegbarkeitsgarantie. Nur bei
+                Wartungsvertraegen — bei einem Pacht- oder Versicherungsvertrag
+                waere die Karte sinnlos und wuerde die Seite verwaessern. */}
+            {contract.contractType === "SERVICE" && (
+              <div className="md:col-span-2">
+                <AvailabilityGuaranteeCard contractId={contract.id} />
+              </div>
+            )}
 
             {/* Sidebar */}
             <div className="space-y-6">
