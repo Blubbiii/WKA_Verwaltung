@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Download, RefreshCw, BarChart3 } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
 import { downloadBlob } from "@/lib/download";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 interface GuvLine {
   position: number;
@@ -74,6 +75,7 @@ function currentYear(): { from: string; to: string } {
 
 export default function GuvContent() {
   const t = useTranslations("buchhaltung.berichteGuv");
+  const tRange = useTranslations("common.dateRange");
   const [data, setData] = useState<GuvResult | null>(null);
   const [multiData, setMultiData] = useState<MultiYearResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,8 +171,19 @@ export default function GuvContent() {
 
         {!multiMode ? (
           <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-            <div className="space-y-1"><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-            <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            {/* Bedienaufwand #18 (Audit 2026-07): Zeitraum mit Schnellauswahl.
+                Vorher zwei rohe Date-Felder ohne jedes Preset — fuer "letztes
+                Quartal" viermal im Monat von Hand getippt. */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label>{tRange("label")}</Label>
+              <DateRangePicker
+                value={{ from, to }}
+                onChange={(range) => {
+                  setFrom(range.from);
+                  setTo(range.to);
+                }}
+              />
+            </div>
             <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
             <Button variant="outline" onClick={exportCsv} disabled={!data}><Download className="h-4 w-4 mr-2" />{t("exportBtn")}</Button>
             <Button

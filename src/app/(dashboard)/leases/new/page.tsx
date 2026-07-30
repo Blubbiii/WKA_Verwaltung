@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { Combobox } from "@/components/ui/combobox";
 import { parseAmount } from "@/lib/parse-amount";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +16,6 @@ import {
   CalendarIcon,
   Plus,
   User,
-  Building2,
   MapPin,
   FileText,
   X,
@@ -183,7 +183,8 @@ export default function NewLeaseWizardPage() {
     message: t("actions.unsavedWarning"),
   });
   const [showNewPlotForm, setShowNewPlotForm] = useState(false);
-  const [showOnlyAvailable, setShowOnlyAvailable] = useState(true); // Filter für verfügbare Flurstücke
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(true);
+  const [plotSearch, setPlotSearch] = useState(""); // Filter für verfügbare Flurstücke
   const [currentNewPlot, setCurrentNewPlot] = useState<NewPlot>({
     tempId: "",
     cadastralDistrict: "",
@@ -493,25 +494,24 @@ export default function NewLeaseWizardPage() {
             {lessorMode === "select" ? (
               <div className="space-y-2">
                 <Label>{t("lessor.selectLabel")}</Label>
-                <Select value={selectedLessorId} onValueChange={setSelectedLessorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("lessor.selectPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {persons.map((person) => (
-                      <SelectItem key={person.id} value={person.id}>
-                        <div className="flex items-center gap-2">
-                          {person.personType === "legal" ? (
-                            <Building2 className="h-4 w-4" />
-                          ) : (
-                            <User className="h-4 w-4" />
-                          )}
-                          {getPersonLabel(person)}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Bedienaufwand #19 (Audit 2026-07): Die Personenliste wird
+                    mit limit=500 geladen. Ein Radix-Select bietet darin nur
+                    Erst-Buchstaben-Typeahead — bei 500 Kontakten heisst das
+                    scrollen. Das Symbol je Zeile weicht der Beschreibung, die
+                    zusaetzlich durchsucht wird. */}
+                <Combobox
+                  value={selectedLessorId}
+                  onChange={setSelectedLessorId}
+                  placeholder={t("lessor.selectPlaceholder")}
+                  options={persons.map((person) => ({
+                    value: person.id,
+                    label: getPersonLabel(person),
+                    description:
+                      person.personType === "legal"
+                        ? t("lessor.typeCompany")
+                        : t("lessor.typeNatural"),
+                  }))}
+                />
 
                 {selectedLessorId && (
                   <div className="mt-4 p-4 bg-muted rounded-lg">
@@ -718,7 +718,21 @@ export default function NewLeaseWizardPage() {
     // Filter plots based on availability
     const availablePlots = existingPlots.filter((plot) => !plot.activeLease);
     const plotsWithActiveLease = existingPlots.filter((plot) => plot.activeLease);
-    const displayedPlots = showOnlyAvailable ? availablePlots : existingPlots;
+    const byAvailability = showOnlyAvailable ? availablePlots : existingPlots;
+
+    // Bedienaufwand #19 (Audit 2026-07): Die Liste hatte kein Suchfeld — bei
+    // 200 Flurstuecken heisst das scrollen. Eine Combobox passt hier nicht
+    // (Mehrfachauswahl mit Zusatzangaben je Zeile), ein Suchfeld schon.
+    // Gesucht wird ueber die Rohfelder, nicht ueber das zusammengesetzte
+    // Label: getippt wird eine Gemarkung oder eine Nummer, nicht "Flur".
+    const needle = plotSearch.trim().toLowerCase();
+    const displayedPlots = needle
+      ? byAvailability.filter((plot) =>
+          [plot.cadastralDistrict, plot.fieldNumber, plot.plotNumber, plot.park?.name, plot.park?.shortName]
+            .filter(Boolean)
+            .some((field) => String(field).toLowerCase().includes(needle)),
+        )
+      : byAvailability;
 
     return (
       <div className="space-y-6">
@@ -751,6 +765,13 @@ export default function NewLeaseWizardPage() {
                   onCheckedChange={setShowOnlyAvailable}
                 />
               </div>
+
+              <Input
+                value={plotSearch}
+                onChange={(e) => setPlotSearch(e.target.value)}
+                placeholder={t("plots.searchPlaceholder")}
+                aria-label={t("plots.searchPlaceholder")}
+              />
 
               <div className="grid gap-2 max-h-[300px] overflow-y-auto">
                 {displayedPlots.map((plot) => {

@@ -190,6 +190,20 @@
       "previous": "Zurück",
       "next": "Weiter",
       "pageOf": "Seite {page} von {totalPages}"
+    },
+    "dateRange": {
+      "label": "Zeitraum",
+      "from": "Von",
+      "to": "Bis",
+      "clear": "Zurücksetzen",
+      "presets": {
+        "thisMonth": "Dieser Monat",
+        "lastMonth": "Letzter Monat",
+        "thisQuarter": "Dieses Quartal",
+        "lastQuarter": "Letztes Quartal",
+        "thisYear": "Dieses Jahr",
+        "lastYear": "Letztes Jahr"
+      }
     }
   },
   "statusLabels": {
@@ -5316,7 +5330,9 @@
         "bicPlaceholder": "COBADEFFXXX",
         "bank": "Bank",
         "bankPlaceholder": "Commerzbank",
-        "createError": "Fehler beim Erstellen des Verpächters"
+        "createError": "Fehler beim Erstellen des Verpächters",
+        "typeCompany": "Firma",
+        "typeNatural": "Person"
       },
       "plots": {
         "existingCardTitle": "Bestehende Flurstücke auswählen",
@@ -5355,7 +5371,8 @@
         "summaryPlural": "{count} Flurstücke ausgewählt",
         "summaryNewSuffix": " ({count} neu)",
         "flur": "Flur {value}",
-        "flurstueck": "Flurstück {value}"
+        "flurstueck": "Flurstück {value}",
+        "searchPlaceholder": "Gemarkung, Flur, Flurstück oder Park suchen …"
       },
       "contract": {
         "cardTitle": "Vertragsdaten",

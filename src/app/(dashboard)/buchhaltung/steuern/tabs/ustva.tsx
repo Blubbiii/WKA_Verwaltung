@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -114,6 +115,7 @@ function inferZeitraum(from: string, to: string): { zeitraum: string; steuerjahr
 
 export default function UstvaContent() {
   const t = useTranslations("buchhaltung.steuernUstva");
+  const tRange = useTranslations("common.dateRange");
   const [data, setData] = useState<UstvaResult | null>(null);
   const [loading, setLoading] = useState(true);
   const defaults = currentQuarter();
@@ -194,8 +196,19 @@ export default function UstvaContent() {
     <Card>
       <CardContent className="pt-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6 items-end">
-          <div className="space-y-1"><Label>{t("from")}</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-1"><Label>{t("to")}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+          {/* Bedienaufwand #18 (Audit 2026-07): Zeitraum mit Schnellauswahl.
+              Vorher zwei rohe Date-Felder ohne jedes Preset — fuer "letztes
+              Quartal" viermal im Monat von Hand getippt. */}
+          <div className="space-y-2 sm:col-span-2">
+            <Label>{tRange("label")}</Label>
+            <DateRangePicker
+              value={{ from, to }}
+              onChange={(range) => {
+                setFrom(range.from);
+                setTo(range.to);
+              }}
+            />
+          </div>
           <Button variant="outline" onClick={fetchData}><RefreshCw className="h-4 w-4 mr-2" />{t("refreshBtn")}</Button>
           <Button
             variant="default"

@@ -13,15 +13,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Download, Info, Loader2, ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { downloadFromResponse } from "@/lib/download";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { useTranslations } from "next-intl";
 
 export default function GobdExportPage() {
+  const tRange = useTranslations("common.dateRange");
   const now = new Date();
   const lastYear = now.getFullYear() - 1;
   const [from, setFrom] = useState(`${lastYear}-01-01`);
@@ -93,20 +95,17 @@ export default function GobdExportPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-            <div className="space-y-2">
-              <Label>Von</Label>
-              <Input
-                type="date"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Bis</Label>
-              <Input
-                type="date"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
+            {/* Bedienaufwand #18 (Audit 2026-07): Zeitraum mit Schnellauswahl.
+                Vorher zwei rohe Date-Felder ohne jedes Preset — fuer "letztes
+                Quartal" viermal im Monat von Hand getippt. */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label>{tRange("label")}</Label>
+              <DateRangePicker
+                value={{ from, to }}
+                onChange={(range) => {
+                  setFrom(range.from);
+                  setTo(range.to);
+                }}
               />
             </div>
             <Button onClick={handleExport} disabled={isLoading} size="lg">

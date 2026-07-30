@@ -190,6 +190,20 @@
       "previous": "Previous",
       "next": "Next",
       "pageOf": "Page {page} of {totalPages}"
+    },
+    "dateRange": {
+      "label": "Period",
+      "from": "From",
+      "to": "To",
+      "clear": "Reset",
+      "presets": {
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "thisQuarter": "This quarter",
+        "lastQuarter": "Last quarter",
+        "thisYear": "This year",
+        "lastYear": "Last year"
+      }
     }
   },
   "statusLabels": {
@@ -5316,7 +5330,9 @@
         "bicPlaceholder": "COBADEFFXXX",
         "bank": "Bank",
         "bankPlaceholder": "Example Bank",
-        "createError": "Failed to create lessor"
+        "createError": "Failed to create lessor",
+        "typeCompany": "Company",
+        "typeNatural": "Individual"
       },
       "plots": {
         "existingCardTitle": "Select existing plots",
@@ -5355,7 +5371,8 @@
         "summaryPlural": "{count} plots selected",
         "summaryNewSuffix": " ({count} new)",
         "flur": "Field {value}",
-        "flurstueck": "Plot {value}"
+        "flurstueck": "Plot {value}",
+        "searchPlaceholder": "Search cadastral district, field, plot or park …"
       },
       "contract": {
         "cardTitle": "Contract terms",

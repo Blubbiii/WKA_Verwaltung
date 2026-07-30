@@ -28,6 +28,8 @@ import { toast } from "sonner";
 import { Printer, RefreshCw, FileText } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { LOCALE_DE } from "@/lib/format";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { useTranslations } from "next-intl";
 
 interface KontoblattLine {
   reference: string | null;
@@ -62,6 +64,7 @@ function formatEur(n: number, suppressZero = true): string {
 }
 
 export default function KontoblattPage() {
+  const tRange = useTranslations("common.dateRange");
   const now = new Date();
   const yearStart = `${now.getFullYear()}-01-01`;
   const today = now.toISOString().slice(0, 10);
@@ -131,13 +134,18 @@ export default function KontoblattPage() {
               className="font-mono"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Von</Label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Bis</Label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          {/* Bedienaufwand #18 (Audit 2026-07): Zeitraum mit Schnellauswahl.
+              Vorher zwei rohe Date-Felder ohne jedes Preset — fuer "letztes
+              Quartal" viermal im Monat von Hand getippt. */}
+          <div className="space-y-2 sm:col-span-2">
+            <Label>{tRange("label")}</Label>
+            <DateRangePicker
+              value={{ from, to }}
+              onChange={(range) => {
+                setFrom(range.from);
+                setTo(range.to);
+              }}
+            />
           </div>
           <div className="flex gap-2">
             <Button onClick={() => void load()} disabled={isLoading} className="flex-1">

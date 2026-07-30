@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -17,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Download, Search, Loader2 } from "lucide-react";
 import { downloadBlob } from "@/lib/download";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 interface PreviewData {
   journalEntries: number;
@@ -41,6 +41,7 @@ function defaultPeriod(): { from: string; to: string } {
 
 export default function DatevContent() {
   const t = useTranslations("buchhaltung.abschlussDatev");
+  const tRange = useTranslations("common.dateRange");
   const defaults = defaultPeriod();
   const [from, setFrom] = useState(defaults.from);
   const [to, setTo] = useState(defaults.to);
@@ -92,13 +93,18 @@ export default function DatevContent() {
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-            <div className="space-y-1">
-              <Label>{t("from")}</Label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>{t("to")}</Label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            {/* Bedienaufwand #18 (Audit 2026-07): Zeitraum mit Schnellauswahl.
+                Vorher zwei rohe Date-Felder ohne jedes Preset — fuer "letztes
+                Quartal" viermal im Monat von Hand getippt. */}
+            <div className="space-y-2 sm:col-span-2">
+              <Label>{tRange("label")}</Label>
+              <DateRangePicker
+                value={{ from, to }}
+                onChange={(range) => {
+                  setFrom(range.from);
+                  setTo(range.to);
+                }}
+              />
             </div>
             <div className="space-y-1">
               <Label>{t("mode")}</Label>

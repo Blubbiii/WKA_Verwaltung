@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { Combobox } from "@/components/ui/combobox";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -19,7 +20,6 @@ import {
   Clock,
   Users,
   Building2,
-  User,
   Wind,
   Landmark,
   Info,
@@ -903,34 +903,27 @@ export function ContractWizard() {
               {/* Partner */}
               <div className="space-y-2">
                 <Label htmlFor="partnerId">Vertragspartner</Label>
-                <Select
+                {/* Bedienaufwand #19: persons wird mit limit=500 geladen —
+                    ein Select ohne Suchfeld ist darin nicht bedienbar. */}
+                <Combobox
+                  id="partnerId"
                   value={formData.partnerId || "_none"}
-                  onValueChange={(v) =>
+                  onChange={(v) =>
                     setFormData((prev) => ({
                       ...prev,
                       partnerId: v === "_none" ? "" : v,
                     }))
                   }
-                >
-                  <SelectTrigger id="partnerId">
-                    <SelectValue placeholder="Kein Partner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Kein Partner</SelectItem>
-                    {persons.map((person) => (
-                      <SelectItem key={person.id} value={person.id}>
-                        <span className="flex items-center gap-2">
-                          {person.personType === "legal" ? (
-                            <Building2 className="h-4 w-4" />
-                          ) : (
-                            <User className="h-4 w-4" />
-                          )}
-                          {getPersonLabel(person)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Kein Partner"
+                  options={[
+                    { value: "_none", label: "Kein Partner" },
+                    ...persons.map((person) => ({
+                      value: person.id,
+                      label: getPersonLabel(person),
+                      description: person.personType === "legal" ? "Firma" : "Person",
+                    })),
+                  ]}
+                />
               </div>
             </div>
 
