@@ -9,11 +9,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -60,7 +61,7 @@ const createFundCategorySchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     // Auth-Check: Nur Admins duerfen zugreifen
-    const check = await requireAdmin();
+    const check = await requirePermission([PERMISSIONS.SYSTEM_FUND_CATEGORIES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
 
     // Query-Parameter auslesen
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Auth-Check: Nur Admins duerfen zugreifen
-    const check = await requireAdmin();
+    const check = await requirePermission([PERMISSIONS.SYSTEM_FUND_CATEGORIES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
 
     // Request-Body parsen und validieren

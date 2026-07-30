@@ -9,10 +9,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 // =============================================================================
 // Validation
@@ -51,7 +52,9 @@ const createLegacySchema = z.object({
 // =============================================================================
 
 export async function GET(req: NextRequest) {
-  const check = await requireAuth();
+  // TF-12: Diese Route prueft vorher nur requireAuth() — jeder angemeldete
+  // Nutzer konnte Mailings lesen. `mailings:read` existierte im Katalog.
+  const check = await requirePermission(PERMISSIONS.MAILINGS_READ);
   if (!check.authorized) return check.error!;
 
   const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
@@ -90,7 +93,9 @@ export async function GET(req: NextRequest) {
 // =============================================================================
 
 export async function POST(req: NextRequest) {
-  const check = await requireAuth();
+  // TF-12: vorher nur requireAuth() — jeder angemeldete Nutzer konnte Mailings
+  // anlegen. Das ist keine Granularitaets-Kosmetik, sondern eine Verschaerfung.
+  const check = await requirePermission(PERMISSIONS.MAILINGS_WRITE);
   if (!check.authorized) return check.error!;
 
   const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);

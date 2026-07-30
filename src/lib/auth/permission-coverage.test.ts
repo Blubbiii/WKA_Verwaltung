@@ -6,8 +6,14 @@
  * oder entzog "Jahresabschluss ausführen" — es änderte nichts. Kein
  * Sicherheitsloch, aber der Katalog täuschte Granularität vor.
  *
- * Dieser Test misst die Lücke und friert sie ein: neue Katalog-Einträge ohne
- * Prüfung fallen sofort auf, und jede weitere Verdrahtung senkt die Schwelle.
+ * Stand: 14 Einträge werden weiterhin nicht via `requirePermission` geprüft —
+ * aber jeder davon trägt jetzt im Katalog ein `unenforcedReason` mit der
+ * Begründung (superadmin-only, no-endpoint, deprecated, portal-session).
+ *
+ * Der Test prüft deshalb keine Obergrenze mehr, sondern eine exakte Invariante
+ * in beide Richtungen: kein ungeprüftes Recht ohne Grund, und kein Grund an
+ * einem Recht, das tatsächlich geprüft wird. Wer ein neues Recht in den Katalog
+ * schreibt, muss es entweder verdrahten oder begründen.
  */
 
 import { describe, it, expect } from "vitest";
@@ -65,8 +71,16 @@ function uncheckedPermissions(): string[] {
   const byPermission = constantByPermission();
 
   return catalogNames().filter((name) => {
-    // Direkt als String geprüft?
-    if (blob.includes(`"${name}"`)) return false;
+    // Direkt als String geprüft — ALLE Quote-Varianten.
+    //
+    // Der erste Wurf dieses Tests suchte nur nach doppelten Anführungszeichen
+    // und meldete dadurch sieben Export-Rechte als ungeprüft, die in
+    // `EXPORT_PERMISSION_MAP` (api/export/[type]/route.ts) längst mit einfachen
+    // Anführungszeichen standen. Eine Messung, die falsch hoch zählt, ist
+    // genauso irreführend wie eine, die zu niedrig zählt.
+    for (const quote of ['"', "'", "`"]) {
+      if (blob.includes(`${quote}${name}${quote}`)) return false;
+    }
     // Über die Konstante geprüft?
     const constant = byPermission.get(name);
     if (constant && new RegExp(`PERMISSIONS\\.${constant}\\b`).test(blob)) return false;
@@ -75,38 +89,50 @@ function uncheckedPermissions(): string[] {
 }
 
 /**
- * Stand nach Welle 8. Bewusst als Obergrenze, nicht als exakte Liste: der Test
- * soll bei jeder Verbesserung grün bleiben und nur bei Verschlechterung reissen.
+ * Katalog-Einträge ohne Konstante in PERMISSIONS.
  *
- * Die verbleibenden Einträge sind überwiegend Export-Rechte (Export läuft in
- * den Listen-Routen mit und hat keinen eigenen Endpunkt) sowie die
- * Portal- und Impersonate-Rechte, die an anderer Stelle als über
- * requirePermission durchgesetzt werden. Sie gehören in eine eigene Runde.
+ * Muss 0 sein: ohne Konstante lässt sich nur per Roh-String prüfen, und genau
+ * so sind news:* und mailings:* durchgerutscht — im Katalog vorhanden, in der
+ * Konstanten-Map nicht, von keiner Route geprüft.
  */
-const MAX_UNCHECKED = 29;
+const MAX_WITHOUT_CONSTANT = 0;
 
 /**
- * Katalog-Einträge, für die es (noch) keine Konstante in PERMISSIONS gibt.
- * Betroffen sind die Portal-, Mailing- und System-Blöcke. Ohne Konstante muss
- * jede Prüfung als Roh-String erfolgen — der Weg, auf dem news:* durchgerutscht
- * ist.
+ * Rechte, die bewusst NICHT via `requirePermission` geprüft werden, tragen im
+ * Katalog ein `unenforcedReason`. Damit ist die Lücke nicht mehr eine Zahl,
+ * sondern eine dokumentierte Liste — und der Test kann exakt statt mit einer
+ * Obergrenze prüfen.
  */
-const MAX_WITHOUT_CONSTANT = 15;
+function permissionsWithReason(): Set<string> {
+  const source = readFileSync(CATALOG_PATH, "utf-8");
+  const withReason = new Set<string>();
+  for (const m of source.matchAll(/\{ name: "([^"]+)"[^}]*unenforcedReason:/g)) {
+    withReason.add(m[1]);
+  }
+  return withReason;
+}
 
 describe("Permission-Katalog (TF-12)", () => {
-  it(`hat höchstens ${MAX_UNCHECKED} ungeprüfte Einträge`, () => {
+  it("jedes ungeprüfte Recht hat einen dokumentierten Grund", () => {
+    // Das ist der Kern von TF-12: nicht die Zahl zählt, sondern dass kein
+    // Eintrag mehr unbemerkt wirkungslos ist. Wer ein neues Recht in den
+    // Katalog schreibt, muss es entweder prüfen oder begründen.
     const unchecked = uncheckedPermissions();
+    const documented = permissionsWithReason();
+    const undocumented = unchecked.filter((p) => !documented.has(p));
+
     expect(
-      unchecked.length,
-      `Ungeprüft (${unchecked.length}):\n  ${unchecked.sort().join("\n  ")}`,
-    ).toBeLessThanOrEqual(MAX_UNCHECKED);
+      undocumented,
+      `Ungeprüft und ohne unenforcedReason: ${undocumented.join(", ")}`,
+    ).toEqual([]);
   });
 
-  it("die Schwelle ist nicht unnötig hoch gesetzt", () => {
-    // Verhindert, dass MAX_UNCHECKED beim Aufräumen vergessen wird und der
-    // Test dauerhaft mehr erlaubt, als tatsächlich offen ist.
-    const unchecked = uncheckedPermissions();
-    expect(MAX_UNCHECKED - unchecked.length).toBeLessThanOrEqual(3);
+  it("kein Recht traegt einen Grund, obwohl es geprüft wird", () => {
+    // Gegenrichtung: ein `unenforcedReason` an einem verdrahteten Recht ist ein
+    // veralteter Kommentar und führt Leser in die Irre.
+    const unchecked = new Set(uncheckedPermissions());
+    const stale = [...permissionsWithReason()].filter((p) => !unchecked.has(p));
+    expect(stale, `Grund gesetzt, obwohl geprüft: ${stale.join(", ")}`).toEqual([]);
   });
 
   it("der kritische Accounting-Block ist vollständig verdrahtet", () => {
@@ -119,7 +145,9 @@ describe("Permission-Katalog (TF-12)", () => {
       "accounting:datev-export:create",
       "accounting:period-lock:create",
       "accounting:period-lock:delete",
-      "accounting:journal:reverse",
+      // "accounting:journal:reverse" ist entfernt — Katalog-Dopplung zu
+      // "accounting:reverse" (siehe merge_duplicate_reverse_permission.sql).
+      "accounting:reverse",
       "accounting:report:bilanz",
       "accounting:report:susa",
       "accounting:report:euer",

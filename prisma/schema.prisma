@@ -56,7 +56,6 @@ model Tenant {
   leaseSettlementPeriods    LeaseSettlementPeriod[]
   leases                    Lease[]
   letterheads               Letterhead[]
-  massCommunications        MassCommunication[]
   networkConnections        NetworkConnection[]
   networkNodes              NetworkNode[]
   news                      News[]
@@ -235,7 +234,6 @@ model User {
   reviewedLeaseRevenueSettlements LeaseRevenueSettlement[] @relation("LeaseRevenueSettlementReviewedBy")
   createdLeaseSettlementPeriods    LeaseSettlementPeriod[]  @relation("LeaseSettlementPeriodCreatedBy")
   reviewedLeaseSettlementPeriods   LeaseSettlementPeriod[]  @relation("LeaseSettlementPeriodReviewedBy")
-  massCommunications                                                      MassCommunication[]
   createdNews                                                             News[]                      @relation("NewsCreatedBy")
   notifications                                                           Notification[]
   passwordResetTokens                                                     PasswordResetToken[]
@@ -2005,44 +2003,6 @@ model ManagementBilling {
   @@unique([stakeholderId, year, month])
   @@index([status])
   @@map("management_billings")
-}
-
-/// DEPRECATED — ersetzt durch `Mailing` (+ `MailingTemplate`).
-///
-/// TF-10 (Audit 2026-07): Modell, CRUD-Route, Audit-Entity-Typ und die
-/// Permission `admin:mass-communication` existieren vollständig, es gibt aber
-/// kein UI. `/kommunikation/masse` leitet auf den vereinheitlichten
-/// Mailing-Wizard um, der `/api/mailings` nutzt.
-///
-/// `Mailing` ist eine echte Obermenge: Templates, Fonds-Bezug, Status als Enum
-/// statt String, sentCount, recipientFilter als Json statt String. Ein UI für
-/// dieses Modell zu bauen würde die unterlegene Doppelimplementierung
-/// wiederbeleben — genau das Muster, das dieses Audit durchgehend als
-/// Hauptfehlerquelle benennt.
-///
-/// Der richtige Schritt ist das Entfernen. Das erfordert eine Migration, die
-/// die Tabelle `mass_communications` löscht, und damit eine Entscheidung über
-/// eventuell vorhandene Altdaten — deshalb bewusst NICHT im Rahmen einer
-/// Bugfix-Welle. Bis dahin: nicht erweitern, nichts Neues anschließen.
-model MassCommunication {
-  id              String    @id @default(uuid())
-  subject         String
-  body            String
-  recipientFilter String
-  recipientCount  Int
-  status          String    @default("QUEUED")
-  sentAt          DateTime?
-  errorMessage    String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime @updatedAt
-  tenantId        String
-  createdById     String
-  createdBy           User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, createdAt])
-  @@index([tenantId])
-  @@map("mass_communications")
 }
 
 model NetworkConnection {

@@ -24,7 +24,7 @@ export async function GET(
 ) {
   try {
     // Berechtigungsprüfung
-    const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
+    const check = await requirePermission([PERMISSIONS.DOCUMENTS_DOWNLOAD, PERMISSIONS.DOCUMENTS_READ]);
     if (!check.authorized) return check.error;
 
     const { id } = await params;

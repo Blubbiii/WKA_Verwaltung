@@ -7,12 +7,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { validateRuleParameters, calculateNextRun, BillingRuleType, BillingRuleFrequency } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 // Validation Schema für neue Regel
 const createRuleSchema = z.object({
@@ -29,7 +30,7 @@ const createRuleSchema = z.object({
 // GET /api/admin/billing-rules
 export async function GET(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    const check = await requirePermission([PERMISSIONS.ADMIN_BILLING_RULES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
 
     const { searchParams } = new URL(request.url);
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/billing-rules
 export async function POST(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    const check = await requirePermission([PERMISSIONS.ADMIN_BILLING_RULES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
 
     const body = await request.json();

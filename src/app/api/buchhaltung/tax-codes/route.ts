@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_TAX_CODE_WRITE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {

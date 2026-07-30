@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendEmailSync } from "@/lib/email";
 import {
@@ -19,11 +19,15 @@ import {
   applyPlaceholders,
 } from "@/lib/mailings/placeholder-service";
 import { wrapEmailBody, stripHtml } from "@/lib/mailings/email-wrapper";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(_req: NextRequest, context: RouteContext) {
-  const check = await requireAuth();
+  // TF-12: Der Versand lief hinter requireAuth() — jeder angemeldete Nutzer
+  // konnte ein Mailing an alle Empfaenger schicken. `mailings:send` stand im
+  // Katalog und wurde nirgends geprueft.
+  const check = await requirePermission(PERMISSIONS.MAILINGS_SEND);
   if (!check.authorized) return check.error!;
   const { id } = await context.params;
 

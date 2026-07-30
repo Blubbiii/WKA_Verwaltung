@@ -36,6 +36,33 @@ export interface PermissionDef {
   category?: string;
   /** Markierung für 4-Augen-Prinzip / Approval-Pflicht. */
   requiresApproval?: boolean;
+  /**
+   * Warum dieses Recht von KEINER Route via `requirePermission` geprüft wird.
+   *
+   * TF-12 (Audit 2026-07): 42 der 169 Einträge waren wirkungslose
+   * Stellschrauben — ein Admin vergab oder entzog sie, und es änderte nichts.
+   * Der größte Teil ist inzwischen verdrahtet. Für den Rest gibt es echte
+   * Gründe, die hier festgehalten werden, statt sie im Katalog zu verschweigen.
+   *
+   * - `superadmin-only`: Die Route steht hinter `requireSuperadmin()`. Ein
+   *   Superadmin umgeht jede Permission-Prüfung (hierarchy >= 100), das Recht
+   *   ist dort also strukturell nicht durchsetzbar. Es delegierbar zu machen
+   *   wäre eine Lockerung und keine Reparatur.
+   * - `no-endpoint`: Die Funktion existiert nicht. `/api/export/[type]` kennt
+   *   nur shareholders, parks, turbines, invoices, contracts, persons, funds,
+   *   leases und plots — für andere Entitäten gibt es keinen Export.
+   * - `deprecated`: Gehört zu abgelöster Funktionalität (siehe TF-10).
+   * - `portal-session`: Wird über die Portal-Sitzung und die
+   *   Gesellschafter-Verknüpfung durchgesetzt, nicht über `requirePermission`.
+   *
+   * Die Einträge bleiben im Katalog, weil ihr Entfernen bestehende
+   * Rollenzuweisungen verwaisen liesse.
+   */
+  unenforcedReason?:
+    | "superadmin-only"
+    | "no-endpoint"
+    | "deprecated"
+    | "portal-session";
 }
 
 /**
@@ -100,7 +127,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "documents:update",   module: "documents", action: "update",   displayName: "Dokumente bearbeiten",       sortOrder: 72 },
   { name: "documents:delete",   module: "documents", action: "delete",   displayName: "Dokumente löschen",          sortOrder: 73 },
   { name: "documents:download", module: "documents", action: "download", displayName: "Dokumente herunterladen",    sortOrder: 74 },
-  { name: "documents:export",   module: "documents", action: "export",   displayName: "Dokumente exportieren",      sortOrder: 75 },
+  { name: "documents:export",   module: "documents", action: "export",   displayName: "Dokumente exportieren",      sortOrder: 75, unenforcedReason: "no-endpoint" },
   { name: "documents:approve",  module: "documents", action: "approve",  displayName: "Dokumente freigeben",        sortOrder: 76, requiresApproval: true },
   { name: "documents:publish",  module: "documents", action: "publish",  displayName: "Dokumente veröffentlichen",  sortOrder: 77 },
   { name: "documents:archive",  module: "documents", action: "archive",  displayName: "Dokumente archivieren",      sortOrder: 78 },
@@ -134,19 +161,19 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "service-events:create", module: "service-events", action: "create", displayName: "Service-Events erstellen",   sortOrder: 101 },
   { name: "service-events:update", module: "service-events", action: "update", displayName: "Service-Events bearbeiten",  sortOrder: 102 },
   { name: "service-events:delete", module: "service-events", action: "delete", displayName: "Service-Events löschen",     sortOrder: 103 },
-  { name: "service-events:export", module: "service-events", action: "export", displayName: "Service-Events exportieren", sortOrder: 104 },
+  { name: "service-events:export", module: "service-events", action: "export", displayName: "Service-Events exportieren", sortOrder: 104, unenforcedReason: "no-endpoint" },
 
   // ── Energy ─────────────────────────────────────────────────────────────
   { name: "energy:read",   module: "energy", action: "read",   displayName: "Stromabrechnungen anzeigen",    sortOrder: 105 },
   { name: "energy:create", module: "energy", action: "create", displayName: "Stromabrechnungen erstellen",   sortOrder: 106 },
   { name: "energy:update", module: "energy", action: "update", displayName: "Stromabrechnungen bearbeiten",  sortOrder: 107 },
   { name: "energy:delete", module: "energy", action: "delete", displayName: "Stromabrechnungen loeschen",    sortOrder: 108 },
-  { name: "energy:export", module: "energy", action: "export", displayName: "Stromabrechnungen exportieren", sortOrder: 109 },
+  { name: "energy:export", module: "energy", action: "export", displayName: "Stromabrechnungen exportieren", sortOrder: 109, unenforcedReason: "no-endpoint" },
 
   // ── Reports ────────────────────────────────────────────────────────────
   { name: "reports:read",   module: "reports", action: "read",   displayName: "Berichte anzeigen",    sortOrder: 110 },
   { name: "reports:create", module: "reports", action: "create", displayName: "Berichte erstellen",   sortOrder: 111 },
-  { name: "reports:export", module: "reports", action: "export", displayName: "Berichte exportieren", sortOrder: 112 },
+  { name: "reports:export", module: "reports", action: "export", displayName: "Berichte exportieren", sortOrder: 112, unenforcedReason: "no-endpoint" },
 
   // ── Settings ───────────────────────────────────────────────────────────
   { name: "settings:read",   module: "settings", action: "read",   displayName: "Einstellungen anzeigen",   sortOrder: 120 },
@@ -157,7 +184,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "users:create",      module: "users", action: "create",      displayName: "Benutzer erstellen",      sortOrder: 131 },
   { name: "users:update",      module: "users", action: "update",      displayName: "Benutzer bearbeiten",     sortOrder: 132 },
   { name: "users:delete",      module: "users", action: "delete",      displayName: "Benutzer löschen",        sortOrder: 133 },
-  { name: "users:impersonate", module: "users", action: "impersonate", displayName: "Als Benutzer anmelden",   sortOrder: 134 },
+  { name: "users:impersonate", module: "users", action: "impersonate", displayName: "Als Benutzer anmelden",   sortOrder: 134, unenforcedReason: "superadmin-only" },
 
   // ── Roles ──────────────────────────────────────────────────────────────
   { name: "roles:read",   module: "roles", action: "read",   displayName: "Rollen anzeigen",   sortOrder: 140 },
@@ -167,7 +194,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "roles:assign", module: "roles", action: "assign", displayName: "Rollen zuweisen",   sortOrder: 144 },
 
   // ── Portal (Kommanditisten-Portal) ─────────────────────────────────────
-  { name: "portal:access",         module: "portal", action: "read",   displayName: "Portal-Zugang",              sortOrder: 150 },
+  { name: "portal:access",         module: "portal", action: "read",   displayName: "Portal-Zugang",              sortOrder: 150, unenforcedReason: "portal-session" },
   { name: "portal:participations", module: "portal", action: "read",   displayName: "Portal-Beteiligungen",       sortOrder: 151 },
   { name: "portal:distributions",  module: "portal", action: "read",   displayName: "Portal-Ausschuettungen",     sortOrder: 152 },
   { name: "portal:documents",      module: "portal", action: "read",   displayName: "Portal-Dokumente",           sortOrder: 153 },
@@ -175,7 +202,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "portal:energyReports",  module: "portal", action: "read",   displayName: "Portal-Energieberichte",     sortOrder: 155 },
   { name: "portal:votes",          module: "portal", action: "read",   displayName: "Portal-Abstimmungen",        sortOrder: 156 },
   { name: "portal:proxies",        module: "portal", action: "read",   displayName: "Portal-Vollmachten",         sortOrder: 157 },
-  { name: "portal:profile",        module: "portal", action: "update", displayName: "Portal-Profil bearbeiten",   sortOrder: 158 },
+  { name: "portal:profile",        module: "portal", action: "update", displayName: "Portal-Profil bearbeiten",   sortOrder: 158, unenforcedReason: "portal-session" },
 
   // ── Mailings ───────────────────────────────────────────────────────────
   { name: "mailings:read",  module: "mailings", action: "read",  displayName: "Serienbriefe anzeigen",              sortOrder: 180 },
@@ -188,11 +215,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "admin:billing-rules",       module: "admin", action: "billing-rules",       displayName: "Abrechnungsregeln verwalten",   sortOrder: 205 },
   { name: "admin:settlement-periods",  module: "admin", action: "settlement-periods",  displayName: "Abrechnungsperioden verwalten", sortOrder: 206 },
   { name: "admin:access-report",       module: "admin", action: "access-report",       displayName: "Zugriffsreport anzeigen",       sortOrder: 207 },
-  { name: "admin:mass-communication",  module: "admin", action: "mass-communication",  displayName: "Massen-Kommunikation",          sortOrder: 208 },
+  { name: "admin:mass-communication",  module: "admin", action: "mass-communication",  displayName: "Massen-Kommunikation",          sortOrder: 208, unenforcedReason: "deprecated" },
   { name: "admin:invoice-settings",    module: "admin", action: "invoice-settings",    displayName: "Rechnungseinstellungen",        sortOrder: 209 },
   { name: "admin:templates",           module: "admin", action: "templates",           displayName: "Vorlagen verwalten",            sortOrder: 210 },
-  { name: "admin:impersonate",         module: "admin", action: "impersonate",         displayName: "Benutzer impersonieren",        sortOrder: 211 },
-  { name: "admin:tenants",             module: "admin", action: "tenants",             displayName: "Mandanten verwalten (Admin)",   description: "Tenant-Konfiguration und Mitgliederverwaltung", sortOrder: 270 },
+  { name: "admin:impersonate",         module: "admin", action: "impersonate",         displayName: "Benutzer impersonieren",        sortOrder: 211, unenforcedReason: "superadmin-only" },
+  { name: "admin:tenants",             module: "admin", action: "tenants",             displayName: "Mandanten verwalten (Admin)",   description: "Tenant-Konfiguration und Mitgliederverwaltung", sortOrder: 270, unenforcedReason: "superadmin-only" },
   { name: "admin:system",              module: "admin", action: "system",              displayName: "System-Administration",         description: "Tenant-übergreifende System-Settings",          sortOrder: 271 },
   { name: "admin:audit",               module: "admin", action: "audit",               displayName: "Audit-Logs anzeigen (Admin)",   description: "Zugriff auf Audit-Trail",                      sortOrder: 272 },
 
@@ -201,13 +228,13 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "system:settings",             module: "system", action: "settings",             displayName: "System-Einstellungen",       sortOrder: 221 },
   { name: "system:health",               module: "system", action: "health",               displayName: "System & Wartung",           sortOrder: 222 },
   { name: "system:config",               module: "system", action: "config",               displayName: "System-Konfiguration",       sortOrder: 223 },
-  { name: "system:audit",                module: "system", action: "audit",                displayName: "Audit-Logs anzeigen",        sortOrder: 224 },
-  { name: "system:backup",               module: "system", action: "backup",               displayName: "Backup & Speicher",          sortOrder: 225 },
+  { name: "system:audit",                module: "system", action: "audit",                displayName: "Audit-Logs anzeigen",        sortOrder: 224, unenforcedReason: "superadmin-only" },
+  { name: "system:backup",               module: "system", action: "backup",               displayName: "Backup & Speicher",          sortOrder: 225, unenforcedReason: "superadmin-only" },
   { name: "system:marketing",            module: "system", action: "marketing",            displayName: "Marketing verwalten",        sortOrder: 226 },
   { name: "system:revenue-types",        module: "system", action: "revenue-types",        displayName: "Vergütungsarten verwalten",  sortOrder: 227 },
   { name: "system:fund-categories",      module: "system", action: "fund-categories",      displayName: "Gesellschaftstypen verwalten", sortOrder: 228 },
-  { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen aendern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260 },
-  { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien fuer alle Mandanten",    sortOrder: 261 },
+  { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen aendern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260, unenforcedReason: "superadmin-only" },
+  { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien fuer alle Mandanten",    sortOrder: 261, unenforcedReason: "superadmin-only" },
 
   // ── Accounting (Buchhaltung) ───────────────────────────────────────────
   { name: "accounting:read",                       module: "accounting", action: "read",                   displayName: "Buchhaltung anzeigen",     sortOrder: 230 },
@@ -219,7 +246,6 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "accounting:tax-code:read",              module: "accounting", action: "tax-code-read",          displayName: "Steuerschluessel anzeigen", sortOrder: 236 },
   { name: "accounting:tax-code:write",             module: "accounting", action: "tax-code-write",         displayName: "Steuerschluessel bearbeiten", sortOrder: 237 },
   { name: "accounting:value-adjustment:create",    module: "accounting", action: "value-adjustment",       displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen",                                       sortOrder: 238 },
-  { name: "accounting:journal:reverse",            module: "accounting", action: "reverse",                displayName: "Buchungen stornieren",     description: "Generalumkehr fuer POSTED-Journals",                                      sortOrder: 239 },
   { name: "accounting:post",                       module: "accounting", action: "post",                   displayName: "Buchungen festschreiben",  description: "DRAFT-Buchungen in POSTED-Status setzen (§146 AO Unveraenderbarkeit ab da)", sortOrder: 240, requiresApproval: true },
   { name: "accounting:reverse",                    module: "accounting", action: "reverse",                displayName: "Buchungen stornieren",     description: "Generalumkehr fuer POSTED-Buchungen — eigene Permission gem. HGB-Verantwortungstrennung", sortOrder: 241, requiresApproval: true },
   { name: "accounting:report:bilanz",              module: "accounting", action: "report-bilanz",          displayName: "Bilanz anzeigen",                  sortOrder: 250 },

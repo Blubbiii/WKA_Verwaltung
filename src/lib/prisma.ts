@@ -152,7 +152,9 @@ export interface PrismaModelDelegate {
  * Known Prisma model names that can be accessed dynamically.
  * Add model names here as they are used with getPrismaModel().
  */
-type DynamicModelName = "systemConfig" | "emailTemplate" | "massCommunication";
+// "massCommunication" ist entfernt (TF-10): das Modell ist ausser Dienst, siehe
+// prisma/migrations/manual/retire_mass_communications.sql.
+type DynamicModelName = "systemConfig" | "emailTemplate";
 
 /**
  * Type-safe accessor for Prisma model delegates by name.

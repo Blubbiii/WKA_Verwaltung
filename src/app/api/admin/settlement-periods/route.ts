@@ -7,6 +7,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const createPeriodSchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/settlement-periods - Neue Periode erstellen
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("invoices:create");
+    const check = await requirePermission([PERMISSIONS.ADMIN_SETTLEMENT_PERIODS, "invoices:create"]);
     if (!check.authorized) return check.error;
 
     const body = await request.json();

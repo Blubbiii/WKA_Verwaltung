@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name erforderlich").max(100),
@@ -37,7 +38,7 @@ export async function GET() {
 // POST /api/admin/revenue-types
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("settings:update");
+    const check = await requirePermission([PERMISSIONS.SYSTEM_REVENUE_TYPES, "settings:update"]);
     if (!check.authorized) return check.error;
 
     const body = await request.json();

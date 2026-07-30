@@ -418,6 +418,30 @@ export const PERMISSIONS = {
   SERVICE_EVENTS_DELETE: "service-events:delete",
   SERVICE_EVENTS_EXPORT: "service-events:export",
 
+  // Mailings — standen im Katalog, hatten aber keine Konstanten und wurden von
+  // keiner Route geprueft (TF-12). Die Routen liefen nur hinter requireAuth(),
+  // jeder angemeldete Nutzer konnte also Mailings anlegen UND versenden.
+  MAILINGS_READ: "mailings:read",
+  MAILINGS_WRITE: "mailings:write",
+  MAILINGS_SEND: "mailings:send",
+
+  // Portal — Rechte der Gesellschafter-Sicht. Ohne Konstanten liess sich hier
+  // nur per Roh-String pruefen.
+  PORTAL_ACCESS: "portal:access",
+  PORTAL_PARTICIPATIONS: "portal:participations",
+  PORTAL_DISTRIBUTIONS: "portal:distributions",
+  PORTAL_DOCUMENTS: "portal:documents",
+  PORTAL_REPORTS: "portal:reports",
+  PORTAL_ENERGY_REPORTS: "portal:energyReports",
+  PORTAL_VOTES: "portal:votes",
+  PORTAL_PROXIES: "portal:proxies",
+  PORTAL_PROFILE: "portal:profile",
+
+  // System-Modul (Superadmin-Ebene).
+  SYSTEM_MARKETING: "system:marketing",
+  SYSTEM_REVENUE_TYPES: "system:revenue-types",
+  SYSTEM_FUND_CATEGORIES: "system:fund-categories",
+
   // Energy
   ENERGY_READ: "energy:read",
   ENERGY_CREATE: "energy:create",
@@ -497,7 +521,6 @@ export const PERMISSIONS = {
   // Accounting (granular — HGB/GoBD)
   ACCOUNTING_PERIOD_LOCK_CREATE: "accounting:period-lock:create",
   ACCOUNTING_PERIOD_LOCK_DELETE: "accounting:period-lock:delete",
-  ACCOUNTING_JOURNAL_REVERSE: "accounting:journal:reverse",
   ACCOUNTING_TAX_CODE_READ: "accounting:tax-code:read",
   ACCOUNTING_TAX_CODE_WRITE: "accounting:tax-code:write",
   ACCOUNTING_VALUE_ADJUSTMENT_CREATE: "accounting:value-adjustment:create",

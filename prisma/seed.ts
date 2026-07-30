@@ -182,7 +182,6 @@ const permissionsData = [
   { name: "accounting:tax-code:read", displayName: "Steuerschluessel anzeigen", module: "accounting", action: "tax-code-read", sortOrder: 236 },
   { name: "accounting:tax-code:write", displayName: "Steuerschluessel bearbeiten", module: "accounting", action: "tax-code-write", sortOrder: 237 },
   { name: "accounting:value-adjustment:create", displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen", module: "accounting", action: "value-adjustment", sortOrder: 238 },
-  { name: "accounting:journal:reverse", displayName: "Buchungen stornieren", description: "Generalumkehr fuer POSTED-Journals", module: "accounting", action: "reverse", sortOrder: 239 },
   { name: "accounting:report:bilanz", displayName: "Bilanz anzeigen", module: "accounting", action: "report-bilanz", sortOrder: 250 },
   { name: "accounting:report:gewst", displayName: "GewSt-Hinzurechnung anzeigen", module: "accounting", action: "report-gewst", sortOrder: 251 },
   { name: "accounting:report:susa", displayName: "Summen- und Saldenliste anzeigen", module: "accounting", action: "report-susa", sortOrder: 252 },

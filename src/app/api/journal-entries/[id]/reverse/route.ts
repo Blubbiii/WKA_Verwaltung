@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
@@ -43,16 +44,18 @@ export async function POST(
   try {
     // Storno braucht dedizierte Permission (HGB-Verantwortungstrennung).
     //
-    // TF-12: Der Katalog fuehrt ZWEI Permissions fuer dieselbe Sache —
-    // "accounting:reverse" (hier geprueft) und "accounting:journal:reverse"
-    // (bis Welle 8 nirgends geprueft, gleicher displayName "Buchungen
-    // stornieren"). Statt eine davon stillschweigend zu ignorieren, gelten
-    // jetzt beide. Die Dopplung selbst gehoert in eine Katalog-Bereinigung,
-    // die bestehende Rollenzuweisungen migrieren muss.
-    const check = await requirePermission([
-      "accounting:reverse",
-      "accounting:journal:reverse",
-    ]);
+    // TF-12: Der Katalog fuehrte hier ZWEI Eintraege fuer dieselbe Sache mit
+    // identischem displayName — "accounting:reverse" und
+    // "accounting:journal:reverse". Aufgeloest: "accounting:reverse" ist
+    // kanonisch (traegt requiresApproval und wird im Seed vergeben), die
+    // Dopplung ist aus Katalog, Konstanten und Seed entfernt.
+    //
+    // Die bestehenden Rollenzuweisungen der abgeloesten Permission werden von
+    // prisma/migrations/manual/merge_duplicate_reverse_permission.sql auf die
+    // kanonische uebertragen. Die Migration MUSS laufen, bevor dieser Stand
+    // deployt wird — sonst verliert eine Rolle, die nur die abgeloeste Variante
+    // hielt, den Storno-Zugriff.
+    const check = await requirePermission(PERMISSIONS.ACCOUNTING_REVERSE);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
