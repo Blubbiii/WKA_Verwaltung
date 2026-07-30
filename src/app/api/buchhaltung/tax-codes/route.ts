@@ -23,6 +23,7 @@ import { requireAdmin, requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import {
   materializeTenantTaxCodes,
   resolveTaxCode,
@@ -44,7 +45,7 @@ const createSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const check = await requirePermission("invoices:read");
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_TAX_CODE_READ, "invoices:read"]);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {

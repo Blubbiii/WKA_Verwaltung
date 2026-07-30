@@ -85,7 +85,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
+const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_UPDATE, PERMISSIONS.PARKS_UPDATE]);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;
@@ -146,7 +146,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.PARKS_DELETE);
+const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_DELETE, PERMISSIONS.PARKS_DELETE]);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;

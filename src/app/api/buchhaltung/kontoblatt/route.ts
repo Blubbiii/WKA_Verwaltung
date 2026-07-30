@@ -7,10 +7,11 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateKontoblatt } from "@/lib/accounting/reports/kontoblatt";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 export async function GET(request: NextRequest) {
   try {
-    const check = await requirePermission("accounting:read");
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_REPORT_KONTOBLATT, "accounting:read"]);
     if (!check.authorized) return check.error;
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });

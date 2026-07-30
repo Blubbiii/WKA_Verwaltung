@@ -62,6 +62,15 @@ services:
       LOG_LEVEL: info
       EMAIL_ENCRYPTION_KEY: ${EMAIL_ENCRYPTION_KEY}
       METRICS_TOKEN: ${METRICS_TOKEN}
+      # Audit 2026-07 (TF-13/F22): Diese drei standen in KEINEM Compose-File.
+      # Ohne sie lehnen die betroffenen Endpunkte fail-closed ab — der
+      # E-Mail-Eingang und die Basiszinssatz-Aktualisierung liefen also nie.
+      CRON_SECRET: ${CRON_SECRET}
+      CRON_BEARER_TOKEN: ${CRON_BEARER_TOKEN}
+      INBOUND_EMAIL_API_KEY: ${INBOUND_EMAIL_API_KEY}
+      # F24: Zeitzone fuer alle BullMQ-Repeat-Jobs. Ohne TZ im Container
+      # wertet BullMQ Cron-Patterns in UTC aus.
+      CRON_TIMEZONE: ${CRON_TIMEZONE:-Europe/Berlin}
       NEXT_PUBLIC_METABASE_URL: ${NEXT_PUBLIC_METABASE_URL:-}
     healthcheck:
       # LIVE-Check: nur "HTTP-Server läuft" — schnell verfügbar nach Restart.

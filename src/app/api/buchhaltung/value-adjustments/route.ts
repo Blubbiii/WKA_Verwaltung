@@ -19,6 +19,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const pwbSchema = z.object({
   amount: z.number().positive(),
@@ -73,7 +74,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("invoices:update");
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_VALUE_ADJUSTMENT_CREATE, "invoices:update"]);
     if (!check.authorized) return check.error;
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });

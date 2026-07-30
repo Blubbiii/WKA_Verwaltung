@@ -24,9 +24,10 @@ import { createHash } from "crypto";
 import JSZip from "jszip";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 import {
   IDEA_DTD_PLACEHOLDER,
   generateGobdExport,
@@ -40,7 +41,10 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    // TF-12: Diese Route prueft jetzt die granulare Permission statt nur
+    // der Rollenhierarchie. Vorher war der Katalogeintrag "GoBD Z3-Export erstellen" eine
+    // sichtbare, aber wirkungslose Stellschraube.
+    const check = await requirePermission(PERMISSIONS.ACCOUNTING_GOBD_EXPORT_CREATE);
     if (!check.authorized) return check.error;
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });

@@ -72,7 +72,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
+const check = await requirePermission([PERMISSIONS.NEWS_UPDATE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;
@@ -156,7 +156,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
+const check = await requirePermission([PERMISSIONS.NEWS_DELETE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
 
     const { id } = await params;

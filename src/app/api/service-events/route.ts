@@ -162,7 +162,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
 // POST /api/service-events - Service-Event erstellen
 export async function POST(request: NextRequest) {
   try {
-const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
+const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_CREATE, PERMISSIONS.PARKS_UPDATE]);
     if (!check.authorized) return check.error!;
 
     const body = await request.json();

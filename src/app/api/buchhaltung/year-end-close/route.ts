@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import {
@@ -25,6 +25,7 @@ import {
   carryForward,
 } from "@/lib/accounting/year-end-close";
 import { invalidateReportsCache } from "@/lib/cache/reports";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const closeSchema = z.object({
   fiscalYear: z.number().int().min(2000).max(2100),
@@ -33,7 +34,10 @@ const closeSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    // TF-12: Diese Route prueft jetzt die granulare Permission statt nur
+    // der Rollenhierarchie. Vorher war der Katalogeintrag "Jahresabschluss ausfuehren" eine
+    // sichtbare, aber wirkungslose Stellschraube.
+    const check = await requirePermission(PERMISSIONS.ACCOUNTING_YEAR_END_CLOSE_EXECUTE);
     if (!check.authorized) return check.error;
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });

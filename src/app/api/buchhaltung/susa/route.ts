@@ -3,11 +3,12 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateSuSa } from "@/lib/accounting/reports/susa";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 // GET /api/buchhaltung/susa?from=2026-01-01&to=2026-12-31
 export async function GET(request: NextRequest) {
   try {
-    const check = await requirePermission("accounting:read");
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_REPORT_SUSA, "accounting:read"]);
     if (!check.authorized) return check.error;
 
     const { searchParams } = new URL(request.url);

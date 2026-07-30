@@ -405,6 +405,13 @@ export const PERMISSIONS = {
   VOTES_MANAGE: "votes:manage",
 
   // Service Events
+  // News — im Katalog vorhanden, aber bis Welle 8 ohne Konstanten und ohne
+  // Pruefung (TF-12). Die Routen liefen ausschliesslich ueber admin:manage.
+  NEWS_READ: "news:read",
+  NEWS_CREATE: "news:create",
+  NEWS_UPDATE: "news:update",
+  NEWS_DELETE: "news:delete",
+
   SERVICE_EVENTS_READ: "service-events:read",
   SERVICE_EVENTS_CREATE: "service-events:create",
   SERVICE_EVENTS_UPDATE: "service-events:update",

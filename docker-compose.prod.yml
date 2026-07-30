@@ -79,6 +79,14 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
 
+      # Cron / Inbound (Audit 2026-07, TF-13): standen in keinem Compose-File.
+      # Ohne sie lehnen die Endpunkte fail-closed ab — E-Mail-Eingang und
+      # Basiszinssatz-Aktualisierung liefen nie.
+      CRON_SECRET: ${CRON_SECRET}
+      CRON_BEARER_TOKEN: ${CRON_BEARER_TOKEN}
+      INBOUND_EMAIL_API_KEY: ${INBOUND_EMAIL_API_KEY}
+      CRON_TIMEZONE: ${CRON_TIMEZONE:-Europe/Berlin}
+
       # App Settings
       NODE_ENV: production
       APP_URL: https://${DOMAIN:-localhost}
@@ -264,6 +272,11 @@ services:
 
       # Worker Settings
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+
+      # F24: Der Worker fuehrt ALLE BullMQ-Repeat-Jobs aus. Ohne TZ wertet
+      # BullMQ die Cron-Patterns in Prozess-Lokalzeit aus — im Container UTC.
+      # "Taeglich 08:00" liefe dann real um 09:00 (Winter) bzw. 10:00 (Sommer).
+      CRON_TIMEZONE: ${CRON_TIMEZONE:-Europe/Berlin}
 
       # App Settings
       NODE_ENV: production

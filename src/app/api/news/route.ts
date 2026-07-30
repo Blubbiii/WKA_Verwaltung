@@ -93,7 +93,7 @@ const check = await requireAuth();
 // POST /api/news
 export async function POST(request: NextRequest) {
   try {
-const check = await requirePermission(PERMISSIONS.ADMIN_MANAGE);
+const check = await requirePermission([PERMISSIONS.NEWS_CREATE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
 
     const body = await request.json();

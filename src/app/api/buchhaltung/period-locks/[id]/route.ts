@@ -15,10 +15,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const unlockSchema = z.object({
   reason: z.string().min(1, "Begründung für Entsperren ist Pflicht").max(500),
@@ -29,7 +30,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const check = await requireAdmin();
+    // TF-12: granulare Permission statt reiner Rollenhierarchie —
+    // "Periode entsperren" war im Katalog sichtbar, aber wirkungslos.
+    const check = await requirePermission(PERMISSIONS.ACCOUNTING_PERIOD_LOCK_DELETE);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {

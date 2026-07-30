@@ -18,6 +18,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateDatevExport } from "@/lib/accounting/datev-export";
 import { getTenantSettings } from "@/lib/tenant-settings";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const schema = z.object({
   from: z.string().min(1),
@@ -28,7 +29,7 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requirePermission("accounting:read");
+    const check = await requirePermission([PERMISSIONS.ACCOUNTING_DATEV_EXPORT_CREATE, "accounting:read"]);
     if (!check.authorized) return check.error;
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });

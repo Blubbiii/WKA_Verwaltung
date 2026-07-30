@@ -17,10 +17,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, requirePermission } from "@/lib/auth/withPermission";
+import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
+import { PERMISSIONS } from "@/lib/auth/permissions";
 
 const createSchema = z.object({
   periodYear: z.number().int().min(2000).max(2100),
@@ -81,7 +82,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const check = await requireAdmin();
+    // TF-12: granulare Permission statt reiner Rollenhierarchie —
+    // "Periode sperren" war im Katalog sichtbar, aber wirkungslos.
+    const check = await requirePermission(PERMISSIONS.ACCOUNTING_PERIOD_LOCK_CREATE);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {

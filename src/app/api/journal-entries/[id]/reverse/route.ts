@@ -42,7 +42,17 @@ export async function POST(
 ) {
   try {
     // Storno braucht dedizierte Permission (HGB-Verantwortungstrennung).
-    const check = await requirePermission("accounting:reverse");
+    //
+    // TF-12: Der Katalog fuehrt ZWEI Permissions fuer dieselbe Sache —
+    // "accounting:reverse" (hier geprueft) und "accounting:journal:reverse"
+    // (bis Welle 8 nirgends geprueft, gleicher displayName "Buchungen
+    // stornieren"). Statt eine davon stillschweigend zu ignorieren, gelten
+    // jetzt beide. Die Dopplung selbst gehoert in eine Katalog-Bereinigung,
+    // die bestehende Rollenzuweisungen migrieren muss.
+    const check = await requirePermission([
+      "accounting:reverse",
+      "accounting:journal:reverse",
+    ]);
     if (!check.authorized) return check.error;
 
     if (!check.tenantId) {
