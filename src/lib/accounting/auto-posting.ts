@@ -23,7 +23,9 @@ import {
   type TenantSettings,
 } from "@/lib/tenant-settings";
 import type { Prisma } from "@prisma/client";
-import type { Decimal } from "@prisma/client-runtime-utils";
+// F9-Rest: Decimal wird jetzt auch als Wert gebraucht (Gebühren-Split), nicht
+// mehr nur als Typ.
+import { Decimal } from "@prisma/client-runtime-utils";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
 import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
@@ -329,12 +331,29 @@ export interface PaymentPostingParams {
   userId: string;
   /** Rechnungsnummer o.ä. für JournalEntry.reference. */
   reference?: string | null;
+  /**
+   * Offener Rechnungsbetrag VOR dieser Zahlung (F9-Rest).
+   *
+   * Nur relevant, wenn die Zahlung den offenen Rechnungsbetrag übersteigt: der
+   * Mehrbetrag sind angemahnte Nebenforderungen (Mahngebühr, Verzugszinsen),
+   * die `sumOpenDunningCharges()` als Toleranz zulässt. Dieser Teil darf NICHT
+   * gegen das Forderungskonto laufen — sonst wird die Forderung überkreditiert
+   * und der Ertrag nie erfasst.
+   *
+   * Ohne Angabe verhält sich die Funktion wie bisher (voller Betrag gegen
+   * Forderungen).
+   */
+  openInvoiceAmount?: Decimal;
 }
 
 export interface PaymentPostingResult {
   journalEntryId: string | null;
   /** Gesetzt wenn bewusst nicht gebucht wurde (mit Grund im Log). */
   skippedReason?: "ACCOUNT_COLLISION" | "ALREADY_POSTED_RESOLVED";
+  /** F9-Rest: als Ertrag gebuchter Anteil (Mahngebühr/Verzugszinsen). */
+  dunningFeeAmount?: string;
+  /** Gesetzt, wenn ein Gebührenanteil anfiel, aber kein Ertragskonto konfiguriert ist. */
+  dunningFeeUnposted?: string;
 }
 
 /**
@@ -444,6 +463,92 @@ export async function createPaymentPosting(
   }
 
   const desc = `Zahlung ${params.reference ?? params.invoiceId}`.slice(0, 200);
+
+  // F9-Rest: Zahlung aufteilen, sobald sie den offenen Rechnungsbetrag
+  // uebersteigt. Der Mehrbetrag sind angemahnte Nebenforderungen
+  // (Mahngebuehr, Verzugszinsen). Vorher lief der gesamte Betrag gegen das
+  // Forderungskonto — die Forderung wurde also um die Gebuehr
+  // ueberkreditiert und der Ertrag nie erfasst.
+  //
+  // §288 BGB ist Verzugsschaden, kein Leistungsaustausch → keine USt, also
+  // kein Steuer-Split auf dieser Zeile.
+  const dunningFeeAccount = settings.datevAccountDunningFee?.trim() || "";
+  let receivablePortion = params.amount;
+  let feePortion = new Decimal(0);
+
+  if (params.openInvoiceAmount) {
+    const excess = params.amount.minus(params.openInvoiceAmount);
+    if (excess.greaterThan(0)) {
+      feePortion = excess;
+      receivablePortion = params.openInvoiceAmount;
+    }
+  }
+
+  // Ohne konfiguriertes Ertragskonto NICHT raten — dann laeuft alles wie
+  // bisher gegen Forderungen, aber sichtbar im Log.
+  let feeUnposted: Decimal | null = null;
+  if (feePortion.greaterThan(0) && !dunningFeeAccount) {
+    feeUnposted = feePortion;
+    logger.warn(
+      {
+        invoiceId: params.invoiceId,
+        paymentId: params.paymentId,
+        feeAmount: feePortion.toString(),
+      },
+      "Mahngebuehren-Anteil nicht als Ertrag gebucht: datevAccountDunningFee ist " +
+        "nicht konfiguriert. Der Betrag laeuft gegen das Forderungskonto.",
+    );
+    receivablePortion = params.amount;
+    feePortion = new Decimal(0);
+  }
+
+  const lines: Array<{
+    lineNumber: number;
+    account: string;
+    description: string;
+    debitAmount: Decimal | null;
+    creditAmount: Decimal | null;
+  }> = [
+    // Geldseite immer ueber den vollen geflossenen Betrag.
+    {
+      lineNumber: 1,
+      account: moneyIsDebit ? moneyAccount : receivableAccount,
+      description: desc,
+      debitAmount: params.amount,
+      creditAmount: null,
+    },
+  ];
+
+  if (moneyIsDebit) {
+    lines.push({
+      lineNumber: 2,
+      account: receivableAccount,
+      description: desc,
+      debitAmount: null,
+      creditAmount: receivablePortion,
+    });
+    if (feePortion.greaterThan(0)) {
+      lines.push({
+        lineNumber: 3,
+        account: dunningFeeAccount,
+        description: `Mahngebuehren/Verzugszinsen ${params.reference ?? params.invoiceId}`.slice(0, 200),
+        debitAmount: null,
+        creditAmount: feePortion,
+      });
+    }
+  } else {
+    // Eingangsseite (Geld raus): der Gebuehren-Split greift hier nicht, weil
+    // eine Gutschrift keine Nebenforderungen erzeugt. Zeile 1 traegt bereits
+    // das Forderungskonto, Gegenkonto ist das Geldkonto.
+    lines.push({
+      lineNumber: 2,
+      account: moneyAccount,
+      description: desc,
+      debitAmount: null,
+      creditAmount: params.amount,
+    });
+  }
+
   const entry = await tx.journalEntry.create({
     data: {
       tenantId: params.tenantId,
@@ -455,24 +560,7 @@ export async function createPaymentPosting(
       referenceType: "InvoicePayment",
       referenceId: params.paymentId,
       createdById: params.userId,
-      lines: {
-        create: [
-          {
-            lineNumber: 1,
-            account: moneyIsDebit ? moneyAccount : receivableAccount,
-            description: desc,
-            debitAmount: params.amount,
-            creditAmount: null,
-          },
-          {
-            lineNumber: 2,
-            account: moneyIsDebit ? receivableAccount : moneyAccount,
-            description: desc,
-            debitAmount: null,
-            creditAmount: params.amount,
-          },
-        ],
-      },
+      lines: { create: lines },
     },
     select: { id: true },
   });
@@ -485,11 +573,18 @@ export async function createPaymentPosting(
       debitAccount: moneyIsDebit ? moneyAccount : receivableAccount,
       creditAccount: moneyIsDebit ? receivableAccount : moneyAccount,
       amount: params.amount.toString(),
+      receivablePortion: receivablePortion.toString(),
+      dunningFeePortion: feePortion.toString(),
+      dunningFeeAccount: feePortion.greaterThan(0) ? dunningFeeAccount : undefined,
     },
     "Zahlungsbuchung erstellt",
   );
 
-  return { journalEntryId: entry.id };
+  return {
+    journalEntryId: entry.id,
+    ...(feePortion.greaterThan(0) ? { dunningFeeAmount: feePortion.toString() } : {}),
+    ...(feeUnposted ? { dunningFeeUnposted: feeUnposted.toString() } : {}),
+  };
 }
 
 /**

@@ -219,9 +219,14 @@ export async function recordPayment(
   // dass irgendwo ein Betrag erfunden wird.
   //
   // ACHTUNG: die Nebenforderung wird dadurch NICHT zur gebuchten Forderung.
-  // paidAmount kann jetzt über grossAmount liegen; die Differenz ist der
-  // vereinnahmte Gebühren-/Zinsanteil und muss weiterhin manuell auf ein
-  // Ertragskonto gebucht werden.
+  // paidAmount kann über grossAmount liegen; die Differenz ist der
+  // vereinnahmte Gebühren-/Zinsanteil.
+  //
+  // F9-Rest (Audit 2026-07): Dieser Anteil musste bisher manuell auf ein
+  // Ertragskonto gebucht werden — in der Praxis also nie. Schlimmer: die
+  // Zahlungsbuchung lief mit dem VOLLEN Betrag gegen das Forderungskonto, die
+  // Forderung wurde damit um die Gebühr überkreditiert. `openInvoiceAmount`
+  // unten teilt die Buchung, sofern ein Ertragskonto konfiguriert ist.
   const dunningExtras = await sumOpenDunningCharges(tx, params.invoiceId);
   const upperLimit = grossAmount.plus(toleranceDec).plus(dunningExtras);
 
@@ -283,6 +288,9 @@ export async function recordPayment(
       paymentMethod: params.paymentMethod ?? "BANK",
       userId: params.userId,
       reference: invoiceNumber,
+      // F9-Rest: offener Rechnungsbetrag VOR dieser Zahlung. Alles darüber ist
+      // Mahngebühr/Verzugszins und gehört nicht aufs Forderungskonto.
+      openInvoiceAmount: Decimal.max(grossAmount.minus(paidBefore), 0),
     });
     journalEntryId = posting.journalEntryId;
   }

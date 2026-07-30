@@ -78,6 +78,7 @@ export interface TenantSettings {
   // Leer = aus Kontenrahmen ableiten (SKR03 2400/0996, SKR04 6930/3090).
   datevAccountValueAdjustment: string;
   datevAccountValueAdjustmentExpense: string;
+  datevAccountDunningFee: string;
 
   // Geschaeftsjahr
   fiscalYearStartMonth: number;
@@ -365,6 +366,12 @@ const tenantSettingsSchema = z.object({
     .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
     .optional(),
   datevAccountValueAdjustmentExpense: z
+    .string()
+    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
+    .optional(),
+  // F9-Rest: Ertragskonto fuer Mahngebuehren/Verzugszinsen (§288 BGB,
+  // nicht umsatzsteuerbar). Leer = Gebuehrenanteil wird nicht gebucht.
+  datevAccountDunningFee: z
     .string()
     .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
     .optional(),

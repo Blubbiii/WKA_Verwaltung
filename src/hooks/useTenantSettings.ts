@@ -53,6 +53,8 @@ export interface TenantSettings {
   datevAccountOutputTax7: string;
   datevAccountInputTax19: string;
   datevAccountInputTax7: string;
+  /** F9-Rest: Ertragskonto für Mahngebühren/Verzugszinsen. Leer = nicht buchen. */
+  datevAccountDunningFee: string;
 
   // Geschaeftsjahr
   fiscalYearStartMonth: number;

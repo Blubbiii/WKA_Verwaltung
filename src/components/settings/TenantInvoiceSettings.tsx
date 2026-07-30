@@ -31,6 +31,9 @@ const SKR03_DEFAULTS = {
   datevAccountOutputTax7: "1771",
   datevAccountInputTax19: "1576",
   datevAccountInputTax7: "1571",
+  // F9-Rest: bewusst OHNE Default. Die konkrete Nummer haengt am
+  // Kontenrahmen; ein geratenes Konto wuerde Ertraege falsch buchen.
+  datevAccountDunningFee: "",
 };
 
 interface InvoiceFormData {
@@ -54,6 +57,7 @@ interface InvoiceFormData {
   datevAccountOutputTax7: string;
   datevAccountInputTax19: string;
   datevAccountInputTax7: string;
+  datevAccountDunningFee: string;
   // Geschaeftsjahr
   fiscalYearStartMonth: number;
   // GoBD
@@ -116,6 +120,7 @@ export function TenantInvoiceSettings() {
         datevAccountOutputTax7: settings.datevAccountOutputTax7 ?? SKR03_DEFAULTS.datevAccountOutputTax7,
         datevAccountInputTax19: settings.datevAccountInputTax19 ?? SKR03_DEFAULTS.datevAccountInputTax19,
         datevAccountInputTax7: settings.datevAccountInputTax7 ?? SKR03_DEFAULTS.datevAccountInputTax7,
+        datevAccountDunningFee: settings.datevAccountDunningFee ?? "",
         fiscalYearStartMonth: settings.fiscalYearStartMonth ?? 1,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
@@ -377,6 +382,11 @@ export function TenantInvoiceSettings() {
                     { label: "USt 7%", key: "datevAccountOutputTax7" as const, default: SKR03_DEFAULTS.datevAccountOutputTax7 },
                     { label: "VSt 19%", key: "datevAccountInputTax19" as const, default: SKR03_DEFAULTS.datevAccountInputTax19 },
                     { label: "VSt 7%", key: "datevAccountInputTax7" as const, default: SKR03_DEFAULTS.datevAccountInputTax7 },
+                    // F9-Rest: Mahngebuehren/Verzugszinsen nach §288 BGB sind
+                    // Verzugsschaden und nicht umsatzsteuerbar. Solange hier
+                    // nichts steht, wird der Gebuehrenanteil einer Zahlung
+                    // nicht als Ertrag gebucht.
+                    { label: "Mahngebühren / Verzugszinsen (Ertrag)", key: "datevAccountDunningFee" as const, default: "— nicht gesetzt" },
                   ].map((row) => (
                     <tr key={row.key}>
                       <td className="px-3 py-2 text-muted-foreground">{row.label}</td>

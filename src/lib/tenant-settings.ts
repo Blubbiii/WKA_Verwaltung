@@ -67,6 +67,24 @@ export interface TenantSettings {
   // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
   datevAccountValueAdjustment: string;
   datevAccountValueAdjustmentExpense: string;
+  // Ertragskonto für Mahngebühren und Verzugszinsen (F9-Rest, Audit 2026-07).
+  //
+  // Umsatzsteuer: Mahngebühren und Verzugszinsen nach §288 BGB sind
+  // Verzugsschaden, also Schadensersatz und KEIN Leistungsaustausch — damit
+  // nicht umsatzsteuerbar. Es wird deshalb ohne USt-Split gebucht (EXEMPT).
+  //
+  // Zeitpunkt: gebucht wird bei ZAHLUNG, nicht bei Versand der Mahnung. Ein
+  // Schadensersatzanspruch von unsicherer Einbringlichkeit wird nach dem
+  // Vorsichtsprinzip (§252 Abs. 1 Nr. 4 HGB) nicht vorab als Forderung
+  // aktiviert. Das vermeidet zugleich eine Forderung, die nie ausgeglichen
+  // werden kann, weil die Rechnung selbst ihren Bruttobetrag behält.
+  //
+  // KEIN Default: fachlich gehören die Erträge unter "sonstige betriebliche
+  // Erträge", die konkrete Kontonummer hängt aber am Kontenrahmen des
+  // Mandanten. Solange hier nichts steht, wird der Gebührenanteil NICHT
+  // gebucht (Verhalten wie bisher) und der Fall geloggt — lieber nicht buchen
+  // als auf ein geratenes Konto buchen. Gleiche Linie wie datevAccountBank.
+  datevAccountDunningFee: string;
   // Geschaeftsjahr
   fiscalYearStartMonth: number; // 1-12 (1 = January)
   // GoBD retention
@@ -176,6 +194,8 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
   datevAccountValueAdjustment: "",
   datevAccountValueAdjustmentExpense: "",
+  // Leer = Gebührenanteil wird nicht gebucht (siehe Kommentar am Typ).
+  datevAccountDunningFee: "",
   // Geschaeftsjahr
   fiscalYearStartMonth: 1,
   // GoBD retention (§147 AO)
