@@ -569,6 +569,12 @@ export const PERMISSIONS = {
   FAULTS_UPDATE: "faults:update",
   FAULTS_DELETE: "faults:delete",
   FAULTS_VALUATE: "faults:valuate",
+
+  // A2 (Audit 2026-07): Verfuegbarkeitsgarantien.
+  AVAILABILITY_READ: "availability:read",
+  AVAILABILITY_MANAGE: "availability:manage",
+  AVAILABILITY_SETTLE: "availability:settle",
+  AVAILABILITY_CONFIRM: "availability:confirm",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

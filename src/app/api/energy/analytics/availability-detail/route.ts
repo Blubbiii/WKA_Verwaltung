@@ -8,6 +8,12 @@ import type {
   AvailabilityTarget,
 } from "@/types/analytics";
 import { apiError } from "@/lib/api-errors";
+import {
+  computeContractualAvailability,
+  SUB_CATEGORIES,
+  type TimeBuckets,
+  type SubCategory,
+} from "@/lib/availability/contractual-availability";
 
 // =============================================================================
 // GET /api/energy/analytics/availability-detail
@@ -23,6 +29,16 @@ interface MonthlyRow {
   t4_total: bigint;
   t5_total: bigint;
   t6_total: bigint;
+  // Unterkategorien von T5. Sie fehlten hier, weshalb `excludeContractual`
+  // gar nicht wirken KONNTE — siehe Kommentar bei der Berechnung unten.
+  t5_1_total: bigint;
+  t5_2_total: bigint;
+  t5_3_total: bigint;
+}
+
+/** Nur Unterkategorien duerfen ueber den Query-Parameter ausgeschlossen werden. */
+function isSubCategory(value: string): value is SubCategory {
+  return (SUB_CATEGORIES as readonly string[]).includes(value);
 }
 
 const MONTH_LABELS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -79,7 +95,10 @@ export async function GET(request: NextRequest) {
           SUM(t3)::bigint AS t3_total,
           SUM(t4)::bigint AS t4_total,
           SUM(t5)::bigint AS t5_total,
-          SUM(t6)::bigint AS t6_total
+          SUM(t6)::bigint AS t6_total,
+          SUM(t5_1)::bigint AS t5_1_total,
+          SUM(t5_2)::bigint AS t5_2_total,
+          SUM(t5_3)::bigint AS t5_3_total
         FROM scada_availability
         WHERE "tenantId" = ${tenantId}
           AND "turbineId" = ${turbineId}
@@ -108,9 +127,45 @@ export async function GET(request: NextRequest) {
         const techRelevant = t1 + t5;
         const techPct = techRelevant > 0 ? round((t1 / techRelevant) * 100, 2) : 0;
 
-        // Contractual: exclude force majeure categories from T5
-        // For now simplified: contractual = technical (can be refined with sub-category data)
-        const contractPct = techPct;
+        /*
+         * A2 / F21 (Audit 2026-07): Hier stand
+         *
+         *     const contractPct = techPct;  // simplified
+         *
+         * Die "vertragliche Verfuegbarkeit" war also die technische unter
+         * anderem Namen, und der Parameter `excludeContractual` wurde gelesen,
+         * im meta zurueckgegeben und NIE angewandt — die Abfrage holte die
+         * Unterkategorien nicht einmal. Bei einer 97-%-Garantie mit Poenale
+         * entscheidet genau diese Zahl ueber fuenfstellige Betraege.
+         *
+         * Jetzt gerechnet mit demselben Kern wie der Jahresabgleich. Die
+         * Definition hier ist die technische (nur T1 zaehlt als verfuegbar,
+         * T2/T3/T4/T6 fallen heraus) MINUS der angefragten Ausschluesse — was
+         * im Vertrag steht, kommt aus AvailabilityGuarantee und nicht aus
+         * einem Query-Parameter.
+         */
+        const monthBuckets: TimeBuckets = {
+          t1,
+          t2,
+          t3,
+          t4,
+          t5,
+          t6,
+          t5_1: Number(r.t5_1_total),
+          t5_2: Number(r.t5_2_total),
+          t5_3: Number(r.t5_3_total),
+        };
+        const contractual = computeContractualAvailability(monthBuckets, {
+          availableCategories: ["t1"],
+          excludedCategories: [
+            "t2",
+            "t3",
+            "t4",
+            "t6",
+            ...(excludeContractual.filter(isSubCategory)),
+          ],
+        });
+        const contractPct = contractual.availabilityPct ?? techPct;
 
         return {
           month: d.getUTCMonth() + 1,
@@ -129,7 +184,29 @@ export async function GET(request: NextRequest) {
 
       const yearRelevant = yearT1 + yearT5;
       technicalPct = yearRelevant > 0 ? round((yearT1 / yearRelevant) * 100, 2) : 0;
-      contractualPct = technicalPct; // Simplified — same as technical without sub-categories
+
+      // Jahreswert aus den Monatssummen, nicht als Mittel der Monatswerte:
+      // ein Monat mit wenigen Stunden Datengrundlage waehre sonst genauso
+      // schwer wie ein voller.
+      const yearBuckets: TimeBuckets = monthlyRows.reduce<TimeBuckets>(
+        (acc, r) => ({
+          t1: acc.t1 + Number(r.t1_total),
+          t2: acc.t2 + Number(r.t2_total),
+          t3: acc.t3 + Number(r.t3_total),
+          t4: acc.t4 + Number(r.t4_total),
+          t5: acc.t5 + Number(r.t5_total),
+          t6: acc.t6 + Number(r.t6_total),
+          t5_1: acc.t5_1 + Number(r.t5_1_total),
+          t5_2: acc.t5_2 + Number(r.t5_2_total),
+          t5_3: acc.t5_3 + Number(r.t5_3_total),
+        }),
+        { t1: 0, t2: 0, t3: 0, t4: 0, t5: 0, t6: 0, t5_1: 0, t5_2: 0, t5_3: 0 },
+      );
+      const yearContractual = computeContractualAvailability(yearBuckets, {
+        availableCategories: ["t1"],
+        excludedCategories: ["t2", "t3", "t4", "t6", ...excludeContractual.filter(isSubCategory)],
+      });
+      contractualPct = yearContractual.availabilityPct ?? technicalPct;
     }
 
     // --- 2. Downtime events (ScadaStateEvent with isFault=true) ---

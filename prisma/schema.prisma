@@ -141,6 +141,8 @@ model Tenant {
   savedFilters              UserSavedFilter[]
   entityPresence            EntityPresence[]
   faultCases                FaultCase[]
+  availabilityGuarantees    AvailabilityGuarantee[]
+  availabilitySettlements   AvailabilitySettlement[]
 
   @@map("tenants")
 }
@@ -286,6 +288,7 @@ model User {
   entityPresence                                                          EntityPresence[]
   faultCasesAssigned                                                      FaultCase[]                @relation("FaultCaseAssignee")
   faultCasesCreated                                                       FaultCase[]                @relation("FaultCaseCreator")
+  availabilitySettlementsCreated                                          AvailabilitySettlement[]   @relation("AvailabilitySettlementCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -880,6 +883,7 @@ model Contract {
   turbine             Turbine?       @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   documents           Document[]
   insuranceClaims     InsuranceClaim[]
+  availabilityGuarantees AvailabilityGuarantee[]
 
   @@index([tenantId])
   @@index([contractType])
@@ -1144,6 +1148,7 @@ model Invoice {
   sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
   recipientPerson                  Person?                 @relation("InvoiceRecipient", fields: [recipientPersonId], references: [id], onDelete: SetNull)
   sourceQuote                      Quote?
+  availabilitySettlements          AvailabilitySettlement[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -5418,4 +5423,192 @@ model FaultCaseScadaEvent {
   @@unique([faultCaseId, scadaEventId])
   @@index([faultCaseId])
   @@map("fault_case_scada_events")
+}
+
+// ---------------------------------------------------------------------------
+// A2: Verfügbarkeitsgarantie & Bonus/Malus (Audit 2026-07)
+//
+// Wartungsverträge lagen als Contract(SERVICE) mit annualValue vor, aber ohne
+// garantierte Verfügbarkeit, Berechnungsmethode, Ausschlusstatbestände und
+// Bonus/Malus-Staffel. Der Hersteller rechnete die Verfügbarkeit selbst ab,
+// der Betreiber hatte keine unabhängige Gegenrechnung.
+//
+// Zusammen damit gehört Finding F21: die bestehende Kennzahl T1/(T1+T5) ist
+// NICHT die, gegen die Garantien abgerechnet werden.
+// ---------------------------------------------------------------------------
+
+enum AvailabilityMethod {
+  /// Zeitbasiert — die Regel. Zeitkategorien T1–T6 aus den SCADA-Daten.
+  TIME_BASED
+  /// Energiebasiert (Soll-Ist der Arbeit). Vorgesehen, aber noch nicht
+  /// gerechnet: dafür braucht es eine vertraglich vereinbarte Referenzkurve,
+  /// die im Datenmodell nicht existiert. Der Wert steht hier, damit ein so
+  /// vereinbarter Vertrag ehrlich erfasst und die Abrechnung abgelehnt werden
+  /// kann — statt stillschweigend zeitbasiert zu rechnen.
+  ENERGY_BASED
+}
+
+/// Rundung der Prozentpunkte in einer Staffel. Steht so im Vertrag
+/// („je angefangenem" / „je vollem Prozentpunkt") und entscheidet über den
+/// Betrag — bei 96,9 % gegen eine 97-%-Marke über alles oder nichts.
+enum PointRounding {
+  UP
+  DOWN
+  EXACT
+}
+
+enum BonusMalusKind {
+  BONUS
+  MALUS
+}
+
+enum BonusMalusMode {
+  PER_PERCENTAGE_POINT
+  FIXED_EUR
+  PERCENT_OF_ANNUAL_VALUE
+}
+
+enum AvailabilitySettlementStatus {
+  DRAFT
+  CONFIRMED
+  /// Gutschrift bzw. Forderung gestellt.
+  INVOICED
+  DISPUTED
+}
+
+model AvailabilityGuarantee {
+  id         String @id @default(uuid())
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Der Wartungsvertrag, aus dem die Garantie stammt.
+  contractId String
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  /// Garantierte Verfügbarkeit in Prozent.
+  targetAvailabilityPct Decimal @db.Decimal(5, 2)
+
+  method AvailabilityMethod @default(TIME_BASED)
+
+  /// Zeitkategorien, die als verfügbar gelten ("t1","t2","t3","t6").
+  /// Als String-Liste und nicht als Flags: der Vertrag zählt sie auf, und so
+  /// liest sich die Erfassung wie der Vertragstext.
+  availableCategories String[]
+  /// Kategorien, die aus der Bemessungsgrundlage fallen — höhere Gewalt,
+  /// Netzausfall, Eiswurf. Unterkategorien ("t5_1") mindern ihre
+  /// Hauptkategorie.
+  excludedCategories  String[]
+
+  /// Freitext zu den Ausschlüssen, im Wortlaut des Vertrags. Die
+  /// Kategorienliste ist die maschinelle Fassung, dieser Text die belastbare.
+  exclusionNotes String? @db.Text
+
+  pointRounding PointRounding @default(UP)
+  /// Obergrenzen aus dem Vertrag ("maximal 10 % der Jahresvergütung").
+  maxMalusEur   Decimal? @db.Decimal(15, 2)
+  maxBonusEur   Decimal? @db.Decimal(15, 2)
+
+  /// Gültigkeit. Eine Vertragsverlängerung mit neuer Zielmarke bekommt einen
+  /// zweiten Datensatz, statt den alten zu überschreiben — sonst ändert sich
+  /// eine bereits abgerechnete Garantie rückwirkend.
+  validFrom DateTime
+  validTo   DateTime?
+
+  isActive Boolean @default(true)
+  notes    String? @db.Text
+
+  tiers       AvailabilityGuaranteeTier[]
+  settlements AvailabilitySettlement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([contractId])
+  @@index([tenantId, isActive])
+  @@map("availability_guarantees")
+}
+
+model AvailabilityGuaranteeTier {
+  id          String @id @default(uuid())
+  guaranteeId String
+  guarantee   AvailabilityGuarantee @relation(fields: [guaranteeId], references: [id], onDelete: Cascade)
+
+  /// Untere Grenze einschliesslich, obere ausschliesslich. Sonst fällt genau
+  /// die Zielmarke in die Pönalestaffel.
+  fromPct Decimal @db.Decimal(5, 2)
+  toPct   Decimal @db.Decimal(5, 2)
+
+  kind BonusMalusKind
+  mode BonusMalusMode
+  /// EUR, EUR je Prozentpunkt oder Prozent der Jahresvergütung — je nach mode.
+  amount Decimal @db.Decimal(15, 2)
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guaranteeId])
+  @@map("availability_guarantee_tiers")
+}
+
+/// Jahresabgleich Ist gegen Soll — die unabhängige Gegenrechnung.
+model AvailabilitySettlement {
+  id          String @id @default(uuid())
+  tenantId    String
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  guaranteeId String
+  guarantee   AvailabilityGuarantee @relation(fields: [guaranteeId], references: [id], onDelete: Cascade)
+
+  /// Abrechnungszeitraum. Meist ein Kalenderjahr, bei Full-Service auch ein
+  /// Quartal — deshalb Datumsgrenzen statt einer Jahreszahl.
+  periodStart DateTime
+  periodEnd   DateTime
+
+  /// Ermittelte Verfügbarkeit. Null heisst "nicht berechenbar" — NICHT 0 %.
+  /// 0 % würde die volle Pönale auslösen.
+  actualAvailabilityPct Decimal? @db.Decimal(5, 2)
+  /// Zielmarke zum Zeitpunkt der Abrechnung, mitgespeichert: eine spätere
+  /// Vertragsänderung darf eine gestellte Forderung nicht verändern.
+  targetAvailabilityPct Decimal  @db.Decimal(5, 2)
+
+  /// Herleitung: Zeitkategorien je Anlage, Basis, Ausschlüsse, Hinweise.
+  basis Json?
+
+  /// Positiv = Forderung des Betreibers (Malus), negativ = Verbindlichkeit
+  /// (Bonus). Vorzeichen bewusst aus Betreibersicht, damit es beim Übernehmen
+  /// in eine Rechnung niemand dreht.
+  bonusMalusEur Decimal? @db.Decimal(15, 2)
+  /// Jahresvergütung, die der Rechnung zugrunde lag.
+  annualValueEur Decimal? @db.Decimal(15, 2)
+
+  status AvailabilitySettlementStatus @default(DRAFT)
+
+  /// Was der Hersteller selbst abgerechnet hat — der eigentliche Zweck der
+  /// Gegenrechnung ist die Abweichung.
+  vendorReportedPct Decimal? @db.Decimal(5, 2)
+  vendorReportNotes String?  @db.Text
+
+  /// Gutschrift bzw. Forderung über den bestehenden Rechnungs-Workflow.
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  computedAt  DateTime?
+  confirmedAt DateTime?
+  notes       String?   @db.Text
+
+  createdById String?
+  createdBy   User?  @relation("AvailabilitySettlementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Ein Zeitraum je Garantie genau einmal — sonst entstehen zwei Forderungen
+  /// für dasselbe Jahr.
+  @@unique([guaranteeId, periodStart, periodEnd])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([guaranteeId])
+  @@map("availability_settlements")
 }

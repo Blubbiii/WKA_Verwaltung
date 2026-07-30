@@ -273,6 +273,12 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "faults:delete",  module: "faults", action: "delete",  displayName: "Stoerungsvorgang loeschen",    description: "Stoerungsvorgang entfernen",                               sortOrder: 249 },
   { name: "faults:valuate", module: "faults", action: "valuate", displayName: "Ertragsausfall berechnen",     description: "Ausfall aus Referenzanlagen ermitteln und bewerten",       sortOrder: 250 },
 
+  // ── Verfuegbarkeitsgarantien (A2, Audit 2026-07) ───────────────────────
+  { name: "availability:read",     module: "availability", action: "read",     displayName: "Verfuegbarkeitsgarantien anzeigen", description: "Garantien und Jahresabgleiche einsehen",              sortOrder: 251 },
+  { name: "availability:manage",   module: "availability", action: "manage",   displayName: "Verfuegbarkeitsgarantie pflegen",  description: "Garantie, Ausschluesse und Staffel erfassen",         sortOrder: 252 },
+  { name: "availability:settle",   module: "availability", action: "settle",   displayName: "Jahresabgleich rechnen",           description: "Ist gegen Soll rechnen und Bonus/Malus ermitteln",    sortOrder: 253 },
+  { name: "availability:confirm",  module: "availability", action: "confirm",  displayName: "Abgleich bestaetigen",             description: "Ergebnis festschreiben und zur Forderung freigeben",  sortOrder: 254 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },
