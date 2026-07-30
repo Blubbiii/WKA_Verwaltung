@@ -184,6 +184,12 @@
       "placeholder": "Bitte wählen",
       "searchPlaceholder": "Suchen …",
       "empty": "Kein Treffer"
+    },
+    "pagination": {
+      "range": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "pageOf": "Seite {page} von {totalPages}"
     }
   },
   "statusLabels": {

@@ -5,6 +5,8 @@
  * tuned for German invoice formats.
  */
 
+import { parseAmount } from "@/lib/parse-amount";
+
 export interface ExtractedInvoiceFields {
   invoiceNumber: string | null;
   invoiceDate: Date | null;
@@ -28,13 +30,20 @@ function matchFirst(text: string, pattern: RegExp): string | null {
   return m ? (m[1] ?? m[0]).trim() : null;
 }
 
-/** Parse a German formatted amount string like "1.234,56" → 1234.56 */
+/**
+ * Betrag aus dem OCR-Text lesen.
+ *
+ * Bedienaufwand #17 (Audit 2026-07): Hier stand die dritte Zahlenerkennung des
+ * Repos. Sie entfernte ALLE Punkte — aus "1234.56" auf einer englischsprachig
+ * gesetzten Rechnung wurde 123456. Bei einem Betrag, der anschliessend als
+ * Vorschlag in die Erfassungsmaske laeuft, ist das ein Faktor 100.
+ *
+ * Das Runden auf zwei Nachkommastellen bleibt: OCR liefert gelegentlich eine
+ * dritte Stelle aus einem Bildfehler, ein Rechnungsbetrag hat zwei.
+ */
 function parseGermanAmount(raw: string | null): number | null {
-  if (!raw) return null;
-  // Remove thousands separators (dots) and replace decimal comma with dot
-  const normalized = raw.replace(/\./g, "").replace(",", ".");
-  const num = parseFloat(normalized);
-  return isNaN(num) ? null : Math.round(num * 100) / 100;
+  const value = parseAmount(raw);
+  return value === null ? null : Math.round(value * 100) / 100;
 }
 
 /** Parse a German date string like "01.12.2024" → Date */

@@ -9,7 +9,8 @@ import { BatchActionBar } from "@/components/ui/batch-action-bar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { PaginationBar, type PaginationInfo } from "@/components/ui/pagination-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -252,9 +253,14 @@ export default function VendorsPage() {
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
   // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
-  const [tableState, setTableState] = usePersistedTableState("vendors", { search: "" });
+  const [tableState, setTableState] = usePersistedTableState("vendors", { search: "", page: 1 });
   const search = tableState.search;
-  const setSearch = (v: string) => setTableState({ search: v });
+  const setSearch = (v: string) => setTableState({ search: v, page: 1 });
+  const currentPage = tableState.page;
+  const setCurrentPage = (p: number) => setTableState({ page: p });
+  // Bedienaufwand #2: Diese Route sucht seit jeher serverseitig (Parameter
+  // `q`) — es fehlte nur die Auskunft, wie viele Treffer es insgesamt gibt.
+  const [pagination, setPagination] = useState<PaginationInfo | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editVendor, setEditVendor] = useState<Vendor | null>(null);
   const [deleteVendor, setDeleteVendor] = useState<Vendor | null>(null);
@@ -266,6 +272,13 @@ export default function VendorsPage() {
   const { selectedIds, isAllSelected, isSomeSelected, toggleItem, toggleAll, clearSelection, selectedCount } =
     useBatchSelection({ items: vendors });
 
+  // Auswahl leeren, sobald sich der sichtbare Ausschnitt aendert — auch beim
+  // Blaettern. Die Sammelaktionen arbeiten nur auf der aktuellen Seite; eine
+  // auf Seite 1 markierte Zeile waere sonst still aus der Aktion gefallen.
+  useEffect(() => {
+    clearSelection();
+  }, [search, currentPage, clearSelection]);
+
   // AbortController um stale Requests bei rascher Suche zu cancelln.
   const abortRef = useRef<AbortController | null>(null);
 
@@ -275,13 +288,18 @@ export default function VendorsPage() {
     abortRef.current = ac;
     setLoading(true);
     try {
-      // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
-      const params = new URLSearchParams({ limit: String(PAGE_SIZE_BULK_LIST) });
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE_LARGE),
+        page: String(currentPage),
+      });
       if (search) params.set("q", search);
       const res = await fetch(`/api/vendors?${params}`, { signal: ac.signal });
       if (res.ok) {
         const data = await res.json();
-        if (!ac.signal.aborted) setVendors(data.data ?? []);
+        if (!ac.signal.aborted) {
+          setVendors(data.data ?? []);
+          setPagination(data.pagination);
+        }
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") return;
@@ -289,7 +307,7 @@ export default function VendorsPage() {
     } finally {
       if (!ac.signal.aborted) setLoading(false);
     }
-  }, [search]);
+  }, [search, currentPage]);
 
   useEffect(() => {
     if (!flagsLoading && flags.inbox) {
@@ -522,6 +540,12 @@ export default function VendorsPage() {
             </Table>
             </div>
           )}
+
+          <PaginationBar
+            pagination={pagination}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 

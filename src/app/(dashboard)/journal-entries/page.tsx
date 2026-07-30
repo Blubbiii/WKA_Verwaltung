@@ -56,6 +56,7 @@ import {
 } from "@/components/ui/table";
 import { JournalAttachmentsList } from "@/components/buchhaltung/JournalAttachmentsList";
 import { Combobox } from "@/components/ui/combobox";
+import { parseAmount, parseAmountOr } from "@/lib/parse-amount";
 import { downloadBlob } from "@/lib/download";
 
 // ============================================================================
@@ -110,9 +111,15 @@ function formatCurrency(n: string | number | null | undefined): string {
   return new Intl.NumberFormat(LOCALE_DE, { style: "currency", currency: "EUR" }).format(val);
 }
 
-function parseAmount(s: string): number {
-  return parseFloat(s.replace(",", ".")) || 0;
-}
+/*
+ * Bedienaufwand #17: Der lokale Parser stand hier —
+ *
+ *     parseFloat(s.replace(",", ".")) || 0
+ *
+ * — und las "1.234,56" als 1.234. Aus 1.234,56 EUR wurde also 1,23 EUR, ohne
+ * jede Rueckmeldung. Ersetzt durch @/lib/parse-amount, das die Mehrdeutigkeit
+ * zwischen deutscher und englischer Schreibweise explizit aufloest.
+ */
 
 function emptyLine(lineNumber: number): JournalLine {
   return {
@@ -251,8 +258,8 @@ function EntryFormDialog({ open, onClose, onSaved, editing, duplicateFrom }: For
     description: a.name,
   }));
 
-  const totalDebit = lines.reduce((s, l) => s + parseAmount(l.debitAmount), 0);
-  const totalCredit = lines.reduce((s, l) => s + parseAmount(l.creditAmount), 0);
+  const totalDebit = lines.reduce((s, l) => s + parseAmountOr(l.debitAmount), 0);
+  const totalCredit = lines.reduce((s, l) => s + parseAmountOr(l.creditAmount), 0);
   const balanced = Math.abs(totalDebit - totalCredit) < 0.005;
 
   const addLine = () => {
@@ -281,9 +288,10 @@ function EntryFormDialog({ open, onClose, onSaved, editing, duplicateFrom }: For
    * kein Validator abfing. `GET /api/buchhaltung/accounts` existierte und wurde
    * nur von /admin/kontenrahmen genutzt.
    *
-   * Beide Felder muessen in EINEM setLines-Aufruf gesetzt werden: zwei
-   * aufeinanderfolgende updateLine wuerden auf demselben Snapshot arbeiten und
-   * die erste Aenderung verwerfen.
+   * Beide Felder in EINEM setLines-Aufruf, weil sie zusammengehoeren: Nummer
+   * und Name kommen aus derselben Auswahl und duerfen nie einzeln in der Zeile
+   * stehen. Zwei updateLine-Aufrufe waeren hier technisch auch korrekt —
+   * updateLine nutzt die funktionale Form und komponiert daher sauber.
    */
   const applyAccount = (idx: number, accountNumber: string, accountName: string) => {
     setLines((prev) =>
@@ -302,6 +310,9 @@ function EntryFormDialog({ open, onClose, onSaved, editing, duplicateFrom }: For
       account: l.account,
       accountName: l.accountName || undefined,
       description: l.description || undefined,
+      // `||` und nicht `??`: eine Zeile mit 0,00 soll wie bisher als "kein
+      // Betrag" gelten und nicht als Buchung ueber null Euro. Dieser Fix
+      // korrigiert das Einlesen, nicht die Bedeutung der Null.
       debitAmount: parseAmount(l.debitAmount) || undefined,
       creditAmount: parseAmount(l.creditAmount) || undefined,
       taxKey: l.taxKey || undefined,

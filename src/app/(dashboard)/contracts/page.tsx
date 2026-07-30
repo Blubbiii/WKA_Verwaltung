@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
-import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { PaginationBar, type PaginationInfo } from "@/components/ui/pagination-bar";
 import { format } from "date-fns/format";
 import { differenceInDays } from "date-fns/differenceInDays";
 import { de } from "date-fns/locale/de";
@@ -86,6 +87,7 @@ interface ContractItem {
 
 interface ContractsResponse {
   data: ContractItem[];
+  pagination?: PaginationInfo;
   stats: {
     byStatus: Record<string, number>;
     expiringIn30Days: number;
@@ -115,13 +117,15 @@ export default function ContractsPage() {
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
   // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
-  const [tableState, setTableState] = usePersistedTableState("contracts", { search: "", type: "all", status: "all" });
+  const [tableState, setTableState] = usePersistedTableState("contracts", { search: "", type: "all", status: "all", page: 1 });
   const search = tableState.search;
   const typeFilter = tableState.type;
   const statusFilter = tableState.status;
   const setSearch = (v: string) => setTableState({ search: v });
   const setTypeFilter = (v: string) => setTableState({ type: v });
   const setStatusFilter = (v: string) => setTableState({ status: v });
+  const currentPage = tableState.page;
+  const setCurrentPage = (p: number) => setTableState({ page: p });
   const debouncedSearch = useDebounce(search, 300);
 
   // Delete Dialog State
@@ -130,16 +134,19 @@ export default function ContractsPage() {
 
   const invalidate = useInvalidateQuery();
 
-  // Build query URL
-  // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
+  // Bedienaufwand #2: Suche und Seite laufen ueber die API. Die Route kann
+  // `search` seit jeher — die Liste hat es nur nie benutzt und stattdessen den
+  // geladenen Ausschnitt durchsucht.
   const queryParams = new URLSearchParams({
-    limit: String(PAGE_SIZE_BULK_LIST),
+    limit: String(PAGE_SIZE_LARGE),
+    page: String(currentPage),
+    ...(debouncedSearch && { search: debouncedSearch }),
     ...(typeFilter !== "all" && { contractType: typeFilter }),
     ...(statusFilter !== "all" && { status: statusFilter }),
   });
 
   const { data: contractsData, isLoading: loading, error, refetch } = useApiQuery<ContractsResponse>(
-    ["contracts", typeFilter, statusFilter],
+    ["contracts", typeFilter, statusFilter, debouncedSearch, String(currentPage)],
     `/api/contracts?${queryParams}`
   );
 
@@ -168,17 +175,16 @@ export default function ContractsPage() {
     }
   );
 
-  // Client-side search filtering (same as original)
-  const filteredContracts = contracts.filter((contract) => {
-    if (!debouncedSearch) return true;
-    const searchLower = debouncedSearch.toLowerCase();
-    return (
-      contract.title.toLowerCase().includes(searchLower) ||
-      contract.contractNumber?.toLowerCase().includes(searchLower) ||
-      contract.park?.name.toLowerCase().includes(searchLower) ||
-      contract.partner?.name.toLowerCase().includes(searchLower)
-    );
-  });
+  // Kommt bereits gefiltert vom Server; der fruehere Block durchsuchte nur den
+  // geladenen Ausschnitt und meldete "nichts gefunden" fuer alles dahinter.
+  const filteredContracts = contracts;
+
+  // Filterwechsel zurueck auf Seite 1 — Seite 4 einer geschrumpften Treffer-
+  // menge ist leer und liest sich wie "nichts gefunden".
+  useEffect(() => {
+    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeFilter, statusFilter, debouncedSearch]);
 
   // Batch selection
   const {
@@ -190,6 +196,13 @@ export default function ContractsPage() {
     clearSelection,
     selectedCount,
   } = useBatchSelection({ items: filteredContracts });
+
+  // Auswahl leeren, sobald sich der sichtbare Ausschnitt aendert — auch beim
+  // Blaettern. Die Sammelaktionen arbeiten nur auf der aktuellen Seite; eine
+  // auf Seite 1 markierte Zeile waere sonst still aus der Aktion gefallen.
+  useEffect(() => {
+    clearSelection();
+  }, [typeFilter, statusFilter, debouncedSearch, currentPage, clearSelection]);
 
   // CSV export for selected contracts
   function handleCsvExport() {
@@ -578,6 +591,12 @@ export default function ContractsPage() {
               </TableBody>
             </Table>
           </div>
+
+          <PaginationBar
+            pagination={contractsData?.pagination}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 

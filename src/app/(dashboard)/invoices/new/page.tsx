@@ -53,6 +53,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { RecipientSearchDialog, type RecipientSelection, PositionTemplateDialog, type PositionTemplateSelection } from "@/components/invoices";
+import { AmountInput } from "@/components/ui/amount-input";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
 
 interface InvoiceItem {
@@ -620,14 +621,13 @@ function NewInvoiceContent() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min="0.01"
-                            step="0.01"
+                          {/* Bedienaufwand #17: type="number" liefert fuer
+                              "1.234,56" einen LEEREN Wert — die Position wurde
+                              dadurch still 0,00 EUR. */}
+                          <AmountInput
                             value={item.quantity}
-                            onChange={(e) =>
-                              handleItemChange(item.id, "quantity", parseFloat(e.target.value) || 0)
-                            }
+                            onValueChange={(v) => handleItemChange(item.id, "quantity", v ?? 0)}
+                            decimals={2}
                           />
                         </TableCell>
                         <TableCell>
@@ -651,14 +651,10 @@ function NewInvoiceContent() {
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          <AmountInput
                             value={item.unitPrice}
-                            onChange={(e) =>
-                              handleItemChange(item.id, "unitPrice", parseFloat(e.target.value) || 0)
-                            }
+                            onValueChange={(v) => handleItemChange(item.id, "unitPrice", v ?? 0)}
+                            decimals={2}
                           />
                         </TableCell>
                         <TableCell>
@@ -823,14 +819,11 @@ function NewInvoiceContent() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="skontoPercent">{t("skontoPercentLabel")}</Label>
-                  <Input
+                  <AmountInput
                     id="skontoPercent"
-                    type="number"
-                    min="0.01"
-                    max="99.99"
-                    step="0.01"
                     value={skontoPercent}
-                    onChange={(e) => setSkontoPercent(parseFloat(e.target.value) || 0)}
+                    onValueChange={(v) => setSkontoPercent(v ?? 0)}
+                    decimals={2}
                   />
                 </div>
                 <div className="space-y-2">

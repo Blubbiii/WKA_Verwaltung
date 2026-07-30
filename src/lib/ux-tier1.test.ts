@@ -172,10 +172,15 @@ describe("Rechnungsfilter Fonds und Zeitraum (#3)", () => {
 
   it("alle Filter stehen im react-query-Key", () => {
     // Sonst liefert der Cache das Ergebnis des vorherigen Filters zurück.
+    // Seit Welle 12 (#2) stehen Suche, Sortierung und Seite ebenfalls darin —
+    // deshalb hier auf die einzelnen Bestandteile pruefen statt auf die
+    // exakte Reihenfolge des Arrays.
     const page = read("app/(dashboard)/invoices/page.tsx");
-    expect(page).toMatch(
-      /\["invoices", statusFilter, typeFilter, fundFilter, fromFilter, toFilter\]/,
-    );
+    const key = page.slice(page.indexOf('["invoices"'));
+    const head = key.slice(0, key.indexOf("]") + 1);
+    for (const part of ["statusFilter", "typeFilter", "fundFilter", "fromFilter", "toFilter"]) {
+      expect(head, `${part} fehlt im Query-Key`).toContain(part);
+    }
   });
 
   it("die Filter überleben einen Seitenwechsel", () => {

@@ -10,7 +10,8 @@ import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 import { SavedFilterPicker } from "@/components/ui/saved-filter-picker";
-import { PAGE_SIZE_BULK_LIST, PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
+import { PaginationBar, type PaginationInfo } from "@/components/ui/pagination-bar";
+import { PAGE_SIZE_LARGE, PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
@@ -111,6 +112,9 @@ interface Invoice {
 
 interface InvoicesResponse {
   data: Invoice[];
+  // Die API lieferte das Feld schon immer mit — die Liste hat es nur nie
+  // ausgewertet und deshalb auch nie gezeigt, dass sie abgeschnitten ist.
+  pagination?: PaginationInfo;
 }
 
 type SortField = "invoiceNumber" | "invoiceType" | "fund" | "recipient" | "invoiceDate" | "netAmount" | "grossAmount" | "status";
@@ -166,6 +170,7 @@ export default function InvoicesPage() {
     fund: "all",
     from: "",
     to: "",
+    page: 1,
   });
   const statusFilter = tableState.status;
   const typeFilter = tableState.type;
@@ -179,6 +184,11 @@ export default function InvoicesPage() {
   const setFundFilter = (s: string) => setTableState({ fund: s });
   const setFromFilter = (s: string) => setTableState({ from: s });
   const setToFilter = (s: string) => setTableState({ to: s });
+  // Bedienaufwand #2: Die Seitenzahl laeuft ueber denselben persistierten
+  // State — so ist eine bestimmte Seite teilbar, und der Zurueck-Knopf landet
+  // nicht wieder auf Seite 1.
+  const currentPage = tableState.page;
+  const setCurrentPage = (p: number) => setTableState({ page: p });
 
   // Bedienaufwand #16: Gespeicherte Filter gab es nur auf der Audit-Log-Seite —
   // ausgerechnet der Seite, die Buchhalter am seltensten oeffnen. Hier tragen
@@ -218,10 +228,15 @@ export default function InvoicesPage() {
 
   const invalidate = useInvalidateQuery();
 
-  // Build query URL
-  // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
+  // Bedienaufwand #2: Suche, Sortierung und Seite laufen jetzt ueber die API.
+  // Vorher wurden 200 Zeilen angefragt (die API gab hoechstens 100 heraus) und
+  // Suche wie Sortierung liefen clientseitig ueber genau diesen Ausschnitt.
   const queryParams = new URLSearchParams({
-    limit: String(PAGE_SIZE_BULK_LIST),
+    limit: String(PAGE_SIZE_LARGE),
+    page: String(currentPage),
+    sortField,
+    sortDir: sortDirection,
+    ...(debouncedSearch && { search: debouncedSearch }),
     ...(statusFilter !== "all" && { status: statusFilter }),
     ...(typeFilter !== "all" && { invoiceType: typeFilter }),
     ...(fundFilter !== "all" && { fundId: fundFilter }),
@@ -232,7 +247,7 @@ export default function InvoicesPage() {
   const { data: invoicesData, isLoading: loading, error, refetch } = useApiQuery<InvoicesResponse>(
     // Der Query-Key MUSS alle Filter enthalten — sonst liefert react-query den
     // Cache-Eintrag des vorherigen Filters zurueck.
-    ["invoices", statusFilter, typeFilter, fundFilter, fromFilter, toFilter],
+    ["invoices", statusFilter, typeFilter, fundFilter, fromFilter, toFilter, debouncedSearch, sortField, sortDirection, String(currentPage)],
     `/api/invoices?${queryParams}`
   );
 
@@ -278,19 +293,16 @@ export default function InvoicesPage() {
     return "-";
   }
 
-  // Filter by search (client-side)
-  const filteredInvoices = invoices.filter((invoice) => {
-    if (!debouncedSearch) return true;
-    const searchLower = debouncedSearch.toLowerCase();
-    return (
-      invoice.invoiceNumber.toLowerCase().includes(searchLower) ||
-      getRecipientName(invoice).toLowerCase().includes(searchLower) ||
-      invoice.fund?.name.toLowerCase().includes(searchLower)
-    );
-  });
+  // Die Liste kommt bereits gefiltert und sortiert vom Server. Die frueheren
+  // Blöcke `filteredInvoices` und `sortedInvoices` arbeiteten auf dem geladenen
+  // Ausschnitt — mit Blaetterung haetten sie nur die sichtbare Seite sortiert.
+  const sortedInvoices = invoices;
 
   // Sort handler
   function handleSort(field: SortField) {
+    // Eine andere Sortierung ordnet die Gesamtmenge neu — Seite 3 der alten
+    // Ordnung hat mit Seite 3 der neuen nichts zu tun.
+    setCurrentPage(1);
     if (sortField === field) {
       setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -298,40 +310,6 @@ export default function InvoicesPage() {
       setSortDirection(field === "invoiceDate" || field === "grossAmount" || field === "netAmount" ? "desc" : "asc");
     }
   }
-
-  // Sort invoices
-  const sortedInvoices = [...filteredInvoices].sort((a, b) => {
-    let cmp = 0;
-    switch (sortField) {
-      case "invoiceNumber":
-        cmp = a.invoiceNumber.localeCompare(b.invoiceNumber, "de", { numeric: true });
-        break;
-      case "invoiceType":
-        cmp = a.invoiceType.localeCompare(b.invoiceType);
-        break;
-      case "fund":
-        cmp = (a.fund?.name || "").localeCompare(b.fund?.name || "", "de");
-        break;
-      case "recipient":
-        cmp = getRecipientName(a).localeCompare(getRecipientName(b), "de");
-        break;
-      case "invoiceDate":
-        cmp = new Date(a.invoiceDate).getTime() - new Date(b.invoiceDate).getTime();
-        break;
-      case "netAmount":
-        cmp = a.netAmount - b.netAmount;
-        break;
-      case "grossAmount":
-        cmp = a.grossAmount - b.grossAmount;
-        break;
-      case "status": {
-        const order = { DRAFT: 0, SENT: 1, PAID: 2, CANCELLED: 3 };
-        cmp = order[a.status] - order[b.status];
-        break;
-      }
-    }
-    return sortDirection === "asc" ? cmp : -cmp;
-  });
 
   // Batch selection
   const {
@@ -344,10 +322,22 @@ export default function InvoicesPage() {
     selectedCount,
   } = useBatchSelection({ items: sortedInvoices });
 
-  // Clear selection when filters change
+  // Auswahl leeren, sobald sich der sichtbare Ausschnitt aendert — auch beim
+  // Blaettern. Die Sammelaktionen arbeiten auf `sortedInvoices`, also nur auf
+  // der aktuellen Seite: eine auf Seite 1 markierte Rechnung waere auf Seite 2
+  // stillschweigend aus der Aktion gefallen.
   useEffect(() => {
     clearSelection();
-  }, [statusFilter, typeFilter, debouncedSearch, clearSelection]);
+  }, [statusFilter, typeFilter, fundFilter, fromFilter, toFilter, debouncedSearch, currentPage, clearSelection]);
+
+  // Filterwechsel zurueck auf Seite 1: Seite 5 einer 60-Treffer-Menge ist nach
+  // dem Filtern auf 12 Treffer leer, und eine leere Tabelle liest sich wie
+  // "nichts gefunden".
+  useEffect(() => {
+    setCurrentPage(1);
+    // setCurrentPage ist bei jedem Render neu — bewusst nicht in den Deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, typeFilter, fundFilter, fromFilter, toFilter, debouncedSearch]);
 
   // Batch: delete selected (only DRAFT invoices)
   async function handleBatchDelete() {
@@ -943,6 +933,15 @@ export default function InvoicesPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Bedienaufwand #2: Sagt, wie viele Treffer es insgesamt gibt.
+              Vorher war eine bei 100 abgeschnittene Liste optisch nicht von
+              einer vollstaendigen zu unterscheiden. */}
+          <PaginationBar
+            pagination={invoicesData?.pagination}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 

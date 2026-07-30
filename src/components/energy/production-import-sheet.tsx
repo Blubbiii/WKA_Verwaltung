@@ -45,6 +45,7 @@ import {
 } from '@/components/ui/table'
 import { Stepper } from '@/components/ui/stepper'
 import { UPLOAD_LIMITS } from '@/lib/config/upload-limits'
+import { parseAmount } from '@/lib/parse-amount'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -122,29 +123,19 @@ const COLUMN_PATTERNS: Record<keyof ColumnMapping, RegExp> = {
 // ---------------------------------------------------------------------------
 
 /** Parse a number that might use German format (1.234,56) */
+/**
+ * Bedienaufwand #17 (Audit 2026-07): Hier stand eine eigene, regexbasierte
+ * Zahlenerkennung — die dritte im Repo, jede mit anderem Verhalten. Sie war
+ * die sauberste der drei, deckte aber "1,234.56" (englische Schreibweise, wie
+ * sie aus einer international erzeugten Datei kommt) nicht ab.
+ *
+ * Der gemeinsame Parser nimmt `unknown` genauso entgegen und liefert
+ * unveraendert `null` fuer Unlesbares — der Vertrag dieser Datei bleibt gleich.
+ */
 function parseGermanNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null
-  if (typeof value === 'number') return isNaN(value) ? null : value
-  const str = String(value).trim()
-  if (str === '') return null
-
-  // German format with dots as thousands separators and comma as decimal
-  if (/^\d{1,3}(\.\d{3})*(,\d+)?$/.test(str)) {
-    const cleaned = str.replace(/\./g, '').replace(',', '.')
-    const num = parseFloat(cleaned)
-    return isNaN(num) ? null : num
-  }
-
-  // Comma-only decimal: "1234,56"
-  if (/^\d+(,\d+)?$/.test(str)) {
-    const cleaned = str.replace(',', '.')
-    const num = parseFloat(cleaned)
-    return isNaN(num) ? null : num
-  }
-
-  // Standard number
-  const num = parseFloat(str)
-  return isNaN(num) ? null : num
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  return parseAmount(value);
 }
 
 /** Try to parse a month value (number 1-12, or German month name) */

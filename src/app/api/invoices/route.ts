@@ -8,6 +8,7 @@ import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { TaxType } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
@@ -86,6 +87,17 @@ async function getHandler(request: NextRequest) {
     // filtert in Excel.
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    // Bedienaufwand #2 (Audit 2026-07): Die Liste suchte bisher NUR in den
+    // geladenen Zeilen. Diese Route kannte keinen search-Parameter, die Seite
+    // holte 200 an, bekam 100 (maxLimit) und filterte den Rest clientseitig.
+    // Ergebnis: "nichts gefunden" fuer Belege, die es gibt.
+    const search = (searchParams.get("search") || "").trim();
+    // Sortierung ebenfalls serverseitig. Sobald geblaettert wird, sortiert eine
+    // clientseitige Sortierung nur noch die sichtbare Seite — das sieht richtig
+    // aus und ist es nicht.
+    const sortField = searchParams.get("sortField") || "invoiceDate";
+    const sortDir = searchParams.get("sortDir") === "asc" ? "asc" : "desc";
+
     const { page, limit, skip } = parsePaginationParams(searchParams, {
       defaultLimit: 50,
       maxLimit: 100,
@@ -111,7 +123,52 @@ async function getHandler(request: NextRequest) {
             },
           }
         : {}),
+      // Dieselben Felder, die die Liste vorher clientseitig durchsucht hat:
+      // Rechnungsnummer, Empfaenger, Gesellschaft.
+      //
+      // Der Empfaengername steht nicht immer im Feld: die Liste faellt bei
+      // leerem recipientName auf den Gesellschafter zurueck. Ohne den letzten
+      // Block waere die Suche also NEUERDINGS enger als vorher — beim Beheben
+      // eines Suchfehlers ein neuer einzubauen waere albern.
+      ...(search
+        ? {
+            OR: [
+              { invoiceNumber: { contains: search, mode: "insensitive" as const } },
+              { recipientName: { contains: search, mode: "insensitive" as const } },
+              { fund: { name: { contains: search, mode: "insensitive" as const } } },
+              {
+                shareholder: {
+                  person: {
+                    OR: [
+                      { companyName: { contains: search, mode: "insensitive" as const } },
+                      { firstName: { contains: search, mode: "insensitive" as const } },
+                      { lastName: { contains: search, mode: "insensitive" as const } },
+                    ],
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
+
+    // Nur Felder zulassen, die es in der Tabelle gibt — ein durchgereichter
+    // Client-String wuerde Prisma sonst zur Laufzeit werfen lassen.
+    const ORDER_BY: Record<string, (dir: "asc" | "desc") => Prisma.InvoiceOrderByWithRelationInput> = {
+      invoiceNumber: (dir) => ({ invoiceNumber: dir }),
+      invoiceType: (dir) => ({ invoiceType: dir }),
+      invoiceDate: (dir) => ({ invoiceDate: dir }),
+      netAmount: (dir) => ({ netAmount: dir }),
+      grossAmount: (dir) => ({ grossAmount: dir }),
+      status: (dir) => ({ status: dir }),
+      // Sortiert nur nach recipientName. Die Liste zeigt bei leerem Feld den
+      // Gesellschafter — dieser Ruckfall laesst sich in EINEM orderBy nicht
+      // abbilden. Rechnungen ohne recipientName sortieren daher zusammen ans
+      // Ende (Prisma stellt NULL bei desc voran, bei asc ans Ende).
+      recipient: (dir) => ({ recipientName: dir }),
+      fund: (dir) => ({ fund: { name: dir } }),
+    };
+    const orderBy = (ORDER_BY[sortField] ?? ORDER_BY.invoiceDate)(sortDir);
 
     const [invoices, total] = await Promise.all([
       prisma.invoice.findMany({
@@ -146,7 +203,7 @@ async function getHandler(request: NextRequest) {
           // Rechnungsliste (page.tsx) nicht angezeigt und kostete pro Row
           // eine zusaetzliche COUNT-Query.
         },
-        orderBy: { invoiceDate: "desc" },
+        orderBy,
         skip,
         take: limit,
       }),

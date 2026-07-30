@@ -86,10 +86,24 @@ async function getHandler(request: NextRequest) {
     };
 
     if (search) {
+      // Bedienaufwand #2 (Audit 2026-07): Park und Vertragspartner kommen dazu.
+      // Die Liste hat bisher clientseitig ueber genau diese vier Felder
+      // gesucht — Titel, Nummer, Park, Partner. Wuerde sie einfach auf diese
+      // Route umgestellt, waere die Suche danach ENGER als vorher.
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
         { contractNumber: { contains: search, mode: "insensitive" } },
         { notes: { contains: search, mode: "insensitive" } },
+        { park: { name: { contains: search, mode: "insensitive" } } },
+        {
+          partner: {
+            OR: [
+              { companyName: { contains: search, mode: "insensitive" } },
+              { firstName: { contains: search, mode: "insensitive" } },
+              { lastName: { contains: search, mode: "insensitive" } },
+            ],
+          },
+        },
       ];
     }
 

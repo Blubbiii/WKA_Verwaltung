@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
@@ -8,7 +8,8 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
-import { PAGE_SIZE_BULK_LIST } from "@/lib/config/pagination";
+import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
+import { PaginationBar, type PaginationInfo } from "@/components/ui/pagination-bar";
 import { format } from "date-fns/format";
 import { differenceInDays } from "date-fns/differenceInDays";
 import { de } from "date-fns/locale/de";
@@ -95,6 +96,7 @@ interface Lease {
 
 interface LeasesResponse {
   data: Lease[];
+  pagination?: PaginationInfo;
 }
 
 export default function LeasesPage() {
@@ -106,11 +108,14 @@ export default function LeasesPage() {
   const [tableState, setTableState] = usePersistedTableState("leases", {
     status: "all",
     search: "",
+    page: 1,
   });
   const statusFilter = tableState.status;
   const search = tableState.search;
   const setSearch = (s: string) => setTableState({ search: s });
   const setStatusFilter = (s: string) => setTableState({ status: s });
+  const currentPage = tableState.page;
+  const setCurrentPage = (p: number) => setTableState({ page: p });
   const debouncedSearch = useDebounce(search, 300);
 
   // Dialog state
@@ -123,15 +128,17 @@ export default function LeasesPage() {
 
   const invalidate = useInvalidateQuery();
 
-  // Build query URL
-  // TODO: Pagination UI hinzufügen — aktuell zeigt max PAGE_SIZE_BULK_LIST Zeilen
+  // Bedienaufwand #2: Suche und Seite ueber die API. Vorher wurden bis zu 200
+  // Zeilen angefragt, hoechstens 100 geliefert und nur darin gesucht.
   const queryParams = new URLSearchParams({
-    limit: String(PAGE_SIZE_BULK_LIST),
+    limit: String(PAGE_SIZE_LARGE),
+    page: String(currentPage),
+    ...(debouncedSearch && { search: debouncedSearch }),
     ...(statusFilter !== "all" && { status: statusFilter }),
   });
 
   const { data: leasesData, isLoading: loading, error, refetch } = useApiQuery<LeasesResponse>(
-    ["leases", statusFilter],
+    ["leases", statusFilter, debouncedSearch, String(currentPage)],
     `/api/leases?${queryParams}`
   );
 
@@ -199,20 +206,13 @@ export default function LeasesPage() {
     return differenceInDays(new Date(endDate), new Date());
   }
 
-  // Filter by search
-  const filteredLeases = leases.filter((lease) => {
-    if (!debouncedSearch) return true;
-    const searchLower = debouncedSearch.toLowerCase();
-    const plotsMatch = lease.plots?.some(plot =>
-      getPlotLabel(plot).toLowerCase().includes(searchLower) ||
-      plot.park?.name.toLowerCase().includes(searchLower)
-    );
-    return (
-      getLessorName(lease.lessor).toLowerCase().includes(searchLower) ||
-      plotsMatch ||
-      lease.contractNumber?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Kommt bereits gefiltert vom Server.
+  const filteredLeases = leases;
+
+  useEffect(() => {
+    setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, debouncedSearch]);
 
   // Batch selection
   const {
@@ -224,6 +224,13 @@ export default function LeasesPage() {
     clearSelection,
     selectedCount,
   } = useBatchSelection({ items: filteredLeases });
+
+  // Auswahl leeren, sobald sich der sichtbare Ausschnitt aendert — auch beim
+  // Blaettern. Die Sammelaktionen arbeiten nur auf der aktuellen Seite; eine
+  // auf Seite 1 markierte Zeile waere sonst still aus der Aktion gefallen.
+  useEffect(() => {
+    clearSelection();
+  }, [statusFilter, debouncedSearch, currentPage, clearSelection]);
 
   // CSV export for selected leases
   function handleCsvExport() {
@@ -500,6 +507,12 @@ export default function LeasesPage() {
               </TableBody>
             </Table>
           </div>
+
+          <PaginationBar
+            pagination={leasesData?.pagination}
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
         </CardContent>
       </Card>
 

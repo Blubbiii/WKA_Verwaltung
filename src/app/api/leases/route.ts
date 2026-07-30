@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
     const plotId = searchParams.get("plotId");
     const parkId = searchParams.get("parkId");
     const status = searchParams.get("status");
+    // Bedienaufwand #2 (Audit 2026-07): Diese Route kannte keine Suche. Die
+    // Liste holte bis zu 200 Zeilen an, bekam hoechstens 100 und durchsuchte
+    // nur diesen Ausschnitt — der 101. Pachtvertrag war nicht auffindbar.
+    const search = (searchParams.get("search") || "").trim();
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
 
     // Build where clause - now using tenantId directly on lease
@@ -64,6 +68,50 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
+      // Dieselben Angaben, die die Liste bisher clientseitig durchsucht hat:
+      // Verpaechter, Flurstueck, Park.
+      //
+      // NICHT dabei: `contractNumber`. Die Liste durchsucht dieses Feld, aber
+      // `Lease` HAT KEINE Spalte dieses Namens (siehe schema.prisma) — es wird
+      // nirgends geschrieben und kommt aus keiner Route zurueck. Die Spalte
+      // "Vertragsnummer" in der Tabelle zeigt deshalb immer "-". Hier
+      // nachzubauen, was es nicht gibt, wuerde Prisma zur Laufzeit werfen
+      // lassen; die Suche darauf konnte ohnehin nie etwas finden.
+      //
+      // Die Liste suchte im ZUSAMMENGESETZTEN Flurstueck-Label ("Gemarkung,
+      // Flur 3, Flurstueck 12/4"), also auch in den uebersetzten Woertern
+      // "Flur" und "Flurstueck". Hier stehen die Rohfelder — was jemand
+      // tatsaechlich eintippt, ist eine Gemarkung oder eine Nummer, nicht das
+      // Wort "Flur".
+      ...(search
+        ? {
+            OR: [
+              {
+                lessor: {
+                  OR: [
+                    { companyName: { contains: search, mode: "insensitive" as const } },
+                    { firstName: { contains: search, mode: "insensitive" as const } },
+                    { lastName: { contains: search, mode: "insensitive" as const } },
+                  ],
+                },
+              },
+              {
+                leasePlots: {
+                  some: {
+                    plot: {
+                      OR: [
+                        { cadastralDistrict: { contains: search, mode: "insensitive" as const } },
+                        { plotNumber: { contains: search, mode: "insensitive" as const } },
+                        { fieldNumber: { contains: search, mode: "insensitive" as const } },
+                        { park: { name: { contains: search, mode: "insensitive" as const } } },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     };
 
     const [leases, total] = await Promise.all([
