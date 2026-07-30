@@ -38,6 +38,7 @@ import { OcrFieldEditor } from "@/components/inbox/ocr-field-editor";
 import { SplitEditor } from "@/components/inbox/split-editor";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { downloadFromResponse } from "@/lib/download";
 
 // ============================================================================
 // Types
@@ -246,13 +247,7 @@ export default function InboxDetailPage() {
         const err = await res.json();
         throw new Error(err.error ?? t("error"));
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `sepa-${id.slice(0, 8)}.xml`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `sepa-${id.slice(0, 8)}.xml`);
       toast.success(t("sepaDownloaded"));
     } catch (err) {
       toast.error(String(err instanceof Error ? err.message : err));

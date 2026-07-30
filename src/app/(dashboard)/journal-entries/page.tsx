@@ -54,6 +54,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JournalAttachmentsList } from "@/components/buchhaltung/JournalAttachmentsList";
+import { downloadBlob } from "@/lib/download";
 
 // ============================================================================
 // TYPES
@@ -743,12 +744,7 @@ function JournalEntriesPageInner() {
     });
     const csv = "\uFEFF" + [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `buchungsjournal-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `buchungsjournal-export-${new Date().toISOString().slice(0, 10)}.csv`);
     toast.success(t("batch.exported", { count: selected.length }));
   }, [entries, selectedIds, t]);
 

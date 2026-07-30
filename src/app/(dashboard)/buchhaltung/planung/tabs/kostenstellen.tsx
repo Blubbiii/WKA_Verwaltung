@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 interface CostCenterRow {
   costCenterCode: string;
@@ -115,12 +116,7 @@ export default function KostenstellenContent() {
     rows.push(["", t("csvTotal"), "", fmt(data.totalRevenue + data.unassigned.revenue), fmt(data.totalExpense + data.unassigned.expense), fmt(data.totalResult + data.unassigned.result)].join(";"));
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Kostenstellen_${from}_${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `Kostenstellen_${from}_${to}.csv`);
   }
 
   return (

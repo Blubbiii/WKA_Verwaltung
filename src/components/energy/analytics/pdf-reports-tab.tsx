@@ -36,7 +36,7 @@ import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { ANALYTICS_MODULES } from "@/types/analytics";
-import { extractFilename } from "@/lib/download-filename";
+import { downloadFromResponse } from "@/lib/download";
 
 // =============================================================================
 // Types
@@ -171,18 +171,8 @@ export function PdfReportsTab() {
         throw new Error(err?.error || `Fehler beim Generieren`);
       }
 
-      const blob = await response.blob();
-      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
-      const filename = extractFilename(response.headers.get("Content-Disposition")) ?? fallbackFilename;
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Der Helper liest den Dateinamen selbst aus Content-Disposition.
+      await downloadFromResponse(response, fallbackFilename);
 
       toast.success(t("reportCreated", { label }));
     } catch (error) {

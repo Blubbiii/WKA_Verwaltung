@@ -59,6 +59,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { EmptyState } from "@/components/ui/empty-state";
+import { downloadBlob } from "@/lib/download";
 
 interface Park {
   id: string;
@@ -144,12 +145,7 @@ export default function ParksPage() {
     const rows = selected.map(p => `"${p.name}";"${p.city || ''}";"${(p.stats?.totalCapacityKw ?? 0) / 1000}";"${p.stats?.turbineCount ?? 0}";"${p.status}"`);
     const csv = "\uFEFF" + [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parks-export-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `parks-export-${new Date().toISOString().slice(0,10)}.csv`);
   }
 
   async function handleBulkDelete() {

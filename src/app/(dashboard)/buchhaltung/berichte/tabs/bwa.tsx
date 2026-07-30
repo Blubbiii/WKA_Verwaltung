@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 interface BwaLine {
   label: string;
@@ -97,12 +98,7 @@ export default function BwaContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `BWA_${from}_${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `BWA_${from}_${to}.csv`);
   }
 
   return (

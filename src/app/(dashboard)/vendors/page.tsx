@@ -43,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { downloadBlob } from "@/lib/download";
 
 // ============================================================================
 // Types
@@ -326,12 +327,7 @@ export default function VendorsPage() {
     );
     const csv = "\uFEFF" + [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `lieferanten-export-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `lieferanten-export-${new Date().toISOString().slice(0, 10)}.csv`);
     toast.success(`${selected.length} Lieferant(en) exportiert`);
   }, [vendors, selectedIds]);
 

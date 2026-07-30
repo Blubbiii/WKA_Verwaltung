@@ -31,6 +31,7 @@ import {
   type AwvWarning,
 } from "@/components/buchhaltung/AwvWarningsAlert";
 import { useSepaWizardState } from "@/hooks/useSepaWizardState";
+import { downloadBlob } from "@/lib/download";
 
 interface SepaBatchResponse {
   id: string;
@@ -130,12 +131,7 @@ export default function SepaWizardStep4() {
     const blob = new Blob([result.data.xmlContent], {
       type: "application/xml",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${result.data.batchNumber}.xml`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${result.data.batchNumber}.xml`);
   }, [result]);
 
   const finish = useCallback(() => {

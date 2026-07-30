@@ -55,6 +55,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { ENTITY_STATUS, getStatusBadge } from "@/lib/status-config";
+import { downloadBlob } from "@/lib/download";
 
 interface FundPark {
   park: {
@@ -223,12 +224,7 @@ export default function FundsPage() {
     ]);
     const csv = "\uFEFF" + [header, ...rows].map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = t("list.csvFilename");
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, t("list.csvFilename"));
   }
 
   // Bulk delete selected funds

@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 interface BudgetComparisonRow {
   costCenterCode: string;
@@ -158,12 +159,7 @@ export default function BudgetContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Budget_Vergleich_${data.budgetName}_${data.year}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `Budget_Vergleich_${data.budgetName}_${data.year}.csv`);
   }
 
   function DeviationIcon({ pct }: { pct: number | null }) {

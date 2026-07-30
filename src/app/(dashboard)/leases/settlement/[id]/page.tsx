@@ -63,6 +63,7 @@ import {
 } from "@/types/billing";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
+import { downloadFromResponse } from "@/lib/download";
 
 // =============================================================================
 // STATUS BADGE HELPER (same colors as list page)
@@ -400,17 +401,9 @@ export default function SettlementDetailPage({
         throw new Error(err.error || `HTTP ${res.status}`);
       }
       // Download the PDF
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const disposition = res.headers.get("Content-Disposition");
-      const filename = disposition?.match(/filename="(.+)"/)?.[1] || "gutschrift.pdf";
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      // Der Helper liest den Dateinamen selbst aus Content-Disposition und
+      // beherrscht dabei auch die RFC-6266-Form mit Umlauten.
+      await downloadFromResponse(res, "gutschrift.pdf");
       toast.success(t("pdfDownloaded"));
       await loadSettlement();
     } catch (err) {

@@ -61,6 +61,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { downloadBlob } from "@/lib/download";
 
 // -- Types --
 
@@ -319,12 +320,7 @@ export default function ServiceEventsPage() {
     );
     const csv = "\uFEFF" + [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `service-events-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `service-events-export-${format(new Date(), "yyyy-MM-dd")}.csv`);
     toast.success(t("batch.exported", { count: selected.length }));
   }, [events, selectedIds, t, translateEventType]);
 

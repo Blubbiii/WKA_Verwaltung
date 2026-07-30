@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { downloadFromResponse } from "@/lib/download";
 
 // ============================================================================
 // TYPES
@@ -148,15 +149,7 @@ export function DatevExportDialog({ open, onOpenChange }: DatevExportDialogProps
       }
 
       // Download the file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      await downloadFromResponse(response, filename);
 
       // Show success with count
       const exportCount = response.headers.get("X-Export-Count");

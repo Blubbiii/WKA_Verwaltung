@@ -23,6 +23,7 @@ import type {
   LayerVisibility,
 } from "./types";
 import { DEFAULT_LAYER_VISIBILITY, DEFAULT_GIS_SETTINGS } from "./types";
+import { downloadBlob } from "@/lib/download";
 
 // Load the Leaflet map without SSR
 const GISMap = dynamic(
@@ -250,12 +251,7 @@ function handleExport(type: "all" | "plots" | "annotations" | "template", data: 
 
   const geojson = JSON.stringify({ type: "FeatureCollection", features }, null, 2);
   const blob = new Blob([geojson], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${type}-export.geojson`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(blob, `${type}-export.geojson`);
 }
 
 // Validate API response shape

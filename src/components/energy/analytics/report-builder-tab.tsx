@@ -47,7 +47,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useDebounce } from "@/hooks/useDebounce";
-import { extractFilename } from "@/lib/download-filename";
 import {
   DndContext,
   closestCenter,
@@ -66,6 +65,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ReportLivePreview } from "./report-live-preview";
+import { downloadFromResponse } from "@/lib/download";
 
 // =============================================================================
 // Types & Constants
@@ -432,17 +432,8 @@ export function ReportBuilderTab() {
         const err = await res.json().catch(() => ({ error: "Fehler" }));
         throw new Error(err.error || "Fehler beim Generieren");
       }
-      const blob = await res.blob();
-      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
-      const filename = extractFilename(res.headers.get("Content-Disposition")) ?? fallbackFilename;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Der Helper liest den Dateinamen selbst aus Content-Disposition.
+      await downloadFromResponse(res, fallbackFilename);
       toast.success(t("reportDownloaded", { label }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("pdfGenerateError"));

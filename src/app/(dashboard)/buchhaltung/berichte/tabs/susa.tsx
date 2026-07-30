@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw } from "lucide-react";
+import { downloadBlob } from "@/lib/download";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,12 +132,7 @@ export default function SuSaContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `SuSa_${from}_${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `SuSa_${from}_${to}.csv`);
   }
 
   return (

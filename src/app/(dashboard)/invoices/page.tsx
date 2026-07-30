@@ -73,6 +73,7 @@ import { DatevExportDialog } from "@/components/invoices/datev-export-dialog";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { RecurringInvoicesManager } from "@/components/invoices/recurring-invoices-manager";
 import { InvoicePreviewDialog } from "@/components/invoices";
+import { downloadBlob, downloadFromResponse } from "@/lib/download";
 
 interface Invoice {
   id: string;
@@ -404,12 +405,7 @@ export default function InvoicesPage() {
       "\uFEFF" +
       [header, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(";")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${t("csvFileName")}-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${t("csvFileName")}-${format(new Date(), "yyyy-MM-dd")}.csv`);
 
     toast.success(t("batchExportSuccess", { count: selected.length }));
   }
@@ -428,13 +424,7 @@ export default function InvoicesPage() {
       });
       if (!res.ok) throw new Error(t("batchPdfError"));
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${t("zipFileName")}-${format(new Date(), "yyyy-MM-dd")}.zip`;
-      link.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `${t("zipFileName")}-${format(new Date(), "yyyy-MM-dd")}.zip`);
       toast.success(t("batchPdfSuccess", { count: ids.length }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("batchPdfFailed"));

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "next-intl";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadFromResponse } from "@/lib/download";
 
 // Types for the access report
 interface RoleData {
@@ -226,15 +227,7 @@ export default function AccessReportPage() {
       }
 
       // Download the file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Zugriffsreport_${new Date().toISOString().split("T")[0]}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadFromResponse(response, `Zugriffsreport_${new Date().toISOString().split("T")[0]}.${format}`);
     } catch {
       toast.error(t("exportFailed"));
     }

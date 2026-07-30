@@ -13,6 +13,7 @@ import { BreadcrumbPath } from "@/components/documents/explorer/breadcrumb-path"
 import { UploadDropzone } from "@/components/documents/explorer/upload-dropzone";
 import { TaxExportDialog } from "@/components/documents/explorer/tax-export-dialog";
 import type { ExplorerFile } from "@/types/document-explorer";
+import { downloadFromResponse } from "@/lib/download";
 
 export default function DocumentExplorerPage() {
   const t = useTranslations("documents.explorer");
@@ -67,13 +68,7 @@ export default function DocumentExplorerPage() {
         throw new Error(err.error || t("downloadFailed"));
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `dokumente-${new Date().toISOString().split("T")[0]}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `dokumente-${new Date().toISOString().split("T")[0]}.zip`);
       toast.success(t("downloadStarted"));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("downloadFailed"));

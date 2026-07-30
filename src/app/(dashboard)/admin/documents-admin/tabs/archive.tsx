@@ -67,6 +67,7 @@ import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
 import { toast } from "sonner";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob, downloadFromResponse } from "@/lib/download";
 
 // Types
 interface ArchivedDoc {
@@ -273,15 +274,7 @@ function ArchiveContent() {
         throw new Error(data.error || "Download fehlgeschlagen");
       }
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = doc.fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadFromResponse(response, doc.fileName);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Download fehlgeschlagen");
     } finally {
@@ -331,14 +324,7 @@ function ArchiveContent() {
       const data = await response.json();
 
       const blob = new Blob([data.indexCsv], { type: "text/csv;charset=utf-8" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `GoBD-Archiv-Index_${exportYear}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadBlob(blob, `GoBD-Archiv-Index_${exportYear}.csv`);
 
       setShowExportDialog(false);
       toast.success(`Export erfolgreich: ${data.documentCount} Dokumente indexiert. Die Index-CSV wurde heruntergeladen.`);

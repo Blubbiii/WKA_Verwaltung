@@ -76,6 +76,7 @@ import { Label } from "@/components/ui/label";
 import { PermissionMatrix } from "@/components/admin/PermissionMatrix";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { downloadFromResponse } from "@/lib/download";
 
 // Schema factory - takes translator so messages stay localized
 const createRoleFormSchema = (t: (key: string) => string) =>
@@ -327,15 +328,7 @@ export function RoleManagement() {
       }
 
       // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Berechtigungs-Matrix_${new Date().toISOString().split("T")[0]}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadFromResponse(response, `Berechtigungs-Matrix_${new Date().toISOString().split("T")[0]}.${format}`);
 
       toast.success(t("exported", { format: format.toUpperCase() }));
     } catch (error) {

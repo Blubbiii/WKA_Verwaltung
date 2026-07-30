@@ -70,6 +70,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { downloadFromResponse } from "@/lib/download";
 
 // Schema
 const roleFormSchema = z.object({
@@ -409,15 +410,7 @@ export default function RolesPage() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || t("exportFailed"));
       }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Berechtigungs-Matrix_${new Date().toISOString().split("T")[0]}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await downloadFromResponse(res, `Berechtigungs-Matrix_${new Date().toISOString().split("T")[0]}.${format}`);
       toast.success(t("exportedAs", { format: format.toUpperCase() }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("exportFailed"));

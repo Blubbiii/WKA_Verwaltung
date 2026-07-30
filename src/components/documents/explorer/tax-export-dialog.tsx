@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import type { FolderNode } from "@/types/document-explorer";
+import { downloadFromResponse } from "@/lib/download";
 
 interface TaxExportDialogProps {
   parks: FolderNode[];
@@ -62,13 +63,7 @@ export function TaxExportDialog({ parks }: TaxExportDialogProps) {
       }
 
       // Download the ZIP
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Steuerexport-${year}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `Steuerexport-${year}.zip`);
 
       toast.success(tToast("taxExportDownloaded"));
       setOpen(false);

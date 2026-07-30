@@ -60,6 +60,7 @@ import { LeaseDialogs } from "@/components/leases";
 import { toast } from "sonner";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { EditableCell } from "@/components/ui/editable-cell";
+import { downloadBlob } from "@/lib/download";
 
 interface Plot {
   id: string;
@@ -240,12 +241,7 @@ export default function LeasesPage() {
     );
     const csv = [header, ...rows].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${t("csv.filePrefix")}_${format(new Date(), "yyyyMMdd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${t("csv.filePrefix")}_${format(new Date(), "yyyyMMdd")}.csv`);
     toast.success(t("csv.exportedToast", { count: selected.length }));
   }
 

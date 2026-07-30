@@ -88,6 +88,7 @@ import { InvoicePreviewDialog, PartialCancelDialog, CorrectionDialog, Settlement
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { downloadBlob } from "@/lib/download";
 
 interface InvoiceItem {
   id: string;
@@ -401,14 +402,9 @@ export default function InvoiceDetailPage({
       }
       // Download the XML file
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
       const disposition = response.headers.get("Content-Disposition");
       const filenameMatch = disposition?.match(/filename="(.+)"/);
-      link.download = filenameMatch?.[1] || `${invoice?.invoiceNumber || "rechnung"}_${format.toUpperCase()}.xml`;
-      link.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, filenameMatch?.[1] || `${invoice?.invoiceNumber || "rechnung"}_${format.toUpperCase()}.xml`);
       toast.success(format === "zugferd" ? t("toastXrechnungDownloadedZF") : t("toastXrechnungDownloadedXR"));
       // Refresh to show updated einvoice status
       fetchInvoice();
@@ -468,16 +464,9 @@ export default function InvoiceDetailPage({
         throw new Error(error.error || t("toastPrintError"));
       }
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
       const filename = extractFilename(response.headers.get("Content-Disposition")) ?? "rechnung.pdf";
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      downloadBlob(blob, filename);
       toast.success(t("toastPrintSuccess"));
       fetchInvoice();
     } catch (error) {

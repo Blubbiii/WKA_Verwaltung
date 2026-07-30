@@ -30,6 +30,7 @@ import {
   AwvWarningsAlert,
   type AwvWarning,
 } from "@/components/buchhaltung/AwvWarningsAlert";
+import { downloadFromResponse } from "@/lib/download";
 
 interface SepaBatch {
   id: string;
@@ -120,17 +121,9 @@ export default function SepaContent() {
     try {
       const res = await fetch(`/api/buchhaltung/sepa/${id}?format=xml`);
       if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${batchNumber}.xml`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // FF/Safari abort the download if we revoke the blob URL synchronously
-      // after click() → defer revoke to give the browser time to start the fetch.
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // Der Helper haelt die ObjectURL bewusst noch kurz offen — genau die
+      // FF/Safari-Erfahrung, die hier vorher als Kommentar stand.
+      await downloadFromResponse(res, `${batchNumber}.xml`);
     } catch {
       toast.error(t("toastDownloadError"));
     }

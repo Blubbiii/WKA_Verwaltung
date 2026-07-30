@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -519,12 +520,7 @@ export default function WirtschaftsplanPLPage() {
     const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = t("exportFileName", { year });
-    a.click();
-    URL.revokeObjectURL(blobUrl);
+    downloadBlob(blob, t("exportFileName", { year }));
   }, [data, year, t, tMonths]);
 
   return (

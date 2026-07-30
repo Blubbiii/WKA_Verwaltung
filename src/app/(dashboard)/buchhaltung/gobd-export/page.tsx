@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Download, Info, Loader2, ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { downloadFromResponse } from "@/lib/download";
 
 export default function GobdExportPage() {
   const now = new Date();
@@ -52,15 +53,7 @@ export default function GobdExportPage() {
       const fileName =
         disposition.match(/filename="([^"]+)"/)?.[1] ?? `gobd-z3-${from}-${to}.zip`;
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, fileName);
 
       setLastResult({ fileName, fileHash, recordCount });
       toast.success("GoBD-Z3-Export erstellt und heruntergeladen");

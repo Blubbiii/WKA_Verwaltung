@@ -63,6 +63,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { CalendarExportButton } from "@/components/calendar-export-button";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
 import { CONTRACT_WARNING_DAYS, CONTRACT_CALENDAR_LOOKAHEAD_DAYS } from "@/lib/config/business-thresholds";
+import { downloadBlob } from "@/lib/download";
 
 interface ContractItem {
   id: string;
@@ -198,12 +199,7 @@ export default function ContractsPage() {
     });
     const csv = [header, ...rows].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `vertraege_export_${format(new Date(), "yyyyMMdd")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `vertraege_export_${format(new Date(), "yyyyMMdd")}.csv`);
     toast.success(t("list.exportedCount", { count: selected.length }));
   }
 

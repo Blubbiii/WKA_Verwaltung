@@ -40,7 +40,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/lib/format";
-import { extractFilename } from "@/lib/download-filename";
+import { downloadFromResponse } from "@/lib/download";
 
 // =============================================================================
 // Types
@@ -165,17 +165,8 @@ export function ReportConfigsTab({ onCreateReport }: ReportConfigsTabProps) {
         const err = await res.json().catch(() => ({ error: "Fehler" }));
         throw new Error(err.error || "Fehler beim Generieren");
       }
-      const blob = await res.blob();
-      // Use RFC-6266-aware helper so filename*=UTF-8'' with Umlauts round-trips.
-      const filename = extractFilename(res.headers.get("Content-Disposition")) ?? `Bericht_${year}.pdf`;
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      // Der Helper liest den Dateinamen selbst aus Content-Disposition.
+      await downloadFromResponse(res, `Bericht_${year}.pdf`);
       toast.success(t("pdfCreated", { name: config.name }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("pdfGenerateError"));

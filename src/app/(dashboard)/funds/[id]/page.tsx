@@ -117,6 +117,7 @@ import {
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { downloadBlob } from "@/lib/download";
 
 interface Shareholder {
   id: string;
@@ -635,12 +636,7 @@ export default function FundDetailsPage({
       "\uFEFF" +
       [header, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(";")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `gesellschafter-${fund?.name || "export"}-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `gesellschafter-${fund?.name || "export"}-${format(new Date(), "yyyy-MM-dd")}.csv`);
 
     toast.success(t("detail.batchExportSuccess", { count: selected.length }));
   }

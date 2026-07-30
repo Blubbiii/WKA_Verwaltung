@@ -30,7 +30,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { VOTE_STATUS, getStatusBadge } from "@/lib/status-config";
-import { extractFilename } from "@/lib/download-filename";
+import { downloadFromResponse } from "@/lib/download";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -143,25 +143,12 @@ export default function VoteDetailPage() {
         throw new Error(errorData.error || "Fehler beim Exportieren");
       }
 
-      // PDF als Blob laden
-      const blob = await response.blob();
-
-      // Download-Link erstellen
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-
-      // Filename aus Content-Disposition Header extrahieren oder Fallback
-      // (RFC-6266-aware — filename*=UTF-8'' mit Umlauten wird korrekt gedeckelt)
-      const filename =
-        extractFilename(response.headers.get("Content-Disposition")) ??
-        `Abstimmungsergebnis_${vote.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
-
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Der Helper liest den Dateinamen selbst aus Content-Disposition
+      // (RFC-6266-aware) und nutzt den Fallback nur, wenn der Header fehlt.
+      await downloadFromResponse(
+        response,
+        `Abstimmungsergebnis_${vote.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Fehler beim PDF-Export");
     } finally {

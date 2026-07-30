@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Download, Search, Loader2 } from "lucide-react";
+import { downloadBlob } from "@/lib/download";
 
 interface PreviewData {
   journalEntries: number;
@@ -75,12 +76,7 @@ export default function DatevContent() {
       const filenameMatch = disposition.match(/filename="(.+?)"/);
       const filename = filenameMatch?.[1] || `EXTF_Export_${from}_${to}.csv`;
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, filename);
 
       const count = res.headers.get("X-Export-Count") || "0";
       toast.success(t("successExport", { count }));

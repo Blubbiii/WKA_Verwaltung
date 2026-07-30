@@ -40,6 +40,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { downloadFromResponse } from "@/lib/download";
 
 export default function SettingsPage() {
   const t = useTranslations("portal.settings");
@@ -125,13 +126,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/portal/my-data/export");
       if (!res.ok) throw new Error(t("privacy.exportFailed"));
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `datenauskunft-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `datenauskunft-${new Date().toISOString().slice(0, 10)}.json`);
       toast.success(t("privacy.exportSuccess"));
     } catch {
       toast.error(t("privacy.exportFailed"));

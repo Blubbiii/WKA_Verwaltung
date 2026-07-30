@@ -48,6 +48,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
 import { SearchFilter } from "@/components/ui/search-filter";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
+import { downloadBlob } from "@/lib/download";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -248,15 +249,7 @@ export default function InvoiceDispatchPage() {
       }
       // Download PDF
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Beleg_${id}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      // FF/Safari abort the download if we revoke synchronously after click().
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      downloadBlob(blob, `Beleg_${id}.pdf`);
       invalidate(["invoices-dispatch"]);
       toast.success(t("printSuccess"));
     } catch (err) {
@@ -294,15 +287,7 @@ export default function InvoiceDispatchPage() {
           if (!res.ok) throw new Error();
           // Download PDF
           const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `Beleg_${id}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          // FF/Safari abort the download if we revoke synchronously after click().
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          downloadBlob(blob, `Beleg_${id}.pdf`);
         }
         if (action === "email" || action === "both") {
           const res = await fetch(`/api/invoices/${id}/email`, { method: "POST" });
@@ -344,15 +329,7 @@ export default function InvoiceDispatchPage() {
           const res = await fetch(`/api/invoices/${inv.id}/print`, { method: "POST" });
           if (!res.ok) throw new Error();
           const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `Beleg_${inv.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          // FF/Safari abort the download if we revoke synchronously after click().
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          downloadBlob(blob, `Beleg_${inv.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`);
         } else {
           const res = await fetch(`/api/invoices/${inv.id}/email`, { method: "POST" });
           if (!res.ok) throw new Error();

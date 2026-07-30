@@ -65,6 +65,7 @@ import {
 } from "@/lib/crm/label-constants";
 import { EditableCell } from "@/components/ui/editable-cell";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { downloadBlob } from "@/lib/download";
 
 // ============================================================================
 // Types
@@ -379,12 +380,7 @@ export default function CrmContactsPage() {
     const blob = new Blob([`\uFEFF${csv}`], {
       type: "text/csv;charset=utf-8;",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `contacts-${new Date().toISOString().slice(0, 10)}.csv`);
     toast.success(t("bulkExportSuccess", { count: selected.length }));
   };
 

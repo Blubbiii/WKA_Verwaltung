@@ -36,6 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { downloadFromResponse } from "@/lib/download";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -224,13 +225,7 @@ export default function BillingDetailPage({
         throw new Error("Fehler beim Herunterladen des PDFs");
       }
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `BF-Rechnung-${period}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, `BF-Rechnung-${period}.pdf`);
 
       toast.success("PDF heruntergeladen");
     } catch (error) {

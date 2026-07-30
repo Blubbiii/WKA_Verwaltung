@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Download, RefreshCw, BarChart3 } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 interface GuvLine {
   position: number;
@@ -130,12 +131,7 @@ export default function GuvContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `GuV_${from}_${to}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `GuV_${from}_${to}.csv`);
   }
 
   function exportMultiCsv() {
@@ -146,12 +142,7 @@ export default function GuvContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `GuV_MultiYear_${startYear}-${endYear}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `GuV_MultiYear_${startYear}-${endYear}.csv`);
   }
 
   return (

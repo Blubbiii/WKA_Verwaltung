@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Download, Info, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { downloadFromResponse } from "@/lib/download";
 
 export default function DatevExportPage() {
   const lastYear = new Date().getFullYear() - 1;
@@ -56,15 +57,7 @@ export default function DatevExportPage() {
       const fileName =
         disposition.match(/filename="([^"]+)"/)?.[1] ?? "EXTF_Buchungsstapel.csv";
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadFromResponse(res, fileName);
 
       setLastResult({ fileName, recordCount });
       toast.success("DATEV-Export erstellt und heruntergeladen");

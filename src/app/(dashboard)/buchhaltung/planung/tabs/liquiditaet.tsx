@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { RefreshCw, Download } from "lucide-react";
 import dynamic from "next/dynamic";
 import { LOCALE_DE } from "@/lib/format";
+import { downloadBlob } from "@/lib/download";
 
 // R3 Perf: Liquiditäts-Chart in separate Datei extrahiert und dynamisch
 // geladen (ssr off). Recharts ist ~120kB und bleibt damit aus initial JS.
@@ -151,12 +152,7 @@ export default function LiquiditaetContent() {
     );
     const csv = header + rows.join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Liquiditaet_${months}M_${granularity}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `Liquiditaet_${months}M_${granularity}.csv`);
   }
 
   // Chart data
