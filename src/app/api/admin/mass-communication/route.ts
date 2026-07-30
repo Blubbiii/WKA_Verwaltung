@@ -1,8 +1,17 @@
 /**
- * Mass Communication API
+ * Mass Communication API — DEPRECATED
  *
  * POST /api/admin/mass-communication - Send mass communication
  * GET  /api/admin/mass-communication - List past mass communications
+ *
+ * TF-10 (Audit 2026-07): Diese Route hat KEINEN Aufrufer. Der Anwendungsfall
+ * ist im vereinheitlichten Mailing-Wizard aufgegangen, der `/api/mailings`
+ * nutzt; `/kommunikation/masse` leitet dorthin um.
+ *
+ * NICHT erweitern und nichts Neues hier anschliessen — das Modell `Mailing`
+ * ist eine echte Obermenge (Templates, Fonds-Bezug, Status-Enum, sentCount).
+ * Siehe den Hinweis an `model MassCommunication` in prisma/schema.prisma; das
+ * Entfernen braucht eine Migration und eine Entscheidung ueber Altdaten.
  *
  * Note: massCommunication model requires `prisma generate` after migration.
  * Until then, we use type assertions for Prisma calls.

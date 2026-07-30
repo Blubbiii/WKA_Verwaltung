@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { getMeilisearchClient, INDICES } from "@/lib/search/client";
+import { getMeilisearchClient, INDICES, isSearchEnabled } from "@/lib/search/client";
 import { apiLogger as logger } from "@/lib/logger";
 import type { SearchEntity } from "@/lib/search/types";
 
@@ -32,6 +32,14 @@ export async function GET(request: NextRequest) {
 
     if (!q || q.length < 2) {
       return NextResponse.json({ results: [], query: q });
+    }
+
+    // TF-8: Das Flag `meilisearch.enabled` wurde nirgends gelesen — der
+    // Admin-Schalter war wirkungslos. Jetzt entscheidet er hier mit.
+    if (!(await isSearchEnabled(check.tenantId))) {
+      return apiError("FEATURE_DISABLED", 503, {
+        message: "Volltextsuche ist nicht aktiviert",
+      });
     }
 
     const client = getMeilisearchClient();

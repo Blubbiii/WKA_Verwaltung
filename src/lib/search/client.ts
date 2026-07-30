@@ -17,6 +17,23 @@ export function getMeilisearchClient(): MeiliSearch | null {
   return _client;
 }
 
+/**
+ * Ist die Volltextsuche eingeschaltet?
+ *
+ * TF-8 (Audit 2026-07): Der Admin-Schalter schrieb `meilisearch.enabled`, und
+ * kein einziges `getConfigBoolean("meilisearch.enabled")` existierte im ganzen
+ * Code. Der Schalter schaltete also nichts, und `/api/features` fuehrte das
+ * Flag nicht — eine sichtbare, aber wirkungslose Einstellung.
+ *
+ * Zwei Bedingungen muessen erfuellt sein: der Dienst ist erreichbar
+ * (MEILISEARCH_URL gesetzt) UND der Mandant hat die Suche aktiviert.
+ */
+export async function isSearchEnabled(tenantId?: string | null): Promise<boolean> {
+  if (!process.env.MEILISEARCH_URL) return false;
+  const { getConfigBoolean } = await import("@/lib/config");
+  return getConfigBoolean("meilisearch.enabled", tenantId, false);
+}
+
 export const INDICES = {
   DOCUMENTS: "documents",
   INVOICES: "invoices",

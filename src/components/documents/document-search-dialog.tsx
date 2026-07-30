@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
@@ -44,6 +45,31 @@ interface SearchResult {
 interface DocumentSearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * Meilisearch-Treffer auf die Darstellung dieses Dialogs abbilden.
+ *
+ * Der Index fuehrt andere Feldnamen als die Prisma-Suche und liefert weder
+ * Park-/Fund-Objekte noch einen Relevanz-Score, deshalb werden die fehlenden
+ * Felder bewusst leer gelassen statt geraten.
+ */
+function toSearchResult(hit: Record<string, unknown>): SearchResult {
+  const str = (v: unknown): string | null => (typeof v === "string" ? v : null);
+  return {
+    id: str(hit.id) ?? "",
+    title: str(hit.title) ?? str(hit.fileName) ?? "Ohne Titel",
+    description: str(hit.description),
+    category: str(hit.category) ?? "OTHER",
+    fileName: str(hit.fileName) ?? "",
+    mimeType: str(hit.mimeType),
+    tags: Array.isArray(hit.tags) ? (hit.tags as string[]) : [],
+    park: null,
+    fund: null,
+    createdAt: str(hit.createdAt) ?? new Date().toISOString(),
+    relevanceScore: 0,
+    highlights: [],
+  };
 }
 
 const CATEGORY_KEYS = ["CONTRACT", "PROTOCOL", "REPORT", "INVOICE", "PERMIT", "CORRESPONDENCE", "OTHER"] as const;
@@ -75,6 +101,9 @@ export function DocumentSearchDialog({
   const t = useTranslations("documentSearch");
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  // TF-8: Der Admin-Schalter "Volltextsuche" steuert jetzt tatsaechlich etwas.
+  const { isFeatureEnabled } = useFeatureFlags();
+  const fullTextEnabled = isFeatureEnabled("meilisearch");
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -121,6 +150,40 @@ export function DocumentSearchDialog({
 
       setLoading(true);
       try {
+        // TF-8 (Audit 2026-07): /api/search laeuft ueber den
+        // Meilisearch-Index, der bei JEDEM Dokument-Upload gefuellt wird — und
+        // bis Welle 8 nie gelesen wurde. Er sucht typo-tolerant im
+        // Dokumenteninhalt, nicht nur in den Metadaten.
+        //
+        // Nur wenn die Volltextsuche aktiviert ist; sonst (und bei jedem
+        // Fehler) die bisherige Prisma-Suche. Der Fallback ist wichtig, weil
+        // /api/search 503 liefert, wenn der Dienst fehlt oder das Flag aus ist.
+        if (fullTextEnabled) {
+          try {
+            const ftParams = new URLSearchParams({
+              q: debouncedQuery,
+              entity: "documents",
+              limit: "10",
+            });
+            const ftRes = await fetch(`/api/search?${ftParams}`);
+            if (ftRes.ok) {
+              const ft = (await ftRes.json()) as {
+                results?: Array<Record<string, unknown>>;
+                total?: number;
+              };
+              const hits = ft.results ?? [];
+              if (hits.length > 0) {
+                setResults(hits.map(toSearchResult));
+                setTotalCount(ft.total ?? hits.length);
+                setSelectedIndex(0);
+                return;
+              }
+            }
+          } catch {
+            // weiter mit der Prisma-Suche
+          }
+        }
+
         const params = new URLSearchParams({
           q: debouncedQuery,
           limit: "10",
@@ -144,7 +207,7 @@ export function DocumentSearchDialog({
     }
 
     search();
-  }, [debouncedQuery]);
+  }, [debouncedQuery, fullTextEnabled]);
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(

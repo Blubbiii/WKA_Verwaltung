@@ -48,6 +48,9 @@ export async function GET() {
       marketDataEnabled,
       scadaUploaderV2Enabled,
       uploaderV2GenericEnabled,
+      // TF-8: Das Flag existierte, wurde aber nirgends gelesen — der
+      // Admin-Schalter schaltete nichts und /api/features fuehrte es nicht.
+      meilisearchEnabled,
     ] = await Promise.all([
       getConfigBoolean("management-billing.enabled", tid, false),
       getConfigBoolean("paperless.enabled", tid, false),
@@ -61,6 +64,7 @@ export async function GET() {
       getConfigBoolean("marketData.enabled", tid, false),
       getConfigBoolean("scada-uploader-v2.enabled", tid, false),
       getConfigBoolean("uploader-v2-generic.enabled", tid, false),
+      getConfigBoolean("meilisearch.enabled", tid, false),
     ]);
 
     // Load accounting sub-flags only if master is enabled
@@ -94,6 +98,7 @@ export async function GET() {
       "marketData": marketDataEnabled,
       "scada-uploader-v2": scadaUploaderV2Enabled,
       "uploader-v2-generic": uploaderV2GenericEnabled,
+      "meilisearch": meilisearchEnabled,
       ...accountingSub,
     });
   } catch {
@@ -108,6 +113,7 @@ export async function GET() {
       "accounting": false,
       "document-routing": false,
       "scada-uploader-v2": false,
+      "meilisearch": false,
       "uploader-v2-generic": false,
       "accounting.reports": false,
       "accounting.bank": false,

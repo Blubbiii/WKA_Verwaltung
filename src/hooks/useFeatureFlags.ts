@@ -8,6 +8,7 @@ interface FeatureFlags {
   "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
+  /** TF-8: war hier deklariert, wurde von /api/features aber nie geliefert. */
   "meilisearch": boolean;
   "accounting": boolean;
   "document-routing": boolean;

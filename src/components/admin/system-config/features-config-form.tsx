@@ -71,6 +71,39 @@ export function FeaturesConfigForm({
 
   // UI state
   const [saving, setSaving] = useState(false);
+  const [reindexing, setReindexing] = useState(false);
+
+  /**
+   * TF-8: Suchindex neu aufbauen.
+   *
+   * Der Index wird ausschliesslich beim Upload fortgeschrieben. Wer die
+   * Volltextsuche einschaltet, findet ohne diesen Lauf keines der vorher
+   * hochgeladenen Dokumente.
+   */
+  async function handleReindex() {
+    setReindexing(true);
+    try {
+      const res = await fetch("/api/admin/search/reindex", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.message ?? "Re-Index fehlgeschlagen");
+        return;
+      }
+      const errors = Number(data?.errors ?? 0);
+      if (errors > 0) {
+        // Teilerfolg nicht als Erfolg verbuchen.
+        toast.warning(
+          `${data?.indexed ?? 0} Einträge indexiert, ${errors} fehlgeschlagen`,
+        );
+      } else {
+        toast.success(`${data?.indexed ?? 0} Einträge indexiert`);
+      }
+    } catch {
+      toast.error("Re-Index fehlgeschlagen");
+    } finally {
+      setReindexing(false);
+    }
+  }
 
   // Re-sync State wenn configs vom Parent invalidiert werden (nach Save oder Refresh).
   useEffect(() => {
@@ -285,6 +318,30 @@ export function FeaturesConfigForm({
             checked={meilisearchEnabled}
             onCheckedChange={setMeilisearchEnabled}
           />
+        </div>
+
+        {/* TF-8: /api/admin/search/reindex war vollstaendig implementiert und
+            hatte keinen UI-Auslöser. Ohne Neuaufbau bleiben alle Dokumente
+            unsichtbar, die vor dem Aktivieren hochgeladen wurden — der Index
+            wird nur beim Upload fortgeschrieben. */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div>
+            <Label>Suchindex neu aufbauen</Label>
+            <p className="text-sm text-muted-foreground">
+              Indexiert alle bestehenden Dokumente, Rechnungen, Parks, Turbinen
+              und Audit-Logs dieses Mandanten neu. Nötig nach dem erstmaligen
+              Aktivieren, da der Index sonst nur neue Uploads enthält.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={!meilisearchEnabled || reindexing}
+            onClick={handleReindex}
+          >
+            {reindexing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Neu indexieren
+          </Button>
         </div>
       </div>
 
