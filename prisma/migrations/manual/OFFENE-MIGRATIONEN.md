@@ -21,6 +21,7 @@ Reihenfolge ist beliebig — die zehn berühren verschiedene Tabellen.
 | [major_components.sql](major_components.sql) | **ja** | Großkomponenten-Register je Anlage samt zwei Enums (B3). Ohne sie schlägt `/api/components` fehl und die Karte im Anlagen-Reiter lädt nicht. **Kein Backfill** — aus dem bisherigen Freitext ließe sich weder eine Seriennummer noch ein Einbaudatum verlässlich ableiten. |
 | [shareholder_meetings.sql](shareholder_meetings.sql) | **ja** | Gesellschafterversammlung, Tagesordnung und Anwesenheitsliste samt fünf Enums (B4). Ohne sie schlägt `/api/meetings` fehl und die Karte im Gesellschafter-Reiter lädt nicht. **Kein Backfill** — bestehende `Vote`-Datensätze werden nicht zu Versammlungen umgedeutet. |
 | [subscriptions_aml.sql](subscriptions_aml.sql) | **ja** | Zeichnungsschein und GwG-Legitimationsprüfung samt vier Enums (B6). Ohne sie schlagen `/api/subscriptions` und `/api/aml-checks` fehl. **Kein Backfill** — bestehende Gesellschafter bekommen keine nachträgliche Zeichnung und keine erfundene Identifizierung. |
+| [market_premium.sql](market_premium.sql) | **ja** | Stündliche Spotpreisreihe, berechnete Marktprämie und zwei neue Spalten an `regulatory_profiles` (B1). Ohne sie schlagen `/api/energy/spot-prices` und `/api/energy/market-premium` fehl; die neuen Spalten schreibt Prisma beim Speichern der Regulatorik-Stammdaten. `market_prices` (Monatsaggregat) bleibt unverändert. **Kein Import** von Preisen. |
 | [retire_mass_communications.sql](retire_mass_communications.sql) | nein | Benennt `mass_communications` in `mass_communications_retired_20260730` um. Das Modell ist aus `schema.prisma` entfernt; die Tabelle stört nur noch. Bewusst RENAME statt DROP — der Inhalt war nicht einsehbar. Endgültiges DROP steht als auskommentierter Nachtrag in der Datei.
 
 ## Ausführen
@@ -40,10 +41,11 @@ npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/man
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/major_components.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/shareholder_meetings.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/subscriptions_aml.sql
+npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/market_premium.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/retire_mass_communications.sql
 ```
 
-Alle fünfzehn sind mehrfach ausführbar: die vierzehn DDL-Skripte über
+Alle sechzehn sind mehrfach ausführbar: die fünfzehn DDL-Skripte über
 `IF NOT EXISTS` / `IF EXISTS`, das Permission-Skript dadurch, dass der zweite
 Lauf keine Zeilen mehr findet. Die Enums in `fault_cases.sql`,
 `availability_guarantees.sql`, `metering_points_settlement_checks.sql`,

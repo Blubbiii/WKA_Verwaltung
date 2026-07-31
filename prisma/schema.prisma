@@ -155,6 +155,7 @@ model Tenant {
   shareholderMeetings       ShareholderMeeting[]
   subscriptions             Subscription[]
   amlChecks                 AmlCheck[]
+  marketPremiumCalculations MarketPremiumCalculation[]
 
   @@map("tenants")
 }
@@ -497,6 +498,7 @@ model Turbine {
   regulatoryProfile              RegulatoryProfile?
   complianceDeadlines            ComplianceDeadline[]
   majorComponents                MajorComponent[]
+  marketPremiumCalculations      MarketPremiumCalculation[]
   scadaElectricalPhases          ScadaElectricalPhase[]
   scadaElectricalSummaries       ScadaElectricalSummary[]
   serviceEvents                  ServiceEvent[]
@@ -6599,6 +6601,17 @@ model RegulatoryProfile {
   awardReference     String?  @db.VarChar(100)
   /// Referenzertrag in Prozent (Standortgüte). Grundlage der Nachprüfung.
   siteQualityPercent Decimal? @db.Decimal(6, 2)
+  /// B1: Korrekturfaktor nach § 36h EEG (Anlage 2). BEWUSST ein Feld und
+  /// keine Ableitung aus `siteQualityPercent`: die Stützstellentabelle hat
+  /// sich mit jeder Novelle geändert, und ein falscher Faktor verschöbe jede
+  /// Marktprämie um wenige Prozent, ohne aufzufallen.
+  correctionFactor Decimal? @db.Decimal(6, 4)
+  /// B1: Mindestdauer zusammenhängender negativer Stunden, ab der der
+  /// Vergütungsanspruch entfällt (§ 51 EEG). Ein Feld, weil sich die Schwelle
+  /// mehrfach geändert hat — EEG 2017 sechs, EEG 2021 vier, EEG 2023 eine
+  /// Stunde für neue Anlagen — und welche gilt, hängt an Inbetriebnahme und
+  /// Zuschlag der einzelnen Anlage.
+  negativePriceThresholdHours Int @default(4)
 
   // --- Netz ---------------------------------------------------------------
   gridOperator        String?   @db.VarChar(200)
@@ -7147,4 +7160,95 @@ model AmlCheck {
   /// Trägt die Wiedervorlageliste.
   @@index([tenantId, status, nextReviewAt])
   @@map("aml_checks")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B1 (Audit 2026-07): Marktprämie, anzulegender Wert, negative Preise
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Stündlicher Spotmarktpreis.
+///
+/// Der Bericht nennt das ausdrücklich neue Infrastruktur: „Braucht eine
+/// stündliche Preisreihe — heute nur Monatsaggregat." `MarketPrice` bleibt
+/// bestehen und liefert weiter die Monatswerte; diese Tabelle steht daneben.
+///
+/// Ohne stündliche Reihe lassen sich die Stunden nach § 51 EEG nicht
+/// bestimmen — und „keine Reihe" ist NICHT „keine negativen Preise".
+///
+/// Mandantenübergreifend: der Börsenpreis ist für alle derselbe. Ihn je
+/// Mandant zu führen hiesse, dieselbe Reihe vielfach zu speichern und
+/// Abweichungen zwischen Mandanten zu ermöglichen, die es nicht geben kann.
+model HourlySpotPrice {
+  id String @id @default(uuid())
+
+  /// Gebotszone. Für Deutschland seit 2018 `DE-LU`.
+  biddingZone String @default("DE-LU") @db.VarChar(20)
+  /// Beginn der Stunde, UTC.
+  hour DateTime
+  /// Preis des Stundenkontrakts in EUR/MWh. Negativ ist zulässig — genau
+  /// darum geht es.
+  priceEurMwh Decimal @db.Decimal(10, 2)
+
+  source String @default("SMARD") @db.VarChar(20)
+
+  createdAt DateTime @default(now())
+
+  /// Eine Stunde je Zone und Quelle genau einmal. Ohne das entstünden beim
+  /// wiederholten Import Dubletten, und jede doppelte negative Stunde
+  /// verdoppelte den entfallenden Anspruch.
+  @@unique([biddingZone, hour, source])
+  @@index([biddingZone, hour])
+  @@map("hourly_spot_prices")
+}
+
+/// Berechnete Marktprämie je Anlage und Monat.
+///
+/// Mitgespeichert statt bei jedem Aufruf gerechnet: der anzulegende Wert und
+/// der Monatsmarktwert ändern sich, und eine bereits abgerechnete Prämie darf
+/// sich nicht rückwirkend verschieben.
+model MarketPremiumCalculation {
+  id        String  @id @default(uuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbineId String
+  turbine   Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  year  Int
+  month Int
+
+  // --- Rechnungsgrundlagen, mitgespeichert ------------------------------
+  awardValueCtPerKwh  Decimal? @db.Decimal(8, 4)
+  correctionFactor    Decimal? @db.Decimal(6, 4)
+  marketValueCtPerKwh Decimal? @db.Decimal(8, 4)
+  productionKwh       Decimal? @db.Decimal(15, 3)
+  /// Schwelle nach § 51 EEG, die für diese Anlage galt.
+  negativeThresholdHours Int
+
+  // --- Ergebnis ----------------------------------------------------------
+  appliedValueCtPerKwh Decimal? @db.Decimal(8, 4)
+  premiumCtPerKwh      Decimal? @db.Decimal(8, 4)
+  premiumEur           Decimal? @db.Decimal(15, 2)
+
+  /// Stunden, für die der Anspruch entfällt. `null` = keine Preisreihe
+  /// vorhanden, ausdrücklich nicht 0.
+  affectedHours Int?
+  negativeHours Int?
+  /// Entfallener Anspruch. `null`, solange die Erzeugung in diesen Stunden
+  /// nicht bekannt ist.
+  forfeitedEur Decimal? @db.Decimal(15, 2)
+
+  /// Herleitung und Hinweise.
+  basis Json?
+
+  computedAt DateTime @default(now())
+  notes      String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Ein Ergebnis je Anlage und Monat.
+  @@unique([turbineId, year, month])
+  @@index([tenantId])
+  @@index([tenantId, year, month])
+  @@map("market_premium_calculations")
 }
