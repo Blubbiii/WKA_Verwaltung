@@ -24,6 +24,8 @@ import type {
   SettlementCalculationResult,
 } from "@/types/billing";
 import { getIntervalDivisor } from "@/types/billing";
+import { splitByLessor } from "@/lib/lease-lessors/share-split";
+import { resolveSharesFrom } from "@/lib/lease-lessors/resolve-shares";
 
 // ============================================================
 // Pure Calculation Functions (no Prisma dependency)
@@ -150,6 +152,8 @@ export function calculateSettlementFees(
     return {
       leaseId: lease.leaseId,
       lessorPersonId: lease.lessorPersonId,
+      // A5: unveraendert weiterreichen — aufgeteilt wird erst beim Schreiben.
+      lessorShares: lease.lessorShares,
       poolAreaSqm: lease.poolAreaSqm,
       poolAreaSharePercent,
       poolFeeEur,
@@ -251,6 +255,8 @@ export function calculateAdvanceFees(
     return {
       leaseId: lease.leaseId,
       lessorPersonId: lease.lessorPersonId,
+      // A5: unveraendert weiterreichen — aufgeteilt wird erst beim Schreiben.
+      lessorShares: lease.lessorShares,
       poolAreaSqm: lease.poolAreaSqm,
       poolAreaSharePercent,
       poolFeeEur,
@@ -371,6 +377,19 @@ export async function loadSettlementData(
               lease: {
                 include: {
                   lessor: { select: { id: true } },
+                  // A5 (Audit 2026-07): Miteigentumsanteile. Ohne Zeilen hier
+                  // bleibt es beim einen Verpaechter aus `lessorId` — der
+                  // Rueckfall in resolveSharesFrom sorgt dafuer, dass sich
+                  // fuer Bestandsvertraege NICHTS aendert.
+                  lessorShares: {
+                    select: {
+                      personId: true,
+                      sharePercent: true,
+                      validFrom: true,
+                      validTo: true,
+                    },
+                    orderBy: { validFrom: "asc" },
+                  },
                 },
               },
             },
@@ -460,6 +479,17 @@ export async function loadSettlementData(
     {
       leaseId: string;
       lessorPersonId: string;
+      /**
+       * A5: Miteigentumsanteile, roh durchgereicht. Aufgeteilt wird erst beim
+       * Schreiben — der Positionsbetrag je Vertrag bleibt unveraendert, sonst
+       * kaeme der je Vertrag nachgeschlagene Vorschuss n-fach in Abzug.
+       */
+      lessorShares: {
+        personId: string;
+        sharePercent: Prisma.Decimal;
+        validFrom: Date | null;
+        validTo: Date | null;
+      }[];
       poolAreaSqm: number;
       turbineCount: number;
       standortShareUnits: number;
@@ -515,6 +545,7 @@ export async function loadSettlementData(
       const existing = leaseDataMap.get(lease.id) ?? {
         leaseId: lease.id,
         lessorPersonId: lease.lessorId,
+        lessorShares: lease.lessorShares ?? [],
         poolAreaSqm: 0,
         turbineCount: 0,
         standortShareUnits: 0,
@@ -756,7 +787,7 @@ export async function executeSettlementCalculation(
         ? round2(item.subtotalEur - advancePaidEur)
         : 0;
 
-      await tx.leaseRevenueSettlementItem.create({
+      const createdItem = await tx.leaseRevenueSettlementItem.create({
         data: {
           settlementId,
           leaseId: item.leaseId,
@@ -779,6 +810,23 @@ export async function executeSettlementCalculation(
           remainderEur: new Decimal(remainderEur),
           directBillingFundId: item.directBillingFundId,
         },
+      });
+
+      // A5 (Audit 2026-07): Aufteilung auf mehrere Verpaechter.
+      //
+      // Der Positionsbetrag bleibt unveraendert die Zahl je Vertrag — die
+      // Aufteilung ist additiv. Waere die Position stattdessen je
+      // Miteigentuemer vervielfacht worden, kaeme der je Vertrag
+      // nachgeschlagene Vorschuss n-fach in Abzug, und zwar stillschweigend.
+      await writeLessorAllocations(tx, {
+        itemId: createdItem.id,
+        leaseId: item.leaseId,
+        lessorShares: item.lessorShares,
+        fallbackPersonId: item.lessorPersonId,
+        amountEur: item.subtotalEur,
+        taxableAmountEur: item.taxableAmountEur,
+        exemptAmountEur: item.exemptAmountEur,
+        year: settlement.year,
       });
     }
 
@@ -955,4 +1003,111 @@ export async function loadAdvanceComponentBreakdown(
   }
 
   return result;
+}
+
+/**
+ * Der Transaktionsclient aus dem Prisma-Singleton. `Prisma.TransactionClient`
+ * passt nicht: der Client traegt Erweiterungen und die Typen sind dadurch
+ * nicht deckungsgleich.
+ */
+type LeaseRevenueTx = Omit<
+  typeof prisma,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
+/**
+ * Aufteilung einer Abrechnungsposition auf die Verpächter schreiben (A5).
+ *
+ * Der Rückfall ist die wichtigste Zeile: ohne erfasste Anteile bekommt der
+ * eine Verpächter aus `lessorId` eine Zeile über 100 %. So ändert sich für
+ * Bestandsverträge nichts — sie bekommen lediglich eine Aufteilung, die aus
+ * genau einem Eintrag besteht.
+ *
+ * Ergeben die Anteile nicht 100 %, wird NICHT verteilt: die Position bleibt
+ * ohne Aufteilung stehen und der Grund steht im Log. Eine halbe Verteilung
+ * wäre schlimmer als keine — sie sähe nach einer Zahlung aus.
+ */
+async function writeLessorAllocations(
+  tx: LeaseRevenueTx,
+  args: {
+    itemId: string;
+    leaseId: string;
+    lessorShares?: {
+      personId: string;
+      sharePercent: number | { toString(): string };
+      validFrom: Date | null;
+      validTo: Date | null;
+    }[];
+    fallbackPersonId: string;
+    amountEur: number;
+    taxableAmountEur: number;
+    exemptAmountEur: number;
+    year: number;
+  }
+): Promise<void> {
+  const resolved = resolveSharesFrom({
+    lessorId: args.fallbackPersonId,
+    lessorShares: args.lessorShares?.map((share) => ({
+      personId: share.personId,
+      sharePercent: Number(share.sharePercent),
+      validFrom: share.validFrom,
+      validTo: share.validTo,
+    })),
+  });
+
+  if (!resolved) {
+    logger.warn(
+      { itemId: args.itemId, leaseId: args.leaseId },
+      "Pachtvertrag ohne Verpächter — keine Aufteilung geschrieben"
+    );
+    return;
+  }
+
+  const periodStart = new Date(Date.UTC(args.year, 0, 1));
+  const periodEnd = new Date(Date.UTC(args.year, 11, 31));
+
+  const split = splitByLessor({
+    shares: resolved.shares,
+    periodStart,
+    periodEnd,
+    amountEur: args.amountEur,
+  });
+
+  if (split.allocations === null) {
+    logger.warn(
+      { itemId: args.itemId, leaseId: args.leaseId, reason: split.reason },
+      "Verpächteranteile unschlüssig — keine Aufteilung geschrieben"
+    );
+    return;
+  }
+
+  // Steuerlicher Anteil in derselben Quote aufteilen. Jeder Miteigentümer ist
+  // ein eigenes Umsatzsteuersubjekt; ohne getrennte Beträge liesse sich die
+  // Gutschrift nicht korrekt ausweisen.
+  const bankByPerson = new Map(
+    (args.lessorShares ?? []).map((share) => [share.personId, undefined as string | undefined])
+  );
+
+  for (const allocation of split.allocations) {
+    const factor = args.amountEur !== 0 ? allocation.amountEur / args.amountEur : 0;
+    await tx.leaseRevenueSettlementItemLessor.create({
+      data: {
+        itemId: args.itemId,
+        personId: allocation.personId,
+        effectiveSharePercent: new Decimal(allocation.effectiveSharePercent),
+        days: allocation.days,
+        amountEur: new Decimal(allocation.amountEur),
+        taxableAmountEur: new Decimal(round2(args.taxableAmountEur * factor)),
+        exemptAmountEur: new Decimal(round2(args.exemptAmountEur * factor)),
+        bankIban: bankByPerson.get(allocation.personId) ?? null,
+      },
+    });
+  }
+
+  if (split.warnings.length > 0) {
+    logger.info(
+      { itemId: args.itemId, leaseId: args.leaseId, warnings: split.warnings },
+      "Verpächteraufteilung mit Hinweisen"
+    );
+  }
 }

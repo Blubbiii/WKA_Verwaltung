@@ -696,6 +696,8 @@ model Person {
   pendingBankUpdates             PendingBankUpdate[]
   // Bedienaufwand #11: Rechnungen, deren Empfaenger dieser Kontakt ist.
   recipientInvoices              Invoice[]                        @relation("InvoiceRecipient")
+  leaseLessorShares              LeaseLessor[]                    @relation("LeaseLessorShare")
+  settlementItemLessorShares     LeaseRevenueSettlementItemLessor[] @relation("SettlementItemLessorShare")
 
   @@index([tenantId])
   @@index([lastName, firstName])
@@ -846,6 +848,7 @@ model Lease {
   tenant                                   Tenant                           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   lastActivityAt                            DateTime?
   crmActivities                             CrmActivity[]
+  lessorShares                              LeaseLessor[]
 
   @@index([endDate])
   @@index([billingInterval])
@@ -1876,6 +1879,8 @@ model LeaseRevenueSettlementItem {
   updatedAt           DateTime  @updatedAt
 
   @@index([leaseId])
+  lessorAllocations                                                     LeaseRevenueSettlementItemLessor[]
+
   @@index([lessorPersonId])
   @@index([settlementId])
   @@map("lease_revenue_settlement_items")
@@ -5882,4 +5887,104 @@ model CurtailmentEvent {
   @@index([tenantId, claimDeadline])
   @@index([tenantId, followUpAt])
   @@map("curtailment_events")
+}
+
+// ---------------------------------------------------------------------------
+// A5: Mehrere Verpächter je Pachtvertrag + Eigentümerwechsel (Audit 2026-07)
+//
+// `Lease.lessorId` ist genau EINE Person — keine Quote, kein Stichtag, keine
+// Historie. Nach 20 Jahren Vertragslaufzeit ist die Erbengemeinschaft der
+// Normalfall, ebenso der Flurstücksverkauf mitten in der Abrechnungsperiode.
+//
+// Behelfslösungen heute: Sammel-Person „Erbengemeinschaft Müller" mit einem
+// Konto, oder Vertragsdubletten. Beides bricht SEPA und die
+// Umsatzsteuerzuordnung — jeder Miteigentümer ist ein eigenes
+// Umsatzsteuersubjekt und braucht seine eigene Gutschrift auf sein Konto.
+//
+// Setzt fort, was die Fixes zu F1 und F2 als `TODO(schema)` markiert haben:
+// dort wird mangels Quote nach Kopfzahl geteilt.
+// ---------------------------------------------------------------------------
+
+/// Anteil einer Person an einem Pachtvertrag, mit Gültigkeitszeitraum.
+model LeaseLessor {
+  id      String @id @default(uuid())
+  leaseId String
+  lease   Lease  @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+
+  personId String
+  person   Person @relation("LeaseLessorShare", fields: [personId], references: [id], onDelete: Restrict)
+
+  /// Miteigentumsquote in Prozent. Die Summe der zu einem Stichtag gültigen
+  /// Anteile muss 100 ergeben — geprüft beim Speichern und beim Abrechnen.
+  sharePercent Decimal @db.Decimal(7, 4)
+
+  /// Ab wann der Anteil gilt. `null` = seit Vertragsbeginn.
+  validFrom DateTime?
+  /// Bis einschliesslich wann. `null` = offen. Ein Eigentümerwechsel entsteht,
+  /// indem der alte Anteil ein `validTo` bekommt und ein neuer am Folgetag
+  /// beginnt — der alte wird NICHT gelöscht, sonst verlöre eine bereits
+  /// abgerechnete Periode ihre Grundlage.
+  validTo DateTime?
+
+  /// Abweichende Bankverbindung dieses Miteigentümers. Ohne sie liefe die
+  /// Gutschrift auf das Konto aus dem Person-Stammsatz — was in der Regel
+  /// richtig ist, aber bei einer Erbengemeinschaft mit Nachlasskonto nicht.
+  bankIban String? @db.VarChar(34)
+  bankBic  String? @db.VarChar(11)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Dieselbe Person kann mehrfach am Vertrag stehen — aber nicht zweimal mit
+  /// demselben Beginn. Das wäre eine Doppelerfassung.
+  @@unique([leaseId, personId, validFrom])
+  @@index([leaseId])
+  @@index([personId])
+  @@map("lease_lessors")
+}
+
+/// Aufteilung einer Abrechnungsposition auf mehrere Verpächter (A5).
+///
+/// BEWUSST eine Untertabelle statt mehrerer Positionen je Vertrag:
+/// `advancePaidEur` wird in der Engine je LEASE nachgeschlagen
+/// (`advancePerLease.get(item.leaseId)`). Würde die Position je Miteigentümer
+/// vervielfacht, käme der gezahlte Vorschuss n-fach in Abzug — und zwar
+/// stillschweigend, weil die Summen je Vertrag weiterhin plausibel aussähen.
+///
+/// So bleibt die Position unverändert die Zahl je Vertrag; die Aufteilung ist
+/// additiv. Alle bestehenden Summen, Vergleiche und Tests rechnen weiter wie
+/// bisher, und Gutschrift und SEPA lesen die Zeilen hier.
+model LeaseRevenueSettlementItemLessor {
+  id     String                     @id @default(uuid())
+  itemId String
+  item   LeaseRevenueSettlementItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  personId String
+  person   Person @relation("SettlementItemLessorShare", fields: [personId], references: [id], onDelete: Restrict)
+
+  /// Wirksamer Anteil in Prozent — Miteigentumsquote mal Zeitanteil. Bei einem
+  /// Eigentümerwechsel zur Jahresmitte sind das 50 % von 50 %, also 25 %.
+  effectiveSharePercent Decimal @db.Decimal(9, 4)
+  /// Tage, an denen die Person am Abrechnungszeitraum beteiligt war.
+  days Int
+
+  amountEur         Decimal @db.Decimal(15, 2)
+  /// Steuerlicher Anteil, getrennt fortgeschrieben: jeder Miteigentümer ist
+  /// ein eigenes Umsatzsteuersubjekt.
+  taxableAmountEur Decimal @db.Decimal(15, 2)
+  exemptAmountEur  Decimal @db.Decimal(15, 2)
+
+  /// Bankverbindung, die für die Zahlung gilt — aus dem Anteil, sonst aus dem
+  /// Stammsatz. Mitgespeichert, damit eine spätere Kontoänderung eine bereits
+  /// ausgeführte Zahlung nicht rückwirkend anders aussehen lässt.
+  bankIban String? @db.VarChar(34)
+
+  createdAt DateTime @default(now())
+
+  @@unique([itemId, personId])
+  @@index([itemId])
+  @@index([personId])
+  @@map("lease_revenue_settlement_item_lessors")
 }

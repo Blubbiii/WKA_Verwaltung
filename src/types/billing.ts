@@ -431,6 +431,17 @@ export interface SettlementCalculationInput {
   leases: {
     leaseId: string;
     lessorPersonId: string;
+    /**
+     * A5 (Audit 2026-07): Miteigentumsanteile mit Stichtag. Leer heisst: ein
+     * Verpaechter zu 100 % (Rueckfall auf `lessorPersonId`) — so rechnen alle
+     * Bestandsvertraege unveraendert weiter.
+     */
+    lessorShares?: {
+      personId: string;
+      sharePercent: number | { toString(): string };
+      validFrom: Date | null;
+      validTo: Date | null;
+    }[];
     poolAreaSqm: number;
     /** Ganzzahlige Anzahl WEA-Standorte auf den Flurstücken dieses Vertrags (Anzeige). */
     turbineCount: number;
@@ -459,6 +470,16 @@ export interface SettlementCalculationResult {
   items: {
     leaseId: string;
     lessorPersonId: string;
+    /**
+     * A5: Miteigentumsanteile, durchgereicht bis zum Schreiben. Leer heisst:
+     * ein Verpaechter zu 100 %.
+     */
+    lessorShares?: {
+      personId: string;
+      sharePercent: number | { toString(): string };
+      validFrom: Date | null;
+      validTo: Date | null;
+    }[];
     poolAreaSqm: number;
     poolAreaSharePercent: number;
     poolFeeEur: number;
