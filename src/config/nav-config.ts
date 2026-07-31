@@ -59,6 +59,7 @@ import {
   CheckSquare,
   ShieldCheck,
   Ban,
+  LayoutGrid,
 } from "lucide-react";
 
 // Re-export icons so sidebar.tsx can import them from here for SIDEBAR_LINK_ICONS
@@ -121,6 +122,7 @@ export {
   Map,
   ShieldCheck,
   Ban,
+  LayoutGrid,
 };
 
 // ---------------------------------------------------------------------------
@@ -316,6 +318,16 @@ export const navGroups: NavGroup[] = [
           // Ausfallarbeit noch die Forderung dagegen.
           { title: "Abregelungen", titleKey: "curtailment", href: "/energy/curtailment", icon: Ban },
         ],
+      },
+      {
+        // B5 (Audit 2026-07): die verdichtete Matrix Park x Jahr, auf die
+        // Banken und Beiraete schauen. Reine Verdichtung vorhandener Daten —
+        // die Einzelauswertungen gab es, die Zusammenfuehrung nicht.
+        title: "Portfolio-Cockpit",
+        titleKey: "portfolioCockpit",
+        href: "/reports/portfolio-cockpit",
+        icon: LayoutGrid,
+        permission: "invoices:read",
       },
     ],
   },

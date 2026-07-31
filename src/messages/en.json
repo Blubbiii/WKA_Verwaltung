@@ -413,7 +413,8 @@
     "fundAccess": "Fund access",
     "hgbSystemSettings": "HGB settings",
     "taxCategoryTemplates": "Tax category templates",
-    "regulatory": "Regulatory"
+    "regulatory": "Regulatory",
+    "portfolioCockpit": "Portfolio cockpit"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
@@ -11142,6 +11143,39 @@
       "UPGRADE": "upgrade",
       "PREVENTIVE": "preventive",
       "OTHER": "other"
+    }
+  },
+  "portfolioCockpit": {
+    "title": "Portfolio cockpit",
+    "description": "The condensed park × year matrix: production, availability, revenue and cost per MWh across several years.",
+    "export": "As CSV",
+    "from": "From year",
+    "to": "To year",
+    "park": "Park",
+    "metric": "Metric",
+    "unit": "Unit",
+    "summaryTitle": "Portfolio total",
+    "summaryTooltip": "Only parks with data for the respective year are summed. The row below states how many — without it a total across three of ten parks would look like the portfolio.",
+    "parksWithData": "Parks with data",
+    "empty": "No parks available",
+    "emptyHint": "Once parks are created and settlements recorded, the matrix fills up.",
+    "loadError": "Cockpit could not be loaded",
+    "loadErrorHint": "Please reload the page. If the error persists, a permission may be missing.",
+    "warningsTitle": "Notes on the data basis",
+    "dashHint": "A dash means there is no data basis for this metric — not the value zero. The reason appears as a tooltip on the cell and replaces the value in the CSV export.",
+    "rows": {
+      "productionMwh": "Production",
+      "fullLoadHours": "Full load hours",
+      "forecastAchievement": "Forecast achievement",
+      "technicalAvailability": "Technical availability",
+      "contractualAvailability": "Contractual availability",
+      "revenueEur": "Revenue",
+      "revenuePerMwh": "Revenue per MWh",
+      "operatingCostEur": "Operating cost",
+      "costPerMwh": "Cost per MWh",
+      "operatingResultEur": "Operating result",
+      "payoutRatio": "Payout ratio",
+      "debtServiceCoverage": "Debt service coverage"
     }
   }
 }

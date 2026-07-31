@@ -413,7 +413,8 @@
     "fundAccess": "Fonds-Zugriff",
     "hgbSystemSettings": "HGB-Einstellungen",
     "taxCategoryTemplates": "Steuerkategorie-Vorlagen",
-    "regulatory": "Regulatorik"
+    "regulatory": "Regulatorik",
+    "portfolioCockpit": "Portfolio-Cockpit"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -11142,6 +11143,39 @@
       "UPGRADE": "Ertüchtigung",
       "PREVENTIVE": "vorsorglich",
       "OTHER": "sonstiges"
+    }
+  },
+  "portfolioCockpit": {
+    "title": "Portfolio-Cockpit",
+    "description": "Die verdichtete Matrix Park × Jahr: Produktion, Verfügbarkeit, Erlös und Kosten je MWh über mehrere Jahre.",
+    "export": "Als CSV",
+    "from": "Von Jahr",
+    "to": "Bis Jahr",
+    "park": "Park",
+    "metric": "Kennzahl",
+    "unit": "Einheit",
+    "summaryTitle": "Portfolio gesamt",
+    "summaryTooltip": "Summiert werden nur Parks mit Daten für das jeweilige Jahr. Die Zeile darunter sagt, wie viele das sind — ohne sie sähe eine Summe über drei von zehn Parks aus wie das Portfolio.",
+    "parksWithData": "Parks mit Daten",
+    "empty": "Kein Park vorhanden",
+    "emptyHint": "Sobald Parks angelegt und Abrechnungen erfasst sind, füllt sich die Matrix.",
+    "loadError": "Cockpit konnte nicht geladen werden",
+    "loadErrorHint": "Bitte die Seite neu laden. Bleibt der Fehler, fehlt möglicherweise die Berechtigung.",
+    "warningsTitle": "Hinweise zur Datengrundlage",
+    "dashHint": "Ein Strich bedeutet: für diese Kennzahl gibt es keine Datengrundlage — nicht den Wert null. Der Grund steht als Tooltip an der Zelle und im CSV-Export an Stelle des Werts.",
+    "rows": {
+      "productionMwh": "Produktion",
+      "fullLoadHours": "Volllaststunden",
+      "forecastAchievement": "Prognoseerreichung",
+      "technicalAvailability": "Technische Verfügbarkeit",
+      "contractualAvailability": "Vertragliche Verfügbarkeit",
+      "revenueEur": "Erlös",
+      "revenuePerMwh": "Erlös je MWh",
+      "operatingCostEur": "Betriebskosten",
+      "costPerMwh": "Kosten je MWh",
+      "operatingResultEur": "Betriebsergebnis",
+      "payoutRatio": "Ausschüttungsquote",
+      "debtServiceCoverage": "Schuldendienstdeckung"
     }
   }
 }
