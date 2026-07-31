@@ -30,6 +30,7 @@ export type AuditEntityType =
   // A1 (Audit 2026-07): Stoerungsvorgang.
   | "FaultCase"
   | "ShareTransfer"
+  | "BankConnection"
   | "News"
   | "Person"
   // Bedienaufwand #22: Der CSV-Import protokolliert auch Lieferanten.
@@ -69,6 +70,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     ServiceEvent: "Service-Event",
     FaultCase: "Störungsvorgang",
     ShareTransfer: "Anteilsübertragung",
+    BankConnection: "Bankverbindung",
     News: "Neuigkeit",
     Person: "Person",
     Vendor: "Lieferant",
