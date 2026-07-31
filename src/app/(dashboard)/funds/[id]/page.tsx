@@ -119,6 +119,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { downloadBlob } from "@/lib/download";
 import { ShareTransfersCard } from "@/components/funds/share-transfers-card";
+import { MeetingsCard } from "@/components/funds/meetings-card";
 // A8 (Audit 2026-07): Dieselbe Rechnung wie auf dem Server. Die Vorschau
 // benutzte eine EIGENE, die normalisiert hat — sie zeigte damit Betraege an,
 // die so nie gebucht wurden.
@@ -1257,6 +1258,13 @@ export default function FundDetailsPage({
               nicht mehr rekonstruierbar. */}
           <div className="mt-6">
             <ShareTransfersCard fundId={id} />
+          </div>
+
+          {/* B4 (Audit 2026-07): Die Klammer um Vote, VoteProxy und Mailing —
+              Ladungsfrist, Anwesenheitsliste mit vertretenem Kapital,
+              Beschlussfaehigkeit und Beschlussbuch. */}
+          <div className="mt-6">
+            <MeetingsCard fundId={id} />
           </div>
         </TabsContent>
 

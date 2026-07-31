@@ -11177,5 +11177,50 @@
       "payoutRatio": "Ausschüttungsquote",
       "debtServiceCoverage": "Schuldendienstdeckung"
     }
+  },
+  "meetings": {
+    "cardTitle": "Gesellschafterversammlungen",
+    "cardTooltip": "Einladung mit Ladungsfrist, Tagesordnung, Anwesenheitsliste mit vertretenem Kapital, Beschlussfähigkeitsprüfung und Beschlussbuch — als ein Vorgang.",
+    "empty": "Noch keine Versammlung erfasst.",
+    "markInvited": "Einladung versandt",
+    "invitationRecorded": "Versand der Einladung vermerkt",
+    "noticeShort": "Ladungsfrist nicht eingehalten",
+    "updateError": "Änderung fehlgeschlagen",
+    "virtual": "virtuell",
+    "present": "Anwesend",
+    "represented": "Vertreten",
+    "totalRepresented": "Zusammen",
+    "outcomeOpen": "offen",
+    "noResolutionNeeded": "kein Beschluss",
+    "baseHint": "Die erforderliche Mehrheit bezieht sich je Tagesordnungspunkt auf eine ausdrücklich gewählte Basis: abgegebene Stimmen, vertretenes Kapital oder gesamtes Kapital. Dieselbe Abstimmung kann auf der einen Basis angenommen und auf der anderen abgelehnt sein — deshalb wird sie nicht vorbelegt.",
+    "table": {
+      "position": "TOP",
+      "item": "Gegenstand",
+      "majority": "Erforderlich",
+      "outcome": "Ergebnis"
+    },
+    "types": {
+      "ORDINARY": "ordentlich",
+      "EXTRAORDINARY": "außerordentlich",
+      "WRITTEN_PROCEDURE": "Umlaufbeschluss"
+    },
+    "statuses": {
+      "DRAFT": "Entwurf",
+      "INVITED": "Eingeladen",
+      "HELD": "Durchgeführt",
+      "MINUTED": "Protokolliert",
+      "CANCELLED": "Abgesagt"
+    },
+    "bases": {
+      "VOTES_CAST": "der abgegebenen Stimmen",
+      "CAPITAL_PRESENT": "des vertretenen Kapitals",
+      "CAPITAL_TOTAL": "des gesamten Kapitals"
+    },
+    "outcomes": {
+      "ADOPTED": "angenommen",
+      "REJECTED": "abgelehnt",
+      "DEFERRED": "vertagt",
+      "NO_RESOLUTION": "kein Beschluss"
+    }
   }
 }

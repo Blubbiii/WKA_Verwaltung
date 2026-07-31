@@ -19,6 +19,7 @@ Reihenfolge ist beliebig — die zehn berühren verschiedene Tabellen.
 | [share_transfers.sql](share_transfers.sql) | **ja** | Anteilsverlauf, Anteilsübertragung und fünf neue Spalten an `distributions`/`distribution_items` (A8). Ohne sie schlägt jedes Anlegen einer Ausschüttung fehl (Prisma schreibt `basis` und `undistributedAmount`). **Kein Backfill** — die Historie bleibt leer, dann gelten weiterhin die Stammdaten. Behebt zugleich Finding 4.1: die Ausschüttung liest ab jetzt `entryDate`/`exitDate` und normalisiert nicht mehr auf 100 %. |
 | [regulatory.sql](regulatory.sql) | **ja** | Regulatorik-Stammdaten je Anlage und gespeicherte Meldefristen samt vier Enums (B2). Ohne sie schlägt `/verwaltung/regulatorik` und `/api/deadlines` fehl — der Fristenkalender liest die neue Tabelle mit. **Kein Backfill**: `turbines.mastrNumber` bleibt unverändert stehen, ein stiller Übertrag würde ungeprüfte Werte in ein geprüftes Feld heben. |
 | [major_components.sql](major_components.sql) | **ja** | Großkomponenten-Register je Anlage samt zwei Enums (B3). Ohne sie schlägt `/api/components` fehl und die Karte im Anlagen-Reiter lädt nicht. **Kein Backfill** — aus dem bisherigen Freitext ließe sich weder eine Seriennummer noch ein Einbaudatum verlässlich ableiten. |
+| [shareholder_meetings.sql](shareholder_meetings.sql) | **ja** | Gesellschafterversammlung, Tagesordnung und Anwesenheitsliste samt fünf Enums (B4). Ohne sie schlägt `/api/meetings` fehl und die Karte im Gesellschafter-Reiter lädt nicht. **Kein Backfill** — bestehende `Vote`-Datensätze werden nicht zu Versammlungen umgedeutet. |
 | [retire_mass_communications.sql](retire_mass_communications.sql) | nein | Benennt `mass_communications` in `mass_communications_retired_20260730` um. Das Modell ist aus `schema.prisma` entfernt; die Tabelle stört nur noch. Bewusst RENAME statt DROP — der Inhalt war nicht einsehbar. Endgültiges DROP steht als auskommentierter Nachtrag in der Datei.
 
 ## Ausführen
@@ -36,17 +37,18 @@ npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/man
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/share_transfers.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/regulatory.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/major_components.sql
+npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/shareholder_meetings.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/retire_mass_communications.sql
 ```
 
-Alle dreizehn sind mehrfach ausführbar: die zwölf DDL-Skripte über
+Alle vierzehn sind mehrfach ausführbar: die dreizehn DDL-Skripte über
 `IF NOT EXISTS` / `IF EXISTS`, das Permission-Skript dadurch, dass der zweite
 Lauf keine Zeilen mehr findet. Die Enums in `fault_cases.sql`,
 `availability_guarantees.sql`, `metering_points_settlement_checks.sql`,
-`curtailment_events.sql`, `share_transfers.sql`, `regulatory.sql` und
-`major_components.sql` sind über `EXCEPTION WHEN duplicate_object` abgesichert;
-das eingebettete `INSERT INTO permissions` in `share_transfers.sql` über
-`ON CONFLICT DO NOTHING`.
+`curtailment_events.sql`, `share_transfers.sql`, `regulatory.sql`,
+`major_components.sql` und `shareholder_meetings.sql` sind über
+`EXCEPTION WHEN duplicate_object` abgesichert; das eingebettete
+`INSERT INTO permissions` in `share_transfers.sql` über `ON CONFLICT DO NOTHING`.
 
 Nach dem Ausführen: `npx prisma validate` und je einen Smoke-Test auf
 `/invoices/new` (legt eine Rechnung mit Empfängerverweis an) und `/faults`

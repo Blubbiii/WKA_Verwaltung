@@ -11177,5 +11177,50 @@
       "payoutRatio": "Payout ratio",
       "debtServiceCoverage": "Debt service coverage"
     }
+  },
+  "meetings": {
+    "cardTitle": "Shareholder meetings",
+    "cardTooltip": "Invitation with notice period, agenda, attendance list with represented capital, quorum check and resolution book — as a single process.",
+    "empty": "No meeting recorded yet.",
+    "markInvited": "Invitation sent",
+    "invitationRecorded": "Invitation dispatch recorded",
+    "noticeShort": "Notice period not met",
+    "updateError": "Update failed",
+    "virtual": "virtual",
+    "present": "Present",
+    "represented": "Represented",
+    "totalRepresented": "Combined",
+    "outcomeOpen": "open",
+    "noResolutionNeeded": "no resolution",
+    "baseHint": "The required majority refers, per agenda item, to an explicitly chosen base: votes cast, capital represented or total capital. The same vote can be adopted on one base and rejected on another — which is why it is never pre-filled.",
+    "table": {
+      "position": "Item",
+      "item": "Subject",
+      "majority": "Required",
+      "outcome": "Outcome"
+    },
+    "types": {
+      "ORDINARY": "ordinary",
+      "EXTRAORDINARY": "extraordinary",
+      "WRITTEN_PROCEDURE": "written procedure"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "INVITED": "Invited",
+      "HELD": "Held",
+      "MINUTED": "Minuted",
+      "CANCELLED": "Cancelled"
+    },
+    "bases": {
+      "VOTES_CAST": "of votes cast",
+      "CAPITAL_PRESENT": "of capital represented",
+      "CAPITAL_TOTAL": "of total capital"
+    },
+    "outcomes": {
+      "ADOPTED": "adopted",
+      "REJECTED": "rejected",
+      "DEFERRED": "deferred",
+      "NO_RESOLUTION": "no resolution"
+    }
   }
 }

@@ -152,6 +152,7 @@ model Tenant {
   regulatoryProfiles        RegulatoryProfile[]
   complianceDeadlines       ComplianceDeadline[]
   majorComponents           MajorComponent[]
+  shareholderMeetings       ShareholderMeeting[]
 
   @@map("tenants")
 }
@@ -303,6 +304,7 @@ model User {
   shareTransfersCreated                                                   ShareTransfer[]            @relation("ShareTransferCreatedBy")
   shareTransfersExecuted                                                  ShareTransfer[]            @relation("ShareTransferExecutedBy")
   complianceDeadlinesCompleted                                            ComplianceDeadline[]       @relation("ComplianceDeadlineCompletedBy")
+  meetingsCreated                                                         ShareholderMeeting[]       @relation("MeetingCreatedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -598,6 +600,7 @@ model Fund {
   contracts                                             Contract[]
   distributions                                         Distribution[]
   shareTransfers                                        ShareTransfer[]
+  shareholderMeetings                                   ShareholderMeeting[]
   documents                                             Document[]
   energySettlementItems                                 EnergySettlementItem[]
   parentHierarchies  FundHierarchy[]               @relation("ChildHierarchy")
@@ -715,6 +718,7 @@ model Person {
   // Bedienaufwand #11: Rechnungen, deren Empfaenger dieser Kontakt ist.
   recipientInvoices              Invoice[]                        @relation("InvoiceRecipient")
   leaseLessorShares              LeaseLessor[]                    @relation("LeaseLessorShare")
+  meetingProxiesHeld             MeetingAttendance[]              @relation("MeetingProxyHolder")
   settlementItemLessorShares     LeaseRevenueSettlementItemLessor[] @relation("SettlementItemLessorShare")
 
   @@index([tenantId])
@@ -790,6 +794,7 @@ model Shareholder {
   shareHistory           ShareholderShare[]
   transfersOut           ShareTransfer[]      @relation("ShareTransferFrom")
   transfersIn            ShareTransfer[]      @relation("ShareTransferTo")
+  meetingAttendance      MeetingAttendance[]
 
   @@index([fundId])
   @@index([personId])
@@ -978,6 +983,7 @@ model Document {
   turbine                             Turbine?               @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
   shareTransfers                      ShareTransfer[]
+  meetingMinutes                      ShareholderMeeting[]   @relation("MeetingMinutes")
 
   @@index([tenantId])
   @@index([category])
@@ -1015,6 +1021,7 @@ model Vote {
   createdById             String?
   proxies                 VoteProxy[]
   responses               VoteResponse[]
+  agendaItem              MeetingAgendaItem?
   createdBy               User?          @relation("VoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   fund                    Fund           @relation(fields: [fundId], references: [id], onDelete: Cascade)
   tenant                  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1058,6 +1065,7 @@ model VoteProxy {
   grantee     Shareholder @relation("ProxyGrantee", fields: [granteeId], references: [id], onDelete: Cascade)
   grantor     Shareholder @relation("ProxyGrantor", fields: [grantorId], references: [id], onDelete: Cascade)
   vote        Vote?       @relation(fields: [voteId], references: [id], onDelete: SetNull)
+  meetingAttendance MeetingAttendance[]
 
   @@index([granteeId])
   @@index([grantorId])
@@ -6752,4 +6760,205 @@ model MajorComponent {
   /// Trägt die Übersicht ablaufender Gewährleistungen.
   @@index([tenantId, warrantyEndDate])
   @@map("major_components")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B4 (Audit 2026-07): Gesellschafterversammlung als Vorgang
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MeetingType {
+  /// Ordentliche Gesellschafterversammlung (Jahresversammlung).
+  ORDINARY
+  EXTRAORDINARY
+  /// Schriftliches Verfahren / Umlaufbeschluss (§ 48 Abs. 2 GmbHG).
+  WRITTEN_PROCEDURE
+}
+
+enum MeetingStatus {
+  DRAFT
+  /// Eingeladen — ab hier läuft die Ladungsfrist.
+  INVITED
+  HELD
+  /// Protokoll unterzeichnet. Erst hier ist die Nachweiskette geschlossen.
+  MINUTED
+  CANCELLED
+}
+
+enum AttendancePresence {
+  PRESENT
+  /// Durch Vollmacht vertreten.
+  REPRESENTED
+  ABSENT
+}
+
+/// Worauf sich eine Mehrheit bezieht. Dieselbe Abstimmung kann auf der einen
+/// Basis angenommen und auf der anderen abgelehnt sein — deshalb ein Feld je
+/// Tagesordnungspunkt und keine Vorbelegung im Code.
+enum MajorityBase {
+  /// Abgegebene Stimmen; Enthaltungen zählen nicht mit (§ 47 Abs. 1 GmbHG).
+  VOTES_CAST
+  /// Anwesendes bzw. vertretenes Kapital.
+  CAPITAL_PRESENT
+  /// Gesamtes Kapital der Gesellschaft.
+  CAPITAL_TOTAL
+}
+
+enum ResolutionOutcome {
+  ADOPTED
+  REJECTED
+  /// Vertagt.
+  DEFERRED
+  /// Punkt ohne Beschlussfassung (Bericht, Aussprache).
+  NO_RESOLUTION
+}
+
+/// Gesellschafterversammlung.
+///
+/// `Vote`, `VoteProxy` und `Mailing` gab es einzeln; was fehlte, war die
+/// Klammer — Einladung mit Ladungsfrist, Tagesordnung, Anwesenheitsliste mit
+/// vertretenem Kapital, Beschlussfähigkeitsprüfung, Protokoll.
+model ShareholderMeeting {
+  id            String @id @default(uuid())
+  tenantId      String
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fundId        String
+  fund          Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  meetingNumber String
+
+  type   MeetingType   @default(ORDINARY)
+  status MeetingStatus @default(DRAFT)
+
+  scheduledAt DateTime
+  location    String?  @db.VarChar(300)
+  /// Hybrid- oder reine Online-Versammlung. Für das Protokoll erheblich.
+  isVirtual Boolean @default(false)
+
+  /// Wann die Einladung hinausging. Ohne dieses Datum ist die Einhaltung der
+  /// Ladungsfrist nicht nachweisbar — und „nicht nachweisbar" ist nicht
+  /// dasselbe wie „eingehalten".
+  invitationSentAt DateTime?
+  /// Ladungsfrist laut Gesellschaftsvertrag in Tagen. Ein Feld, weil die
+  /// gesetzliche Wochenfrist der GmbH (§ 51 Abs. 1 S. 2 GmbHG) regelmässig
+  /// vertraglich verlängert wird und bei Personengesellschaften gar nicht gilt.
+  noticePeriodDays Int @default(14)
+  /// Vollversammlung: alle erschienen und einverstanden — heilt einen
+  /// Ladungsmangel (§ 51 Abs. 3 GmbHG).
+  noticeWaivedByAll Boolean @default(false)
+
+  /// Erforderliches Quorum in Prozent des Kapitals. `null` = keines
+  /// hinterlegt; dann wird von Beschlussfähigkeit ausgegangen und das gesagt.
+  quorumPercent Decimal? @db.Decimal(5, 2)
+
+  chairperson String? @db.VarChar(200)
+  minuteTaker String? @db.VarChar(200)
+
+  /// Das unterzeichnete Protokoll.
+  minutesDocumentId String?
+  minutesDocument   Document? @relation("MeetingMinutes", fields: [minutesDocumentId], references: [id], onDelete: SetNull)
+  minutesApprovedAt DateTime?
+
+  /// Die Einladung als Rundschreiben, sofern darüber versandt.
+  invitationMailingId String?
+
+  notes String? @db.Text
+
+  agendaItems MeetingAgendaItem[]
+  attendance  MeetingAttendance[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation("MeetingCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, meetingNumber])
+  @@index([tenantId])
+  @@index([fundId, scheduledAt])
+  @@index([tenantId, status])
+  @@map("shareholder_meetings")
+}
+
+/// Tagesordnungspunkt — und, sofern beschlossen, der Beschluss dazu.
+///
+/// Beides in einem Datensatz, weil das Beschlussbuch nichts anderes ist als
+/// die Tagesordnung mit Ergebnis. Sie zu trennen hiesse, die Zuordnung später
+/// wieder herstellen zu müssen.
+model MeetingAgendaItem {
+  id        String             @id @default(uuid())
+  meetingId String
+  meeting   ShareholderMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  /// TOP-Nummer.
+  position Int
+  title    String @db.VarChar(300)
+  description String? @db.Text
+
+  /// Wird hierüber abgestimmt?
+  requiresResolution Boolean @default(true)
+  /// Erforderliche Mehrheit in Prozent und ihre Basis.
+  requiredMajorityPercent Decimal      @default(50) @db.Decimal(5, 2)
+  majorityBase            MajorityBase @default(VOTES_CAST)
+
+  /// Der Beschlusstext, wie er im Protokoll steht.
+  resolutionText String? @db.Text
+
+  votesInFavor Decimal? @db.Decimal(12, 4)
+  votesAgainst Decimal? @db.Decimal(12, 4)
+  votesAbstain Decimal? @db.Decimal(12, 4)
+
+  outcome ResolutionOutcome?
+  /// Erreichter Anteil auf der gewählten Basis, mitgespeichert. Eine spätere
+  /// Änderung der Anwesenheitsliste darf ein protokolliertes Ergebnis nicht
+  /// rückwirkend umrechnen.
+  achievedPercent Decimal? @db.Decimal(6, 2)
+  /// Der Satz fürs Protokoll, ebenfalls festgehalten.
+  resultStatement String? @db.Text
+
+  /// Verknüpfung zur bestehenden Abstimmung, falls elektronisch abgestimmt wurde.
+  voteId String? @unique
+  vote   Vote?   @relation(fields: [voteId], references: [id], onDelete: SetNull)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([meetingId, position])
+  @@index([meetingId])
+  @@map("meeting_agenda_items")
+}
+
+/// Anwesenheitsliste mit vertretenem Kapital.
+model MeetingAttendance {
+  id        String             @id @default(uuid())
+  meetingId String
+  meeting   ShareholderMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  shareholderId String
+  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  presence AttendancePresence @default(ABSENT)
+
+  /// Kapitalanteil in Prozent ZUM VERSAMMLUNGSTAG — Snapshot aus dem
+  /// Anteilsverlauf (A8). Nicht später nachgerechnet: sonst änderte ein
+  /// Anteilsübergang im Juli rückwirkend die Beschlussfähigkeit der
+  /// Mai-Versammlung.
+  sharePercent Decimal @db.Decimal(8, 5)
+
+  /// Wer vertritt, wenn REPRESENTED.
+  representedByPersonId String?
+  representedByPerson   Person? @relation("MeetingProxyHolder", fields: [representedByPersonId], references: [id], onDelete: SetNull)
+  /// Die zugrunde liegende Vollmacht, sofern erfasst.
+  proxyId String?
+  proxy   VoteProxy? @relation(fields: [proxyId], references: [id], onDelete: SetNull)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Ein Gesellschafter erscheint in der Liste genau einmal.
+  @@unique([meetingId, shareholderId])
+  @@index([meetingId])
+  @@index([shareholderId])
+  @@map("meeting_attendance")
 }
