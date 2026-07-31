@@ -3,7 +3,7 @@
 Diese Dateien sind geschrieben und gegen `prisma validate` geprüft, aber **noch
 nicht auf der Datenbank ausgeführt**. Der Code im Repo setzt sie voraus.
 
-Reihenfolge ist beliebig — die sechs berühren verschiedene Tabellen.
+Reihenfolge ist beliebig — die sieben berühren verschiedene Tabellen.
 
 | Datei | Muss vor Deploy? | Was passiert |
 |---|---|---|
@@ -12,6 +12,7 @@ Reihenfolge ist beliebig — die sechs berühren verschiedene Tabellen.
 | [fault_cases.sql](fault_cases.sql) | **ja** | Neue Tabellen `fault_cases` und `fault_case_scada_events` samt vier Enums (A1: Störungsvorgang mit bewertetem Ertragsausfall). Ohne sie schlägt jeder Zugriff auf `/faults` fehl. |
 | [availability_guarantees.sql](availability_guarantees.sql) | **ja** | Drei Tabellen für Verfügbarkeitsgarantien, Bonus-/Malus-Staffel und Jahresabgleich samt fünf Enums (A2). Ohne sie schlägt `/api/availability/*` fehl. |
 | [metering_points_settlement_checks.sql](metering_points_settlement_checks.sql) | **ja** | Zählpunkte (Marktlokation/Messlokation) und Abgleichsergebnisse (A3). Ohne sie schlägt `/api/energy/metering-points` und die Abrechnungsprüfung fehl. |
+| [curtailment_events.sql](curtailment_events.sql) | **ja** | Abregelungsereignisse mit Ausfallarbeit und Entschädigungsforderung (A4). Ohne sie schlägt `/api/curtailment` fehl. |
 | [retire_mass_communications.sql](retire_mass_communications.sql) | nein | Benennt `mass_communications` in `mass_communications_retired_20260730` um. Das Modell ist aus `schema.prisma` entfernt; die Tabelle stört nur noch. Bewusst RENAME statt DROP — der Inhalt war nicht einsehbar. Endgültiges DROP steht als auskommentierter Nachtrag in der Datei.
 
 ## Ausführen
@@ -22,14 +23,16 @@ npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/man
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/fault_cases.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/availability_guarantees.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/metering_points_settlement_checks.sql
+npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/curtailment_events.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/retire_mass_communications.sql
 ```
 
-Alle sechs sind mehrfach ausführbar: die fünf DDL-Skripte über
+Alle sieben sind mehrfach ausführbar: die sechs DDL-Skripte über
 `IF NOT EXISTS` / `IF EXISTS`, das Permission-Skript dadurch, dass der zweite
 Lauf keine Zeilen mehr findet. Die Enums in `fault_cases.sql`,
-`availability_guarantees.sql` und `metering_points_settlement_checks.sql` sind
-über `EXCEPTION WHEN duplicate_object` abgesichert.
+`availability_guarantees.sql`, `metering_points_settlement_checks.sql` und
+`curtailment_events.sql` sind über `EXCEPTION WHEN duplicate_object`
+abgesichert.
 
 Nach dem Ausführen: `npx prisma validate` und je einen Smoke-Test auf
 `/invoices/new` (legt eine Rechnung mit Empfängerverweis an) und `/faults`

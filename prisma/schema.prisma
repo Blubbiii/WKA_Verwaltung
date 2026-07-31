@@ -145,6 +145,7 @@ model Tenant {
   availabilitySettlements   AvailabilitySettlement[]
   meteringPoints            MeteringPoint[]
   settlementChecks          SettlementCheck[]
+  curtailmentEvents         CurtailmentEvent[]
 
   @@map("tenants")
 }
@@ -292,6 +293,7 @@ model User {
   faultCasesCreated                                                       FaultCase[]                @relation("FaultCaseCreator")
   availabilitySettlementsCreated                                          AvailabilitySettlement[]   @relation("AvailabilitySettlementCreator")
   settlementChecksReviewed                                                SettlementCheck[]          @relation("SettlementCheckReviewer")
+  curtailmentEventsCreated                                                CurtailmentEvent[]         @relation("CurtailmentEventCreator")
 
   @@index([tenantId])
   @@index([email])
@@ -408,6 +410,7 @@ model Park {
   powerPurchaseAgreements                PowerPurchaseAgreement[]
   quotes                                 Quote[]
   meteringPoints                         MeteringPoint[]
+  curtailmentEvents                      CurtailmentEvent[]
 
   @@index([tenantId])
   @@index([deletedAt])
@@ -488,6 +491,7 @@ model Turbine {
   insuranceClaims                InsuranceClaim[]
   faultCases                     FaultCase[]
   meteringPoints                 MeteringPoint[]
+  curtailmentEvents              CurtailmentEvent[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -5732,4 +5736,150 @@ model SettlementCheck {
   @@index([settlementId])
   @@index([tenantId, worstSeverity])
   @@map("settlement_checks")
+}
+
+// ---------------------------------------------------------------------------
+// A4: Redispatch / Einspeisemanagement (Audit 2026-07)
+//
+// Die Abregelungsgründe kamen aus dem DBF-Reader und landeten in Charts und
+// PDF-Reports. Es fehlte die ANSPRUCHSSEITE: Ausfallarbeit je Ereignis,
+// Anspruchsgrundlage, Forderungsaufstellung, Abgleich mit der gezahlten
+// Entschädigung, Nachverfolgung offener Beträge. Man verliess sich auf die
+// Berechnung des Netzbetreibers.
+// ---------------------------------------------------------------------------
+
+/// Anspruchsgrundlage. Bestimmt den Rechenweg, nicht nur die Beschriftung.
+enum CurtailmentLegalBasis {
+  /// § 15 EEG (Einspeisemanagement, „Härtefallregelung"): 95 % der
+  /// entgangenen Einnahmen, ab Überschreiten von 1 % der Jahreseinnahmen
+  /// 100 %.
+  EEG_15
+  /// § 13a EnWG / Redispatch 2.0: Der finanzielle Ausgleich wird vom
+  /// Netzbetreiber ermittelt. Das System beziffert die entgangene Einnahme als
+  /// Vergleichsgrösse — nachgerechnet wird sie NICHT, dafür fehlen
+  /// Bilanzkreisdaten und das Abrechnungsmodell.
+  ENWG_13A
+  /// Sonstiges (z. B. vertragliche Abregelung des Direktvermarkters).
+  OTHER
+}
+
+enum CurtailmentLostWorkMethod {
+  /// Aus dem Abregelungssignal der Anlagensteuerung (mrwSmpPext).
+  CONTROLLER_SIGNAL
+  /// Aus Referenzanlagen desselben Parks.
+  REFERENCE_TURBINE
+  /// Vom Netzbetreiber gemeldet.
+  GRID_OPERATOR
+  /// Von Hand beziffert.
+  MANUAL
+}
+
+enum CurtailmentClaimStatus {
+  /// Noch nicht geltend gemacht.
+  OPEN
+  /// Forderung gestellt.
+  SUBMITTED
+  /// Vom Netzbetreiber anerkannt.
+  ACKNOWLEDGED
+  /// Teilweise gezahlt — der offene Rest bleibt sichtbar.
+  PARTIALLY_PAID
+  /// Vollständig gezahlt.
+  PAID
+  /// Abgelehnt.
+  REJECTED
+  /// Verjährt. Damit ein versäumter Anspruch im Bestand sichtbar bleibt.
+  TIME_BARRED
+}
+
+model CurtailmentEvent {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Fortlaufend je Mandant und Jahr, z. B. "RD-2026-0012". Wird gegenüber dem
+  /// Netzbetreiber referenziert.
+  eventNumber String
+
+  parkId String
+  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  /// Betrifft die Abregelung nur eine Anlage, steht sie hier. Bei einer
+  /// Parkabregelung bleibt das Feld leer.
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+
+  startAt DateTime
+  endAt   DateTime?
+
+  legalBasis CurtailmentLegalBasis @default(ENWG_13A)
+  /// Anweisungsnummer des Netzbetreibers — der Schlüssel für jede Rückfrage.
+  gridOperatorReference String? @db.VarChar(100)
+  gridOperator          String? @db.VarChar(200)
+  reason                String? @db.VarChar(200)
+  description           String? @db.Text
+
+  // --- Ausfallarbeit ---------------------------------------------------
+  /// Null heisst „noch nicht ermittelt" — NICHT 0 kWh.
+  lostWorkKwh    Decimal?                   @db.Decimal(15, 3)
+  lostWorkMethod CurtailmentLostWorkMethod?
+  /// Herleitung: Intervallzahl, einbezogene Komponenten, Hinweise.
+  lostWorkBasis  Json?
+  lostWorkNotes  String?                    @db.Text
+
+  // --- Bewertung -------------------------------------------------------
+  /// Angesetzter Satz, MITGESPEICHERT: sonst ändert sich eine gestellte
+  /// Forderung rückwirkend, wenn jemand einen Monatssatz korrigiert.
+  ratePerKwh Decimal? @db.Decimal(10, 4)
+  rateSource String?  @db.VarChar(100)
+
+  lostRevenueEur Decimal? @db.Decimal(15, 2)
+  /// Aufteilung nach § 15 EEG. Beide Anteile getrennt, weil ein Ereignis die
+  /// 1-%-Schwelle überschreiten und dann geteilt werden kann.
+  portionAt95Eur  Decimal? @db.Decimal(15, 2)
+  portionAt100Eur Decimal? @db.Decimal(15, 2)
+  /// Die Forderung, inklusive Zu- und Abschlägen.
+  claimEur Decimal? @db.Decimal(15, 2)
+
+  additionalExpensesEur Decimal? @db.Decimal(15, 2)
+  savedExpensesEur      Decimal? @db.Decimal(15, 2)
+
+  /// Rechnungsgrundlagen der Schwelle, mitgespeichert — sonst lässt sich die
+  /// Aufteilung später nicht mehr nachvollziehen.
+  annualRevenueBasisEur     Decimal? @db.Decimal(15, 2)
+  priorLostRevenueInYearEur Decimal? @db.Decimal(15, 2)
+
+  computedAt DateTime?
+
+  // --- Anspruch und Zahlung --------------------------------------------
+  claimStatus      CurtailmentClaimStatus @default(OPEN)
+  claimSubmittedAt DateTime?
+  /// Verjährungsdatum. Bewusst ein Feld und keine Berechnung: die Frist hängt
+  /// von der Anspruchsgrundlage ab. Eine automatisch gesetzte Frist wäre eine
+  /// Rechtsauskunft im Code.
+  claimDeadline DateTime?
+  claimNotes    String?   @db.Text
+
+  /// Was der Netzbetreiber tatsächlich gezahlt hat. Der Abgleich zwischen
+  /// claimEur und diesem Betrag ist der eigentliche Zweck des Vorgangs.
+  compensationPaidEur Decimal?  @db.Decimal(15, 2)
+  compensationPaidAt  DateTime?
+  /// Was der Netzbetreiber selbst als Ausfallarbeit gemeldet hat — die
+  /// Abweichung zur eigenen Rechnung ist der Anlass für eine Nachfrage.
+  gridOperatorReportedKwh Decimal? @db.Decimal(15, 3)
+
+  followUpAt DateTime?
+
+  createdById String?
+  createdBy   User?  @relation("CurtailmentEventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, eventNumber])
+  @@index([tenantId])
+  @@index([parkId, startAt])
+  @@index([tenantId, claimStatus])
+  /// Trägt die Arbeitsliste: offene Forderungen und ablaufende Fristen.
+  @@index([tenantId, claimDeadline])
+  @@index([tenantId, followUpAt])
+  @@map("curtailment_events")
 }

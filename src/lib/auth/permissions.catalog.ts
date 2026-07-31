@@ -283,6 +283,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "energy:settlement:check",  module: "energy", action: "settlement-check",  displayName: "Abrechnung plausibilisieren", description: "Dreiecksabgleich Menge und Preis gegen SCADA und Produktion", sortOrder: 255 },
   { name: "energy:metering-points",   module: "energy", action: "metering-points",   displayName: "Zaehlpunkte verwalten",       description: "Marktlokation und Messlokation pflegen",                     sortOrder: 256 },
 
+  // ── Abregelung / Redispatch (A4, Audit 2026-07) ────────────────────────
+  { name: "curtailment:read",    module: "curtailment", action: "read",    displayName: "Abregelungen anzeigen",     description: "Redispatch-Ereignisse und Forderungen einsehen",        sortOrder: 257 },
+  { name: "curtailment:manage",  module: "curtailment", action: "manage",  displayName: "Abregelung erfassen",       description: "Ereignis, Anspruchsgrundlage und Zahlung pflegen",       sortOrder: 258 },
+  { name: "curtailment:compute", module: "curtailment", action: "compute", displayName: "Ausfallarbeit ermitteln",   description: "Ausfallarbeit und Entschaedigungsforderung berechnen",  sortOrder: 259 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },

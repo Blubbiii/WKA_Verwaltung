@@ -579,6 +579,11 @@ export const PERMISSIONS = {
   // A3 (Audit 2026-07): Abrechnungspruefung und Zaehlpunkte.
   ENERGY_SETTLEMENT_CHECK: "energy:settlement:check",
   ENERGY_METERING_POINTS: "energy:metering-points",
+
+  // A4 (Audit 2026-07): Abregelung / Redispatch.
+  CURTAILMENT_READ: "curtailment:read",
+  CURTAILMENT_MANAGE: "curtailment:manage",
+  CURTAILMENT_COMPUTE: "curtailment:compute",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
