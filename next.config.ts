@@ -124,6 +124,24 @@ const isDev = process.env.NODE_ENV === "development";
 export default isDev
   ? configWithIntl
   : withSentryConfig(configWithIntl, {
+      // Release ausdrücklich setzen statt Sentry raten zu lassen.
+      //
+      // Ohne diese Angabe ermittelt das Sentry-Plugin den Release über
+      // `git rev-parse`. Im Docker-Build gibt es aber kein Repository —
+      // `.git` steht in `.dockerignore` — und der Aufruf endet mit
+      // "fatal: not a git repository", Exit-Code 128.
+      //
+      // Der Commit-SHA liegt ohnehin vor: die Deploy-Pipeline reicht ihn als
+      // Build-Arg NEXT_PUBLIC_COMMIT_SHA durch. Ihn zu verwenden ist nicht nur
+      // robuster, sondern auch richtiger — er benennt genau den Stand, der im
+      // Image liegt.
+      release: {
+        name: process.env.NEXT_PUBLIC_COMMIT_SHA || undefined,
+        // Ohne Auth-Token gibt es nichts anzulegen; das spart einen weiteren
+        // Netzwerkaufruf im Build.
+        create: Boolean(process.env.SENTRY_AUTH_TOKEN),
+      },
+
       // Suppresses source map uploading logs during build
       silent: true,
 
