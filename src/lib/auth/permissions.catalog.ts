@@ -294,6 +294,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "insurance:read",   module: "insurance", action: "read",   displayName: "Policen anzeigen",  description: "Versicherungspolicen und Deckungsluecken einsehen",   sortOrder: 260 },
   { name: "insurance:manage", module: "insurance", action: "manage", displayName: "Policen pflegen",   description: "Police, Deckungen und Schadenbewertung bearbeiten",   sortOrder: 261 },
 
+  // ── Rueckbauverpflichtung (A7, Audit 2026-07) ──────────────────────────
+  { name: "dismantling:read",    module: "dismantling", action: "read",    displayName: "Rueckbau anzeigen",        description: "Rueckbauverpflichtung, Sicherheit und Rueckstellung einsehen", sortOrder: 262 },
+  { name: "dismantling:manage",  module: "dismantling", action: "manage",  displayName: "Rueckbau pflegen",         description: "Gutachten, Buergschaft und Rueckbautermin bearbeiten",         sortOrder: 263 },
+  { name: "dismantling:provision", module: "dismantling", action: "provision", displayName: "Rueckstellung fortschreiben", description: "Jahresrueckstellung nach HGB und EStG ermitteln",        sortOrder: 264 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },

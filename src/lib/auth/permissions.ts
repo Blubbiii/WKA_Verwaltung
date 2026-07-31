@@ -588,6 +588,11 @@ export const PERMISSIONS = {
   // A6 (Audit 2026-07): Versicherungspolicen.
   INSURANCE_READ: "insurance:read",
   INSURANCE_MANAGE: "insurance:manage",
+
+  // A7 (Audit 2026-07): Rueckbauverpflichtung.
+  DISMANTLING_READ: "dismantling:read",
+  DISMANTLING_MANAGE: "dismantling:manage",
+  DISMANTLING_PROVISION: "dismantling:provision",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

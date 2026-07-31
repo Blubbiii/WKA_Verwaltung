@@ -147,6 +147,7 @@ model Tenant {
   settlementChecks          SettlementCheck[]
   curtailmentEvents         CurtailmentEvent[]
   insurancePolicies         InsurancePolicy[]
+  dismantlingObligations    DismantlingObligation[]
 
   @@map("tenants")
 }
@@ -413,6 +414,7 @@ model Park {
   meteringPoints                         MeteringPoint[]
   curtailmentEvents                      CurtailmentEvent[]
   insuredObjects                         InsuredObject[]
+  dismantlingObligation                  DismantlingObligation?
 
   @@index([tenantId])
   @@index([deletedAt])
@@ -3613,6 +3615,7 @@ model JournalEntry {
   // P16: Forderungsmanagement Rückrelationen.
   invoicePayments        InvoicePayment[] @relation("InvoicePaymentJournal")
   valueAdjustments       ValueAdjustment[] @relation("ValueAdjustmentJournal")
+  dismantlingProvisions  DismantlingProvision[]
 
   @@index([tenantId])
   @@index([tenantId, entryDate])
@@ -6169,4 +6172,131 @@ model InsuredObject {
   @@index([parkId])
   @@index([turbineId])
   @@map("insured_objects")
+}
+
+// ---------------------------------------------------------------------------
+// A7: Rückbauverpflichtung, Sicherheitsleistung, Rückbaurückstellung (Audit 2026-07)
+//
+// „Kein einziger Treffer für ‚Rückbau' im gesamten Codebase." Jeder Park hat
+// eine behördlich festgesetzte Rückbausicherheit (Bürgschaft mit Laufzeit) und
+// eine Rückbaurückstellung, die jährlich fortzuschreiben ist. Heute: Excel
+// beim Steuerberater, Bürgschaft im Aktenordner.
+// ---------------------------------------------------------------------------
+
+enum DismantlingSecurityType {
+  /// Bankbürgschaft — der Regelfall.
+  BANK_GUARANTEE
+  /// Konzernbürgschaft.
+  PARENT_GUARANTEE
+  /// Hinterlegte Barsicherheit.
+  CASH_DEPOSIT
+  /// Versicherungsbürgschaft (Kautionsversicherung).
+  SURETY_BOND
+  OTHER
+}
+
+/// Rückbauverpflichtung eines Parks: Gutachten, Sicherheit, Ansammlungsplan.
+model DismantlingObligation {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  parkId String @unique
+  park   Park   @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  /// Geschätzte Rückbaukosten in heutigen Preisen — aus dem Gutachten.
+  estimatedCostTodayEur Decimal  @db.Decimal(15, 2)
+  /// Datum bzw. Stand des Gutachtens. Ein Kostenansatz ohne Datum lässt sich
+  /// nicht beurteilen: 500.000 EUR von 2012 sind eine andere Aussage als
+  /// dieselbe Zahl von 2026.
+  costEstimateDate    DateTime?
+  costEstimateSource  String?   @db.VarChar(200)
+
+  /// Jahr des geplanten Rückbaus — Ende der Ansammlung.
+  dismantlingYear Int
+  /// Erwartete jährliche Kostensteigerung in Prozent. Nur handelsrechtlich
+  /// relevant (§ 253 Abs. 1 S. 2 HGB: Erfüllungsbetrag).
+  costInflationPercent Decimal @default(2.00) @db.Decimal(5, 2)
+
+  // --- Behördliche Sicherheitsleistung ---------------------------------
+  /// Behördlich festgesetzte Höhe der Rückbausicherheit.
+  requiredSecurityEur Decimal? @db.Decimal(15, 2)
+  /// Tatsächlich gestellte Sicherheit.
+  providedSecurityEur Decimal? @db.Decimal(15, 2)
+  securityType        DismantlingSecurityType?
+  securityProvider    String?  @db.VarChar(200)
+  /// Bürgschaftsurkunde.
+  securityReference String?   @db.VarChar(100)
+  securityValidFrom DateTime?
+  /// Ablauf der Bürgschaft. Sie läuft still ab, weil niemand den Aktenordner
+  /// liest — deshalb indiziert und in der Fälligkeitsliste.
+  securityValidTo DateTime?
+  /// Behördliches Aktenzeichen der Auflage.
+  authorityReference String? @db.VarChar(100)
+
+  notes String? @db.Text
+
+  provisions DismantlingProvision[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, securityValidTo])
+  @@map("dismantling_obligations")
+}
+
+/// Fortschreibung der Rückstellung je Geschäftsjahr.
+model DismantlingProvision {
+  id           String                @id @default(uuid())
+  obligationId String
+  obligation   DismantlingObligation @relation(fields: [obligationId], references: [id], onDelete: Cascade)
+
+  /// Bilanzstichtagsjahr.
+  year Int
+
+  /// Rechnungsgrundlagen, MITGESPEICHERT: eine spätere Änderung des
+  /// Gutachtens oder des Rückbautermins darf einen festgestellten
+  /// Jahresabschluss nicht rückwirkend umrechnen.
+  estimatedCostTodayEur Decimal @db.Decimal(15, 2)
+  costInflationPercent  Decimal @db.Decimal(5, 2)
+  /// Handelsrechtlicher Abzinsungssatz (Bundesbank, laufzeitabhängig).
+  /// `null` = nicht hinterlegt; dann wird NICHT abgezinst und der Betrag ist
+  /// zu hoch. Ihn zu schätzen wäre eine erfundene Bilanzgrösse.
+  hgbDiscountRatePercent Decimal? @db.Decimal(5, 3)
+
+  // --- Handelsbilanz (§ 253 HGB) ---------------------------------------
+  hgbSettlementAmountEur Decimal @db.Decimal(15, 2)
+  hgbProvisionEur        Decimal @db.Decimal(15, 2)
+  hgbAdditionEur         Decimal? @db.Decimal(15, 2)
+
+  // --- Steuerbilanz (§ 6 Abs. 1 Nr. 3a EStG) ---------------------------
+  taxSettlementAmountEur Decimal @db.Decimal(15, 2)
+  taxProvisionEur        Decimal @db.Decimal(15, 2)
+  taxAdditionEur         Decimal? @db.Decimal(15, 2)
+
+  /// Handelsbilanz minus Steuerbilanz — Grundlage der latenten Steuern.
+  differenceEur Decimal @db.Decimal(15, 2)
+
+  accrualRatio   Decimal @db.Decimal(7, 4)
+  remainingYears Int
+
+  /// Herleitung und Hinweise.
+  basis Json?
+
+  /// Die Jahresbuchung, sofern gebucht.
+  journalEntryId String?
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
+
+  computedAt DateTime @default(now())
+  notes      String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Ein Datensatz je Verpflichtung und Jahr — sonst entstehen zwei
+  /// Rückstellungswerte für denselben Abschluss.
+  @@unique([obligationId, year])
+  @@index([obligationId])
+  @@map("dismantling_provisions")
 }
