@@ -1,0 +1,61 @@
+# Zeilenenden — repo-weit, nicht pro Rechner.
+#
+# Vorher regelte das allein `core.autocrlf=true`. Das ist lokale Konfiguration:
+# ein Kollege, ein CI-Runner oder ein frischer Clone ohne diese Einstellung
+# verhält sich anders, und nichts im Repository hätte das verhindert.
+#
+# Der konkrete Schaden wäre `docker-entrypoint.sh`: landet die Datei je mit
+# CRLF im Repo, stirbt der Container mit „exec /docker-entrypoint.sh: no such
+# file or directory" — einer Meldung, die mit keinem Wort auf Zeilenenden
+# hinweist.
+
+# Alles als Text führen und im Repo wie im Arbeitsverzeichnis auf LF
+# normalisieren. Das Ziel ist Linux (Docker); VS Code, Node und Git Bash
+# kommen unter Windows problemlos mit LF zurecht.
+* text=auto eol=lf
+
+# --- Ausnahmen: was CRLF braucht ------------------------------------------
+
+# PowerShell ist das einzige Windows-Skript im Repo. `.bat`/`.cmd` — das
+# Format, das CRLF zwingend verlangt — gibt es hier nicht.
+*.ps1 text eol=crlf
+
+# --- Binärdateien: ausdrücklich, nicht per Heuristik ----------------------
+#
+# `text=auto` erkennt Binärdateien am Inhalt. Bei den SCADA-Rohdaten wollen
+# wir uns darauf nicht verlassen: eine Fehlerkennung würde die Fixtures
+# umschreiben und die Parser-Tests gegen veränderte Daten laufen lassen.
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.zip binary
+*.xlsx binary
+
+# Enercon-SCADA-Rohdaten (siehe src/lib/scada/__fixtures__)
+*.wsd binary
+*.wsr binary
+*.wdd binary
+*.avm binary
+*.avr binary
+*.pes binary
+*.ssm binary
+*.swm binary
+*.uid binary
+*.uqd binary
+*.84d binary
+*.85d binary
+
+# --- Diff-Verhalten --------------------------------------------------------
+
+# Lockfile ist generiert — im Diff zusammenklappen, aber weiter als Text
+# führen (sonst gehen Merges verloren).
+package-lock.json -diff linguist-generated
+
+# Vitest-Snapshots bleiben Text und LF, damit `git diff` sie zeigt.
+*.snap text eol=lf
