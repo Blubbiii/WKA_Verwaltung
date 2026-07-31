@@ -11094,5 +11094,54 @@
       "annualReportDayHint": "Only fill in if the grid operator sets a different date. Statutory: 28 Feb (§ 71 no. 1 EEG).",
       "notes": "Notes"
     }
+  },
+  "majorComponents": {
+    "cardTitle": "Major components",
+    "cardTooltip": "Gearbox, generator, rotor blades and transformer with serial number, installation date and warranty. A replacement deletes nothing — the old component stays as history.",
+    "empty": "No major component recorded.",
+    "showHistory": "Show history",
+    "hideHistory": "Hide history",
+    "warrantyExpired": "{count} out of warranty",
+    "warrantyExpiring": "{count} expiring",
+    "unknownWarranty": "No warranty recorded for {count} installed components. That does not mean there is none — it means nobody has checked.",
+    "positionProblems": "Position assignment",
+    "removedOn": "removed {date}",
+    "isReplacement": "replacement part",
+    "years": "yrs",
+    "consumed": "{percent} % consumed",
+    "noDesignLife": "no design life",
+    "noInstallDate": "no installation date",
+    "warrantyNone": "not recorded",
+    "warrantyEnded": "ended {date}",
+    "daysLeft": "{days} d left",
+    "designLifeHint": "The consumed share refers to the manufacturer's design life. It is a planning figure for replacement budgeting, not a failure prediction — a gearbox can fail in year seven and still run in year twenty-five.",
+    "table": {
+      "component": "Component",
+      "turbine": "Turbine",
+      "serial": "Serial number",
+      "installed": "Installed",
+      "age": "Age",
+      "warranty": "Warranty",
+      "cost": "Cost"
+    },
+    "types": {
+      "GEARBOX": "Gearbox",
+      "GENERATOR": "Generator",
+      "ROTOR_BLADE": "Rotor blade",
+      "MAIN_BEARING": "Main bearing",
+      "TRANSFORMER": "Transformer",
+      "CONVERTER": "Converter",
+      "YAW_SYSTEM": "Yaw system",
+      "PITCH_SYSTEM": "Pitch system",
+      "TOWER_SECTION": "Tower section",
+      "OTHER": "Other"
+    },
+    "removalReasons": {
+      "SCHEDULED": "scheduled",
+      "FAILURE": "failure",
+      "UPGRADE": "upgrade",
+      "PREVENTIVE": "preventive",
+      "OTHER": "other"
+    }
   }
 }

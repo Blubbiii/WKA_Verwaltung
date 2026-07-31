@@ -90,6 +90,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { MeteringPointsCard } from "@/components/energy/metering-points-card";
 import { DismantlingCard } from "@/components/parks/dismantling-card";
+import { MajorComponentsCard } from "@/components/parks/major-components-card";
 
 interface Turbine {
   id: string;
@@ -1329,6 +1330,13 @@ export default function ParkDetailsPage({
               )}
             </CardContent>
           </Card>
+
+          {/* B3 (Audit 2026-07): Grosskomponenten-Register. Vorher standen
+              Getriebe, Generator und Rotorblaetter als Freitext im
+              ServiceEvent oder im technicalData-Json. */}
+          <div className="mt-6">
+            <MajorComponentsCard parkId={park.id} />
+          </div>
         </TabsContent>
 
         {/* Lease Configuration Tab */}

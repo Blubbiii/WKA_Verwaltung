@@ -11094,5 +11094,54 @@
       "annualReportDayHint": "Nur ausfüllen, wenn der Netzbetreiber einen abweichenden Termin setzt. Gesetzlich: 28.02. (§ 71 Nr. 1 EEG).",
       "notes": "Notizen"
     }
+  },
+  "majorComponents": {
+    "cardTitle": "Großkomponenten",
+    "cardTooltip": "Getriebe, Generator, Rotorblätter und Trafo mit Seriennummer, Einbaudatum und Gewährleistung. Ein Tausch löscht nichts — die alte Komponente bleibt als Historie stehen.",
+    "empty": "Keine Großkomponente erfasst.",
+    "showHistory": "Historie einblenden",
+    "hideHistory": "Historie ausblenden",
+    "warrantyExpired": "{count} ohne Gewährleistung",
+    "warrantyExpiring": "{count} laufen ab",
+    "unknownWarranty": "Bei {count} eingebauten Komponenten ist keine Gewährleistung erfasst. Das heißt nicht, dass keine besteht — es heißt, dass niemand nachgesehen hat.",
+    "positionProblems": "Belegung der Positionen",
+    "removedOn": "ausgebaut {date}",
+    "isReplacement": "Austauschteil",
+    "years": "J.",
+    "consumed": "{percent} % verbraucht",
+    "noDesignLife": "keine Auslegungsdauer",
+    "noInstallDate": "kein Einbaudatum",
+    "warrantyNone": "nicht erfasst",
+    "warrantyEnded": "endete {date}",
+    "daysLeft": "noch {days} T.",
+    "designLifeHint": "Der verbrauchte Anteil bezieht sich auf die Auslegungslebensdauer des Herstellers. Das ist eine Planungsgröße für die Ersatzbeschaffung, keine Ausfallprognose — ein Getriebe kann im siebten Jahr ausfallen und im fünfundzwanzigsten noch laufen.",
+    "table": {
+      "component": "Komponente",
+      "turbine": "Anlage",
+      "serial": "Seriennummer",
+      "installed": "Eingebaut",
+      "age": "Alter",
+      "warranty": "Gewährleistung",
+      "cost": "Kosten"
+    },
+    "types": {
+      "GEARBOX": "Getriebe",
+      "GENERATOR": "Generator",
+      "ROTOR_BLADE": "Rotorblatt",
+      "MAIN_BEARING": "Hauptlager",
+      "TRANSFORMER": "Transformator",
+      "CONVERTER": "Umrichter",
+      "YAW_SYSTEM": "Azimutsystem",
+      "PITCH_SYSTEM": "Pitchsystem",
+      "TOWER_SECTION": "Turmsegment",
+      "OTHER": "Sonstige"
+    },
+    "removalReasons": {
+      "SCHEDULED": "planmäßig",
+      "FAILURE": "Ausfall",
+      "UPGRADE": "Ertüchtigung",
+      "PREVENTIVE": "vorsorglich",
+      "OTHER": "sonstiges"
+    }
   }
 }

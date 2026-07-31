@@ -151,6 +151,7 @@ model Tenant {
   shareTransfers            ShareTransfer[]
   regulatoryProfiles        RegulatoryProfile[]
   complianceDeadlines       ComplianceDeadline[]
+  majorComponents           MajorComponent[]
 
   @@map("tenants")
 }
@@ -488,6 +489,7 @@ model Turbine {
   scadaOperatingStates           ScadaOperatingState[]
   regulatoryProfile              RegulatoryProfile?
   complianceDeadlines            ComplianceDeadline[]
+  majorComponents                MajorComponent[]
   scadaElectricalPhases          ScadaElectricalPhase[]
   scadaElectricalSummaries       ScadaElectricalSummary[]
   serviceEvents                  ServiceEvent[]
@@ -531,6 +533,7 @@ model ServiceEvent {
   turbine            Turbine    @relation(fields: [turbineId], references: [id], onDelete: Cascade)
   inspectionReports  InspectionReport[]
   faultCases         FaultCase[]
+  majorComponents    MajorComponent[]
 
   @@index([turbineId])
   @@index([eventDate])
@@ -3822,6 +3825,7 @@ model Vendor {
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoices    IncomingInvoice[]
   insuranceClaims InsuranceClaim[]
+  majorComponents MajorComponent[]
 
   @@index([tenantId])
   @@index([name])
@@ -5464,6 +5468,7 @@ model FaultCase {
 
   scadaEvents FaultCaseScadaEvent[]
   insuranceClaims InsuranceClaim[]
+  majorComponents MajorComponent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -6641,4 +6646,110 @@ model ComplianceDeadline {
   @@index([turbineId])
   @@index([parkId])
   @@map("compliance_deadlines")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B3 (Audit 2026-07): Grosskomponenten-Register je Anlage
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MajorComponentType {
+  GEARBOX
+  GENERATOR
+  ROTOR_BLADE
+  MAIN_BEARING
+  TRANSFORMER
+  CONVERTER
+  YAW_SYSTEM
+  PITCH_SYSTEM
+  TOWER_SECTION
+  OTHER
+}
+
+/// Warum eine Komponente ausgebaut wurde. Der Grund entscheidet, ob ein
+/// Gewährleistungs- oder Versicherungsanspruch dahintersteht — deshalb ein
+/// eigenes Feld und kein Freitext.
+enum ComponentRemovalReason {
+  /// Planmässiger Tausch am Ende der Lebensdauer.
+  SCHEDULED
+  /// Ausfall. Kandidat für Gewährleistung, Versicherung oder Störungsvorgang.
+  FAILURE
+  /// Ertüchtigung / Leistungssteigerung.
+  UPGRADE
+  /// Vorsorglicher Tausch nach Befund.
+  PREVENTIVE
+  OTHER
+}
+
+/// Grosskomponente einer Anlage.
+///
+/// Bisher standen Getriebe, Generator, Rotorblätter und Trafo als Freitext im
+/// `ServiceEvent` oder im `technicalData`-Json — 0 Treffer für „Komponente"
+/// im ganzen Codebase.
+///
+/// Ein Tausch LÖSCHT den alten Datensatz nicht, er setzt `removedAt`. Ohne das
+/// gäbe es keine Tauschhistorie, und die Frage „das wievielte Getriebe ist
+/// das" wäre nicht beantwortbar.
+model MajorComponent {
+  id        String @id @default(uuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbineId String
+  turbine   Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  type MajorComponentType
+  /// Position, wo es mehrere gleiche gibt — Rotorblatt A/B/C, Turmsegment 1–4.
+  /// `null` bei Einzelstücken wie dem Getriebe.
+  position String? @db.VarChar(20)
+
+  manufacturer String? @db.VarChar(200)
+  model        String? @db.VarChar(200)
+  /// Seriennummer. Sie ist die Kennung gegenüber dem Hersteller im Garantiefall.
+  serialNumber String? @db.VarChar(100)
+
+  installedAt DateTime?
+  /// Ausbau. Gesetzt = historisch. Der Datensatz bleibt bestehen.
+  removedAt     DateTime?
+  removalReason ComponentRemovalReason?
+  removalNotes  String?                 @db.Text
+
+  /// Auslegungslebensdauer in Jahren laut Hersteller. `null` = keine Angabe;
+  /// dann wird die Restdauer NICHT geschätzt.
+  designLifeYears Int?
+  /// Betriebsstunden beim Einbau — bei einem gebrauchten Austauschteil ist
+  /// das nicht 0, und der Unterschied ist für die Restdauer erheblich.
+  operatingHoursAtInstall Int?
+
+  warrantyEndDate DateTime?
+  /// Gewährleistungsgeber, falls abweichend vom Hersteller (Lieferant, WV).
+  warrantyProvider String? @db.VarChar(200)
+
+  /// Anschaffungs- bzw. Tauschkosten.
+  costEur Decimal? @db.Decimal(15, 2)
+  vendorId String?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  /// Verknüpfungen in die vorhandenen Vorgänge. Ein Getriebetausch ist in der
+  /// Regel beides: ein Serviceeinsatz und ein Störungsvorgang.
+  serviceEventId String?
+  serviceEvent   ServiceEvent? @relation(fields: [serviceEventId], references: [id], onDelete: SetNull)
+  faultCaseId    String?
+  faultCase      FaultCase?    @relation(fields: [faultCaseId], references: [id], onDelete: SetNull)
+
+  /// Die Komponente, die diese ersetzt hat. Trägt die Tauschkette.
+  replacedById String?         @unique
+  replacedBy   MajorComponent? @relation("ComponentReplacement", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces     MajorComponent? @relation("ComponentReplacement")
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([turbineId])
+  /// Trägt die Liste der eingebauten Komponenten je Anlage.
+  @@index([turbineId, removedAt])
+  /// Trägt die Übersicht ablaufender Gewährleistungen.
+  @@index([tenantId, warrantyEndDate])
+  @@map("major_components")
 }
