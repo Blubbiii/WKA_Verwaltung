@@ -412,7 +412,8 @@
     "bankUpdateRequests": "Bank detail approvals",
     "fundAccess": "Fund access",
     "hgbSystemSettings": "HGB settings",
-    "taxCategoryTemplates": "Tax category templates"
+    "taxCategoryTemplates": "Tax category templates",
+    "regulatory": "Regulatory"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
@@ -11001,6 +11002,97 @@
       "PENDING_CONSENT": "Consent pending",
       "EXECUTED": "Executed",
       "CANCELLED": "Cancelled"
+    }
+  },
+  "regulatory": {
+    "title": "Regulatory",
+    "description": "Market master data register, EEG plant key, awarded value — and the reporting deadlines that follow from them.",
+    "generate": "Generate deadlines",
+    "generated": "{created} deadlines created, {skipped} already present",
+    "generateError": "Deadlines could not be generated",
+    "withoutProfile": "{count} turbines skipped without regulatory master data: {names}",
+    "updateError": "Deadline could not be changed",
+    "markedDone": "Deadline marked as done",
+    "markedNotApplicable": "Deadline marked as not applicable",
+    "deadlinesTitle": "Open reporting deadlines",
+    "deadlinesTooltip": "Derived from master data. Completed deadlines stay completed even if master data changes later — otherwise a missed report would look like a new one.",
+    "noDeadlines": "No open reporting deadline",
+    "noDeadlinesHint": "Either everything is done or no deadlines have been generated yet. “Generate deadlines” creates what the master data supports.",
+    "overdueCount": "{count} overdue",
+    "overdue": "overdue",
+    "markDone": "Done",
+    "notApplicable": "Not applicable",
+    "notApplicableHint": "Kept separate from “done” so that “done” does not mean two things.",
+    "profilesTitle": "Master data per turbine",
+    "profilesTooltip": "The old free-text field on the turbine remains and is not overwritten. It is flagged as unverified so it does not look like maintained data.",
+    "noTurbines": "No turbines available",
+    "legacyField": "old free-text field, unverified",
+    "noMastr": "no MaStR number",
+    "edit": "Edit",
+    "create": "Add",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Master data saved",
+    "saveError": "Saving failed",
+    "dialogTitle": "Regulatory — {turbine}",
+    "dialogDescription": "Formats are validated on save. A MaStR number one character short looks correct and would otherwise only surface when the grid operator rejects the report.",
+    "sectionMastr": "Market master data register",
+    "sectionEeg": "EEG remuneration",
+    "sectionGrid": "Grid",
+    "table": {
+      "due": "Due",
+      "kind": "Type",
+      "subject": "Turbine",
+      "basis": "Basis",
+      "turbine": "Turbine",
+      "mastr": "MaStR",
+      "eegKey": "Plant key",
+      "scheme": "Remuneration",
+      "gridOperator": "Grid operator"
+    },
+    "kinds": {
+      "EEG_ANNUAL_REPORT": "EEG annual report",
+      "MASTR_CHANGE_NOTICE": "MaStR change notice",
+      "EEG_36H_SITE_REVIEW": "Site quality review",
+      "MASTR_REGISTRATION": "MaStR registration",
+      "MANUAL": "Custom deadline"
+    },
+    "mastrStatuses": {
+      "NOT_REGISTERED": "Not registered",
+      "PENDING": "Registration pending",
+      "REGISTERED": "Registered",
+      "DECOMMISSIONED": "Decommissioned"
+    },
+    "schemes": {
+      "UNKNOWN": "Unknown",
+      "FIXED_FEED_IN": "Fixed feed-in tariff",
+      "MARKET_PREMIUM": "Market premium",
+      "TENDER_AWARD": "Tender award",
+      "OUTSIDE_EEG": "Outside EEG"
+    },
+    "fields": {
+      "mastrUnitNumber": "Unit number",
+      "mastrPlantNumber": "Plant number",
+      "mastrStatus": "Registration status",
+      "mastrRegisteredAt": "Registered on",
+      "lastChangeAt": "Last change on",
+      "lastChangeHint": "Notifiable change. The one-month period starts here (§ 5 (1) MaStRV).",
+      "lastChangeReportedAt": "Change reported on",
+      "eegPlantKey": "EEG plant key",
+      "eegKeyHint": "{length} characters (§ 3 no. 1 HkNRV)",
+      "eegKeyLength": "{actual} of {expected} characters",
+      "scheme": "Remuneration scheme",
+      "schemeHint": "Only tender awards are subject to the site quality review under § 36h EEG.",
+      "awardValue": "Awarded value ct/kWh",
+      "awardDate": "Award date",
+      "awardReference": "Award reference",
+      "siteQuality": "Site quality %",
+      "siteQualityHint": "Site yield relative to the reference yield.",
+      "gridOperator": "Grid operator",
+      "gridConnectionDate": "Grid connection on",
+      "annualReportDay": "Reporting day (MM-DD)",
+      "annualReportDayHint": "Only fill in if the grid operator sets a different date. Statutory: 28 Feb (§ 71 no. 1 EEG).",
+      "notes": "Notes"
     }
   }
 }

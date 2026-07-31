@@ -412,7 +412,8 @@
     "bankUpdateRequests": "Bankdaten-Freigaben",
     "fundAccess": "Fonds-Zugriff",
     "hgbSystemSettings": "HGB-Einstellungen",
-    "taxCategoryTemplates": "Steuerkategorie-Vorlagen"
+    "taxCategoryTemplates": "Steuerkategorie-Vorlagen",
+    "regulatory": "Regulatorik"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -11001,6 +11002,97 @@
       "PENDING_CONSENT": "Zustimmung offen",
       "EXECUTED": "Vollzogen",
       "CANCELLED": "Storniert"
+    }
+  },
+  "regulatory": {
+    "title": "Regulatorik",
+    "description": "Marktstammdatenregister, EEG-Anlagenschlüssel, Zuschlagswert — und die Meldefristen, die daraus folgen.",
+    "generate": "Fristen erzeugen",
+    "generated": "{created} Fristen angelegt, {skipped} bereits vorhanden",
+    "generateError": "Fristen konnten nicht erzeugt werden",
+    "withoutProfile": "{count} Anlagen ohne Regulatorik-Stammdaten übersprungen: {names}",
+    "updateError": "Frist konnte nicht geändert werden",
+    "markedDone": "Frist als erledigt vermerkt",
+    "markedNotApplicable": "Frist als nicht zutreffend vermerkt",
+    "deadlinesTitle": "Offene Meldefristen",
+    "deadlinesTooltip": "Aus den Stammdaten abgeleitet. Erledigte Fristen bleiben erledigt, auch wenn sich ein Stammdatum später ändert — sonst sähe eine versäumte Meldung aus wie eine neue.",
+    "noDeadlines": "Keine offene Meldefrist",
+    "noDeadlinesHint": "Entweder ist alles erledigt oder es wurden noch keine Fristen erzeugt. „Fristen erzeugen“ legt an, was die Stammdaten hergeben.",
+    "overdueCount": "{count} überfällig",
+    "overdue": "überfällig",
+    "markDone": "Erledigt",
+    "notApplicable": "Nicht zutreffend",
+    "notApplicableHint": "Getrennt von „erledigt“ — damit „erledigt“ nicht zweierlei bedeutet.",
+    "profilesTitle": "Stammdaten je Anlage",
+    "profilesTooltip": "Das alte Freitextfeld auf der Anlage bleibt bestehen und wird nicht überschrieben. Es ist als ungeprüft gekennzeichnet, damit es nicht wie ein gepflegter Stand aussieht.",
+    "noTurbines": "Keine Anlage vorhanden",
+    "legacyField": "altes Freitextfeld, ungeprüft",
+    "noMastr": "keine MaStR-Nummer",
+    "edit": "Bearbeiten",
+    "create": "Erfassen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saved": "Stammdaten gespeichert",
+    "saveError": "Speichern fehlgeschlagen",
+    "dialogTitle": "Regulatorik — {turbine}",
+    "dialogDescription": "Die Formate werden beim Speichern geprüft. Eine MaStR-Nummer mit einem Zeichen zu wenig sieht richtig aus und fällt sonst erst auf, wenn der Netzbetreiber die Meldung ablehnt.",
+    "sectionMastr": "Marktstammdatenregister",
+    "sectionEeg": "EEG-Vergütung",
+    "sectionGrid": "Netz",
+    "table": {
+      "due": "Fällig",
+      "kind": "Art",
+      "subject": "Anlage",
+      "basis": "Grundlage",
+      "turbine": "Anlage",
+      "mastr": "MaStR",
+      "eegKey": "Anlagenschlüssel",
+      "scheme": "Vergütung",
+      "gridOperator": "Netzbetreiber"
+    },
+    "kinds": {
+      "EEG_ANNUAL_REPORT": "EEG-Jahresmeldung",
+      "MASTR_CHANGE_NOTICE": "MaStR-Änderungsanzeige",
+      "EEG_36H_SITE_REVIEW": "Standortgüte-Nachprüfung",
+      "MASTR_REGISTRATION": "MaStR-Registrierung",
+      "MANUAL": "Eigene Frist"
+    },
+    "mastrStatuses": {
+      "NOT_REGISTERED": "Nicht registriert",
+      "PENDING": "Registrierung läuft",
+      "REGISTERED": "Registriert",
+      "DECOMMISSIONED": "Stillgelegt"
+    },
+    "schemes": {
+      "UNKNOWN": "Unbekannt",
+      "FIXED_FEED_IN": "Feste Einspeisevergütung",
+      "MARKET_PREMIUM": "Marktprämie",
+      "TENDER_AWARD": "Ausschreibungszuschlag",
+      "OUTSIDE_EEG": "Ausserhalb EEG"
+    },
+    "fields": {
+      "mastrUnitNumber": "Einheitennummer",
+      "mastrPlantNumber": "Anlagennummer",
+      "mastrStatus": "Registrierungsstatus",
+      "mastrRegisteredAt": "Registriert am",
+      "lastChangeAt": "Letzte Änderung am",
+      "lastChangeHint": "Anzeigepflichtige Änderung. Ab hier läuft die Monatsfrist (§ 5 Abs. 1 MaStRV).",
+      "lastChangeReportedAt": "Änderung gemeldet am",
+      "eegPlantKey": "EEG-Anlagenschlüssel",
+      "eegKeyHint": "{length} Zeichen (§ 3 Nr. 1 HkNRV)",
+      "eegKeyLength": "{actual} von {expected} Zeichen",
+      "scheme": "Vergütungsregime",
+      "schemeHint": "Nur beim Ausschreibungszuschlag gibt es die Standortgüte-Nachprüfung nach § 36h EEG.",
+      "awardValue": "Zuschlagswert ct/kWh",
+      "awardDate": "Zuschlagsdatum",
+      "awardReference": "Zuschlagsnummer",
+      "siteQuality": "Standortgüte %",
+      "siteQualityHint": "Standortertrag im Verhältnis zum Referenzertrag.",
+      "gridOperator": "Netzbetreiber",
+      "gridConnectionDate": "Netzanschluss am",
+      "annualReportDay": "Meldetermin (MM-TT)",
+      "annualReportDayHint": "Nur ausfüllen, wenn der Netzbetreiber einen abweichenden Termin setzt. Gesetzlich: 28.02. (§ 71 Nr. 1 EEG).",
+      "notes": "Notizen"
     }
   }
 }

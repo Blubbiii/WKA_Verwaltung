@@ -7,14 +7,21 @@ import { MS_PER_DAY } from "@/lib/constants/time";
 
 export interface DeadlineEvent {
   id: string;
-  entityType: "contract" | "lease";
+  entityType: "contract" | "lease" | "compliance";
   entityId: string;
   title: string;
-  eventType: "end" | "notice" | "renewal";
+  /**
+   * B2 (Audit 2026-07): `compliance` fuer regulatorische Meldefristen. Sie
+   * kommen nicht aus einem Vertragsdatum, sondern aus einer Regel — und sie
+   * sind einzeln erledigbar, weshalb sie gespeichert sind statt abgeleitet.
+   */
+  eventType: "end" | "notice" | "renewal" | "compliance";
   date: string;
   daysRemaining: number;
   urgency: "overdue" | "urgent" | "soon" | "ok";
   href: string;
+  /** Nur bei Meldefristen: die Rechtsgrundlage, damit niemand nachschlagen muss. */
+  basis?: string;
 }
 
 function getUrgency(daysRemaining: number): DeadlineEvent["urgency"] {
@@ -23,6 +30,20 @@ function getUrgency(daysRemaining: number): DeadlineEvent["urgency"] {
   if (daysRemaining <= 90) return "soon";
   return "ok";
 }
+
+/**
+ * B2: Kurzbezeichnung je Fristenart. Bewusst hier und nicht aus einer
+ * i18n-Datei: die Route liefert JSON an mehrere Verbraucher und kennt die
+ * Sprache des Aufrufers nicht. Die ausfuehrliche Herleitung steht ohnehin in
+ * `basis`.
+ */
+const DEADLINE_KIND_LABELS: Record<string, string> = {
+  EEG_ANNUAL_REPORT: "EEG-Jahresmeldung",
+  MASTR_CHANGE_NOTICE: "MaStR-Änderungsanzeige",
+  EEG_36H_SITE_REVIEW: "Standortgüte-Nachprüfung",
+  MASTR_REGISTRATION: "MaStR-Registrierung fehlt",
+  MANUAL: "Meldefrist",
+};
 
 function daysBetween(from: Date, to: Date): number {
   const diffMs = to.getTime() - from.getTime();
@@ -138,6 +159,44 @@ export async function GET(request: NextRequest) {
         daysRemaining: days,
         urgency: getUrgency(days),
         href: `/verwaltung/leases/${l.id}`,
+      });
+    }
+
+    // --- Regulatorische Meldefristen (B2) ---
+    //
+    // Sie gehoeren in denselben Kalender: wer nach Fristen schaut, will nicht
+    // an zwei Stellen suchen. Nur OFFENE — erledigte sind Historie und wuerden
+    // die Arbeitsliste zumuellen.
+    const complianceDeadlines = await prisma.complianceDeadline.findMany({
+      where: {
+        tenantId,
+        status: "OPEN",
+        dueDate: { gte: from, lte: to },
+      },
+      include: {
+        turbine: { select: { id: true, designation: true, parkId: true, park: { select: { name: true } } } },
+        park: { select: { id: true, name: true } },
+      },
+    });
+
+    for (const deadline of complianceDeadlines) {
+      const days = daysBetween(now, deadline.dueDate);
+      const parkName = deadline.turbine?.park?.name ?? deadline.park?.name ?? null;
+      const where = deadline.turbine
+        ? `${deadline.turbine.designation}${parkName ? ` (${parkName})` : ""}`
+        : (parkName ?? "");
+
+      events.push({
+        id: `compliance-${deadline.id}`,
+        entityType: "compliance",
+        entityId: deadline.id,
+        title: `${DEADLINE_KIND_LABELS[deadline.kind]}${where ? ` — ${where}` : ""}`,
+        eventType: "compliance",
+        date: deadline.dueDate.toISOString().split("T")[0],
+        daysRemaining: days,
+        urgency: getUrgency(days),
+        href: "/verwaltung/regulatorik",
+        basis: deadline.basis,
       });
     }
 

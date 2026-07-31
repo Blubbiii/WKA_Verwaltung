@@ -379,6 +379,16 @@ export const navGroups: NavGroup[] = [
         icon: CalendarClock,
         permission: "leases:read",
       },
+      {
+        // B2 (Audit 2026-07): MaStR, EEG-Anlagenschluessel, Zuschlagswert —
+        // und das Fristenset, das daraus folgt. Die Fristen laufen zugleich im
+        // Kalender darueber mit.
+        title: "Regulatorik",
+        titleKey: "regulatory",
+        href: "/verwaltung/regulatorik",
+        icon: ScrollText,
+        permission: "turbines:read",
+      },
     ],
   },
 

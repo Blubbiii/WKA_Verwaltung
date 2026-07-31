@@ -149,6 +149,8 @@ model Tenant {
   insurancePolicies         InsurancePolicy[]
   dismantlingObligations    DismantlingObligation[]
   shareTransfers            ShareTransfer[]
+  regulatoryProfiles        RegulatoryProfile[]
+  complianceDeadlines       ComplianceDeadline[]
 
   @@map("tenants")
 }
@@ -299,6 +301,7 @@ model User {
   curtailmentEventsCreated                                                CurtailmentEvent[]         @relation("CurtailmentEventCreator")
   shareTransfersCreated                                                   ShareTransfer[]            @relation("ShareTransferCreatedBy")
   shareTransfersExecuted                                                  ShareTransfer[]            @relation("ShareTransferExecutedBy")
+  complianceDeadlinesCompleted                                            ComplianceDeadline[]       @relation("ComplianceDeadlineCompletedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -418,6 +421,7 @@ model Park {
   curtailmentEvents                      CurtailmentEvent[]
   insuredObjects                         InsuredObject[]
   dismantlingObligation                  DismantlingObligation?
+  complianceDeadlines                    ComplianceDeadline[]
 
   @@index([tenantId])
   @@index([deletedAt])
@@ -482,6 +486,8 @@ model Turbine {
   scadaWindSummaries             ScadaWindSummary[]
   scadaShadowCasting             ScadaShadowCasting[]
   scadaOperatingStates           ScadaOperatingState[]
+  regulatoryProfile              RegulatoryProfile?
+  complianceDeadlines            ComplianceDeadline[]
   scadaElectricalPhases          ScadaElectricalPhase[]
   scadaElectricalSummaries       ScadaElectricalSummary[]
   serviceEvents                  ServiceEvent[]
@@ -6488,4 +6494,151 @@ model ShareTransfer {
   @@index([fundId, effectiveDate])
   @@index([status])
   @@map("share_transfers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B2 (Audit 2026-07): Regulatorik-Stammdaten + Meldefristen
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum MastrRegistrationStatus {
+  /// Noch nicht registriert. Ohne Registrierung entfällt der Zahlungsanspruch
+  /// (§ 52 Abs. 1 EEG) — deshalb ein eigener Zustand und kein leeres Feld.
+  NOT_REGISTERED
+  /// Registrierung eingereicht, Bestätigung steht aus.
+  PENDING
+  REGISTERED
+  /// Stillgelegt bzw. aus dem Register genommen.
+  DECOMMISSIONED
+}
+
+/// Vergütungsregime. Es entscheidet, ob es eine Standortgüte-Nachprüfung gibt.
+enum RemunerationScheme {
+  /// Feste Einspeisevergütung nach altem EEG.
+  FIXED_FEED_IN
+  /// Marktprämie ohne Ausschreibung (Bestandsanlagen).
+  MARKET_PREMIUM
+  /// Zuschlag aus einer Ausschreibung — nur hier gilt § 36h EEG.
+  TENDER_AWARD
+  /// Anlage ausserhalb des EEG (PPA, sonstige Direktvermarktung).
+  OUTSIDE_EEG
+  UNKNOWN
+}
+
+enum ComplianceDeadlineKind {
+  EEG_ANNUAL_REPORT
+  MASTR_CHANGE_NOTICE
+  EEG_36H_SITE_REVIEW
+  MASTR_REGISTRATION
+  /// Von Hand angelegt — für alles, was die Regeln nicht kennen.
+  MANUAL
+}
+
+enum ComplianceDeadlineStatus {
+  OPEN
+  DONE
+  /// Bewusst nicht anwendbar. Getrennt von DONE, damit „erledigt" nicht
+  /// zweierlei bedeutet.
+  NOT_APPLICABLE
+}
+
+/// Regulatorische Stammdaten einer Anlage.
+///
+/// `Turbine.mastrNumber` war ein ungeprüftes Freitextfeld. Es bleibt bestehen
+/// und wird von hier NICHT überschrieben — bestehende Auswertungen lesen es
+/// weiter. Dieser Datensatz ist der geprüfte Stand daneben.
+model RegulatoryProfile {
+  id        String @id @default(uuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbineId String  @unique
+  turbine   Turbine @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  // --- Marktstammdatenregister ------------------------------------------
+  /// Einheitennummer (SEE…).
+  mastrUnitNumber String? @db.VarChar(30)
+  /// Nummer der Betreiberanlage (SEE…/SNB…), falls abweichend geführt.
+  mastrPlantNumber String? @db.VarChar(30)
+  mastrStatus      MastrRegistrationStatus @default(NOT_REGISTERED)
+  mastrRegisteredAt DateTime?
+  /// Wann zuletzt eine anzeigepflichtige Änderung eingetreten ist, und wann
+  /// sie gemeldet wurde. Die Differenz IST die Frist (§ 5 Abs. 1 MaStRV).
+  lastChangeAt         DateTime?
+  lastChangeReportedAt DateTime?
+
+  // --- EEG ---------------------------------------------------------------
+  /// Anlagenschlüssel nach § 3 Nr. 1 HkNRV — 33 Zeichen.
+  eegPlantKey String? @db.VarChar(40)
+  scheme      RemunerationScheme @default(UNKNOWN)
+  /// Zuschlagswert in ct/kWh und die Zuschlagsdaten aus der Ausschreibung.
+  awardValueCtPerKwh Decimal? @db.Decimal(8, 4)
+  awardDate          DateTime?
+  awardReference     String?  @db.VarChar(100)
+  /// Referenzertrag in Prozent (Standortgüte). Grundlage der Nachprüfung.
+  siteQualityPercent Decimal? @db.Decimal(6, 2)
+
+  // --- Netz ---------------------------------------------------------------
+  gridOperator        String?   @db.VarChar(200)
+  gridConnectionDate  DateTime?
+  /// Abweichender Meldetermin des Netzbetreibers als `MM-TT`. Er liegt in der
+  /// Praxis regelmässig vor dem gesetzlichen 28.02.
+  annualReportDay String? @db.VarChar(5)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, mastrStatus])
+  @@map("regulatory_profiles")
+}
+
+/// Eine konkrete Meldefrist.
+///
+/// Bewusst gespeichert und nicht bei jedem Aufruf abgeleitet: eine erledigte
+/// Frist muss erledigt bleiben. Würde die Liste jedes Mal neu gerechnet,
+/// verschwände der Haken beim nächsten Laden.
+model ComplianceDeadline {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  kind   ComplianceDeadlineKind
+  status ComplianceDeadlineStatus @default(OPEN)
+
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+  parkId    String?
+  park      Park?    @relation(fields: [parkId], references: [id], onDelete: Cascade)
+
+  dueDate DateTime
+  /// Rechtsgrundlage bzw. Herleitung — sie steht in der Liste, damit niemand
+  /// nachschlagen muss, warum dieser Termin gilt.
+  basis String @db.Text
+  /// Betriebs- bzw. Meldejahr, sofern die Frist daran hängt.
+  operatingYear Int?
+
+  /// Stabile Kennung der erzeugenden Regel. Trägt die Idempotenz: ein
+  /// erneutes Erzeugen legt dieselbe Frist nicht zweimal an.
+  /// `null` bei von Hand angelegten Fristen.
+  ruleKey String? @db.VarChar(80)
+
+  completedAt   DateTime?
+  completedById String?
+  completedBy   User?     @relation("ComplianceDeadlineCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  /// Beleg der Meldung — Sendebericht, Bestätigungsnummer, Aktenzeichen.
+  reference String? @db.VarChar(200)
+  notes     String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Eine Regel erzeugt je Anlage genau eine Frist. Ohne das entstünden bei
+  /// jedem Lauf Dubletten, und die Liste wäre nach einer Woche unbrauchbar.
+  @@unique([tenantId, turbineId, ruleKey])
+  @@index([tenantId])
+  @@index([tenantId, status, dueDate])
+  @@index([turbineId])
+  @@index([parkId])
+  @@map("compliance_deadlines")
 }
