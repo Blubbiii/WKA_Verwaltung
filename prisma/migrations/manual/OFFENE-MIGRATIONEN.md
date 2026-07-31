@@ -3,7 +3,7 @@
 Diese Dateien sind geschrieben und gegen `prisma validate` geprüft, aber **noch
 nicht auf der Datenbank ausgeführt**. Der Code im Repo setzt sie voraus.
 
-Reihenfolge ist beliebig — die acht berühren verschiedene Tabellen.
+Reihenfolge ist beliebig — die neun berühren verschiedene Tabellen.
 
 | Datei | Muss vor Deploy? | Was passiert |
 |---|---|---|
@@ -14,6 +14,7 @@ Reihenfolge ist beliebig — die acht berühren verschiedene Tabellen.
 | [metering_points_settlement_checks.sql](metering_points_settlement_checks.sql) | **ja** | Zählpunkte (Marktlokation/Messlokation) und Abgleichsergebnisse (A3). Ohne sie schlägt `/api/energy/metering-points` und die Abrechnungsprüfung fehl. |
 | [curtailment_events.sql](curtailment_events.sql) | **ja** | Abregelungsereignisse mit Ausfallarbeit und Entschädigungsforderung (A4). Ohne sie schlägt `/api/curtailment` fehl. |
 | [lease_lessors.sql](lease_lessors.sql) | nein | Miteigentumsanteile am Pachtvertrag und deren Aufteilung in der Abrechnung (A5). **Kein Backfill** — ohne erfasste Anteile gilt weiterhin `Lease.lessorId`, Bestandsverträge rechnen unverändert. Erst nötig, wenn eine Erbengemeinschaft erfasst werden soll. |
+| [insurance_policies.sql](insurance_policies.sql) | **ja** | Policen, Deckungsarten, versicherte Objekte und sechs neue Spalten an `insurance_claims` (A6). Ohne sie schlägt `/api/insurance/*` fehl; die neuen Claim-Spalten schreibt Prisma bei jeder Bewertung. |
 | [retire_mass_communications.sql](retire_mass_communications.sql) | nein | Benennt `mass_communications` in `mass_communications_retired_20260730` um. Das Modell ist aus `schema.prisma` entfernt; die Tabelle stört nur noch. Bewusst RENAME statt DROP — der Inhalt war nicht einsehbar. Endgültiges DROP steht als auskommentierter Nachtrag in der Datei.
 
 ## Ausführen
@@ -26,10 +27,11 @@ npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/man
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/metering_points_settlement_checks.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/curtailment_events.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/lease_lessors.sql
+npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/insurance_policies.sql
 npx prisma db execute --schema prisma/schema.prisma --file prisma/migrations/manual/retire_mass_communications.sql
 ```
 
-Alle acht sind mehrfach ausführbar: die sieben DDL-Skripte über
+Alle neun sind mehrfach ausführbar: die acht DDL-Skripte über
 `IF NOT EXISTS` / `IF EXISTS`, das Permission-Skript dadurch, dass der zweite
 Lauf keine Zeilen mehr findet. Die Enums in `fault_cases.sql`,
 `availability_guarantees.sql`, `metering_points_settlement_checks.sql` und

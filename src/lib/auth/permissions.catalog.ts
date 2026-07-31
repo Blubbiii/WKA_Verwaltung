@@ -288,6 +288,12 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "curtailment:manage",  module: "curtailment", action: "manage",  displayName: "Abregelung erfassen",       description: "Ereignis, Anspruchsgrundlage und Zahlung pflegen",       sortOrder: 258 },
   { name: "curtailment:compute", module: "curtailment", action: "compute", displayName: "Ausfallarbeit ermitteln",   description: "Ausfallarbeit und Entschaedigungsforderung berechnen",  sortOrder: 259 },
 
+  // ── Versicherungspolicen (A6, Audit 2026-07) ──────────────────────────
+  // Bewusst nur zwei Rechte: eine dritte Stufe fuer das Bewerten haette
+  // keine eigene Bedeutung — wer die Police pflegt, bewertet auch den Schaden.
+  { name: "insurance:read",   module: "insurance", action: "read",   displayName: "Policen anzeigen",  description: "Versicherungspolicen und Deckungsluecken einsehen",   sortOrder: 260 },
+  { name: "insurance:manage", module: "insurance", action: "manage", displayName: "Policen pflegen",   description: "Police, Deckungen und Schadenbewertung bearbeiten",   sortOrder: 261 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },

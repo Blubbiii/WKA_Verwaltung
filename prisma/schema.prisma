@@ -146,6 +146,7 @@ model Tenant {
   meteringPoints            MeteringPoint[]
   settlementChecks          SettlementCheck[]
   curtailmentEvents         CurtailmentEvent[]
+  insurancePolicies         InsurancePolicy[]
 
   @@map("tenants")
 }
@@ -411,6 +412,7 @@ model Park {
   quotes                                 Quote[]
   meteringPoints                         MeteringPoint[]
   curtailmentEvents                      CurtailmentEvent[]
+  insuredObjects                         InsuredObject[]
 
   @@index([tenantId])
   @@index([deletedAt])
@@ -492,6 +494,7 @@ model Turbine {
   faultCases                     FaultCase[]
   meteringPoints                 MeteringPoint[]
   curtailmentEvents              CurtailmentEvent[]
+  insuredObjects                 InsuredObject[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -896,6 +899,7 @@ model Contract {
   documents           Document[]
   insuranceClaims     InsuranceClaim[]
   availabilityGuarantees AvailabilityGuarantee[]
+  insurancePolicy        InsurancePolicy?
 
   @@index([tenantId])
   @@index([contractType])
@@ -5009,6 +5013,25 @@ model InsuranceClaim {
   estimatedCostEur Decimal?    @db.Decimal(12, 2)
   actualCostEur    Decimal?    @db.Decimal(12, 2)
   reimbursedEur    Decimal?    @db.Decimal(12, 2)
+  // A6 (Audit 2026-07): Verknuepfung Schaden -> Police mit Selbstbehaltsabzug.
+  /// Die Police, unter der der Schaden geltend gemacht wird.
+  policyId String?
+  policy   InsurancePolicy? @relation(fields: [policyId], references: [id], onDelete: SetNull)
+  /// Deckungsart, unter die der Schaden faellt. Bestimmt Summe und
+  /// Selbstbehalt, wenn die Deckung eigene fuehrt.
+  coverageId String?
+  coverage   InsuranceCoverage? @relation(fields: [coverageId], references: [id], onDelete: SetNull)
+  /// Angesetzter Selbstbehalt, MITGESPEICHERT: eine spaetere Aenderung der
+  /// Police darf einen abgeschlossenen Schadenfall nicht umrechnen.
+  deductibleAppliedEur Decimal? @db.Decimal(15, 2)
+  /// Erwartete Entschaedigung nach Unterversicherung und Selbstbehalt.
+  expectedReimbursementEur Decimal? @db.Decimal(15, 2)
+  /// Herleitung der Erwartung: Quote, Selbstbehalt, Deckelung, Hinweise.
+  reimbursementBasis Json?
+  /// Bei Betriebsunterbrechung: der Stoerungsvorgang, aus dem der entgangene
+  /// Ertrag stammt. Ohne A1 waere die BU-Entschaedigung gar nicht bezifferbar.
+  faultCaseId String?
+  faultCase   FaultCase? @relation(fields: [faultCaseId], references: [id], onDelete: SetNull)
   resolvedAt       DateTime?
   resolutionNotes  String?     @db.Text
   contractId       String?
@@ -5399,6 +5422,7 @@ model FaultCase {
   resolvedAt      DateTime?
 
   scadaEvents FaultCaseScadaEvent[]
+  insuranceClaims InsuranceClaim[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5987,4 +6011,162 @@ model LeaseRevenueSettlementItemLessor {
   @@index([itemId])
   @@index([personId])
   @@map("lease_revenue_settlement_item_lessors")
+}
+
+// ---------------------------------------------------------------------------
+// A6: Versicherungspolice als eigenes Objekt (Audit 2026-07)
+//
+// Policen waren nur `Contract(contractType=INSURANCE)`; der Insurance-Screen
+// zeigte Titel, Typ, Status, Laufzeit — mehr nicht. Es fehlten
+// Versicherungssumme, Selbstbehalt, Prämie und Zahlweise, Deckungsarten,
+// versicherte Objekte, Kündigungsfrist und die Verknüpfung Schaden→Police mit
+// Selbstbehaltsabzug.
+//
+// Bewusst AM Vertrag und nicht statt seiner: Laufzeit, Kündigungsfristen,
+// Dokumente und Erinnerungen hängen bereits am Contract. Eine zweite
+// Vertragsart daneben würde beides pflegen müssen.
+// ---------------------------------------------------------------------------
+
+enum InsuranceDeductibleType {
+  FIXED_EUR
+  PERCENT_OF_LOSS
+  PERCENT_OF_SUM_INSURED
+}
+
+enum InsurancePremiumInterval {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+/// Deckungsart innerhalb einer Police. Eine Police deckt in der Regel mehrere
+/// Risiken mit je eigener Summe und eigenem Selbstbehalt ab.
+enum InsuranceCoverageType {
+  /// Maschinenbruch.
+  MACHINERY_BREAKDOWN
+  /// Betriebsunterbrechung. Der Schaden ist der entgangene Ertrag — ohne A1
+  /// gar nicht bezifferbar.
+  BUSINESS_INTERRUPTION
+  /// Haftpflicht.
+  LIABILITY
+  /// Elementarschäden (Sturm, Hagel, Blitz).
+  ELEMENTAL
+  /// Montage / Bauleistung.
+  ERECTION
+  /// Transport.
+  TRANSPORT
+  /// Rechtsschutz.
+  LEGAL_PROTECTION
+  OTHER
+}
+
+model InsurancePolicy {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  /// Der Vertrag, der die Police trägt. Laufzeit, Kündigungsfristen und
+  /// Dokumente stehen dort.
+  contractId String   @unique
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  /// Policennummer des Versicherers — der Schlüssel für jede Rückfrage.
+  policyNumber String? @db.VarChar(100)
+  insurerName  String? @db.VarChar(200)
+  brokerName   String? @db.VarChar(200)
+
+  /// Versicherungssumme über alle Deckungen, sofern die Police eine
+  /// Gesamtsumme führt. Deckungsarten können eigene Summen haben.
+  sumInsuredEur Decimal? @db.Decimal(15, 2)
+  /// Versicherungswert (Wiederbeschaffungs- bzw. Zeitwert). Ohne ihn lässt
+  /// sich eine Unterversicherung nach § 75 VVG NICHT prüfen — „nicht erfasst"
+  /// ist etwas anderes als „keine Unterversicherung".
+  insuredValueEur Decimal? @db.Decimal(15, 2)
+  /// Verzicht auf den Unterversicherungseinwand. In der Praxis häufig
+  /// vereinbart, deshalb ein eigenes Feld und keine Annahme.
+  waivesUnderinsurance Boolean @default(false)
+
+  deductibleType   InsuranceDeductibleType @default(FIXED_EUR)
+  deductibleValue  Decimal                 @default(0) @db.Decimal(15, 2)
+  /// Nur bei prozentualen Formen wirksam.
+  deductibleMinEur Decimal? @db.Decimal(15, 2)
+  deductibleMaxEur Decimal? @db.Decimal(15, 2)
+
+  premiumEur      Decimal?                  @db.Decimal(15, 2)
+  premiumInterval InsurancePremiumInterval?
+  /// Nächste Fälligkeit der Prämie.
+  nextPremiumDue DateTime?
+
+  /// Kündigungsfrist in Monaten zum Ablauf.
+  noticePeriodMonths Int?
+
+  notes String? @db.Text
+
+  coverages      InsuranceCoverage[]
+  insuredObjects InsuredObject[]
+  claims         InsuranceClaim[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, nextPremiumDue])
+  @@map("insurance_policies")
+}
+
+/// Einzelne Deckungsart mit eigener Summe und eigenem Selbstbehalt.
+model InsuranceCoverage {
+  id       String          @id @default(uuid())
+  policyId String
+  policy   InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  coverageType InsuranceCoverageType
+
+  sumInsuredEur   Decimal? @db.Decimal(15, 2)
+  insuredValueEur Decimal? @db.Decimal(15, 2)
+
+  /// Abweichender Selbstbehalt. `null` = der Wert der Police gilt.
+  deductibleType  InsuranceDeductibleType?
+  deductibleValue Decimal?                 @db.Decimal(15, 2)
+
+  /// Haftzeit bei Betriebsunterbrechung in Monaten — die Dauer, für die der
+  /// entgangene Ertrag ersetzt wird.
+  indemnityPeriodMonths Int?
+
+  notes String? @db.Text
+  claims InsuranceClaim[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([policyId, coverageType])
+  @@index([policyId])
+  @@map("insurance_coverages")
+}
+
+/// Versichertes Objekt: ein Park oder eine einzelne Anlage.
+model InsuredObject {
+  id       String          @id @default(uuid())
+  policyId String
+  policy   InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  parkId    String?
+  park      Park?    @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+
+  /// Versicherungswert dieses Objekts. Die Summe über alle Objekte ist die
+  /// belastbarere Grundlage für die Unterversicherungsprüfung als ein
+  /// pauschaler Wert an der Police.
+  insuredValueEur Decimal? @db.Decimal(15, 2)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([policyId])
+  @@index([parkId])
+  @@index([turbineId])
+  @@map("insured_objects")
 }

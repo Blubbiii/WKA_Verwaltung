@@ -584,6 +584,10 @@ export const PERMISSIONS = {
   CURTAILMENT_READ: "curtailment:read",
   CURTAILMENT_MANAGE: "curtailment:manage",
   CURTAILMENT_COMPUTE: "curtailment:compute",
+
+  // A6 (Audit 2026-07): Versicherungspolicen.
+  INSURANCE_READ: "insurance:read",
+  INSURANCE_MANAGE: "insurance:manage",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
