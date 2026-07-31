@@ -89,6 +89,7 @@ import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { MeteringPointsCard } from "@/components/energy/metering-points-card";
+import { DismantlingCard } from "@/components/parks/dismantling-card";
 
 interface Turbine {
   id: string;
@@ -1006,6 +1007,11 @@ export default function ParkDetailsPage({
                 den sich eine Netzbetreiber-Abrechnung dem Park zuordnen
                 laesst — und fehlten im ganzen System. */}
             <MeteringPointsCard parkId={park.id} />
+
+            {/* A7 (Audit 2026-07): Rueckbauverpflichtung. Die Buergschaft
+                laeuft still ab, weil niemand den Aktenordner liest — deshalb
+                steht sie hier und nicht in einem Unterreiter. */}
+            <DismantlingCard parkId={park.id} />
 
             {/* Netz-Topologie */}
             <NetworkTopology

@@ -113,10 +113,17 @@ export async function createDistribution(
   data: {
     totalAmount: number;
     distributionDate: string;
+    /**
+     * A8 (Audit 2026-07): Zeitraum, fuer den ausgeschuettet wird. Ohne ihn
+     * verteilt die Route nach dem Stand am Ausschuettungstag statt
+     * zeitanteilig — und sagt das auch. Geraten wird er nicht.
+     */
+    periodStart?: string;
+    periodEnd?: string;
     description?: string;
     notes?: string;
   }
-): Promise<Distribution> {
+): Promise<Distribution & { warnings?: string[] }> {
   const res = await fetch(`/api/funds/${fundId}/distributions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -125,7 +132,9 @@ export async function createDistribution(
 
   if (!res.ok) {
     const error = await res.json();
-    throw new Error(error.error || "Fehler beim Erstellen");
+    // `message` zuerst: apiError() liefert die genaue Begruendung dort — etwa
+    // welcher Abschnitt mehr als 100 % ergibt. `error` ist der aeltere Schluessel.
+    throw new Error(error.message || error.error || "Fehler beim Erstellen");
   }
 
   return res.json();

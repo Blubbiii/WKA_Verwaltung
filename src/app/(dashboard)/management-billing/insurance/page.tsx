@@ -62,6 +62,7 @@ const statusBadgeColors: Record<string, string> = {
 
 export default function InsuranceOverviewPage() {
   const t = useTranslations("managementBilling.insurance");
+  const tPolicies = useTranslations("insurancePolicies");
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claimSummary, setClaimSummary] = useState<ClaimSummary | null>(null);
   const [policiesLoading, setPoliciesLoading] = useState(true);
@@ -128,6 +129,14 @@ export default function InsuranceOverviewPage() {
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
             {t("policies.title")}
+            {/* A6 (Audit 2026-07): Der Vertrag traegt Titel und Laufzeit, die
+                Police die Versicherungssumme. Ohne sie faellt eine
+                Unterversicherung erst im Schadenfall auf. */}
+            <Button variant="link" size="sm" className="ml-auto h-auto p-0" asChild>
+              <Link href="/management-billing/insurance/policies">
+                {tPolicies("title")}
+              </Link>
+            </Button>
           </CardTitle>
           <CardDescription>{t("policies.description")}</CardDescription>
         </CardHeader>

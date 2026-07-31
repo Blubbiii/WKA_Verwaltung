@@ -268,6 +268,7 @@
     "scadaMeasurements": "SCADA Measurements",
     "scadaMapping": "SCADA Mapping",
     "energyAnalytics": "Energy Analytics",
+    "curtailment": "Curtailment",
     "groundLeases": "Land & Leases",
     "reportsDocuments": "Reports & Documents",
     "leases": "Leases",
@@ -9514,7 +9515,14 @@
       "batchPortalNoSuitable": "No suitable shareholders selected (only those without portal access and with email address).",
       "batchPortalSuccess": "Portal access enabled for {count} shareholders",
       "batchPortalPartial": "{success} enabled, {fail} failed",
-      "recalcError": "Error recalculating"
+      "recalcError": "Error recalculating",
+      "proRataLabel": "Distribute pro rata temporis",
+      "periodYear": "Fiscal year",
+      "proRataHint": "Distributed according to the actual holding period and the actual share in the given fiscal year. Anyone who joined or left during the year receives their time-weighted share — it is not reallocated to the others.",
+      "registerHint": "Without a period, distribution follows the share register as at the distribution date. Entries and exits during the year are ignored.",
+      "previewColDays": "Days",
+      "previewUndistributed": "Not distributed (retained by the company)",
+      "previewNoShares": "No shareholder has a participation quota on record."
     },
     "form": {
       "editTitle": "Edit Company",
@@ -10780,6 +10788,219 @@
     "hints": {
       "MARKTLOKATION": "11 digits",
       "MESSLOKATION": "33 characters, starting with the country code (e.g. DE)"
+    }
+  },
+  "dismantling": {
+    "cardTitle": "Dismantling obligation",
+    "cardTooltip": "Dismantling cost, the security required by the authority, and the annual provision under commercial and tax law.",
+    "noObligation": "No dismantling obligation recorded for this park.",
+    "noObligationHint": "Every permitted park has one. Without it the provision is missing from the annual accounts and the guarantee expiry goes unwatched.",
+    "securityExpired": "Guarantee expired",
+    "securityExpiresSoon": "Guarantee expiring",
+    "securityProblems": "Dismantling security",
+    "estimatedCost": "Dismantling cost (at today's prices)",
+    "estimateFrom": "Estimate dated {date}",
+    "estimateUndated": "Estimate without a date — cannot be assessed",
+    "dismantlingYear": "Planned dismantling",
+    "security": "Security provided / required",
+    "securityUnknown": "no requirement recorded",
+    "securityValidTo": "Guarantee valid until",
+    "securityNoExpiry": "no expiry recorded",
+    "daysLeft": "{days} days left",
+    "daysExpired": "expired {days} days ago",
+    "provisionTitle": "Roll forward provision",
+    "provisionYear": "Balance sheet year",
+    "discountRate": "Discount %",
+    "discountRateHint": "Commercial discount rate under § 253 (2) HGB — published by the Bundesbank, depends on remaining term. Without it no discounting is applied and the amount is too high. The tax rate of 5.5 % (§ 6 (1) no. 3a EStG) is fixed by law and not configurable.",
+    "compute": "Roll forward",
+    "computed": "Provision for {year} rolled forward",
+    "computedWithWarnings": "Rolled forward — with warnings",
+    "computeError": "Roll-forward failed",
+    "noProvisions": "No roll-forward recorded yet.",
+    "notDiscounted": "Calculated without a discount rate — the commercial amount is too high.",
+    "accrualLine": "Accrued: {percent} % of the obligation, {years} years until dismantling.",
+    "differenceHint": "Commercial and tax accounts arrive at different amounts for the same obligation — both are correct. The difference is the basis for deferred taxes.",
+    "table": {
+      "year": "Year",
+      "hgb": "HGB",
+      "tax": "Tax",
+      "difference": "Difference",
+      "addition": "Addition"
+    }
+  },
+  "lessorShares": {
+    "cardTitle": "Lessor shares",
+    "cardTooltip": "Co-ownership shares with effective dates. Each co-owner is a separate VAT subject and receives their own credit note to their own account.",
+    "fallbackBadge": "single lessor",
+    "fallbackHint": "No shares recorded for this lease. {lessor} still holds 100 % — settlement is unchanged. Shares are only needed when the land has several owners or is sold mid-period.",
+    "noLessor": "no lessor",
+    "empty": "No shares recorded yet.",
+    "person": "Lessor",
+    "personPlaceholder": "Search person …",
+    "sharePercent": "Share %",
+    "validFrom": "Valid from",
+    "validTo": "Valid until (incl.)",
+    "bankIban": "Different IBAN",
+    "bankIbanPlaceholder": "only for estate accounts etc.",
+    "addRow": "Add share",
+    "removeRow": "Remove share",
+    "save": "Save",
+    "savedToast": "Lessor shares saved",
+    "clearedToast": "Shares removed — the lease reverts to the single lessor",
+    "saveError": "Saving failed",
+    "sumLine": "Total: {sum} %",
+    "sumWithDatesHint": "checked per effective date",
+    "problemsTitle": "The shares do not add up to 100 %",
+    "vatHint": "An ownership change is recorded by giving the old share a “valid until” and starting a new one the next day. The old one is not deleted — otherwise an already settled period would lose its basis."
+  },
+  "insurancePolicies": {
+    "title": "Policies",
+    "description": "Sums insured, deductibles and insured objects — with an underinsurance check.",
+    "backToContracts": "To insurance contracts",
+    "filterGapsOnly": "Coverage gaps only",
+    "empty": "No policy recorded yet",
+    "emptyHint": "An insurance contract on its own only carries a title and a term. Only the policy records the sum insured, the deductible and the insured objects — without it neither underinsurance can be detected nor a claim recalculated.",
+    "emptyGaps": "No policy with a detected coverage gap",
+    "emptyGapsHint": "That does not mean every policy is sufficient — policies without a recorded insured value cannot be assessed and do not appear here.",
+    "loadError": "Policies could not be loaded",
+    "loadErrorHint": "Please reload the page. If the error persists, a permission may be missing.",
+    "summary": {
+      "covered": "sufficiently covered",
+      "underinsured": "underinsured",
+      "unassessable": "not assessable",
+      "unassessableHint": "No insured value recorded"
+    },
+    "badgeUnderinsured": "Underinsurance",
+    "badgeUnassessable": "not assessable",
+    "badgeWaiver": "Waiver of defence",
+    "insurer": "Insurer",
+    "viaBroker": "via {broker}",
+    "sumInsured": "Sum insured",
+    "insuredValue": "Insured value",
+    "valueFromObjects": "from {count} insured objects",
+    "deductible": "Deductible",
+    "deductibleMin": "min. {amount}",
+    "deductibleMax": "max. {amount}",
+    "deductibleBases": {
+      "PERCENT_OF_LOSS": "of the loss",
+      "PERCENT_OF_SUM_INSURED": "of the sum insured",
+      "FIXED_EUR": ""
+    },
+    "coverages": "Coverages",
+    "indemnityPeriod": "indemnity {months} mo.",
+    "term": "Term {from} – {to}",
+    "openEnded": "open-ended",
+    "premium": "Premium {amount} {interval}",
+    "intervals": {
+      "MONTHLY": "monthly",
+      "QUARTERLY": "quarterly",
+      "SEMI_ANNUAL": "semi-annually",
+      "ANNUAL": "annually"
+    },
+    "nextDue": "next due {date}",
+    "claimCount": "{count} claims",
+    "coverageTypes": {
+      "MACHINERY_BREAKDOWN": "Machinery breakdown",
+      "BUSINESS_INTERRUPTION": "Business interruption",
+      "LIABILITY": "Liability",
+      "ELEMENTAL": "Elemental",
+      "ERECTION": "Erection",
+      "TRANSPORT": "Transport",
+      "LEGAL_PROTECTION": "Legal protection",
+      "OTHER": "Other"
+    }
+  },
+  "curtailment": {
+    "title": "Curtailment",
+    "description": "Lost energy from feed-in management and redispatch — together with the compensation claim.",
+    "filterStatus": "Status",
+    "filterAll": "All statuses",
+    "filterOpenOnly": "Open claims only",
+    "empty": "No curtailment recorded",
+    "emptyHint": "Curtailment events are imported or entered manually. Without them the lost energy stays unvalued and the claim against the grid operator is never filed.",
+    "loadError": "Curtailment events could not be loaded",
+    "loadErrorHint": "Please reload the page. If the error persists, a permission may be missing.",
+    "notComputed": "not valued",
+    "noDeadline": "no deadline recorded",
+    "deadlinePassed": "Deadline passed",
+    "deadlineSoon": "{days} days left",
+    "deviation": "grid operator {percent} %",
+    "totals": {
+      "claimed": "Claimed",
+      "paid": "Paid",
+      "open": "Open",
+      "openHint": "across all matches, not just this page",
+      "lostWork": "Lost energy"
+    },
+    "table": {
+      "event": "Event",
+      "park": "Park / turbine",
+      "basis": "Legal basis",
+      "lostWork": "Lost energy",
+      "claim": "Claim",
+      "paid": "Paid",
+      "status": "Status",
+      "deadline": "Limitation"
+    },
+    "bases": {
+      "EEG_15": "§ 15 EEG",
+      "ENWG_13A": "§ 13a EnWG",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "OPEN": "Not filed",
+      "SUBMITTED": "Filed",
+      "ACKNOWLEDGED": "Acknowledged",
+      "PARTIALLY_PAID": "Partially paid",
+      "PAID": "Paid",
+      "REJECTED": "Rejected",
+      "TIME_BARRED": "Time-barred"
+    },
+    "enwgHint": "For redispatch under § 13a EnWG the grid operator calculates the compensation itself; it depends on the balancing group and is not recalculated here. The in-house lost energy figure serves reconciliation, not claim calculation."
+  },
+  "shareTransfers": {
+    "cardTitle": "Share transfers",
+    "cardTooltip": "The share history with effective dates. Without it the share register as at the last balance sheet date cannot be reconstructed — a sale would otherwise overwrite the master record.",
+    "registerDate": "Share register as at",
+    "registerEmpty": "No shareholder holds a share on this date.",
+    "sources": {
+      "SHARE_HISTORY": "from the share history",
+      "MASTER_DATA_FALLBACK": "from master data (no share history recorded yet)"
+    },
+    "register": {
+      "shareholder": "Shareholder",
+      "share": "Share",
+      "capital": "Capital",
+      "total": "Total"
+    },
+    "transfersTitle": "Transfers",
+    "transfersEmpty": "No share transfer recorded yet.",
+    "redeemed": "redeemed",
+    "execute": "Execute",
+    "executed": "Transfer {number} executed",
+    "executeError": "Execution failed",
+    "consentMissing": "Consent missing",
+    "consentBlocks": "Without the required consent the transfer is provisionally ineffective and cannot be executed.",
+    "executeHint": "Only execution updates the share history. Booking it earlier would assume a transfer that may still fail under the articles of association. Transfers must be executed in the order of their effective dates.",
+    "table": {
+      "number": "Transfer",
+      "type": "Type",
+      "parties": "From → to",
+      "share": "Share",
+      "status": "Status"
+    },
+    "types": {
+      "SALE": "Sale",
+      "GIFT": "Gift",
+      "INHERITANCE": "Inheritance",
+      "REDEMPTION": "Redemption",
+      "ISSUE": "New issue"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PENDING_CONSENT": "Consent pending",
+      "EXECUTED": "Executed",
+      "CANCELLED": "Cancelled"
     }
   }
 }

@@ -268,6 +268,7 @@
     "scadaMeasurements": "Ertragsdaten",
     "scadaMapping": "SCADA-Zuordnung",
     "energyAnalytics": "Energie-Analysen",
+    "curtailment": "Abregelungen",
     "groundLeases": "Grundstücke & Pachten",
     "reportsDocuments": "Berichte & Dokumente",
     "leases": "Pacht",
@@ -9514,7 +9515,14 @@
       "batchPortalNoSuitable": "Keine geeigneten Gesellschafter ausgewählt (nur solche ohne Portal-Zugang und mit E-Mail-Adresse).",
       "batchPortalSuccess": "Portal-Zugang für {count} Gesellschafter aktiviert",
       "batchPortalPartial": "{success} aktiviert, {fail} fehlgeschlagen",
-      "recalcError": "Fehler bei der Neuberechnung"
+      "recalcError": "Fehler bei der Neuberechnung",
+      "proRataLabel": "Zeitanteilig nach Beteiligungsdauer verteilen",
+      "periodYear": "Geschäftsjahr",
+      "proRataHint": "Verteilt wird nach tatsächlicher Beteiligungsdauer und tatsächlicher Quote im angegebenen Geschäftsjahr. Wer im Jahr ein- oder ausgetreten ist, erhält seinen Zeitanteil — sein Anteil wird nicht auf die übrigen verteilt.",
+      "registerHint": "Ohne Zeitraum wird nach dem Stand der Gesellschafterliste am Ausschüttungstag verteilt. Ein- und Austritte im Jahr bleiben unberücksichtigt.",
+      "previewColDays": "Tage",
+      "previewUndistributed": "Nicht verteilt (bleibt bei der Gesellschaft)",
+      "previewNoShares": "Für keinen Gesellschafter ist eine Beteiligungsquote hinterlegt."
     },
     "form": {
       "editTitle": "Gesellschaft bearbeiten",
@@ -10780,6 +10788,219 @@
     "hints": {
       "MARKTLOKATION": "11 Ziffern",
       "MESSLOKATION": "33 Zeichen, beginnt mit dem Ländercode (z. B. DE)"
+    }
+  },
+  "dismantling": {
+    "cardTitle": "Rückbauverpflichtung",
+    "cardTooltip": "Rückbaukosten, behördlich geforderte Sicherheit und die jährliche Rückstellung nach Handels- und Steuerbilanz.",
+    "noObligation": "Für diesen Park ist keine Rückbauverpflichtung erfasst.",
+    "noObligationHint": "Jeder genehmigte Park hat eine. Ohne sie fehlt die Rückstellung im Jahresabschluss und der Ablauf der Bürgschaft wird nicht überwacht.",
+    "securityExpired": "Bürgschaft abgelaufen",
+    "securityExpiresSoon": "Bürgschaft läuft ab",
+    "securityProblems": "Rückbausicherheit",
+    "estimatedCost": "Rückbaukosten (heutiger Stand)",
+    "estimateFrom": "Gutachten vom {date}",
+    "estimateUndated": "Gutachten ohne Datum — nicht beurteilbar",
+    "dismantlingYear": "Geplanter Rückbau",
+    "security": "Sicherheit gestellt / gefordert",
+    "securityUnknown": "keine Vorgabe hinterlegt",
+    "securityValidTo": "Bürgschaft gültig bis",
+    "securityNoExpiry": "kein Ablauf hinterlegt",
+    "daysLeft": "noch {days} Tage",
+    "daysExpired": "seit {days} Tagen abgelaufen",
+    "provisionTitle": "Rückstellung fortschreiben",
+    "provisionYear": "Bilanzjahr",
+    "discountRate": "Abzinsung %",
+    "discountRateHint": "Handelsrechtlicher Abzinsungssatz nach § 253 Abs. 2 HGB — von der Bundesbank veröffentlicht, laufzeitabhängig. Ohne ihn wird nicht abgezinst und der Betrag ist zu hoch. Der steuerliche Satz von 5,5 % (§ 6 Abs. 1 Nr. 3a EStG) ist gesetzlich fest und nicht einstellbar.",
+    "compute": "Fortschreiben",
+    "computed": "Rückstellung {year} fortgeschrieben",
+    "computedWithWarnings": "Fortgeschrieben — mit Hinweisen",
+    "computeError": "Fortschreibung fehlgeschlagen",
+    "noProvisions": "Noch keine Fortschreibung erfasst.",
+    "notDiscounted": "Ohne Abzinsungssatz gerechnet — der handelsrechtliche Betrag ist zu hoch.",
+    "accrualLine": "Ansammlung: {percent} % der Verpflichtung, noch {years} Jahre bis zum Rückbau.",
+    "differenceHint": "Handels- und Steuerbilanz kommen bei derselben Verpflichtung zu verschiedenen Beträgen — beide sind richtig. Die Differenz ist Grundlage der latenten Steuern.",
+    "table": {
+      "year": "Jahr",
+      "hgb": "HGB",
+      "tax": "Steuer",
+      "difference": "Differenz",
+      "addition": "Zuführung"
+    }
+  },
+  "lessorShares": {
+    "cardTitle": "Verpächteranteile",
+    "cardTooltip": "Miteigentumsquoten mit Stichtag. Jeder Miteigentümer ist ein eigenes Umsatzsteuersubjekt und bekommt seine eigene Gutschrift auf sein eigenes Konto.",
+    "fallbackBadge": "ein Verpächter",
+    "fallbackHint": "Für diesen Vertrag sind keine Anteile erfasst. Es gilt weiterhin {lessor} mit 100 % — die Abrechnung rechnet unverändert. Anteile sind erst nötig, wenn das Grundstück mehreren gehört oder mitten in der Periode verkauft wird.",
+    "noLessor": "kein Verpächter",
+    "empty": "Noch keine Anteile erfasst.",
+    "person": "Verpächter",
+    "personPlaceholder": "Person suchen …",
+    "sharePercent": "Quote %",
+    "validFrom": "Gültig ab",
+    "validTo": "Gültig bis (einschl.)",
+    "bankIban": "Abweichende IBAN",
+    "bankIbanPlaceholder": "nur bei Nachlasskonto o. Ä.",
+    "addRow": "Anteil hinzufügen",
+    "removeRow": "Anteil entfernen",
+    "save": "Speichern",
+    "savedToast": "Verpächteranteile gespeichert",
+    "clearedToast": "Anteile entfernt — der Vertrag rechnet wieder über den einzelnen Verpächter",
+    "saveError": "Speichern fehlgeschlagen",
+    "sumLine": "Summe: {sum} %",
+    "sumWithDatesHint": "je Stichtag geprüft",
+    "problemsTitle": "Die Anteile ergeben nicht 100 %",
+    "vatHint": "Ein Eigentümerwechsel entsteht, indem der alte Anteil ein „gültig bis“ bekommt und ein neuer am Folgetag beginnt. Der alte wird nicht gelöscht — sonst verlöre eine bereits abgerechnete Periode ihre Grundlage."
+  },
+  "insurancePolicies": {
+    "title": "Policen",
+    "description": "Versicherungssummen, Selbstbehalte und versicherte Objekte — mit Prüfung auf Unterversicherung.",
+    "backToContracts": "Zu den Versicherungsverträgen",
+    "filterGapsOnly": "Nur mit Deckungslücke",
+    "empty": "Noch keine Police erfasst",
+    "emptyHint": "Ein Versicherungsvertrag allein trägt nur Titel und Laufzeit. Erst die Police hält Versicherungssumme, Selbstbehalt und versicherte Objekte fest — ohne sie lässt sich weder eine Unterversicherung erkennen noch eine Entschädigung nachrechnen.",
+    "emptyGaps": "Keine Police mit erkannter Deckungslücke",
+    "emptyGapsHint": "Das heißt nicht, dass alle Policen ausreichend sind — Policen ohne erfassten Versicherungswert sind nicht beurteilbar und tauchen hier nicht auf.",
+    "loadError": "Policen konnten nicht geladen werden",
+    "loadErrorHint": "Bitte die Seite neu laden. Bleibt der Fehler, fehlt möglicherweise die Berechtigung.",
+    "summary": {
+      "covered": "ausreichend gedeckt",
+      "underinsured": "unterversichert",
+      "unassessable": "nicht beurteilbar",
+      "unassessableHint": "Kein Versicherungswert erfasst"
+    },
+    "badgeUnderinsured": "Unterversicherung",
+    "badgeUnassessable": "nicht beurteilbar",
+    "badgeWaiver": "Einwandsverzicht",
+    "insurer": "Versicherer",
+    "viaBroker": "über {broker}",
+    "sumInsured": "Versicherungssumme",
+    "insuredValue": "Versicherungswert",
+    "valueFromObjects": "aus {count} versicherten Objekten",
+    "deductible": "Selbstbehalt",
+    "deductibleMin": "mind. {amount}",
+    "deductibleMax": "höchstens {amount}",
+    "deductibleBases": {
+      "PERCENT_OF_LOSS": "des Schadens",
+      "PERCENT_OF_SUM_INSURED": "der Versicherungssumme",
+      "FIXED_EUR": ""
+    },
+    "coverages": "Deckungen",
+    "indemnityPeriod": "Haftzeit {months} Mon.",
+    "term": "Laufzeit {from} – {to}",
+    "openEnded": "unbefristet",
+    "premium": "Prämie {amount} {interval}",
+    "intervals": {
+      "MONTHLY": "monatlich",
+      "QUARTERLY": "vierteljährlich",
+      "SEMI_ANNUAL": "halbjährlich",
+      "ANNUAL": "jährlich"
+    },
+    "nextDue": "nächste Fälligkeit {date}",
+    "claimCount": "{count} Schäden",
+    "coverageTypes": {
+      "MACHINERY_BREAKDOWN": "Maschinenbruch",
+      "BUSINESS_INTERRUPTION": "Betriebsunterbrechung",
+      "LIABILITY": "Haftpflicht",
+      "ELEMENTAL": "Elementar",
+      "ERECTION": "Montage",
+      "TRANSPORT": "Transport",
+      "LEGAL_PROTECTION": "Rechtsschutz",
+      "OTHER": "Sonstige"
+    }
+  },
+  "curtailment": {
+    "title": "Abregelungen",
+    "description": "Ausfallarbeit durch Einspeisemanagement und Redispatch — mit der Entschädigungsforderung dagegen.",
+    "filterStatus": "Status",
+    "filterAll": "Alle Status",
+    "filterOpenOnly": "Nur offene Forderungen",
+    "empty": "Keine Abregelung erfasst",
+    "emptyHint": "Abregelungen werden über die Schnittstelle oder von Hand erfasst. Ohne sie bleibt die Ausfallarbeit unbewertet und die Forderung gegen den Netzbetreiber ungestellt.",
+    "loadError": "Abregelungen konnten nicht geladen werden",
+    "loadErrorHint": "Bitte die Seite neu laden. Bleibt der Fehler, fehlt möglicherweise die Berechtigung.",
+    "notComputed": "nicht bewertet",
+    "noDeadline": "keine Frist hinterlegt",
+    "deadlinePassed": "Frist abgelaufen",
+    "deadlineSoon": "noch {days} Tage",
+    "deviation": "Netzbetreiber {percent} %",
+    "totals": {
+      "claimed": "Geltend gemacht",
+      "paid": "Gezahlt",
+      "open": "Offen",
+      "openHint": "über alle Treffer, nicht nur diese Seite",
+      "lostWork": "Ausfallarbeit"
+    },
+    "table": {
+      "event": "Vorgang",
+      "park": "Park / Anlage",
+      "basis": "Grundlage",
+      "lostWork": "Ausfallarbeit",
+      "claim": "Forderung",
+      "paid": "Gezahlt",
+      "status": "Status",
+      "deadline": "Verjährung"
+    },
+    "bases": {
+      "EEG_15": "§ 15 EEG",
+      "ENWG_13A": "§ 13a EnWG",
+      "OTHER": "Sonstige"
+    },
+    "statuses": {
+      "OPEN": "Nicht geltend gemacht",
+      "SUBMITTED": "Gestellt",
+      "ACKNOWLEDGED": "Anerkannt",
+      "PARTIALLY_PAID": "Teilweise gezahlt",
+      "PAID": "Gezahlt",
+      "REJECTED": "Abgelehnt",
+      "TIME_BARRED": "Verjährt"
+    },
+    "enwgHint": "Bei Redispatch nach § 13a EnWG rechnet der Netzbetreiber die Entschädigung selbst; sie hängt am Bilanzkreis und wird hier nicht nachgerechnet. Die eigene Ausfallarbeit dient dem Abgleich, nicht der Forderungsberechnung."
+  },
+  "shareTransfers": {
+    "cardTitle": "Anteilsübertragungen",
+    "cardTooltip": "Der Anteilsverlauf mit Stichtag. Ohne ihn ist die Gesellschafterliste zum letzten Bilanzstichtag nicht mehr rekonstruierbar — beim Verkauf wird sonst der Stammsatz überschrieben.",
+    "registerDate": "Gesellschafterliste zum Stichtag",
+    "registerEmpty": "Zu diesem Stichtag ist kein Gesellschafter beteiligt.",
+    "sources": {
+      "SHARE_HISTORY": "aus dem Anteilsverlauf",
+      "MASTER_DATA_FALLBACK": "aus den Stammdaten (noch kein Anteilsverlauf erfasst)"
+    },
+    "register": {
+      "shareholder": "Gesellschafter",
+      "share": "Quote",
+      "capital": "Kapitalanteil",
+      "total": "Summe"
+    },
+    "transfersTitle": "Vorgänge",
+    "transfersEmpty": "Noch keine Anteilsübertragung erfasst.",
+    "redeemed": "eingezogen",
+    "execute": "Vollziehen",
+    "executed": "Übertragung {number} vollzogen",
+    "executeError": "Vollzug fehlgeschlagen",
+    "consentMissing": "Zustimmung fehlt",
+    "consentBlocks": "Ohne die erforderliche Zustimmung ist die Übertragung schwebend unwirksam und kann nicht vollzogen werden.",
+    "executeHint": "Erst der Vollzug schreibt den Anteilsverlauf fort. Vorher zu buchen hieße, eine Übertragung zu unterstellen, die gesellschaftsvertraglich noch scheitern kann. Übertragungen müssen in der Reihenfolge ihrer Stichtage vollzogen werden.",
+    "table": {
+      "number": "Vorgang",
+      "type": "Art",
+      "parties": "Von → an",
+      "share": "Quote",
+      "status": "Status"
+    },
+    "types": {
+      "SALE": "Verkauf",
+      "GIFT": "Schenkung",
+      "INHERITANCE": "Erbfall",
+      "REDEMPTION": "Einziehung",
+      "ISSUE": "Neuaufnahme"
+    },
+    "statuses": {
+      "DRAFT": "Entwurf",
+      "PENDING_CONSENT": "Zustimmung offen",
+      "EXECUTED": "Vollzogen",
+      "CANCELLED": "Storniert"
     }
   }
 }

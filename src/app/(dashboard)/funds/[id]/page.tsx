@@ -118,6 +118,11 @@ import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 import { downloadBlob } from "@/lib/download";
+import { ShareTransfersCard } from "@/components/funds/share-transfers-card";
+// A8 (Audit 2026-07): Dieselbe Rechnung wie auf dem Server. Die Vorschau
+// benutzte eine EIGENE, die normalisiert hat — sie zeigte damit Betraege an,
+// die so nie gebucht wurden.
+import { splitDistribution, type ShareholderShare } from "@/lib/shareholding/distribution-split";
 
 interface Shareholder {
   id: string;
@@ -317,6 +322,13 @@ export default function FundDetailsPage({
   const [distributionAmount, setDistributionAmount] = useState<string>("");
   const [distributionDescription, setDistributionDescription] = useState<string>("");
   const [distributionDate, setDistributionDate] = useState<Date>(new Date());
+  // Vorbelegt mit dem VORJAHR: ausgeschuettet wird nach dem
+  // Gewinnverwendungsbeschluss, also fuer ein abgeschlossenes Geschaeftsjahr.
+  // Der Nutzer sieht und aendert es — geraten wird nichts im Hintergrund.
+  const [distributionPeriodYear, setDistributionPeriodYear] = useState<string>(
+    () => String(new Date().getFullYear() - 1),
+  );
+  const [distributionProRata, setDistributionProRata] = useState(true);
   const [isCreatingDistribution, setIsCreatingDistribution] = useState(false);
   const [isExecutingDistribution, setIsExecutingDistribution] = useState<string | null>(null);
   const [isDeletingDistribution, setIsDeletingDistribution] = useState<string | null>(null);
@@ -684,28 +696,60 @@ export default function FundDetailsPage({
     }
   }
 
-  // Calculate distribution preview for each shareholder
+  /**
+   * Vorschau der Ausschuettung — mit derselben Funktion wie der Server.
+   *
+   * A8 (Finding 4.1): Vorher stand hier eine eigene Rechnung, die auf
+   * `status === "ACTIVE"` filterte und die verbleibenden Quoten auf 100 %
+   * hochnormalisierte. Wer zum 31.03. ausgetreten war, erschien mit 0 EUR,
+   * und sein Jahresanteil wurde den uebrigen zugeschlagen. Die Vorschau zeigte
+   * damit Betraege, die so nicht gebucht wurden.
+   *
+   * `entryDate` und `exitDate` waren die ganze Zeit im Datensatz.
+   */
   function calculateDistributionPreview(totalAmount: number) {
-    if (!fund?.shareholders || fund.shareholders.length === 0) return [];
+    if (!fund?.shareholders || fund.shareholders.length === 0) return null;
 
-    const activeShareholders = fund.shareholders.filter(sh => sh.status === "ACTIVE");
-    const totalPercentage = activeShareholders.reduce(
-      (sum, sh) => sum + (Number(sh.ownershipPercentage) || 0),
-      0
-    );
+    const shares: ShareholderShare[] = fund.shareholders
+      .map((sh) => ({
+        shareholderId: sh.id,
+        sharePercent: Number(sh.distributionPercentage) || Number(sh.ownershipPercentage) || 0,
+        validFrom: sh.entryDate ? new Date(sh.entryDate) : null,
+        validTo: sh.exitDate ? new Date(sh.exitDate) : null,
+      }))
+      .filter((share) => share.sharePercent > 0);
 
-    if (totalPercentage === 0) return [];
+    if (shares.length === 0) return null;
 
-    return activeShareholders.map(sh => {
-      const percentage = Number(sh.ownershipPercentage) || 0;
-      const normalizedPercentage = (percentage / totalPercentage) * 100;
-      const amount = Math.round((totalAmount * normalizedPercentage / 100) * 100) / 100;
-      return {
-        shareholder: sh,
-        percentage: normalizedPercentage,
-        amount,
-      };
-    });
+    const year = Number(distributionPeriodYear);
+    const proRata = distributionProRata && Number.isFinite(year) && year > 1900;
+    const periodStart = proRata
+      ? new Date(Date.UTC(year, 0, 1))
+      : new Date(`${format(distributionDate, "yyyy-MM-dd")}T00:00:00.000Z`);
+    const periodEnd = proRata
+      ? new Date(Date.UTC(year, 11, 31))
+      : new Date(`${format(distributionDate, "yyyy-MM-dd")}T00:00:00.000Z`);
+
+    const result = splitDistribution({ shares, periodStart, periodEnd, totalAmountEur: totalAmount });
+    if (result.allocations === null) return { error: result.reason };
+
+    const byId = new Map(fund.shareholders.map((sh) => [sh.id, sh]));
+    return {
+      rows: result.allocations
+        .map((allocation) => ({
+          shareholder: byId.get(allocation.shareholderId)!,
+          percentage: allocation.effectiveSharePercent,
+          days: allocation.days,
+          amount: allocation.amountEur,
+        }))
+        .filter((row) => row.shareholder),
+      distributedEur: result.distributedEur,
+      // Eingezogene oder eigene Anteile. Er bleibt bei der Gesellschaft und
+      // wird NICHT auf die uebrigen verteilt.
+      undistributedEur: result.undistributedEur,
+      warnings: result.warnings,
+      proRata,
+    };
   }
 
   async function handleCreateDistribution() {
@@ -717,13 +761,31 @@ export default function FundDetailsPage({
 
     try {
       setIsCreatingDistribution(true);
-      await createDistribution(id, {
+      const year = Number(distributionPeriodYear);
+      const proRata = distributionProRata && Number.isFinite(year) && year > 1900;
+
+      const created = await createDistribution(id, {
         totalAmount: amount,
         description: distributionDescription || undefined,
         distributionDate: format(distributionDate, "yyyy-MM-dd"),
+        // Nur mitschicken, wenn zeitanteilig gewuenscht. Ohne Zeitraum
+        // verteilt die Route nach dem Stand am Ausschuettungstag und sagt das
+        // auch — sie raet kein Geschaeftsjahr.
+        ...(proRata
+          ? { periodStart: `${year}-01-01`, periodEnd: `${year}-12-31` }
+          : {}),
       });
 
-      toast.success(t("detail.createDistributionSuccess"));
+      if (created.warnings && created.warnings.length > 0) {
+        // Vor allem der Hinweis auf einen nicht verteilten Rest — er gehoert
+        // vor die Augen des Bearbeiters, nicht nur in den Datensatz.
+        toast.warning(t("detail.createDistributionSuccess"), {
+          description: created.warnings.slice(0, 3).join(" · "),
+          duration: 15_000,
+        });
+      } else {
+        toast.success(t("detail.createDistributionSuccess"));
+      }
       setIsDistributionDialogOpen(false);
       setDistributionAmount("");
       setDistributionDescription("");
@@ -1188,6 +1250,14 @@ export default function FundDetailsPage({
               )}
             </CardContent>
           </Card>
+
+          {/* A8 (Audit 2026-07): Anteilsuebertragung und Gesellschafterliste
+              zum Stichtag. Bisher wurde der Stammsatz beim Verkauf
+              ueberschrieben — die Liste zum letzten Bilanzstichtag war danach
+              nicht mehr rekonstruierbar. */}
+          <div className="mt-6">
+            <ShareTransfersCard fundId={id} />
+          </div>
         </TabsContent>
 
         {/* Overview Tab */}
@@ -2057,48 +2127,116 @@ export default function FundDetailsPage({
               </div>
             </div>
 
+            {/* A8 (Audit 2026-07): Der Zeitraum. Ohne ihn gibt es keinen
+                Zeitanteil — dann gilt der Stand am Ausschuettungstag. Das Feld
+                ist sichtbar und aenderbar, statt im Hintergrund geraten zu
+                werden. */}
+            <div className="rounded-lg border p-3">
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="distributionProRata"
+                    checked={distributionProRata}
+                    onCheckedChange={(checked) => setDistributionProRata(checked === true)}
+                  />
+                  <Label htmlFor="distributionProRata" className="text-sm font-normal">
+                    {t("detail.proRataLabel")}
+                  </Label>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="distributionPeriodYear" className="text-xs">
+                    {t("detail.periodYear")}
+                  </Label>
+                  <Input
+                    id="distributionPeriodYear"
+                    type="number"
+                    min={1900}
+                    max={2200}
+                    className="w-28"
+                    value={distributionPeriodYear}
+                    onChange={(e) => setDistributionPeriodYear(e.target.value)}
+                    disabled={!distributionProRata}
+                  />
+                </div>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {distributionProRata ? t("detail.proRataHint") : t("detail.registerHint")}
+              </p>
+            </div>
+
             {/* Preview */}
-            {distributionAmount && parseFloat(distributionAmount) > 0 && (
-              <div className="space-y-3">
-                <Label>{t("detail.previewTitle")}</Label>
-                <div className="rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("detail.previewColShareholder")}</TableHead>
-                        <TableHead className="text-right">{t("detail.previewColShare")}</TableHead>
-                        <TableHead className="text-right">{t("detail.previewColAmount")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {calculateDistributionPreview(parseFloat(distributionAmount)).map(
-                        (item) => (
+            {distributionAmount && parseFloat(distributionAmount) > 0 && (() => {
+              const preview = calculateDistributionPreview(parseFloat(distributionAmount));
+              if (!preview) {
+                return <p className="text-sm text-muted-foreground">{t("detail.previewNoShares")}</p>;
+              }
+              if ("error" in preview) {
+                // Die Begruendung des Rechenkerns ist die genaue — sie nennt
+                // den Abschnitt und die Summe.
+                return <p className="text-sm font-medium text-destructive">{preview.error}</p>;
+              }
+              const columnSpan = preview.proRata ? 3 : 2;
+              return (
+                <div className="space-y-3">
+                  <Label>{t("detail.previewTitle")}</Label>
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("detail.previewColShareholder")}</TableHead>
+                          {preview.proRata && (
+                            <TableHead className="text-right">{t("detail.previewColDays")}</TableHead>
+                          )}
+                          <TableHead className="text-right">{t("detail.previewColShare")}</TableHead>
+                          <TableHead className="text-right">{t("detail.previewColAmount")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {preview.rows.map((item) => (
                           <TableRow key={item.shareholder.id}>
                             <TableCell>{getPersonName(item.shareholder.person)}</TableCell>
-                            <TableCell className="text-right">
+                            {preview.proRata && (
+                              <TableCell className="text-right tabular-nums">{item.days}</TableCell>
+                            )}
+                            <TableCell className="text-right tabular-nums">
                               {item.percentage.toFixed(2)}%
                             </TableCell>
-                            <TableCell className="text-right font-medium">
+                            <TableCell className="text-right font-medium tabular-nums">
                               {formatCurrency(item.amount)}
                             </TableCell>
                           </TableRow>
-                        )
-                      )}
-                      <TableRow className="bg-muted/50 font-medium">
-                        <TableCell>{t("detail.previewTotal")}</TableCell>
-                        <TableCell className="text-right">100%</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(parseFloat(distributionAmount))}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
+                        ))}
+                        {/* Der nicht verteilte Rest bekommt eine eigene Zeile.
+                            Ihn wegzulassen liesse die Summe unter dem Beschluss
+                            stehen, ohne dass jemand erfaehrt warum. */}
+                        {preview.undistributedEur > 0.005 && (
+                          <TableRow className="text-muted-foreground">
+                            <TableCell colSpan={columnSpan}>
+                              {t("detail.previewUndistributed")}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatCurrency(preview.undistributedEur)}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        <TableRow className="bg-muted/50 font-medium">
+                          <TableCell colSpan={columnSpan}>{t("detail.previewTotal")}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatCurrency(parseFloat(distributionAmount))}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {preview.warnings.map((warning) => (
+                    <p key={warning} className="text-xs text-amber-600">
+                      {warning}
+                    </p>
+                  ))}
+                  <p className="text-sm text-muted-foreground">{t("detail.previewHint")}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {t("detail.previewHint")}
-                </p>
-              </div>
-            )}
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button

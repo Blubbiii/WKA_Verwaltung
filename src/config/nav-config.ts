@@ -58,6 +58,7 @@ import {
   Database,
   CheckSquare,
   ShieldCheck,
+  Ban,
 } from "lucide-react";
 
 // Re-export icons so sidebar.tsx can import them from here for SIDEBAR_LINK_ICONS
@@ -119,6 +120,7 @@ export {
   Link2,
   Map,
   ShieldCheck,
+  Ban,
 };
 
 // ---------------------------------------------------------------------------
@@ -310,6 +312,9 @@ export const navGroups: NavGroup[] = [
           { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
           { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
           { title: "Energie-Analysen", titleKey: "energyAnalytics", href: "/energy/analytics", icon: TrendingUp },
+          // A4 (Audit 2026-07): Abregelung war nicht abgebildet — weder die
+          // Ausfallarbeit noch die Forderung dagegen.
+          { title: "Abregelungen", titleKey: "curtailment", href: "/energy/curtailment", icon: Ban },
         ],
       },
     ],

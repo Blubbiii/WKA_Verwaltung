@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { ActivityTimeline } from "@/components/crm/activity-timeline";
 import { LeasePaymentsCard } from "@/components/leases/lease-payments-card";
+import { LessorSharesCard } from "@/components/leases/lessor-shares-card";
 import { FileUploadDropzone } from "@/components/ui/file-upload-dropzone";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import Link from "next/link";
@@ -567,6 +568,13 @@ export default function LeaseDetailPage({
 
         {/* Bedienaufwand #13: Zahlungen des Vertrags. */}
         <LeasePaymentsCard leaseId={lease.id} />
+
+        {/* A5 (Audit 2026-07): Miteigentumsanteile. Nach 20 Jahren Laufzeit
+            ist die Erbengemeinschaft der Normalfall — und jeder Miteigentuemer
+            ist ein eigenes Umsatzsteuersubjekt mit eigenem Konto. */}
+        <div className="md:col-span-2">
+          <LessorSharesCard leaseId={lease.id} />
+        </div>
 
         {/* CRM Activities */}
         {flags.crm && (
