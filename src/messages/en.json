@@ -10738,5 +10738,48 @@
       "bonusMalus": "Bonus/penalty",
       "status": "Status"
     }
+  },
+  "settlementCheck": {
+    "title": "Reconciliation",
+    "tooltip": "Compares the settled quantity against SCADA data and recorded production, and the settled rate against the rate on file. A missing source does not count as a passed check.",
+    "run": "Check",
+    "notYetChecked": "Not checked yet.",
+    "resultOk": "Everything within tolerance",
+    "resultIncomplete": "Reconciliation incomplete – comparison sources are missing",
+    "resultDeviation": "Deviation found – please review the findings",
+    "error": "Reconciliation failed",
+    "checkedAt": "Checked on {date}",
+    "scadaSource": "SCADA source",
+    "rateSource": "Rate",
+    "sources": {
+      "METER_READING": "Meter reading",
+      "POWER_INTEGRATION": "Power integration"
+    }
+  },
+  "meteringPoints": {
+    "title": "Metering points",
+    "tooltip": "Market location and metering location are the key that links a grid operator settlement to this park.",
+    "add": "Metering point",
+    "empty": "No metering points recorded.",
+    "inactive": "Inactive",
+    "kind": "Type",
+    "code": "Identifier",
+    "gridOperator": "Grid operator",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Metering point saved",
+    "saveError": "Saving failed",
+    "kinds": {
+      "MARKTLOKATION": "Market location (MaLo)",
+      "MESSLOKATION": "Metering location (MeLo)"
+    },
+    "directions": {
+      "FEED_IN": "Feed-in",
+      "CONSUMPTION": "Consumption"
+    },
+    "hints": {
+      "MARKTLOKATION": "11 digits",
+      "MESSLOKATION": "33 characters, starting with the country code (e.g. DE)"
+    }
   }
 }

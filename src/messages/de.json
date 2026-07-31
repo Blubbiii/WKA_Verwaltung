@@ -10738,5 +10738,48 @@
       "bonusMalus": "Bonus/Pönale",
       "status": "Status"
     }
+  },
+  "settlementCheck": {
+    "title": "Abgleich",
+    "tooltip": "Vergleicht die abgerechnete Menge mit den SCADA-Daten und der erfassten Produktion sowie den abgerechneten Satz mit dem hinterlegten. Eine fehlende Quelle gilt nicht als bestandener Abgleich.",
+    "run": "Prüfen",
+    "notYetChecked": "Noch nicht geprüft.",
+    "resultOk": "Alles innerhalb der Toleranz",
+    "resultIncomplete": "Abgleich unvollständig – es fehlen Vergleichsquellen",
+    "resultDeviation": "Abweichung gefunden – bitte Befunde prüfen",
+    "error": "Abgleich fehlgeschlagen",
+    "checkedAt": "Geprüft am {date}",
+    "scadaSource": "SCADA-Quelle",
+    "rateSource": "Satz",
+    "sources": {
+      "METER_READING": "Zählerstand",
+      "POWER_INTEGRATION": "Leistungsintegration"
+    }
+  },
+  "meteringPoints": {
+    "title": "Zählpunkte",
+    "tooltip": "Marktlokation und Messlokation sind der Schlüssel, über den sich eine Netzbetreiber-Abrechnung diesem Park zuordnen lässt.",
+    "add": "Zählpunkt",
+    "empty": "Keine Zählpunkte erfasst.",
+    "inactive": "Inaktiv",
+    "kind": "Art",
+    "code": "Kennung",
+    "gridOperator": "Netzbetreiber",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "saved": "Zählpunkt gespeichert",
+    "saveError": "Speichern fehlgeschlagen",
+    "kinds": {
+      "MARKTLOKATION": "Marktlokation (MaLo)",
+      "MESSLOKATION": "Messlokation (MeLo)"
+    },
+    "directions": {
+      "FEED_IN": "Einspeisung",
+      "CONSUMPTION": "Bezug"
+    },
+    "hints": {
+      "MARKTLOKATION": "11 Ziffern",
+      "MESSLOKATION": "33 Zeichen, beginnt mit dem Ländercode (z. B. DE)"
+    }
   }
 }

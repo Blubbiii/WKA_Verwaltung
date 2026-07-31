@@ -142,6 +142,54 @@ describe("Abgleichsroute", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Import
+// ---------------------------------------------------------------------------
+
+describe("Abrechnungsimport", () => {
+  const route = src("app/api/energy/settlements/import/route.ts");
+
+  it("die Zuordnung laeuft ueber den Zaehlpunkt", () => {
+    // Genau dafuer gibt es ihn — er steht in der Abrechnung.
+    expect(route).toContain("meteringCode");
+    expect(route).toContain("parkByCode");
+  });
+
+  it("ein unbekannter Zaehlpunkt wird gemeldet, nicht geraten", () => {
+    expect(route).toContain("keinem Park zugeordnet");
+  });
+
+  it("Betraege werden mit dem gemeinsamen Parser gelesen", () => {
+    // "1.234,56" wuerde parseFloat als 1.234 lesen.
+    expect(route).toContain('from "@/lib/parse-amount"');
+  });
+
+  it("bestehende Abrechnungen werden NICHT ueberschrieben", () => {
+    // Eine verteilte Abrechnung ist Grundlage von Pachtabrechnungen und
+    // Ausschuettungen; sie still zu ersetzen wuerde die Folgerechnungen
+    // unbemerkt ungueltig machen.
+    expect(route).toContain("bereits eine Abrechnung — übersprungen");
+  });
+
+  it("es gibt einen Probelauf", () => {
+    expect(route).toContain("if (dryRun)");
+  });
+
+  it("eingelesene Abrechnungen sind Entwuerfe", () => {
+    // Sie sind ungeprueft; der Dreiecksabgleich laeuft danach.
+    expect(route).toContain('status: "DRAFT"');
+  });
+
+  it("die Mandantenbindung der Parks wird geprueft", () => {
+    // Ein direkt angegebener parkId kommt vom Client.
+    expect(route).toContain("allowedParks");
+  });
+
+  it("eine negative Menge wird abgewiesen", () => {
+    expect(route).toContain("Negative Menge");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Rechte
 // ---------------------------------------------------------------------------
 

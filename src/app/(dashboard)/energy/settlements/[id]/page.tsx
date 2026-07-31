@@ -52,6 +52,7 @@ import {
   distributionModeLabels,
   formatPeriod,
 } from "@/hooks/useEnergySettlements";
+import { SettlementCheckCard } from "@/components/energy/settlement-check-card";
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -358,6 +359,11 @@ export default function SettlementDetailPage({
             )}
           </CardContent>
         </Card>
+
+        {/* A3 (Audit 2026-07): Dreiecksabgleich gegen SCADA und erfasste
+            Produktion. Steht direkt neben den abgerechneten Zahlen, weil er
+            genau die pruefen soll. */}
+        <SettlementCheckCard settlementId={settlement.id} />
 
         {/* Verteilung */}
         <Card>

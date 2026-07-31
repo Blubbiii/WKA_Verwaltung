@@ -88,6 +88,7 @@ import { TurbineDialogs, NetworkTopology } from "@/components/parks";
 import { DocumentPreviewDialog } from "@/components/documents";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { MeteringPointsCard } from "@/components/energy/metering-points-card";
 
 interface Turbine {
   id: string;
@@ -1001,6 +1002,11 @@ export default function ParkDetailsPage({
         {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid gap-6">
+            {/* A3 (Audit 2026-07): Zaehlpunkte. Sie sind der Schluessel, ueber
+                den sich eine Netzbetreiber-Abrechnung dem Park zuordnen
+                laesst — und fehlten im ganzen System. */}
+            <MeteringPointsCard parkId={park.id} />
+
             {/* Netz-Topologie */}
             <NetworkTopology
               parkName={park.name}
