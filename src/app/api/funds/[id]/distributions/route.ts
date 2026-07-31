@@ -1,17 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { splitDistribution } from "@/lib/shareholding/distribution-split";
+import {
+  resolveShareholderSharesFrom,
+  SHAREHOLDER_SHARES_SELECT,
+} from "@/lib/shareholding/resolve-shares";
 
-const createDistributionSchema = z.object({
-  totalAmount: z.number().positive("Betrag muss positiv sein"),
-  distributionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  description: z.string().optional(),
-  notes: z.string().optional(),
-});
+const createDistributionSchema = z
+  .object({
+    totalAmount: z.number().positive("Betrag muss positiv sein"),
+    distributionDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    /**
+     * A8: Zeitraum, für den ausgeschüttet wird — in der Regel das
+     * Geschäftsjahr des Gewinnverwendungsbeschlusses. Optional, weil
+     * bestehende Aufrufer ihn nicht kennen; ohne ihn wird nach dem Stand der
+     * Gesellschafterliste am Ausschüttungstag verteilt. Geraten wird er NICHT.
+     */
+    periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    description: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (Boolean(data.periodStart) !== Boolean(data.periodEnd)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["periodEnd"],
+        message: "Beginn und Ende des Zeitraums müssen zusammen angegeben werden",
+      });
+    }
+    if (data.periodStart && data.periodEnd && data.periodEnd < data.periodStart) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["periodEnd"],
+        message: "Das Ende des Zeitraums liegt vor dessen Beginn",
+      });
+    }
+  });
 
 // GET /api/funds/[id]/distributions - Liste aller Ausschuettungen
 export async function GET(
@@ -91,12 +122,16 @@ export async function POST(
     const body = await request.json();
     const data = createDistributionSchema.parse(body);
 
-    // Gesellschaft mit aktiven Gesellschaftern laden
+    // Gesellschaft mit ALLEN Gesellschaftern laden.
+    //
+    // A8 (Finding 4.1): Der frühere Filter `status: "ACTIVE"` war der Kern des
+    // Fehlers. Wer im Zeitraum ausgetreten ist, steht auf INACTIVE und hat
+    // trotzdem Anspruch auf seinen Zeitanteil — sein Anteil wurde stattdessen
+    // auf die übrigen hochnormalisiert und damit verschenkt.
     const fund = await prisma.fund.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         shareholders: {
-          where: { status: "ACTIVE" },
           include: {
             person: {
               select: {
@@ -107,6 +142,7 @@ export async function POST(
                 personType: true,
               },
             },
+            shareHistory: SHAREHOLDER_SHARES_SELECT,
           },
         },
       },
@@ -117,17 +153,54 @@ export async function POST(
     }
 
     if (fund.shareholders.length === 0) {
-      return apiError("BAD_REQUEST", undefined, { message: "Keine aktiven Gesellschafter vorhanden" });
+      return apiError("BAD_REQUEST", undefined, { message: "Keine Gesellschafter vorhanden" });
     }
 
-    // Prüfen ob alle Gesellschafter eine gültige Beteiligungsquote haben
-    const totalPercentage = fund.shareholders.reduce(
-      (sum, s) => sum + (Number(s.distributionPercentage) || Number(s.ownershipPercentage) || 0),
-      0
-    );
+    const distributionDate = new Date(`${data.distributionDate}T00:00:00.000Z`);
 
-    if (totalPercentage === 0) {
-      return apiError("BAD_REQUEST", undefined, { message: "Keine Beteiligungsquoten definiert" });
+    // Ohne Zeitraum gibt es keinen Zeitanteil. Dann gilt der Stand der
+    // Gesellschafterliste am Ausschüttungstag — und auch der wird NICHT
+    // hochnormalisiert.
+    const proRata = Boolean(data.periodStart && data.periodEnd);
+    const periodStart = data.periodStart
+      ? new Date(`${data.periodStart}T00:00:00.000Z`)
+      : distributionDate;
+    const periodEnd = data.periodEnd
+      ? new Date(`${data.periodEnd}T00:00:00.000Z`)
+      : distributionDate;
+
+    const resolved = resolveShareholderSharesFrom(fund.shareholders);
+    const split = splitDistribution({
+      shares: resolved.shares,
+      periodStart,
+      periodEnd,
+      totalAmountEur: data.totalAmount,
+    });
+
+    if (split.allocations === null) {
+      return apiError("BAD_REQUEST", undefined, { message: split.reason });
+    }
+
+    const warnings = [...resolved.warnings, ...split.warnings];
+    if (!proRata) {
+      warnings.push(
+        "Kein Ausschüttungszeitraum angegeben — verteilt wurde nach dem Stand der Gesellschafterliste am Ausschüttungstag. Für eine zeitanteilige Verteilung bitte den Zeitraum (Geschäftsjahr) angeben.",
+      );
+    }
+
+    // Nennquote je Gesellschafter, also die Quote OHNE Zeitanteil. Nur wenn
+    // sie im Zeitraum unverändert war — bei einem Anteilsübergang mitten im
+    // Jahr gibt es keine einzelne Nennquote, und eine davon herauszugreifen
+    // wäre eine Behauptung. Dann tragen `days` und die wirksame Quote die
+    // Herleitung.
+    const nominalByShareholder = new Map<string, number | null>();
+    for (const share of resolved.shares) {
+      const known = nominalByShareholder.get(share.shareholderId);
+      if (known === undefined) {
+        nominalByShareholder.set(share.shareholderId, share.sharePercent);
+      } else if (known !== share.sharePercent) {
+        nominalByShareholder.set(share.shareholderId, null);
+      }
     }
 
     // Eindeutige Ausschuettungsnummer generieren
@@ -148,7 +221,15 @@ export async function POST(
           distributionNumber,
           description: data.description,
           totalAmount: data.totalAmount,
-          distributionDate: new Date(data.distributionDate),
+          distributionDate,
+          periodStart: proRata ? periodStart : null,
+          periodEnd: proRata ? periodEnd : null,
+          basis: proRata ? "PRO_RATA_TEMPORIS" : "REGISTER_AT_DATE",
+          undistributedAmount: split.undistributedEur,
+          computationNotes:
+            warnings.length > 0
+              ? { source: resolved.source, segments: split.segmentCount, warnings }
+              : Prisma.DbNull,
           notes: data.notes,
           status: "DRAFT",
           fundId: id,
@@ -157,33 +238,19 @@ export async function POST(
         },
       });
 
-      // Items für jeden Gesellschafter erstellen
-      const items = fund.shareholders.map((shareholder) => {
-        // Verwende distributionPercentage falls vorhanden, sonst ownershipPercentage
-        const percentage = Number(shareholder.distributionPercentage) ||
-                          Number(shareholder.ownershipPercentage) || 0;
-        // Normalisiere auf 100% (falls Summe nicht genau 100 ist)
-        const normalizedPercentage = (percentage / totalPercentage) * 100;
-        const amount = Math.round((data.totalAmount * normalizedPercentage / 100) * 100) / 100;
-
-        return {
+      // Ein Item je Gesellschafter, der im Zeitraum beteiligt WAR — nicht je
+      // heute aktivem. Der Rundungsausgleich steckt bereits in
+      // `splitDistribution` und greift dort nur in den verteilten Betrag.
+      await tx.distributionItem.createMany({
+        data: split.allocations.map((allocation) => ({
           distributionId: dist.id,
-          shareholderId: shareholder.id,
-          percentage: normalizedPercentage,
-          amount,
-        };
+          shareholderId: allocation.shareholderId,
+          percentage: allocation.effectiveSharePercent,
+          amount: allocation.amountEur,
+          days: proRata ? allocation.days : null,
+          nominalPercentage: nominalByShareholder.get(allocation.shareholderId) ?? null,
+        })),
       });
-
-      // Compensate rounding difference on the last shareholder
-      if (items.length > 0) {
-        const distributedTotal = items.reduce((s, i) => s + i.amount, 0);
-        const roundingDiff = Math.round((data.totalAmount - distributedTotal) * 100) / 100;
-        if (roundingDiff !== 0) {
-          items[items.length - 1].amount += roundingDiff;
-        }
-      }
-
-      await tx.distributionItem.createMany({ data: items });
 
       return dist;
     });
@@ -213,7 +280,10 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(result, { status: 201 });
+    // Die Hinweise gehen mit zurück, nicht nur in die Datenbank — sonst
+    // erführe der Bearbeiter erst beim nächsten Öffnen, dass ein Teil nicht
+    // verteilt wurde.
+    return NextResponse.json({ ...result, warnings }, { status: 201 });
   } catch (error) {
     return handleApiError(error, "Fehler beim Erstellen der Ausschuettung");
   }

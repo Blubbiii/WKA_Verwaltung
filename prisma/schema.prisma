@@ -148,6 +148,7 @@ model Tenant {
   curtailmentEvents         CurtailmentEvent[]
   insurancePolicies         InsurancePolicy[]
   dismantlingObligations    DismantlingObligation[]
+  shareTransfers            ShareTransfer[]
 
   @@map("tenants")
 }
@@ -296,6 +297,8 @@ model User {
   availabilitySettlementsCreated                                          AvailabilitySettlement[]   @relation("AvailabilitySettlementCreator")
   settlementChecksReviewed                                                SettlementCheck[]          @relation("SettlementCheckReviewer")
   curtailmentEventsCreated                                                CurtailmentEvent[]         @relation("CurtailmentEventCreator")
+  shareTransfersCreated                                                   ShareTransfer[]            @relation("ShareTransferCreatedBy")
+  shareTransfersExecuted                                                  ShareTransfer[]            @relation("ShareTransferExecutedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -585,6 +588,7 @@ model Fund {
   emailSmtpSecure                                       Boolean?
   contracts                                             Contract[]
   distributions                                         Distribution[]
+  shareTransfers                                        ShareTransfer[]
   documents                                             Document[]
   energySettlementItems                                 EnergySettlementItem[]
   parentHierarchies  FundHierarchy[]               @relation("ChildHierarchy")
@@ -773,6 +777,10 @@ model Shareholder {
   voteProxiesGiven       VoteProxy[]          @relation("ProxyGrantor")
   voteResponses          VoteResponse[]
   mailingRecipients      MailingRecipient[]
+  /// A8: Anteilsverlauf. Leer = der Stammsatz oben gilt weiter.
+  shareHistory           ShareholderShare[]
+  transfersOut           ShareTransfer[]      @relation("ShareTransferFrom")
+  transfersIn            ShareTransfer[]      @relation("ShareTransferTo")
 
   @@index([fundId])
   @@index([personId])
@@ -960,6 +968,7 @@ model Document {
   tenant                              Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   turbine                             Turbine?               @relation(fields: [turbineId], references: [id], onDelete: SetNull)
   uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  shareTransfers                      ShareTransfer[]
 
   @@index([tenantId])
   @@index([category])
@@ -1461,8 +1470,17 @@ model BillingRule {
 
 model DistributionItem {
   id             String        @id @default(uuid())
+  /// Wirksame Quote am Gesamtbetrag — Beteiligungsquote MAL Zeitanteil.
+  /// Bei ganzjähriger Beteiligung ist das die Beteiligungsquote selbst.
   percentage     Decimal       @db.Decimal(8, 5)
   amount         Decimal       @db.Decimal(15, 2)
+  /// A8: Tage der Beteiligung im Ausschüttungszeitraum. `null` bei Verteilung
+  /// nach Stichtag — dann gibt es keinen Zeitanteil zu erklären.
+  days           Int?
+  /// A8: Beteiligungsquote ohne Zeitanteil, wie sie im Zeitraum galt. Zusammen
+  /// mit `days` ist die Zeile ohne Rückgriff auf die Stammdaten nachvollziehbar
+  /// — die ändern sich beim nächsten Anteilsübergang.
+  nominalPercentage Decimal?   @db.Decimal(8, 5)
   createdAt      DateTime      @default(now())
   distributionId String
   shareholderId  String
@@ -1482,6 +1500,20 @@ model Distribution {
   description        String?
   totalAmount        Decimal              @db.Decimal(15, 2)
   distributionDate   DateTime
+  /// A8: Zeitraum, für den ausgeschüttet wird — in der Regel das
+  /// Geschäftsjahr des Gewinnverwendungsbeschlusses. Ohne ihn kann nicht
+  /// zeitanteilig verteilt werden; er wird deshalb NICHT geraten.
+  periodStart        DateTime?
+  periodEnd          DateTime?
+  /// Nach welcher Grundlage verteilt wurde. Gehört in jede Herleitung und in
+  /// die KapESt-Bescheinigung.
+  basis              DistributionBasis    @default(REGISTER_AT_DATE)
+  /// Nicht verteilter Rest — eingezogene oder eigene Anteile. Er bleibt bei
+  /// der Gesellschaft. Ihn auf die übrigen zu verteilen wäre der Fehler, den
+  /// A8 behebt.
+  undistributedAmount Decimal             @default(0) @db.Decimal(15, 2)
+  /// Hinweise aus der Berechnung, damit sie in der Ansicht sichtbar bleiben.
+  computationNotes   Json?
   status             DistributionStatus   @default(DRAFT)
   executedAt         DateTime?
   notes              String?
@@ -6299,4 +6331,161 @@ model DismantlingProvision {
   @@unique([obligationId, year])
   @@index([obligationId])
   @@map("dismantling_provisions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// A8 (Audit 2026-07): Anteilsübertragung mit stichtagsgenauer Verteilung
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Art der Übertragung. Sie entscheidet über Zustimmung, Steuer und Nachweis —
+/// deshalb ein eigenes Feld und kein Freitext.
+enum ShareTransferType {
+  /// Verkauf gegen Kaufpreis.
+  SALE
+  /// Unentgeltliche Übertragung, § 7 ErbStG.
+  GIFT
+  /// Erbfall. Der Stichtag ist der Todestag, nicht der Tag der Erfassung.
+  INHERITANCE
+  /// Einziehung. Der Anteil geht NICHT auf einen anderen über, sondern
+  /// unter — die Summe der Anteile sinkt unter 100 %.
+  REDEMPTION
+  /// Neuaufnahme / Kapitalerhöhung. Kein abgebender Gesellschafter.
+  ISSUE
+}
+
+enum ShareTransferStatus {
+  DRAFT
+  /// Beschlossen, aber die Zustimmung fehlt noch.
+  PENDING_CONSENT
+  /// Vollzogen — erst hier entstehen die Einträge im Anteilsverlauf.
+  EXECUTED
+  CANCELLED
+}
+
+/// Grundlage, nach der eine Ausschüttung auf die Gesellschafter verteilt wurde.
+enum DistributionBasis {
+  /// Zeitanteilig nach tatsächlicher Beteiligungsdauer im Zeitraum.
+  PRO_RATA_TEMPORIS
+  /// Nach dem Stand der Gesellschafterliste am Ausschüttungstag. Ohne
+  /// hinterlegten Zeitraum die einzige belegbare Grundlage.
+  REGISTER_AT_DATE
+}
+
+/// Anteilsverlauf eines Gesellschafters.
+///
+/// `Shareholder.ownershipPercentage` ist EIN Wert ohne Historie: wird er beim
+/// Verkauf überschrieben, verliert jede bereits abgerechnete Ausschüttung ihre
+/// Grundlage, und die Gesellschafterliste zum 31.12. ist nicht mehr
+/// rekonstruierbar.
+///
+/// Additiv wie `LeaseLessor` (A5): existieren keine Zeilen, gilt der
+/// Stammsatz mit `entryDate`/`exitDate` weiter. Kein Backfill, keine
+/// Umstellung — siehe `resolveShareholderShares`.
+model ShareholderShare {
+  id            String      @id @default(uuid())
+  shareholderId String
+  shareholder   Shareholder @relation(fields: [shareholderId], references: [id], onDelete: Cascade)
+
+  /// Beteiligungsquote in Prozent.
+  sharePercent Decimal @db.Decimal(8, 5)
+  /// Stimmrechtsquote, falls abweichend. Bei Vorzugsanteilen ist sie das.
+  votingPercent Decimal? @db.Decimal(8, 5)
+  /// Kapitalanteil in EUR zum Zeitpunkt.
+  capitalAmount Decimal? @db.Decimal(15, 2)
+
+  /// Ab wann. `null` = seit Beitritt.
+  validFrom DateTime?
+  /// Bis einschliesslich. `null` = offen. Ein Wechsel entsteht, indem die alte
+  /// Zeile ein `validTo` bekommt und eine neue am Folgetag beginnt — die alte
+  /// wird NICHT gelöscht.
+  validTo DateTime?
+
+  /// Die Übertragung, aus der diese Zeile entstanden ist.
+  transferId String?
+  transfer   ShareTransfer? @relation(fields: [transferId], references: [id], onDelete: SetNull)
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shareholderId])
+  @@index([shareholderId, validFrom])
+  @@index([transferId])
+  @@map("shareholder_shares")
+}
+
+/// Übertragung eines Gesellschaftsanteils.
+///
+/// Der Vorgang ist mehrstufig: beschlossen → zugestimmt → vollzogen. Erst der
+/// Vollzug schreibt den Anteilsverlauf fort. Vorher zu buchen hiesse, eine
+/// Übertragung zu unterstellen, die gesellschaftsvertraglich noch scheitern
+/// kann.
+model ShareTransfer {
+  id             String @id @default(uuid())
+  transferNumber String
+  fundId         String
+  fund           Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  tenantId       String
+  tenant         Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type   ShareTransferType
+  status ShareTransferStatus @default(DRAFT)
+
+  /// Stichtag: ab diesem Tag gilt der neue Stand. Beim Erbfall der Todestag,
+  /// nicht der Tag der Erfassung — sonst fiele die Zeit dazwischen dem
+  /// Verstorbenen zu.
+  effectiveDate DateTime
+
+  /// Abgebender Gesellschafter. `null` bei Neuaufnahme/Kapitalerhöhung.
+  fromShareholderId String?
+  fromShareholder   Shareholder? @relation("ShareTransferFrom", fields: [fromShareholderId], references: [id], onDelete: Restrict)
+  /// Erwerbender Gesellschafter. `null` bei Einziehung — dann geht der Anteil
+  /// unter und die Anteilssumme sinkt.
+  toShareholderId String?
+  toShareholder   Shareholder? @relation("ShareTransferTo", fields: [toShareholderId], references: [id], onDelete: Restrict)
+
+  /// Übertragene Quote in Prozentpunkten der Gesellschaft.
+  sharePercent Decimal @db.Decimal(8, 5)
+  /// Übertragener Kapitalanteil in EUR.
+  capitalAmount Decimal? @db.Decimal(15, 2)
+  /// Kaufpreis. Nur bei SALE; bei GIFT/INHERITANCE ist der gemeine Wert
+  /// massgeblich und steht nicht hier.
+  priceEur Decimal? @db.Decimal(15, 2)
+
+  /// Verlangt der Gesellschaftsvertrag die Zustimmung (Vinkulierung)?
+  /// Vorbelegt mit `true`, weil das bei Personengesellschaften der Regelfall
+  /// ist und die fehlende Zustimmung die Übertragung schwebend unwirksam lässt.
+  consentRequired  Boolean   @default(true)
+  consentGrantedAt DateTime?
+  /// Beschluss oder Zustimmungserklärung — der Beleg dafür.
+  consentReference String?
+
+  /// Notarielle Beurkundung, soweit erforderlich (GmbH-Anteil, § 15 GmbHG).
+  notarizedAt   DateTime?
+  notaryName    String?
+  /// Aufnahme in die zum Handelsregister eingereichte Gesellschafterliste.
+  registerFiledAt DateTime?
+
+  executedAt  DateTime?
+  executedById String?
+  executedBy   User?    @relation("ShareTransferExecutedBy", fields: [executedById], references: [id], onDelete: SetNull)
+
+  documentId String?
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  notes String? @db.Text
+
+  shares ShareholderShare[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation("ShareTransferCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, transferNumber])
+  @@index([fundId])
+  @@index([tenantId])
+  @@index([fundId, effectiveDate])
+  @@index([status])
+  @@map("share_transfers")
 }

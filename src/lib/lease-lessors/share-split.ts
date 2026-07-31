@@ -27,6 +27,15 @@
  * richtige Rechnung — und beides zusammen macht niemand von Hand korrekt.
  */
 
+import {
+  splitIntoSegments,
+  isActiveInSegment,
+  startOfDay,
+  addDays,
+  formatDay,
+  roundCents,
+} from "@/lib/period-shares/segments";
+
 export interface LessorShare {
   /** Person, die den Anteil hält. */
   personId: string;
@@ -68,8 +77,6 @@ export interface SplitFailure {
  */
 const SHARE_TOLERANCE = 0.011;
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 /**
  * Betrag auf die Verpächter verteilen.
  *
@@ -77,6 +84,10 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * nicht 100 % ergeben. Das ist der wichtigste Teil: eine Lücke oder
  * Überschneidung würde Geld stillschweigend falsch zuordnen — und bei einer
  * Pachtgutschrift fällt das erst auf, wenn ein Miteigentümer sich meldet.
+ *
+ * Die Zerlegung in Abschnitte teilt sich diese Datei mit der
+ * Gesellschafterverteilung (A8); die REGEL unterscheidet sich: dort ist eine
+ * Lücke zulässig und wird als nicht verteilter Rest ausgewiesen.
  */
 export function splitByLessor(input: {
   shares: readonly LessorShare[];
@@ -95,79 +106,53 @@ export function splitByLessor(input: {
   }
 
   const warnings: string[] = [];
+  const segments = splitIntoSegments(shares, periodStart, periodEnd);
 
-  // Zeitraum an jedem Wechseltag zerschneiden. Die Grenzen sind der
-  // Periodenanfang, jedes validFrom und jeder Tag nach einem validTo.
-  const boundaries = new Set<number>([startOfDay(periodStart).getTime()]);
-  for (const share of shares) {
-    if (share.validFrom && share.validFrom > periodStart && share.validFrom <= periodEnd) {
-      boundaries.add(startOfDay(share.validFrom).getTime());
-    }
-    if (share.validTo && share.validTo >= periodStart && share.validTo < periodEnd) {
-      boundaries.add(startOfDay(addDays(share.validTo, 1)).getTime());
-    }
-  }
-
-  const cuts = [...boundaries].sort((a, b) => a - b);
-  const periodEndDay = startOfDay(periodEnd).getTime();
-
-  const totalDays = daysBetween(periodStart, periodEnd);
-  if (totalDays <= 0) {
+  if (segments.length === 0) {
     return { allocations: null, reason: "Zeitraum umfasst keine Tage" };
   }
 
   const byPerson = new Map<string, { amountEur: number; days: number; effective: number }>();
 
-  for (const [index, cutTime] of cuts.entries()) {
-    const segmentStart = new Date(cutTime);
-    const segmentEnd =
-      index + 1 < cuts.length ? new Date(cuts[index + 1] - MS_PER_DAY) : new Date(periodEndDay);
-
-    const segmentDays = daysBetween(segmentStart, segmentEnd);
-    if (segmentDays <= 0) continue;
-
-    const active = shares.filter((share) => isActive(share, segmentStart, segmentEnd));
-
-    if (active.length === 0) {
+  for (const segment of segments) {
+    if (segment.active.length === 0) {
       return {
         allocations: null,
-        reason: `Für den Abschnitt ${formatDate(segmentStart)}–${formatDate(segmentEnd)} ist kein Verpächter hinterlegt`,
+        reason: `Für den Abschnitt ${formatDay(segment.start)}–${formatDay(
+          segment.end,
+        )} ist kein Verpächter hinterlegt`,
       };
     }
 
-    const sum = active.reduce((total, share) => total + share.sharePercent, 0);
-    if (Math.abs(sum - 100) > SHARE_TOLERANCE) {
+    if (Math.abs(segment.sumPercent - 100) > SHARE_TOLERANCE) {
       return {
         allocations: null,
-        reason: `Die Anteile im Abschnitt ${formatDate(segmentStart)}–${formatDate(
-          segmentEnd,
-        )} ergeben ${sum.toFixed(2)} % statt 100 %`,
+        reason: `Die Anteile im Abschnitt ${formatDay(segment.start)}–${formatDay(
+          segment.end,
+        )} ergeben ${segment.sumPercent.toFixed(2)} % statt 100 %`,
       };
     }
 
-    const timeShare = segmentDays / totalDays;
-
-    for (const share of active) {
+    for (const share of segment.active) {
       const entry = byPerson.get(share.personId) ?? { amountEur: 0, days: 0, effective: 0 };
-      const effective = (share.sharePercent / 100) * timeShare;
+      const effective = (share.sharePercent / 100) * segment.timeShare;
       entry.amountEur += amountEur * effective;
-      entry.days += segmentDays;
+      entry.days += segment.days;
       entry.effective += effective * 100;
       byPerson.set(share.personId, entry);
     }
   }
 
-  if (cuts.length > 1) {
+  if (segments.length > 1) {
     warnings.push(
-      `Eigentümerwechsel im Zeitraum — der Betrag ist auf ${cuts.length} Abschnitte zeitanteilig verteilt.`,
+      `Eigentümerwechsel im Zeitraum — der Betrag ist auf ${segments.length} Abschnitte zeitanteilig verteilt.`,
     );
   }
 
   // Runden und den Rest zuweisen. Ohne diesen Schritt summieren sich die
   // Einzelbeträge nicht exakt auf den Gesamtbetrag — bei einer Gutschrift wäre
   // das ein Cent, der nirgends steht.
-  const entries = [...byPerson.entries()];
-  const allocations: SplitAllocation[] = entries.map(([personId, value]) => ({
+  const allocations: SplitAllocation[] = [...byPerson.entries()].map(([personId, value]) => ({
     personId,
     amountEur: roundCents(value.amountEur),
     days: value.days,
@@ -191,45 +176,7 @@ export function splitByLessor(input: {
     }
   }
 
-  return { allocations, segmentCount: cuts.length, warnings };
-}
-
-/** Gilt der Anteil im gesamten Abschnitt? */
-function isActive(share: LessorShare, segmentStart: Date, segmentEnd: Date): boolean {
-  if (share.validFrom && startOfDay(share.validFrom) > segmentStart) return false;
-  if (share.validTo && startOfDay(share.validTo) < segmentEnd) return false;
-  return true;
-}
-
-/**
- * Tage zwischen zwei Datumsangaben, beide einschliesslich.
- *
- * Bewusst auf Tagesebene und über UTC-Mitternacht: eine Berechnung mit
- * Zeitstempeln würde bei einem Sommerzeitwechsel im Zeitraum einen Tag mit
- * 23 oder 25 Stunden zählen und die Verteilung um Cent-Beträge verschieben.
- */
-function daysBetween(from: Date, to: Date): number {
-  const a = startOfDay(from).getTime();
-  const b = startOfDay(to).getTime();
-  return Math.round((b - a) / MS_PER_DAY) + 1;
-}
-
-function startOfDay(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
-
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * MS_PER_DAY);
-}
-
-function roundCents(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
-function formatDate(date: Date): string {
-  return `${String(date.getUTCDate()).padStart(2, "0")}.${String(
-    date.getUTCMonth() + 1,
-  ).padStart(2, "0")}.${date.getUTCFullYear()}`;
+  return { allocations, segmentCount: segments.length, warnings };
 }
 
 /**
@@ -267,10 +214,10 @@ export function validateShares(shares: readonly LessorShare[]): string[] {
 
   for (const time of dates) {
     const at = new Date(time);
-    const active = shares.filter((share) => isActive(share, at, at));
+    const active = shares.filter((share) => isActiveInSegment(share, at, at));
     const sum = active.reduce((total, share) => total + share.sharePercent, 0);
     if (active.length > 0 && Math.abs(sum - 100) > SHARE_TOLERANCE) {
-      problems.push(`Am ${formatDate(at)} ergeben die Anteile ${sum.toFixed(2)} % statt 100 %`);
+      problems.push(`Am ${formatDay(at)} ergeben die Anteile ${sum.toFixed(2)} % statt 100 %`);
     }
   }
 

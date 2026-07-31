@@ -353,6 +353,13 @@ export const PERMISSIONS = {
   SHAREHOLDERS_UPDATE: "shareholders:update",
   SHAREHOLDERS_DELETE: "shareholders:delete",
   SHAREHOLDERS_EXPORT: "shareholders:export",
+  /**
+   * Anteilsübertragung vollziehen (A8). Bewusst getrennt von
+   * `shareholders:update`: der Vollzug ändert die Gesellschafterliste, die zum
+   * Handelsregister eingereicht wird — das ist nicht dasselbe wie eine
+   * Adressänderung.
+   */
+  SHAREHOLDERS_TRANSFER: "shareholders:transfer",
 
   // Plots
   PLOTS_READ: "plots:read",

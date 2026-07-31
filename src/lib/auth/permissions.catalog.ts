@@ -99,6 +99,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "shareholders:update", module: "shareholders", action: "update", displayName: "Gesellschafter bearbeiten",  sortOrder: 32 },
   { name: "shareholders:delete", module: "shareholders", action: "delete", displayName: "Gesellschafter löschen",     sortOrder: 33 },
   { name: "shareholders:export", module: "shareholders", action: "export", displayName: "Gesellschafter exportieren", sortOrder: 34 },
+  { name: "shareholders:transfer", module: "shareholders", action: "transfer", displayName: "Anteilsübertragung vollziehen", sortOrder: 35 },
 
   // ── Plots ──────────────────────────────────────────────────────────────
   { name: "plots:read",   module: "plots", action: "read",   displayName: "Flurstücke anzeigen",    sortOrder: 40 },
