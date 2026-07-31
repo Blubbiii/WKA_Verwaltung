@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -510,6 +511,10 @@ function AppearanceTab({
 }) {
   const { theme, setTheme: setNextTheme } = useTheme();
   const { style: uiStyle, setStyle: setUiStyle } = useUiStyle();
+  // useId statt fester Kennungen: die Beschriftung muss auf genau diesen
+  // Trigger zeigen, auch wenn die Seite mehrere Auswahlfelder traegt.
+  const pageSizeId = useId();
+  const startPageId = useId();
   const [mounted, setMounted] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
   const [pageSize, setPageSize] = useState("25");
@@ -740,15 +745,15 @@ function AppearanceTab({
         <CardContent className="space-y-6">
           {/* Default Page Size */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
+            <Label htmlFor={pageSizeId}>
               Standard-Seitengröße (Tabelleneinträge)
-            </label>
+            </Label>
             <Select
               value={pageSize}
               onValueChange={handlePageSizeChange}
               disabled={isSavingPrefs}
             >
-              <SelectTrigger className="w-64">
+              <SelectTrigger id={pageSizeId} className="w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -768,13 +773,13 @@ function AppearanceTab({
 
           {/* Default Start Page */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Standard-Startseite</label>
+            <Label htmlFor={startPageId}>Standard-Startseite</Label>
             <Select
               value={startPage}
               onValueChange={handleStartPageChange}
               disabled={isSavingPrefs}
             >
-              <SelectTrigger className="w-64">
+              <SelectTrigger id={startPageId} className="w-64">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

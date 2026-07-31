@@ -12,8 +12,18 @@ const eslintConfig = [
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
       // Allow img elements (Next Image is optional)
       "@next/next/no-img-element": "warn",
-      // React hooks deps are warnings
-      "react-hooks/exhaustive-deps": "warn",
+      // Fehlende Dependencies sind Stale-Closure-Bugs: der Effect arbeitet mit
+      // Werten aus einem früheren Render. Das fällt nicht beim Klicken auf,
+      // sondern erst, wenn jemand eine Zahl anzweifelt.
+      //
+      // Seit dem a11y-/Hook-Durchgang (2026-08) auf `error`, weil der Bestand
+      // sauber ist. Der Anlass war lehrreich: die eine verbliebene Warnung
+      // entstand, weil ein Aufräum-Commit ein `eslint-disable` mitentfernt
+      // hatte — mit `warn` blieb das monatelang unbemerkt.
+      //
+      // Ein bewusst mount-only gemeinter Effect braucht jetzt eine
+      // Ausnahme MIT Begründung. Das ist der Punkt.
+      "react-hooks/exhaustive-deps": "error",
       // prefer-const is a warning
       "prefer-const": "warn",
 
@@ -34,10 +44,45 @@ const eslintConfig = [
       "react-hooks/set-state-in-render": "off",
 
       // ── a11y ──────────────────────────────────────────────────────────────
-      // UX18: Label-For-Association als warn — verhindert dass neue
-      // Formulare Labels ohne htmlFor/nested-Input schreiben. Warn (nicht
-      // error), um CI nicht zu blockieren.
-      "jsx-a11y/label-has-associated-control": "warn",
+      // UX18: Label-For-Association — verhindert, dass neue Formulare Labels
+      // ohne htmlFor oder verschachteltes Control schreiben.
+      //
+      // `controlComponents` nennt die eigenen Steuerelemente. Ohne diese
+      // Liste meldet die Regel jedes `<label><Checkbox/>…</label>` als Fehler,
+      // obwohl die Verschachtelung dort korrekt ist: Radix rendert die
+      // Checkbox als `<button type="button" role="checkbox">`, und `button`
+      // ist nach HTML-Spec § 4.10.4 ein labelable element. Das Label
+      // assoziiert also mit ihm — die Regel kennt nur die Komponentennamen
+      // nicht.
+      //
+      // Bewusst NICHT in der Liste: `Select`. Dort steht das Label in der
+      // Praxis als Geschwister neben dem Trigger, nicht darum herum; die
+      // Verbindung muss über `htmlFor`/`id` laufen und soll gemeldet werden,
+      // wenn sie fehlt.
+      //
+      // Seit dem a11y-Durchgang (2026-08) sind alle Verstösse behoben, deshalb
+      // `error`: ein neuer Fall kostet dann eine Minute statt eines späteren
+      // Sammeldurchgangs.
+      "jsx-a11y/label-has-associated-control": [
+        "error",
+        {
+          controlComponents: [
+            "Checkbox",
+            "Switch",
+            "RadioGroupItem",
+            "Input",
+            "AmountInput",
+            "Textarea",
+          ],
+          // Standard ist 2. Eine Auswahlzeile aus Checkbox plus
+          // Beschreibungsblock (`label > div > p`) liegt darunter und wurde
+          // als „kein zugänglicher Text" gemeldet, obwohl der Text da ist —
+          // die Namensberechnung im Browser läuft über den ganzen Teilbaum.
+          // 3 deckt diesen Aufbau ab und lässt ein wirklich leeres Label
+          // weiterhin auffallen.
+          depth: 3,
+        },
+      ],
     },
   },
   {

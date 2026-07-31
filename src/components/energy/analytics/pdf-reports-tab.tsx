@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import {
   FileText,
   Calendar,
@@ -93,6 +93,11 @@ const CLASSIC_MODULES_CUSTOM: Record<string, string> = {
 // =============================================================================
 
 export function PdfReportsTab() {
+  // useId statt fester Kennungen: die Komponente kann mehrfach im Baum
+  // stehen, und doppelte id-Werte verbinden ein Label mit dem falschen
+  // Element — schlimmer als gar keine Verbindung.
+  const parkFieldId = useId();
+  const yearFieldId = useId();
   const t = useTranslations("energy.componentToasts");
   const [parks, setParks] = useState<Park[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,9 +215,9 @@ export function PdfReportsTab() {
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Windpark</label>
+              <Label htmlFor={parkFieldId}>Windpark</Label>
               <Select value={parkId} onValueChange={setParkId}>
-                <SelectTrigger>
+                <SelectTrigger id={parkFieldId}>
                   <SelectValue placeholder="Park waehlen..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -225,9 +230,9 @@ export function PdfReportsTab() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Jahr</label>
+              <Label htmlFor={yearFieldId}>Jahr</Label>
               <Select value={year} onValueChange={setYear}>
-                <SelectTrigger>
+                <SelectTrigger id={yearFieldId}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

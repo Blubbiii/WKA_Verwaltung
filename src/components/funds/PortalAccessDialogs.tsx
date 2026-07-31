@@ -357,9 +357,13 @@ export function PasswordDisplayDialog({
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">
+            {/* Kein <label>: darunter steht keine Eingabe, sondern die
+                Anzeige des erzeugten Zugangs. Ein Label ohne Bedienelement
+                verspricht dem Screenreader eine Beschriftung, die zu nichts
+                gehört. */}
+            <p className="text-sm font-medium text-muted-foreground">
               E-Mail-Adresse
-            </label>
+            </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm">
                 {credentials.email}
@@ -381,9 +385,9 @@ export function PasswordDisplayDialog({
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground">
               Temporaeres Passwort
-            </label>
+            </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm">
                 {credentials.temporaryPassword}

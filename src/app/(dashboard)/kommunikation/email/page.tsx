@@ -215,10 +215,30 @@ export default function EmailConfigPage() {
   // LOAD DATA
   // =========================================================================
 
+  // Als useCallback und VOR dem Effect: die Dep-Liste wird waehrend des
+  // Renders ausgewertet. Stuende die Deklaration weiter unten, waere das ein
+  // ReferenceError (temporal dead zone) — die fruehere function-Deklaration
+  // war nur durch Hoisting unauffaellig.
+  const loadNotificationConfig = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/email");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.notifications) {
+          setNotificationSettings(data.notifications);
+        }
+      }
+    } catch {
+      toast.error(t("errorLoadingConfig"));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
   useEffect(() => {
     if (flags.communication) loadNotificationConfig();
-   
-  }, [flags.communication]);
+  }, [flags.communication, loadNotificationConfig]);
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -318,23 +338,6 @@ export default function EmailConfigPage() {
       throw new Error("delete failed");
     }
   };
-
-  async function loadNotificationConfig() {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/admin/email");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.notifications) {
-          setNotificationSettings(data.notifications);
-        }
-      }
-    } catch {
-      toast.error(t("errorLoadingConfig"));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // Feature flag guard
   if (flagsLoading) {

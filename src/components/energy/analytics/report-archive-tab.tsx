@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId } from "react";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDateTime } from "@/lib/format";
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -125,6 +126,11 @@ function getUserDisplayName(user: ArchivedReport["generatedBy"]): string {
 export function ReportArchiveTab() {
   const t = useTranslations("energy.componentToasts");
   const { data: session } = useSession();
+  // useId statt fester Kennungen: die Komponente kann mehrfach im Baum
+  // stehen, und doppelte id-Werte verbinden ein Label mit dem falschen
+  // Element — schlimmer als gar keine Verbindung.
+  const reportTypeId = useId();
+  const formatId = useId();
   const [reports, setReports] = useState<ArchivedReport[]>([]);
   const [stats, setStats] = useState<ArchiveStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -304,9 +310,11 @@ export function ReportArchiveTab() {
             {showFilters && (
               <div className="flex gap-4 pt-4 border-t">
                 <div className="w-64">
-                  <label className="text-sm font-medium mb-2 block">Berichtsart</label>
+                  <Label htmlFor={reportTypeId} className="mb-2 block">
+                    Berichtsart
+                  </Label>
                   <Select value={reportType} onValueChange={setReportType}>
-                    <SelectTrigger><SelectValue placeholder="Alle Arten" /></SelectTrigger>
+                    <SelectTrigger id={reportTypeId}><SelectValue placeholder="Alle Arten" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alle Arten</SelectItem>
                       {Object.entries(reportTypeLabels).map(([key, label]) => (
@@ -316,9 +324,11 @@ export function ReportArchiveTab() {
                   </Select>
                 </div>
                 <div className="w-48">
-                  <label className="text-sm font-medium mb-2 block">Format</label>
+                  <Label htmlFor={formatId} className="mb-2 block">
+                    Format
+                  </Label>
                   <Select value={format} onValueChange={setFormat}>
-                    <SelectTrigger><SelectValue placeholder="Alle Formate" /></SelectTrigger>
+                    <SelectTrigger id={formatId}><SelectValue placeholder="Alle Formate" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Alle Formate</SelectItem>
                       <SelectItem value="PDF">PDF</SelectItem>
