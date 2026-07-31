@@ -575,6 +575,10 @@ export const PERMISSIONS = {
   AVAILABILITY_MANAGE: "availability:manage",
   AVAILABILITY_SETTLE: "availability:settle",
   AVAILABILITY_CONFIRM: "availability:confirm",
+
+  // A3 (Audit 2026-07): Abrechnungspruefung und Zaehlpunkte.
+  ENERGY_SETTLEMENT_CHECK: "energy:settlement:check",
+  ENERGY_METERING_POINTS: "energy:metering-points",
 } as const;
 
 export type PermissionName = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

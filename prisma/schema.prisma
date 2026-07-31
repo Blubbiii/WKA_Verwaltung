@@ -143,6 +143,8 @@ model Tenant {
   faultCases                FaultCase[]
   availabilityGuarantees    AvailabilityGuarantee[]
   availabilitySettlements   AvailabilitySettlement[]
+  meteringPoints            MeteringPoint[]
+  settlementChecks          SettlementCheck[]
 
   @@map("tenants")
 }
@@ -289,6 +291,7 @@ model User {
   faultCasesAssigned                                                      FaultCase[]                @relation("FaultCaseAssignee")
   faultCasesCreated                                                       FaultCase[]                @relation("FaultCaseCreator")
   availabilitySettlementsCreated                                          AvailabilitySettlement[]   @relation("AvailabilitySettlementCreator")
+  settlementChecksReviewed                                                SettlementCheck[]          @relation("SettlementCheckReviewer")
 
   @@index([tenantId])
   @@index([email])
@@ -404,6 +407,7 @@ model Park {
   insuranceClaims                        InsuranceClaim[]
   powerPurchaseAgreements                PowerPurchaseAgreement[]
   quotes                                 Quote[]
+  meteringPoints                         MeteringPoint[]
 
   @@index([tenantId])
   @@index([deletedAt])
@@ -483,6 +487,7 @@ model Turbine {
   defects                        Defect[]
   insuranceClaims                InsuranceClaim[]
   faultCases                     FaultCase[]
+  meteringPoints                 MeteringPoint[]
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
@@ -1665,6 +1670,7 @@ model EnergySettlement {
   park                     Park                        @relation(fields: [parkId], references: [id], onDelete: Cascade)
   leaseRevenueSettlements   LeaseRevenueSettlement[]
   leaseSettlementPeriods    LeaseSettlementPeriod[]
+  checks                    SettlementCheck[]
 
   @@unique([parkId, year, month, tenantId])
   @@index([parkId])
@@ -5611,4 +5617,119 @@ model AvailabilitySettlement {
   @@index([tenantId, status])
   @@index([guaranteeId])
   @@map("availability_settlements")
+}
+
+// ---------------------------------------------------------------------------
+// A3: Zählpunkt / Marktlokation + Plausibilisierung (Audit 2026-07)
+//
+// Befund: "Zählpunkt / Marktlokations-ID kommen im ganzen Codebase nicht vor."
+// Damit fehlte der Schlüssel, über den sich eine Netzbetreiber-Abrechnung
+// überhaupt einer Anlage oder einem Park zuordnen lässt.
+// ---------------------------------------------------------------------------
+
+enum MeteringPointKind {
+  /// Marktlokation (MaLo-ID, 11-stellig). Der Ort, an dem Energie bilanziell
+  /// ein- oder ausgespeist wird — die Bezugsgrösse jeder Abrechnung.
+  MARKTLOKATION
+  /// Messlokation (MeLo, 33 Zeichen, "Zählpunktbezeichnung"). Der Ort, an dem
+  /// gemessen wird. Eine Marktlokation kann mehrere Messlokationen haben.
+  MESSLOKATION
+}
+
+enum MeteringDirection {
+  /// Einspeisung — der Regelfall bei einem Windpark.
+  FEED_IN
+  /// Bezug (Eigenverbrauch der Anlage, Baustrom).
+  CONSUMPTION
+}
+
+/// Zählpunkt eines Parks oder einer einzelnen Anlage.
+model MeteringPoint {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  kind      MeteringPointKind
+  direction MeteringDirection @default(FEED_IN)
+
+  /// Die Kennung selbst. Länge und Aufbau unterscheiden sich je Art, deshalb
+  /// als Text und nicht mit fester Breite — eine MaLo hat 11 Stellen, eine
+  /// MeLo 33 Zeichen.
+  code String @db.VarChar(40)
+
+  /// Ein Zählpunkt gehört zu einem Park; die Zuordnung zu einer einzelnen
+  /// Anlage ist optional, weil viele Parks nur einen Übergabepunkt haben.
+  parkId    String
+  park      Park     @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  turbineId String?
+  turbine   Turbine? @relation(fields: [turbineId], references: [id], onDelete: SetNull)
+
+  /// Netzbetreiber bzw. Messstellenbetreiber, wie er in der Abrechnung steht.
+  gridOperator      String? @db.VarChar(200)
+  meteringOperator  String? @db.VarChar(200)
+  /// Bilanzkreis, in dem der Zählpunkt geführt wird.
+  balancingGroup    String? @db.VarChar(50)
+
+  validFrom DateTime?
+  validTo   DateTime?
+  isActive  Boolean   @default(true)
+  notes     String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Eine Kennung je Mandant nur einmal. Zwei Datensätze mit derselben MaLo
+  /// würden eine Abrechnung zwei Parks zuordnen.
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([parkId])
+  @@index([turbineId])
+  @@map("metering_points")
+}
+
+/// Ergebnis eines Dreiecksabgleichs zu einer Abrechnung.
+model SettlementCheck {
+  id         String @id @default(uuid())
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  settlementId String
+  settlement   EnergySettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  /// Die drei verglichenen Mengen, mitgespeichert. Der Abgleich ist eine
+  /// Momentaufnahme: die SCADA-Daten können später nachgeliefert werden, und
+  /// dann stimmt eine nachgerechnete Zahl nicht mehr mit dem überein, was
+  /// beim Reklamieren vorlag.
+  settledKwh  Decimal? @db.Decimal(15, 3)
+  scadaKwh    Decimal? @db.Decimal(15, 3)
+  reportedKwh Decimal? @db.Decimal(15, 3)
+
+  settledRevenueEur  Decimal? @db.Decimal(15, 2)
+  expectedRatePerKwh Decimal? @db.Decimal(10, 4)
+  expectedRevenueEur Decimal? @db.Decimal(15, 2)
+
+  /// Alle Befunde mit Werten und Abweichungen.
+  findings Json
+
+  /// Höchste aufgetretene Schwere: OK · INFO · WARNING · CRITICAL.
+  worstSeverity String @db.VarChar(10)
+  /// Hinweis, welche Quelle vermutlich abweicht.
+  interpretation String? @db.Text
+
+  /// Angewandte Toleranzen, damit ein Befund später nachvollziehbar bleibt.
+  tolerances Json?
+
+  /// Vermerk der kaufmännischen Betriebsführung.
+  reviewNotes String?   @db.Text
+  reviewedAt  DateTime?
+  reviewedById String?
+  reviewedBy   User?    @relation("SettlementCheckReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([settlementId])
+  @@index([tenantId, worstSeverity])
+  @@map("settlement_checks")
 }

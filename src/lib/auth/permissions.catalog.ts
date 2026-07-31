@@ -279,6 +279,10 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "availability:settle",   module: "availability", action: "settle",   displayName: "Jahresabgleich rechnen",           description: "Ist gegen Soll rechnen und Bonus/Malus ermitteln",    sortOrder: 253 },
   { name: "availability:confirm",  module: "availability", action: "confirm",  displayName: "Abgleich bestaetigen",             description: "Ergebnis festschreiben und zur Forderung freigeben",  sortOrder: 254 },
 
+  // ── Abrechnungspruefung (A3, Audit 2026-07) ────────────────────────────
+  { name: "energy:settlement:check",  module: "energy", action: "settlement-check",  displayName: "Abrechnung plausibilisieren", description: "Dreiecksabgleich Menge und Preis gegen SCADA und Produktion", sortOrder: 255 },
+  { name: "energy:metering-points",   module: "energy", action: "metering-points",   displayName: "Zaehlpunkte verwalten",       description: "Marktlokation und Messlokation pflegen",                     sortOrder: 256 },
+
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },
   { name: "crm:create", module: "crm", action: "create", displayName: "CRM-Einträge erstellen",   sortOrder: 281 },
