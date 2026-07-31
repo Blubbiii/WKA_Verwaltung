@@ -258,7 +258,12 @@ function cleanRow(row: Record<string, string>, spec: CsvImportSpec): Record<stri
 function dedupeKey(data: Record<string, string>, spec: CsvImportSpec): string | null {
   for (const combination of spec.dedupeBy) {
     if (combination.every((field) => (data[field] ?? "").trim() !== "")) {
-      return combination.map((field) => data[field].trim().toLowerCase()).join(" ");
+      // Trennzeichen als Escape, NICHT als literales NUL-Byte: ein echtes
+      // 0x00 in der Quelldatei laesst Git sie fuer binaer halten — dann
+      // zeigt `git diff` nichts mehr an, und die Datei ist nicht mehr
+      // reviewbar. NUL als Trenner ist richtig, weil es in CSV-Feldern nicht
+      // vorkommt: sonst ergaeben ["ab","c"] und ["a","bc"] denselben Schluessel.
+      return combination.map((field) => data[field].trim().toLowerCase()).join("\u0000");
     }
   }
   return null;
