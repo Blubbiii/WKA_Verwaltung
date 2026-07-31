@@ -120,6 +120,7 @@ import { HTTP_STATUS } from "@/lib/config/http-status";
 import { downloadBlob } from "@/lib/download";
 import { ShareTransfersCard } from "@/components/funds/share-transfers-card";
 import { MeetingsCard } from "@/components/funds/meetings-card";
+import { SubscriptionsCard } from "@/components/funds/subscriptions-card";
 // A8 (Audit 2026-07): Dieselbe Rechnung wie auf dem Server. Die Vorschau
 // benutzte eine EIGENE, die normalisiert hat — sie zeigte damit Betraege an,
 // die so nie gebucht wurden.
@@ -1265,6 +1266,13 @@ export default function FundDetailsPage({
               Beschlussfaehigkeit und Beschlussbuch. */}
           <div className="mt-6">
             <MeetingsCard fundId={id} />
+          </div>
+
+          {/* B6 (Audit 2026-07): Zeichnungsschein mit Widerrufsfrist,
+              Einzahlungsueberwachung und GwG-Legitimation. Ohne
+              abgeschlossene Legitimation ist die Annahme gesperrt. */}
+          <div className="mt-6">
+            <SubscriptionsCard fundId={id} />
           </div>
         </TabsContent>
 

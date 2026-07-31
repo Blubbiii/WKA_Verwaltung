@@ -11222,5 +11222,41 @@
       "DEFERRED": "deferred",
       "NO_RESOLUTION": "no resolution"
     }
+  },
+  "subscriptions": {
+    "cardTitle": "Subscriptions",
+    "cardTooltip": "Subscription form with withdrawal period, payment monitoring against contribution plus premium, and the AML identification without which acceptance is blocked.",
+    "empty": "No subscription recorded yet.",
+    "missingAml": "{count} without identification",
+    "openPayments": "{count} contributions open",
+    "accept": "Accept",
+    "accepted": "Subscription {number} accepted",
+    "acceptError": "Acceptance not possible",
+    "plusAgio": "plus {percent} % premium",
+    "noInstruction": "no withdrawal instruction — period does not start",
+    "daysLeft": "withdrawal {days} days left",
+    "withdrawalExpired": "period expired",
+    "amlValid": "on file",
+    "amlMissing": "identification missing",
+    "reviewDue": "review in {days} days",
+    "paid": "settled",
+    "openOf": "open {open} of {due}",
+    "overdue": "overdue by {days} days",
+    "amlHint": "Identification must be completed before the business relationship is established (§ 10 (1) no. 1, § 11 (1) GwG). Without it acceptance is blocked — catching up later does not cure the breach.",
+    "table": {
+      "subscription": "Subscription",
+      "amount": "Contribution",
+      "withdrawal": "Withdrawal",
+      "aml": "AML",
+      "payment": "Payment"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "SIGNED": "Signed",
+      "ACCEPTED": "Accepted",
+      "PAID": "Paid",
+      "WITHDRAWN": "Withdrawn",
+      "REJECTED": "Rejected"
+    }
   }
 }

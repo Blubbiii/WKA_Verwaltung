@@ -153,6 +153,8 @@ model Tenant {
   complianceDeadlines       ComplianceDeadline[]
   majorComponents           MajorComponent[]
   shareholderMeetings       ShareholderMeeting[]
+  subscriptions             Subscription[]
+  amlChecks                 AmlCheck[]
 
   @@map("tenants")
 }
@@ -305,6 +307,9 @@ model User {
   shareTransfersExecuted                                                  ShareTransfer[]            @relation("ShareTransferExecutedBy")
   complianceDeadlinesCompleted                                            ComplianceDeadline[]       @relation("ComplianceDeadlineCompletedBy")
   meetingsCreated                                                         ShareholderMeeting[]       @relation("MeetingCreatedBy")
+  subscriptionsCreated                                                    Subscription[]             @relation("SubscriptionCreatedBy")
+  subscriptionsAccepted                                                   Subscription[]             @relation("SubscriptionAcceptedBy")
+  amlChecksIdentified                                                     AmlCheck[]                 @relation("AmlCheckIdentifiedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -601,6 +606,7 @@ model Fund {
   distributions                                         Distribution[]
   shareTransfers                                        ShareTransfer[]
   shareholderMeetings                                   ShareholderMeeting[]
+  subscriptions                                         Subscription[]
   documents                                             Document[]
   energySettlementItems                                 EnergySettlementItem[]
   parentHierarchies  FundHierarchy[]               @relation("ChildHierarchy")
@@ -719,6 +725,8 @@ model Person {
   recipientInvoices              Invoice[]                        @relation("InvoiceRecipient")
   leaseLessorShares              LeaseLessor[]                    @relation("LeaseLessorShare")
   meetingProxiesHeld             MeetingAttendance[]              @relation("MeetingProxyHolder")
+  subscriptions                  Subscription[]                   @relation("SubscriptionSubscriber")
+  amlChecks                      AmlCheck[]                       @relation("AmlCheckedPerson")
   settlementItemLessorShares     LeaseRevenueSettlementItemLessor[] @relation("SettlementItemLessorShare")
 
   @@index([tenantId])
@@ -795,6 +803,7 @@ model Shareholder {
   transfersOut           ShareTransfer[]      @relation("ShareTransferFrom")
   transfersIn            ShareTransfer[]      @relation("ShareTransferTo")
   meetingAttendance      MeetingAttendance[]
+  subscription           Subscription?
 
   @@index([fundId])
   @@index([personId])
@@ -984,6 +993,8 @@ model Document {
   uploadedBy                          User?                  @relation("DocumentCreatedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
   shareTransfers                      ShareTransfer[]
   meetingMinutes                      ShareholderMeeting[]   @relation("MeetingMinutes")
+  subscriptions                       Subscription[]         @relation("SubscriptionDocument")
+  amlChecks                           AmlCheck[]             @relation("AmlCheckDocument")
 
   @@index([tenantId])
   @@index([category])
@@ -6961,4 +6972,179 @@ model MeetingAttendance {
   @@index([meetingId])
   @@index([shareholderId])
   @@map("meeting_attendance")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// B6 (Audit 2026-07): Zeichnungsprozess + GwG-Legitimation
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  DRAFT
+  /// Zeichnungsschein unterzeichnet — ab hier läuft die Widerrufsfrist.
+  SIGNED
+  /// Von der Gesellschaft angenommen. Erst hier entsteht die
+  /// Geschäftsbeziehung — und deshalb muss die Legitimation vorher vorliegen.
+  ACCEPTED
+  /// Einlage und Agio vollständig eingegangen.
+  PAID
+  WITHDRAWN
+  REJECTED
+}
+
+enum AmlCheckStatus {
+  PENDING
+  VERIFIED
+  /// Ausweis abgelaufen oder Wiedervorlage nicht erledigt.
+  EXPIRED
+  REJECTED
+}
+
+/// Art der Identifizierung nach § 12 f. GwG.
+enum AmlMethod {
+  /// Vorlage des Ausweises in Person.
+  IN_PERSON
+  VIDEO_IDENT
+  POST_IDENT
+  /// Qualifizierte elektronische Signatur (§ 12 Abs. 1 S. 1 Nr. 2 GwG).
+  QUALIFIED_SIGNATURE
+  /// Übernahme von einem Dritten (§ 17 GwG).
+  THIRD_PARTY
+  OTHER
+}
+
+enum AmlRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Zeichnungsschein.
+///
+/// `shareholders/onboard` deckte die Datenerfassung. Was fehlte, war der
+/// Vorgang: Widerrufsfrist, Einzahlungsüberwachung und die Legitimation, ohne
+/// die nicht angenommen werden darf.
+model Subscription {
+  id                 String @id @default(uuid())
+  tenantId           String
+  tenant             Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fundId             String
+  fund               Fund   @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  subscriptionNumber String
+
+  /// Der Zeichner.
+  personId String
+  person   Person @relation("SubscriptionSubscriber", fields: [personId], references: [id], onDelete: Restrict)
+  /// Der daraus entstandene Gesellschafter — erst nach Annahme.
+  shareholderId String?      @unique
+  shareholder   Shareholder? @relation(fields: [shareholderId], references: [id], onDelete: SetNull)
+
+  status SubscriptionStatus @default(DRAFT)
+
+  /// Gezeichnete Einlage und Agio. Das Agio gehört zum Soll, auch wenn es
+  /// nicht auf die Einlage angerechnet wird.
+  amountEur   Decimal @db.Decimal(15, 2)
+  agioPercent Decimal @default(0) @db.Decimal(5, 2)
+
+  signedAt DateTime?
+  /// Wann die Widerrufsbelehrung erteilt wurde. Ohne sie läuft die Frist NICHT
+  /// an (§ 356 Abs. 3 S. 1 BGB) — deshalb ein eigenes Feld und kein Haken.
+  withdrawalInstructionAt DateTime?
+  withdrawalPeriodDays    Int       @default(14)
+  /// Errechnetes Fristende, mitgespeichert. `null`, solange keine Belehrung
+  /// erfasst ist.
+  withdrawalDeadline DateTime?
+  withdrawnAt        DateTime?
+  withdrawalReason   String?   @db.Text
+
+  acceptedAt   DateTime?
+  acceptedById String?
+  acceptedBy   User?     @relation("SubscriptionAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull)
+  rejectedAt   DateTime?
+  rejectionReason String? @db.Text
+
+  paymentDueDate DateTime?
+  paidEur        Decimal   @default(0) @db.Decimal(15, 2)
+  fullyPaidAt    DateTime?
+
+  /// Der unterzeichnete Zeichnungsschein.
+  documentId String?
+  document   Document? @relation("SubscriptionDocument", fields: [documentId], references: [id], onDelete: SetNull)
+
+  notes String? @db.Text
+
+  amlChecks AmlCheck[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation("SubscriptionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, subscriptionNumber])
+  @@index([tenantId])
+  @@index([fundId, status])
+  @@index([personId])
+  /// Trägt die Arbeitsliste: offene Einzahlungen und ablaufende Fristen.
+  @@index([tenantId, status, paymentDueDate])
+  @@map("subscriptions")
+}
+
+/// Legitimationsprüfung nach GwG.
+///
+/// Eigenes Objekt und nicht ein paar Felder am Zeichner: die Prüfung wird
+/// wiederholt (§ 10 Abs. 1 Nr. 5 GwG), und jede Prüfung ist ein eigener
+/// Nachweis mit eigener Aufbewahrungsfrist (§ 8 Abs. 4 GwG, fünf Jahre).
+model AmlCheck {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  personId String
+  person   Person @relation("AmlCheckedPerson", fields: [personId], references: [id], onDelete: Cascade)
+
+  /// Der Anlass, sofern es eine Zeichnung war.
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  status AmlCheckStatus @default(PENDING)
+  method AmlMethod      @default(IN_PERSON)
+
+  identifiedAt   DateTime?
+  identifiedById String?
+  identifiedBy   User?     @relation("AmlCheckIdentifiedBy", fields: [identifiedById], references: [id], onDelete: SetNull)
+
+  /// Vorgelegtes Dokument. Die Nummer wird für den Nachweis benötigt
+  /// (§ 8 Abs. 1 GwG), das Ablaufdatum trägt die Gültigkeit fort.
+  documentType       String?   @db.VarChar(60)
+  documentNumber     String?   @db.VarChar(60)
+  issuingAuthority   String?   @db.VarChar(200)
+  documentValidUntil DateTime?
+
+  /// Wirtschaftlich Berechtigter abgeklärt (§ 10 Abs. 1 Nr. 2, § 3 GwG).
+  beneficialOwnerVerified Boolean @default(false)
+  beneficialOwnerNotes    String? @db.Text
+  /// Politisch exponierte Person (§ 1 Abs. 12 GwG) — verstärkte
+  /// Sorgfaltspflichten nach § 15 Abs. 4 GwG.
+  isPep     Boolean      @default(false)
+  riskLevel AmlRiskLevel @default(LOW)
+
+  /// Wiedervorlage zur Aktualisierung (§ 10 Abs. 1 Nr. 5 GwG).
+  nextReviewAt DateTime?
+  /// Ende der Aufbewahrungsfrist, § 8 Abs. 4 S. 1 GwG: fünf Jahre nach Ende
+  /// der Geschäftsbeziehung. Mitgeführt, damit nicht zu früh gelöscht wird —
+  /// und nicht zu spät.
+  retentionUntil DateTime?
+
+  documentId String?
+  document   Document? @relation("AmlCheckDocument", fields: [documentId], references: [id], onDelete: SetNull)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([personId])
+  @@index([subscriptionId])
+  /// Trägt die Wiedervorlageliste.
+  @@index([tenantId, status, nextReviewAt])
+  @@map("aml_checks")
 }

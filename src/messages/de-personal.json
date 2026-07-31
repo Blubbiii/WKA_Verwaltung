@@ -11222,5 +11222,41 @@
       "DEFERRED": "vertagt",
       "NO_RESOLUTION": "kein Beschluss"
     }
+  },
+  "subscriptions": {
+    "cardTitle": "Zeichnungen",
+    "cardTooltip": "Zeichnungsschein mit Widerrufsfrist, Einzahlungsüberwachung gegen Einlage plus Agio und die GwG-Legitimation, ohne die nicht angenommen werden darf.",
+    "empty": "Noch keine Zeichnung erfasst.",
+    "missingAml": "{count} ohne Legitimation",
+    "openPayments": "{count} Einlagen offen",
+    "accept": "Annehmen",
+    "accepted": "Zeichnung {number} angenommen",
+    "acceptError": "Annahme nicht möglich",
+    "plusAgio": "zzgl. {percent} % Agio",
+    "noInstruction": "keine Widerrufsbelehrung — Frist läuft nicht an",
+    "daysLeft": "Widerruf noch {days} Tage",
+    "withdrawalExpired": "Frist abgelaufen",
+    "amlValid": "liegt vor",
+    "amlMissing": "Legitimation fehlt",
+    "reviewDue": "Wiedervorlage in {days} Tagen",
+    "paid": "vollständig",
+    "openOf": "offen {open} von {due}",
+    "overdue": "seit {days} Tagen überfällig",
+    "amlHint": "Die Identifizierung muss vor Begründung der Geschäftsbeziehung abgeschlossen sein (§ 10 Abs. 1 Nr. 1, § 11 Abs. 1 GwG). Ohne sie ist die Annahme gesperrt — ein späteres Nachholen heilt den Verstoß nicht.",
+    "table": {
+      "subscription": "Zeichnung",
+      "amount": "Einlage",
+      "withdrawal": "Widerruf",
+      "aml": "GwG",
+      "payment": "Einzahlung"
+    },
+    "statuses": {
+      "DRAFT": "Entwurf",
+      "SIGNED": "Gezeichnet",
+      "ACCEPTED": "Angenommen",
+      "PAID": "Eingezahlt",
+      "WITHDRAWN": "Widerrufen",
+      "REJECTED": "Abgelehnt"
+    }
   }
 }
