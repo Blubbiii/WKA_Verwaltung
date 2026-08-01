@@ -29,6 +29,15 @@ export interface CreatedRef {
   collection: string;
   id: string;
   name: string;
+  /**
+   * Warum das Aufräumen scheiterte — gefüllt von `cleanup()`.
+   *
+   * Vorher meldete der Aufräumer nur, DASS etwas liegen blieb. Damit steht
+   * man vor derselben Frage wie bei einem Test, der „fehlgeschlagen" sagt und
+   * die Antwort des Servers verschweigt: man rät. Die Sperre, an der es
+   * hängt, nennt ihren Grund — er gehört in die Meldung.
+   */
+  grund?: string;
 }
 
 /**
@@ -176,6 +185,17 @@ export class WpmApi {
       );
     }
     const res = await this.request.delete(`/api/${ref.collection}/${ref.id}`);
+    if (!res.ok()) {
+      const rumpf = await res.text();
+      let grund = rumpf;
+      try {
+        const json = JSON.parse(rumpf);
+        grund = json.message ?? json.error ?? rumpf;
+      } catch {
+        // Kein JSON — dann eben der Rohtext.
+      }
+      ref.grund = `HTTP ${res.status()}: ${String(grund).slice(0, 200)}`;
+    }
     return res.ok();
   }
 
@@ -190,6 +210,14 @@ export class WpmApi {
   async cleanup(): Promise<{ removed: number; failed: CreatedRef[] }> {
     const failed: CreatedRef[] = [];
     let removed = 0;
+    // Vorwärts durch `created` — und das IST bereits die umgekehrte
+    // Anlegereihenfolge, weil `track()` mit `unshift` einfügt.
+    //
+    // Ich hatte hier ein `.reverse()` eingebaut, in der Annahme, die Liste
+    // stünde in Anlegereihenfolge. Sie stand es nicht, und das `.reverse()`
+    // hat genau den Schaden angerichtet, den es verhindern sollte: der
+    // Aufräumer begann beim Park und scheiterte an dessen Anlagen, statt die
+    // Anlagen zuerst zu entfernen. Vier Datensätze blieben liegen.
     for (const ref of this.created) {
       try {
         (await this.remove(ref)) ? removed++ : failed.push(ref);

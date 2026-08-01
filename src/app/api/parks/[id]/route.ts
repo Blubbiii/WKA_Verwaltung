@@ -342,7 +342,10 @@ export async function DELETE(
             // Test, der einen Park anlegt und wieder loeschen will.
             turbines: { where: { deviceType: "WEA" } },
             plots: true,
-            contracts: true,
+            // Vertraege sind weich geloescht — ohne diesen Filter zaehlt
+            // der Zaehler geloeschte mit, und der Park bliebe fuer immer
+            // gesperrt mit "hat noch Vertraege", obwohl keiner mehr steht.
+            contracts: { where: { deletedAt: null } },
           },
         },
       },

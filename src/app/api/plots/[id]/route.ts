@@ -199,7 +199,16 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
         tenantId: check.tenantId,
       },
       include: {
-        _count: { select: { leasePlots: true } },
+        _count: {
+          select: {
+            // Ueber die Relation filtern: LeasePlot ist eine reine
+            // Verknuepfungszeile und wird nicht weich geloescht — der
+            // Pachtvertrag dahinter schon. Ohne diesen Filter blieb ein
+            // Flurstueck nach dem Loeschen seines Pachtvertrags fuer immer
+            // gesperrt, mit der Meldung "hat noch aktive Pachtvertraege".
+            leasePlots: { where: { lease: { deletedAt: null } } },
+          },
+        },
       },
     });
 

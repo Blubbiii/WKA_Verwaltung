@@ -59,7 +59,7 @@ export const test = base.extend<{ api: WpmApi }>({
       testInfo.annotations.push({
         type: "aufraeumen-unvollstaendig",
         description: failed
-          .map((f) => `${f.collection}/${f.id} (${f.name})`)
+          .map((f) => `${f.collection}/${f.id} (${f.name}) — ${f.grund ?? "ohne Angabe"}`)
           .join(", "),
       });
     }

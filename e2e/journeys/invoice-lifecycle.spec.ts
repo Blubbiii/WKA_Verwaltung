@@ -124,12 +124,24 @@ test.describe("Rechnungs-Lebenszyklus", () => {
   test("Rechnungsdatum in der Zukunft wird abgelehnt (§ 239 HGB)", async ({ page }) => {
     // Vor-Datierung von Umsaetzen ist nicht zulaessig. Die Pruefung steht in
     // der API — hier wird bestaetigt, dass sie auch greift.
-    const morgen = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+    //
+    // Zwei Tage und nicht einer. „Morgen" war zweideutig: der Test rechnete
+    // es in UTC aus, die Pruefung rechnet in der Zeitzone des Betriebs. Lief
+    // der Lauf zwischen 22:00 und 24:00 UTC, war „morgen in UTC" bereits
+    // „heute in Berlin" — und wurde zu Recht angenommen. Genau daran ist ein
+    // CI-Lauf gescheitert.
+    //
+    // Das ist die Kehrseite des Fehlers, den isNotInFuture behebt: eine
+    // Datumsgrenze in UTC zu ziehen und in Ortszeit zu pruefen geht in beide
+    // Richtungen schief. Zwei Tage liegen ausserhalb jeder Zeitzone.
+    const uebermorgen = new Date(Date.now() + 2 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
 
     const res = await page.request.post("/api/invoices", {
       data: {
         invoiceType: "INVOICE",
-        invoiceDate: morgen,
+        invoiceDate: uebermorgen,
         recipientName: testName("Zukunft"),
         items: [{ description: "Test", quantity: 1, unitPrice: 100 }],
       },
@@ -140,6 +152,45 @@ test.describe("Rechnungs-Lebenszyklus", () => {
       "Eine Rechnung mit Datum in der Zukunft wurde angenommen — die Pruefung greift nicht",
     ).toBe(false);
     expect(await res.text()).toMatch(/zukunft/i);
+  });
+
+  test("Rechnungsdatum von heute wird angenommen", async ({ page, api }) => {
+    // Die Gegenprobe, und der Grund, warum es sie geben muss: bis zum
+    // 02.08.2026 lehnte die Pruefung den HEUTIGEN Tag ab, wenn jemand
+    // zwischen 00:00 und 02:00 Ortszeit arbeitete. Die Oberflaeche schickt
+    // ein gewaehltes Datum als Mitternacht UTC, und die lag dann noch in der
+    // Zukunft. Ohne diesen Test faellt so etwas erst dem Nutzer auf — und dem
+    // fehlt der Grund, es fuer einen Fehler des Programms zu halten.
+    //
+    // „Heute" wird hier so bestimmt, wie es der Server tut: als Kalendertag
+    // in der Zeitzone des Betriebs.
+    const heuteInBerlin = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const name = testName("Heute");
+    const res = await page.request.post("/api/invoices", {
+      data: {
+        invoiceType: "INVOICE",
+        invoiceDate: heuteInBerlin,
+        recipientName: name,
+        items: [{ description: "Test", quantity: 1, unitPrice: 100 }],
+      },
+    });
+
+    expect(
+      res.ok(),
+      `Eine Rechnung mit dem heutigen Datum wurde abgelehnt: HTTP ${res.status()}\n` +
+        `${await res.text()}\nDas ist keine Vor-Datierung — § 239 HGB verbietet ` +
+        `einen spaeteren TAG, nicht eine spaetere Uhrzeit.`,
+    ).toBe(true);
+
+    const rumpf = await res.json();
+    const angelegt = rumpf.data ?? rumpf;
+    api.track({ collection: "invoices", id: angelegt.id, name });
   });
 
   test("Liste: Suche findet eine angelegte Rechnung", async ({ page, api }) => {

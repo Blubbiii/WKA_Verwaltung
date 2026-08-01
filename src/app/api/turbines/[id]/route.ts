@@ -275,7 +275,8 @@ export async function DELETE(
           select: {
             serviceEvents: true,
             documents: true,
-            contracts: true,
+            // Weich geloeschte Vertraege duerfen die Anlage nicht sperren.
+            contracts: { where: { deletedAt: null } },
             // Abrechnungsgrundlage: hängt per Cascade / SetNull am Hard-Delete
             turbineProductions: true,
             energySettlementItems: true,

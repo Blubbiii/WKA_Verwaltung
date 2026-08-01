@@ -215,8 +215,13 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
         _count: {
           select: {
             shareholders: true,
-            leases: true,
-            contracts: true,
+            // Pachtvertraege und Vertraege sind weich geloescht. Ohne den
+            // Filter zaehlen geloeschte mit, und die Person bleibt fuer immer
+            // gesperrt — mit einer Meldung, die dem Zustand widerspricht:
+            // "wird noch verwendet (1 Pachtvertraege)", obwohl der einzige
+            // Pachtvertrag geloescht ist.
+            leases: { where: { deletedAt: null } },
+            contracts: { where: { deletedAt: null } },
           },
         },
       },
