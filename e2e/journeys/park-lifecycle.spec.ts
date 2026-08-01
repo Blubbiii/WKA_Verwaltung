@@ -103,9 +103,9 @@ test.describe("Park-Lebenszyklus", () => {
 
     // Geprueft wird der gespeicherte WERT, nicht seine Darstellung.
     //
-    // Der erste Entwurf suchte „18.500" auf der Detailseite und scheiterte —
+    // Der erste Entwurf suchte „18.500“ auf der Detailseite und scheiterte —
     // zu Recht, aber aus einem anderen Grund als vermutet: die Seite zeigt
-    // unter „Leistung" die Summe ueber die ANLAGEN, nicht das Feld am Park.
+    // unter „Leistung“ die Summe ueber die ANLAGEN, nicht das Feld am Park.
     // Ohne erfasste Nennleistungen steht dort ein Strich, egal was am Park
     // hinterlegt ist. Das ist eine Beobachtung ueber die Oberflaeche und
     // gehoert nicht in die Pruefung des Speicherns.

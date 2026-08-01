@@ -27,7 +27,22 @@ export function Stepper({ steps, currentStep, onStepClick, className }: StepperP
           const isClickable = onStepClick && index <= currentStep;
 
           return (
-            <li key={step.id} className="relative flex-1">
+            <li
+              key={step.id}
+              // Der aktuelle Schritt war bisher nur farblich erkennbar. Ein
+              // Bildschirmleser las die Liste als „Stammdaten, Abrechnung"
+              // vor, ohne zu sagen, wo man steht — bei einem Assistenten die
+              // wichtigste Information überhaupt.
+              //
+              // `aria-current="step"` ist zugleich der stabile Anker für die
+              // Ablauf-Tests. Ohne ihn müssten sie sich an CSS-Klassen
+              // klammern, und eine Umgestaltung machte sie reihenweise kaputt.
+              aria-current={isCurrent ? "step" : undefined}
+              data-step-state={
+                isCompleted ? "completed" : isCurrent ? "current" : "upcoming"
+              }
+              className="relative flex-1"
+            >
               {/* Connector line */}
               {index > 0 && (
                 <div

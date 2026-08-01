@@ -104,7 +104,7 @@ export async function ready(page: Page): Promise<void> {
  * (driver.js) legt ein SVG über die ganze Seite, und der Cookie-Hinweis sitzt
  * unten fest.
  *
- * Playwright meldet das nicht immer als „intercepts pointer events": liegt die
+ * Playwright meldet das nicht immer als „intercepts pointer events“: liegt die
  * Überlagerung ausserhalb des Klickpunkts, aber im Weg der Ereigniskette,
  * bleibt die Meldung aus und man sucht den Fehler beim Ziel.
  *
