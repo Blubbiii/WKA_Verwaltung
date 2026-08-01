@@ -72,12 +72,13 @@ sperren sich selbst aus. Deshalb möglichst alles in **einem** Aufruf.
 |---|---|
 | Park — anlegen über den Assistenten, ändern, löschen | ✅ |
 | Assistenten — 8 Einstiege, Schrittwechsel, Zustand bei „Zurück" | ✅ |
-| Rechnung — anlegen, Position, Status, löschen | offen |
-| Pacht — Assistent über 4 Schritte | offen |
-| Buchhaltung — 41 Seiten, bisher **null** Abdeckung | offen |
+| Rechnung — anlegen, Betrag prüfen, suchen, löschen | ✅ |
+| Buchhaltung — Soll=Haben, Vorbuchung, Festschreiben, Storno, Bilanzdifferenz | ✅ |
+| Admin — Einstellung ändern, prüfen, exakt zurücksetzen; 22 Seiten erreichbar | ✅ |
+| Pacht — Assistent über 4 Schritte | offen (Schritt 1 verlangt eine Auswahl) |
 | GIS — Flächen einzeichnen, SHP-Import | offen |
 | SCADA — Import ausführen, Anomalie erzeugen | offen |
-| Admin — Einstellung ändern und zurücksetzen | offen |
+| Die neun Assistenten ohne generischen Durchlauf | offen |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
