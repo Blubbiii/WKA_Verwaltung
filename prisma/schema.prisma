@@ -65,6 +65,7 @@ model Tenant {
   parks                     Park[]
   persons                   Person[]
   plots                     Plot[]
+  municipalities            Municipality[]
   recurringInvoices         RecurringInvoice[]
   reminderLogs              ReminderLog[]
   roles                     Role[]
@@ -466,6 +467,17 @@ model Turbine {
   createdAt                      DateTime                  @default(now())
   updatedAt                      DateTime                  @updatedAt
   parkId                         String
+  /// Standortgemeinde der Anlage (A5, Audit 2026-08).
+  ///
+  /// Bewusst AN DER ANLAGE und nicht ueber das Flurstueck abgeleitet: es gibt
+  /// keine Beziehung Turbine → Plot, und ein Park liegt regelmaessig in
+  /// mehreren Gemeinden — genau deshalb wird der Gewerbesteuer-Messbetrag
+  /// nach § 29 GewStG ueberhaupt zerlegt. Ueber den Park laesst sich die
+  /// Gemeinde also nicht bestimmen.
+  ///
+  /// Gaebe es die Beziehung Turbine → Plot eines Tages, waere die Ableitung
+  /// die bessere Antwort und dieses Feld der Rueckfall.
+  municipalityId                 String?
   technischeBetriebsfuehrung     String?
   kaufmaennischeBetriebsfuehrung String?
   netzgesellschaftFundId         String?
@@ -509,6 +521,7 @@ model Turbine {
   turbineProductions             TurbineProduction[]
   netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id], onDelete: SetNull)
   park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
+  municipalityRef                Municipality?             @relation(fields: [municipalityId], references: [id], onDelete: SetNull)
   costCenters                    CostCenter[]
   operationalTasks               OperationalTask[]
   inspectionPlans                InspectionPlan[]
@@ -522,6 +535,7 @@ model Turbine {
 
   @@index([parkId])
   @@index([netzgesellschaftFundId])
+  @@index([municipalityId])
   @@map("turbines")
 }
 
@@ -841,7 +855,10 @@ model Shareholder {
 model Plot {
   id                String        @id @default(uuid())
   county            String?
+  /// Freitext-Altfeld. Bleibt bestehen, damit vorhandene Angaben nicht
+  /// verloren gehen; massgeblich ist `municipalityId`, sobald gesetzt.
   municipality      String?
+  municipalityId    String?
   cadastralDistrict String
   fieldNumber       String        @default("0")
   plotNumber        String
@@ -862,7 +879,9 @@ model Plot {
   plotAreas         PlotArea[]
   park              Park?         @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  municipalityRef   Municipality? @relation(fields: [municipalityId], references: [id], onDelete: SetNull)
 
+  @@index([municipalityId])
   @@unique([tenantId, cadastralDistrict, fieldNumber, plotNumber])
   @@index([parkId])
   @@index([county, municipality])
@@ -7397,4 +7416,57 @@ model BankFetchRun {
   /// Trägt die Dublettenprüfung des Auszugs.
   @@index([connectionId, statementChecksum])
   @@map("bank_fetch_runs")
+}
+
+// =============================================================================
+// A5 (Audit 2026-08): Gemeinde als Stammdatensatz
+// =============================================================================
+//
+// Die Gemeinde stand bisher als Freitext an `Plot.municipality`. Damit gab es
+// keinen Ort, an dem etwas Gemeindebezogenes haengen koennte — weder der
+// Gewerbesteuer-Hebesatz noch die Beteiligung nach § 6 EEG. Freitext
+// fragmentiert ausserdem jede Auswertung: „Musterdorf" und „Musterdorf, Gem."
+// sind fuer die Datenbank zwei Gemeinden.
+//
+// Der Hebesatz steht hier bewusst NICHT: nach der Entscheidung vom 01.08.2026
+// rechnet der Steuerberater die Zerlegung. WPM liefert ihm die Grundlage —
+// installierte Leistung je Gemeinde und Jahr — und rechnet keine Steuer.
+// Kaeme die Zerlegung spaeter ins Haus, waere ein `MunicipalityTaxRate` mit
+// Gueltigkeitszeitraum die Fortsetzung; der Hebesatz wird jaehrlich neu
+// beschlossen und braucht deshalb Historie, kein einzelnes Feld.
+model Municipality {
+  id       String @id @default(uuid())
+  tenantId String
+
+  /// Name laut Gemeindeverzeichnis.
+  name String
+
+  /// Amtlicher Gemeindeschluessel (8-stellig).
+  ///
+  /// Der eigentliche Zweck ist die Dublettenvermeidung: der Name allein
+  /// unterscheidet die 15 deutschen Gemeinden namens „Neustadt" nicht, und
+  /// der Steuerberater ordnet ueber den AGS zu.
+  officialKey String? @db.VarChar(12)
+
+  /// Bundesland — fuer die Zuordnung des Finanzamts und als Plausibilitaets-
+  /// pruefung gegen den AGS (dessen erste beiden Stellen das Land codieren).
+  state String? @db.VarChar(50)
+
+  notes String? @db.Text
+
+  status    EntityStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plots    Plot[]
+  turbines Turbine[]
+
+  /// Derselbe Name darf im Mandanten nur einmal vorkommen — das ist die
+  /// Bremse gegen genau die Fragmentierung, die den Freitext unbrauchbar
+  /// gemacht hat.
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, officialKey])
+  @@map("municipalities")
 }
