@@ -263,3 +263,30 @@ export async function selectFromCombobox(
   ).toBeVisible({ timeout: 10_000 });
   await treffer.click();
 }
+
+/**
+ * Einen Eintrag in einem Radix-Select waehlen.
+ *
+ * Unterschied zum Combobox: kein Suchfeld. Der Ausloeser oeffnet direkt eine
+ * Liste. Beide tragen `role="combobox"`, weshalb der Unterschied im Test
+ * leicht untergeht — und ein `fill()` auf beiden gleichermassen nichts tut.
+ *
+ * @param triggerId  id des SelectTrigger (z. B. "status").
+ * @param eintrag    Sichtbarer Text des gewuenschten Eintrags.
+ */
+export async function selectOption(
+  page: Page,
+  triggerId: string,
+  eintrag: string | RegExp,
+): Promise<void> {
+  const trigger = page.locator(`#${triggerId}`);
+  await must(trigger, `Auswahlfeld #${triggerId}`);
+  await trigger.click();
+
+  const option = page.getByRole("option", { name: eintrag }).first();
+  await expect(
+    option,
+    `Kein Eintrag ${eintrag} im Auswahlfeld #${triggerId}`,
+  ).toBeVisible({ timeout: 10_000 });
+  await option.click();
+}

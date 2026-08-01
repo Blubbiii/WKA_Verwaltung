@@ -71,9 +71,13 @@ const WIZARDS: WizardCase[] = [
   {
     name: "Vertrag anlegen",
     path: "/contracts/new",
-    steps: 0,
+    // Meine erste Einordnung war "einseitige Maske ohne Schrittanzeiger" —
+    // falsch. Der Assistent hat vier Schritte; meine Zaehlung im Quelltext
+    // hat sein Format nur nicht erkannt.
+    steps: 4,
     walkable: false,
-    needs: "einseitige Maske ohne Schrittanzeiger",
+    needs: "Schritt 1 verlangt die Auswahl einer Vertragsart",
+    ownTest: "contract-wizard.spec.ts",
   },
   {
     name: "Pachtvertrag anlegen",
@@ -248,9 +252,10 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 01.08.2026: acht, nachdem der Pacht-Assistent einen eigenen
-      // Test bekommen hat. Die Zahl darf NICHT steigen — sie ist die
-      // Schuldenliste dieser Suite.
-    ).toBeLessThanOrEqual(8);
+      // Stand 02.08.2026: sieben, nachdem Pacht- und Vertrags-Assistent je
+      // einen eigenen Test bekommen haben. Die Schranke wird bei jedem neuen
+      // Test mit nachgezogen — bliebe sie auf acht stehen, waere sie kein
+      // Sperrklinken-Wert mehr, sondern nur noch eine Zahl, die immer passt.
+    ).toBeLessThanOrEqual(7);
   });
 });
