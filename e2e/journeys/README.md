@@ -108,6 +108,26 @@ Anlagen, und aus diesem Bestand werden Abrechnung und Ausschüttung gerechnet.
 Der Test geht bis zur Validierung — die ruft die API mit `action: "validate"`
 und schreibt nichts. Der nächste Klick wäre `action: "import"`.
 
+## Was der erste Gesamtlauf gefunden hat (02.08.2026)
+
+81 Tests gegen die Produktion, 5 rot. **Vier davon waren echte Fehler im
+Programm**, einer lag am Test:
+
+| Fund | Wirkung |
+|---|---|
+| Buchungsdatum „in der Zukunft" beim heutigen Tag | Zwischen 00:00 und 02:00 Ortszeit liess sich nichts buchen — jeden Tag, seit jeher |
+| Vertrag anlegen scheiterte an leeren Freiwilligenfeldern | Ein Vertrag mit nur den Pflichtfeldern liess sich gar nicht speichern |
+| Beispieldatei des Netzbetreiber-Imports passte nicht zum Import | Wer sie herunterlud und hochlud, kam in Schritt 2 nicht weiter |
+| Kartenseite ohne jede Überschrift | Einzige Seite ohne `h1` — per Überschriften nicht auffindbar |
+| Vertragsbeginn hängt an einem Popover-Kalender | Der generische Läufer kam nicht durch Schritt 2 → `pickDate()` |
+
+Zwei der Fehler standen seit Monaten im Programm und wären ohne diesen Lauf
+nicht aufgefallen: beide sehen im Alltag aus wie Bedienfehler.
+
+Bemerkenswert am ersten: gefunden hat ihn nicht die Sorgfalt, sondern der
+**Zufall** — der Lauf startete kurz nach Mitternacht. Ein Testlauf, der immer
+zur selben Tageszeit läuft, hätte ihn nie gesehen.
+
 ## In CI
 
 Seit dem 01.08.2026 läuft dieser Ordner bei jedem Push — Job `e2e` in
