@@ -299,11 +299,20 @@ jobs:
       # db push statt migrate deploy — dieselbe Reihenfolge wie im Container.
       # Ein Schema, das hier nicht durchgeht, geht auch beim Deployment nicht
       # durch, und das faellt lieber jetzt auf.
-      # Kein --skip-generate: die Option gibt es in Prisma 7 nicht mehr, der
-      # erste CI-Lauf ist genau daran gescheitert. `--accept-data-loss` wie im
-      # Container-Entrypoint — die Datenbank ist hier ohnehin frisch.
+      # Zwei Prisma-7-Eigenheiten, an denen je ein CI-Lauf gescheitert ist:
+      #
+      # 1. `--skip-generate` gibt es nicht mehr.
+      # 2. `db push` liest die Datenbank-Adresse NICHT mehr aus der Umgebung.
+      #    In schema.prisma steht bewusst kein `url` — die CLI erwartet sie
+      #    daher aus einer Prisma-Config-Datei, die es hier nicht gibt, und
+      #    bricht ab mit „datasource.url property is required". `--url` gibt
+      #    sie direkt mit. Kein Config-File anlegen: das wuerde auch lokal
+      #    und im Container gelten und dort etwas aendern, das laeuft.
+      #
+      # `--accept-data-loss` wie im Container-Entrypoint — die Datenbank ist
+      # hier ohnehin frisch.
       - name: Schema anlegen
-        run: npx prisma db push --accept-data-loss
+        run: npx prisma db push --accept-data-loss --url "$DATABASE_URL"
 
       - name: Seed-Daten laden
         run: npm run db:seed
