@@ -83,9 +83,17 @@ Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
 Fehler am meisten weh.
 
-## Was noch aussteht
+## In CI
 
-Die Suite läuft **nirgends automatisch**. Der letzte Lauf vor dem 01.08.2026
-war am 13. April. Solange sie nicht in CI hängt, verfällt sie wieder — und
-eine verfallene Suite ist schlimmer als keine, weil ihr Grün Sicherheit
-suggeriert.
+Seit dem 01.08.2026 läuft dieser Ordner bei jedem Push — Job `e2e` in
+`.github/workflows/ci.yml`, mit eigener Postgres- und Redis-Instanz, frischem
+Schema und Seed-Daten.
+
+Der Grund steht im Job: die Suite lief zuletzt am 13. April und danach vier
+Monate nicht. Eine Suite, die niemand startet, verfällt — und ihr Grün vom
+letzten Lauf suggeriert eine Sicherheit, die es nicht gibt.
+
+**Bewusst nur `e2e/journeys`.** Die älteren Spezifikationen eine Ebene höher
+kommen erst dazu, wenn ihre 162 verschluckten Fehler und 72 stillen Zweige
+beseitigt sind. Sie in CI aufzunehmen hiesse, ihr Grün zum Freigabekriterium
+zu machen.

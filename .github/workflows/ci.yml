@@ -213,3 +213,135 @@ jobs:
           echo "  npm install -D vitest @vitejs/plugin-react"
           echo "  # Dann Test-Dateien in src/ erstellen"
           echo "========================================="
+
+  # ===========================================================================
+  # Job 4: Ablauf-Tests (Playwright)
+  #
+  # Warum dieser Job existiert: die E2E-Suite lief zuletzt am 13.04.2026 und
+  # danach vier Monate nicht mehr. Eine Suite, die niemand startet, verfaellt —
+  # und ihr Gruen vom letzten Lauf suggeriert eine Sicherheit, die es nicht
+  # gibt. Deshalb laeuft sie ab jetzt bei jedem Push.
+  #
+  # Bewusst NUR e2e/journeys: das sind die Tests mit strengen Zusicherungen,
+  # die etwas anlegen und wieder loeschen. Die aelteren Spezifikationen eine
+  # Ebene hoeher sind ein Rauchtest mit 162 verschluckten Fehlern — sie
+  # gehoeren erst dazu, wenn sie ueberarbeitet sind (siehe
+  # e2e/journeys/README.md).
+  # ===========================================================================
+  e2e:
+    name: Ablauf-Tests (E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: build
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: wpm
+          POSTGRES_PASSWORD: wpm
+          POSTGRES_DB: windparkmanager_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://wpm:wpm@localhost:5432/windparkmanager_e2e?schema=public
+      NEXTAUTH_SECRET: ci-e2e-secret-key-minimum-32-characters-long
+      AUTH_SECRET: ci-e2e-secret-key-minimum-32-characters-long
+      NEXTAUTH_URL: http://localhost:3050
+      NEXT_PUBLIC_APP_URL: http://localhost:3050
+      REDIS_URL: redis://localhost:6379
+      # Der Seed legt admin@windparkmanager.de an; die Suite meldet sich damit
+      # an. Das Passwort steht hier ausdruecklich, damit niemand es fuer ein
+      # Versehen haelt — es gilt nur fuer diese Wegwerf-Datenbank.
+      SEED_SUPERADMIN_PASSWORD: ci-e2e-passwort
+      E2E_EMAIL: admin@windparkmanager.de
+      E2E_PASSWORD: ci-e2e-passwort
+      # Alle Arbeiter eines Laufs teilen sich diese Kennung. Ohne sie erzeugt
+      # jeder Prozess eine eigene, und das Aufraeumen findet die Spuren der
+      # anderen nicht.
+      E2E_RUN_ID: ci-${{ github.run_id }}
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      S3_BUCKET: wpm-documents
+      S3_REGION: us-east-1
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # db push statt migrate deploy — dieselbe Reihenfolge wie im Container.
+      # Ein Schema, das hier nicht durchgeht, geht auch beim Deployment nicht
+      # durch, und das faellt lieber jetzt auf.
+      - name: Schema anlegen
+        run: npx prisma db push --skip-generate
+
+      - name: Seed-Daten laden
+        run: npm run db:seed
+
+      # Nur Chromium: drei Browser verdreifachen die Laufzeit, ohne dass ein
+      # Ablauf-Test dadurch etwas anderes faende. Browser-Unterschiede sind
+      # Sache der Sichtpruefungen, nicht der Ablaeufe.
+      - name: Playwright-Browser installieren
+        run: npx playwright install --with-deps chromium
+
+      - name: Anwendung bauen
+        run: npm run build
+
+      # Warten ohne Zusatzpaket: eine Schleife auf den Liveness-Endpunkt.
+      # `wait-on` waere eine Abhaengigkeit mehr fuer etwas, das drei Zeilen
+      # Shell sind — und sie scheitert lauter, wenn der Start haengt.
+      - name: Anwendung starten
+        run: |
+          npm start -- -p 3050 > /tmp/wpm-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3050/api/health/live > /dev/null; then
+              echo "Anwendung laeuft nach ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Die Anwendung war nach 60s nicht erreichbar. Serverprotokoll:"
+          cat /tmp/wpm-server.log
+          exit 1
+
+      - name: Ablauf-Tests
+        run: npx playwright test e2e/journeys --project=chromium --reporter=list
+
+      # Bei einem Fehlschlag sind Spur, Bildschirmfoto und Video das, womit
+      # sich die Ursache ohne lokales Nachstellen finden laesst.
+      - name: Bericht sichern
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-bericht
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
