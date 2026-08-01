@@ -100,7 +100,21 @@ test.describe("Vertrags-Assistent", () => {
     // --- Speichern ---------------------------------------------------------
     const speichern = page.getByRole("button", { name: /vertrag erstellen/i }).first();
     await must(speichern, "Schaltflaeche „Vertrag erstellen“");
+
+    // Die Antwort des Servers mitlesen. Ohne das meldet der Test nur „nicht
+    // gefunden" und verschweigt, was der Server geantwortet hat — und man
+    // sucht den Fehler im Assistenten, obwohl die Antwort ihn nennt.
+    const antwort = page.waitForResponse(
+      (r) => r.url().includes("/api/contracts") && r.request().method() === "POST",
+      { timeout: 30_000 },
+    );
     await speichern.click();
+
+    const res = await antwort;
+    expect(
+      res.ok(),
+      `Speichern fehlgeschlagen: HTTP ${res.status()}\n${await res.text()}`,
+    ).toBe(true);
 
     // Erst das Speichern beweist, dass der ueber vier Schritte gesammelte
     // Zustand vollstaendig ankommt. Eine Erfolgsmeldung beweist es nicht.

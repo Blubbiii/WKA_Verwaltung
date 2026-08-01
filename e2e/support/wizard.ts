@@ -310,7 +310,10 @@ export async function pickDate(
   page: Page,
   beschriftung: string | RegExp = /datum w(ä|ae)hlen/i,
 ): Promise<void> {
-  const trigger = page.getByRole("button", { name: beschriftung }).first();
+  const offeneFelder = page.getByRole("button", { name: beschriftung });
+  const vorher = await offeneFelder.count();
+
+  const trigger = offeneFelder.first();
   await must(trigger, `Datumsfeld mit der Aufschrift ${beschriftung}`);
   await trigger.click();
 
@@ -326,11 +329,23 @@ export async function pickDate(
   const anzahl = await tage.count();
   await tage.nth(Math.min(14, anzahl - 1)).click();
 
-  // Die Aufschrift muss sich geaendert haben — sonst wurde zwar geklickt,
-  // aber nichts uebernommen, und der naechste Schritt scheiterte an einer
-  // Stelle, die nichts mit der Ursache zu tun hat.
-  await expect(
-    trigger,
-    "Nach der Auswahl steht immer noch die Aufforderung im Datumsfeld",
-  ).not.toHaveText(beschriftung, { timeout: 10_000 });
+  // Ein Datumsfeld weniger muss die Aufforderung tragen — dann wurde die
+  // Auswahl uebernommen. Ohne diese Pruefung scheiterte der naechste Schritt
+  // an einer Stelle, die nichts mit der Ursache zu tun hat.
+  //
+  // Gezaehlt und nicht am Element geprueft: sobald die Aufschrift wechselt,
+  // findet der Selektor genau die Schaltflaeche nicht mehr, die er pruefen
+  // soll. Ein `not.toHaveText` darauf scheitert dann an „nicht gefunden"
+  // statt zu bestehen — mein erster Versuch stand genau dort.
+  //
+  // Gezaehlt statt auf 0 geprueft, weil Assistenten oft zwei Datumsfelder
+  // nebeneinander haben (Beginn und Ende); nur eines wurde gefuellt.
+  await expect
+    .poll(() => offeneFelder.count(), {
+      message:
+        "Nach der Auswahl traegt immer noch dieselbe Anzahl Felder die " +
+        "Aufforderung — das gewaehlte Datum wurde nicht uebernommen",
+      timeout: 10_000,
+    })
+    .toBe(vorher - 1);
 }

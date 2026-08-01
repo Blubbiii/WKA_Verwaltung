@@ -133,16 +133,36 @@ export class WpmApi {
    * Liste und nicht über die id: der Test kennt die id nicht, weil er über
    * die Maske gegangen ist — und genau das soll er auch nicht müssen.
    */
+  /**
+   * Einen Datensatz an seiner Bezeichnung wiederfinden.
+   *
+   * Nicht jede Sammlung nennt das Feld `name`: Vertraege haben `title`,
+   * Anlagen `designation`, Personen `lastName`. Vorher wurde nur `name`
+   * geprueft — ein gespeicherter Vertrag galt damit als „nicht angelegt",
+   * obwohl er da war. Das ist die unangenehme Sorte Testfehler: er meldet
+   * einen Fehler im Programm, der keiner ist.
+   *
+   * @param feld Wenn bekannt, das Feld ausdruecklich angeben. Sonst werden
+   *             die ueblichen der Reihe nach probiert.
+   */
   async findByName(
     collection: string,
     name: string,
+    feld?: string,
   ): Promise<{ id: string; name: string } | null> {
-    const json = await this.get<{ data?: { id: string; name?: string }[] }>(
+    const felder = feld ? [feld] : ["name", "title", "designation", "lastName"];
+    const json = await this.get<{ data?: Record<string, unknown>[] }>(
       `/api/${collection}?limit=500`,
     );
     const rows = json.data ?? [];
-    const hit = rows.find((r) => (r.name ?? "").trim() === name.trim());
-    return hit ? { id: hit.id, name: hit.name ?? "" } : null;
+
+    for (const f of felder) {
+      const hit = rows.find(
+        (r) => String(r[f] ?? "").trim() === name.trim(),
+      );
+      if (hit) return { id: String(hit.id), name };
+    }
+    return null;
   }
 
   async remove(ref: CreatedRef): Promise<boolean> {

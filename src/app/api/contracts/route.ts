@@ -31,22 +31,35 @@ const contractCreateSchema = z.object({
     "MARKETING",
     "OTHER",
   ]),
-  contractNumber: z.string().optional(),
+  // `.nullable()` auf allen optionalen Feldern — sonst ist "leer gelassen"
+  // nicht dasselbe wie "nicht geschickt".
+  //
+  // Der Assistent sendet für leere Felder `null` (`formData.x || null`), das
+  // Schema akzeptierte aber nur `undefined`. Damit liess sich ein Vertrag mit
+  // nur den Pflichtfeldern gar nicht anlegen: das Speichern brach mit
+  // "Validierungsfehler" ab, ohne zu sagen, welches Feld gemeint ist — und
+  // gemeint waren Felder, die der Assistent selbst als freiwillig fuehrt.
+  //
+  // Dass es ein Versehen war und keine Absicht, zeigt contractUpdateSchema in
+  // [id]/route.ts: dort tragen dieselben Felder laengst `.nullable()`.
+  contractNumber: z.string().optional().nullable(),
   title: z.string().min(1),
   startDate: z.string().transform((s) => new Date(s)),
   endDate: z
     .string()
     .optional()
+    .nullable()
     .transform((s) => (s ? new Date(s) : undefined)),
-  noticePeriodMonths: z.number().int().positive().optional(),
+  noticePeriodMonths: z.number().int().positive().optional().nullable(),
   noticeDeadline: z
     .string()
     .optional()
+    .nullable()
     .transform((s) => (s ? new Date(s) : undefined)),
   autoRenewal: z.boolean().default(false),
-  renewalPeriodMonths: z.number().int().positive().optional(),
-  annualValue: z.number().positive().optional(),
-  paymentTerms: z.string().optional(),
+  renewalPeriodMonths: z.number().int().positive().optional().nullable(),
+  annualValue: z.number().positive().optional().nullable(),
+  paymentTerms: z.string().optional().nullable(),
   status: z.enum(["DRAFT", "ACTIVE", "EXPIRING", "EXPIRED", "TERMINATED"]).default("ACTIVE"),
   documentUrl: z.url().optional(),
   reminderDays: z.array(z.number().int().positive()).optional(),
