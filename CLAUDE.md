@@ -98,6 +98,19 @@ import { DataTable } from "@/components/ui/data-table";
 
 **Wofür sie NICHT gedacht ist:** serverseitig paginierte Listen. Sie würde nur die geladene Seite durchsuchen und vorspiegeln, das sei alles. Solche Listen behalten ihre eigene Steuerung mit `PAGE_SIZE_*` aus `@/lib/config/pagination`.
 
+## 📅 Datumseingabe: welche wann
+
+Zwei Muster im Einsatz, beide begründet — die Regel stand nur nirgends:
+
+| Muster | Wann | Wo im Einsatz |
+|---|---|---|
+| `<Input type="date">` | **Standard.** Filter, Zeiträume nahe am Heute, alles in Dialogen | 55 Dateien |
+| Textfeld + Kalender-Popover | Wenn das Datum **Jahre zurückliegen** kann — Inbetriebnahme, Vertragsbeginn, Beitritt | 13 Dateien |
+
+Das native Feld ist tastaturfreundlich, kennt keine Zeitzonen-Fallstricke und braucht keinen Zustand. Es taugt aber schlecht für „März 2003": man scrollt Jahre. Dort steht ein Textfeld mit `parseDateInput`/`formatDateInput` und daneben eine Schaltfläche, die den Kalender öffnet — tippen **oder** auswählen.
+
+**Nicht mischen** innerhalb einer Ansicht. Und: `Calendar` aus `lucide-react` ist das Symbol, `Calendar` aus `@/components/ui/calendar` die Komponente — beim Suchen leicht zu verwechseln.
+
 ## Weitere verbindliche Konventionen
 
 - **API-Routes:** IMMER `apiError("CODE", status, { message?, details? })` aus `@/lib/api-errors`. NIEMALS `NextResponse.json({ error })` direkt.
