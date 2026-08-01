@@ -20,6 +20,24 @@ export interface KapEStInput {
   /** Kirchensteuer-Satz (0.08 = Bayern/BW, 0.09 = alle anderen) oder 0 falls nicht KiSt-pflichtig. */
   kirchensteuerRate?: number;
   /**
+   * Ist der Kirchensteuersatz erfasst — oder nur angenommen?
+   *
+   * `false` heisst: die Person ist kirchensteuerpflichtig, der Satz steht aber
+   * nirgends. Gerechnet wird dann OHNE Kirchensteuer, und das Beiblatt weist
+   * es aus. Stillschweigend mit 0 zu rechnen sähe aus wie „nicht Mitglied" —
+   * genau die Verwechslung, die dieses Feld verhindert.
+   */
+  kirchensteuerDetermined?: boolean;
+  /**
+   * Ist der Freistellungsauftrag erfasst?
+   *
+   * `false` heisst: es wurde ohne Freibetrag gerechnet, weil keiner hinterlegt
+   * ist. Das ist der richtige Vorbehalt — ohne Auftrag wird auf den vollen
+   * Betrag einbehalten —, aber der Leser soll wissen, dass hier nichts geprüft
+   * wurde.
+   */
+  freibetragDetermined?: boolean;
+  /**
    * Kapitalertragsteuersatz (§43a Abs. 1 Nr. 1 EStG).
    *
    * Bewusst als Eingabe statt als Konstante in diesem Modul: der Wert liegt in
@@ -45,6 +63,10 @@ export interface KapEStResult {
   kirchensteuerAmount: number;
   totalDeducted: number;
   netPayout: number;
+  /** Siehe KapEStInput.kirchensteuerDetermined. */
+  kirchensteuerDetermined: boolean;
+  /** Siehe KapEStInput.freibetragDetermined. */
+  freibetragDetermined: boolean;
 }
 
 /**
@@ -72,13 +94,20 @@ export function computeKapESt(input: KapEStInput): KapEStResult {
 
   const kapestRate = input.kapestRate ?? DEFAULT_KAPEST_RATE;
   const soliRate = input.soliRate ?? DEFAULT_SOLI_RATE;
+  const kirchensteuerDetermined = input.kirchensteuerDetermined ?? true;
+  const freibetragDetermined = input.freibetragDetermined ?? true;
 
   const freibetragApplied = Math.min(gross, freibetragRemaining);
   const taxableAmount = Math.max(0, gross - freibetragApplied);
 
   const kapestAmount = roundCent(taxableAmount * kapestRate);
   const soliAmount = roundCent(kapestAmount * soliRate);
-  const kirchensteuerAmount = roundCent(kapestAmount * kirchensteuerRate);
+  // Bei unbekanntem Satz bleibt die Kirchensteuer aussen vor, statt mit einem
+  // geratenen Wert zu rechnen. Der Nettobetrag ist dann ein Hoechstwert — das
+  // Beiblatt sagt es dazu.
+  const kirchensteuerAmount = kirchensteuerDetermined
+    ? roundCent(kapestAmount * kirchensteuerRate)
+    : 0;
 
   const totalDeducted = roundCent(kapestAmount + soliAmount + kirchensteuerAmount);
   const netPayout = roundCent(gross - totalDeducted);
@@ -95,11 +124,62 @@ export function computeKapESt(input: KapEStInput): KapEStResult {
     kirchensteuerAmount,
     totalDeducted,
     netPayout,
+    kirchensteuerDetermined,
+    freibetragDetermined,
   };
 }
 
 function roundCent(v: number): number {
   return Math.round(v * 100) / 100;
+}
+
+/**
+ * Personenbezogene Merkmale in Rechner-Eingaben übersetzen.
+ *
+ * Vorher kamen Kirchensteuersatz und Freibetrag als Abfrageparameter und galten
+ * damit EINHEITLICH für alle Gesellschafter einer Ausschüttung. Beides ist aber
+ * personenbezogen: der Satz hängt am Wohnsitz-Bundesland und an der
+ * Mitgliedschaft, der Freistellungsauftrag wird von jedem einzeln erteilt.
+ *
+ * Die Abfrageparameter bleiben als ausdrückliche Vorgabe erhalten — wer weiss,
+ * dass alle Beteiligten denselben Auftrag erteilt haben, soll ihn weiter in
+ * einem Zug setzen können. Was auf einer Vorgabe beruht und was erfasst ist,
+ * unterscheidet die Rückgabe aber sauber, damit das Beiblatt es ausweisen kann.
+ */
+export function resolvePersonKapESt(input: {
+  /** § 51a EStG — ist die Person kirchensteuerpflichtig? */
+  churchTaxLiable: boolean;
+  /** Erfasster Satz als Dezimalbruch, oder null wenn nicht gepflegt. */
+  churchTaxRate: number | null;
+  /** Erfasster Freistellungsauftrag in EUR, oder null wenn nicht gepflegt. */
+  exemptionOrderEur: number | null;
+  /** Vorgabe aus der Abfrage — gilt als Annahme, nicht als erfasster Wert. */
+  fallbackKirchensteuerRate: number;
+  /** Vorgabe aus der Abfrage — gilt als Annahme, nicht als erfasster Wert. */
+  fallbackFreibetragEur: number;
+}): Pick<
+  KapEStInput,
+  | "kirchensteuerRate"
+  | "kirchensteuerDetermined"
+  | "freibetragRemaining"
+  | "freibetragDetermined"
+> {
+  // Nicht kirchensteuerpflichtig ist eine ERFASSTE Aussage, keine Lücke —
+  // deshalb determined = true bei Satz 0.
+  const churchKnown = !input.churchTaxLiable || input.churchTaxRate !== null;
+  const churchRate = !input.churchTaxLiable
+    ? 0
+    : (input.churchTaxRate ?? input.fallbackKirchensteuerRate);
+
+  const freibetragKnown = input.exemptionOrderEur !== null;
+  const freibetrag = input.exemptionOrderEur ?? input.fallbackFreibetragEur;
+
+  return {
+    kirchensteuerRate: churchRate,
+    kirchensteuerDetermined: churchKnown,
+    freibetragRemaining: Math.max(0, freibetrag),
+    freibetragDetermined: freibetragKnown,
+  };
 }
 
 export interface KapEStLeafletRow {
@@ -123,6 +203,14 @@ export function buildKapEStLeaflet(rows: KapEStLeafletRow[]): {
     totalDeducted: number;
     netPayoutTotal: number;
   };
+  /**
+   * Vorbehalte zum Blatt.
+   *
+   * Ein Beiblatt ohne Hinweis liest sich wie eine Abrechnung. Wo Angaben
+   * fehlen, muss das dabeistehen — sonst nimmt der Empfänger eine Zahl für
+   * geprüft, die auf einem Standardwert beruht.
+   */
+  warnings: string[];
 } {
   let grossTotal = 0;
   let kapestTotal = 0;
@@ -140,6 +228,25 @@ export function buildKapEStLeaflet(rows: KapEStLeafletRow[]): {
     netPayoutTotal += r.kapest.netPayout;
   }
 
+  const missingChurchTax = rows.filter((r) => !r.kapest.kirchensteuerDetermined);
+  const missingFreibetrag = rows.filter((r) => !r.kapest.freibetragDetermined);
+
+  const warnings: string[] = [];
+  if (missingChurchTax.length > 0) {
+    warnings.push(
+      `Bei ${missingChurchTax.length} Gesellschafter(n) ist die Kirchensteuerpflicht vermerkt, aber kein Satz hinterlegt (${missingChurchTax
+        .map((r) => r.shareholderName)
+        .join(", ")}). Für diese Zeilen wurde OHNE Kirchensteuer gerechnet — der ausgewiesene Nettobetrag ist ein Höchstwert.`,
+    );
+  }
+  if (missingFreibetrag.length > 0) {
+    warnings.push(
+      `Bei ${missingFreibetrag.length} Gesellschafter(n) ist kein Freistellungsauftrag hinterlegt (${missingFreibetrag
+        .map((r) => r.shareholderName)
+        .join(", ")}). Gerechnet wurde mit dem Vorgabewert dieser Abfrage — die Zahl beruht insoweit auf einer Annahme. Liegt ein Auftrag vor, ist er beim Kontakt zu erfassen.`,
+    );
+  }
+
   return {
     rows,
     totals: {
@@ -150,5 +257,6 @@ export function buildKapEStLeaflet(rows: KapEStLeafletRow[]): {
       totalDeducted: roundCent(totalDeducted),
       netPayoutTotal: roundCent(netPayoutTotal),
     },
+    warnings,
   };
 }

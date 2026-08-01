@@ -24,6 +24,17 @@ const updateSchema = z.object({
   country: z.string().max(100).nullable().optional(),
   contactType: z.string().max(50).optional().nullable(),
   notes: z.string().optional().nullable(),
+  // A3: Kapitalertragsteuer-Merkmale. Beide bewusst nullable — „nicht erfasst"
+  // ist ein eigener Zustand und nicht dasselbe wie 0.
+  churchTaxLiable: z.boolean().optional(),
+  /**
+   * § 51a EStG: 8 % in Bayern und Baden-Württemberg, 9 % im übrigen
+   * Bundesgebiet. Die Obergrenze verhindert, dass ein Prozentwert (9) statt
+   * eines Dezimalbruchs (0.09) durchrutscht — der Fehler wäre sonst erst im
+   * gedruckten Beiblatt sichtbar.
+   */
+  churchTaxRate: z.number().min(0).max(0.15).optional().nullable(),
+  exemptionOrderEur: z.number().min(0).max(1_000_000).optional().nullable(),
 });
 
 // GET /api/crm/contacts/[id]

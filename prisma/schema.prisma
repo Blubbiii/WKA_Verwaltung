@@ -719,6 +719,28 @@ model Person {
   // B2C = Basis+5%-Pkt). personType="natural" + isBusinessCustomer=false → B2C.
   // companyName gesetzt ODER isBusinessCustomer=true → B2B.
   isBusinessCustomer             Boolean                          @default(false)
+  // A3 (Audit 2026-08): Kapitalertragsteuer-Merkmale je Person.
+  //
+  // Kirchensteuersatz und Freistellungsauftrag kamen bisher als Abfrage-
+  // parameter an den Beiblatt-Endpunkt und galten damit EINHEITLICH fuer alle
+  // Gesellschafter einer Ausschuettung. Beides ist aber personenbezogen: der
+  // Satz haengt am Wohnsitz-Bundesland und an der Mitgliedschaft, der
+  // Freistellungsauftrag wird von jedem einzeln erteilt.
+  //
+  /// § 51a EStG — ist die Person kirchensteuerpflichtig?
+  churchTaxLiable                Boolean                          @default(false)
+  /// Anzuwendender Kirchensteuersatz als Dezimalbruch: 0.08 in Bayern und
+  /// Baden-Wuerttemberg, 0.09 im uebrigen Bundesgebiet.
+  ///
+  /// NULL bei churchTaxLiable = true heisst „pflichtig, Satz nicht erfasst".
+  /// Die Berechnung weist das aus und rechnet NICHT mit 0 — sonst saehe eine
+  /// fehlende Angabe aus wie eine Nicht-Mitgliedschaft.
+  churchTaxRate                  Decimal?                         @db.Decimal(5, 4)
+  /// § 44a EStG — der diesem Zahlungspflichtigen erteilte Freistellungsauftrag
+  /// in EUR. NULL = kein Auftrag erfasst; das ist NICHT dasselbe wie ein
+  /// Auftrag ueber 0 EUR, denn ohne Auftrag wird auf den vollen Betrag
+  /// einbehalten.
+  exemptionOrderEur              Decimal?                         @db.Decimal(10, 2)
   lastActivityAt                 DateTime?
   crmActivities                  CrmActivity[]
   vendorProfiles                 Vendor[]

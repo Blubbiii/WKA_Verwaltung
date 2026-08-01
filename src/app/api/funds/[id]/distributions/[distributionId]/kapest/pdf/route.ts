@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import {
   computeKapESt,
   buildKapEStLeaflet,
+  resolvePersonKapESt,
 } from "@/lib/accounting/kapesta-calculator";
 import { generateKapEStPdf } from "@/lib/pdf/generators/kapestPdf";
 import { getSystemSetting } from "@/lib/system-settings";
@@ -79,6 +80,11 @@ export async function GET(
                       lastName: true,
                       companyName: true,
                       personType: true,
+                      // A3: personenbezogene KapESt-Merkmale statt eines
+                      // Einheitswerts fuer die ganze Ausschuettung.
+                      churchTaxLiable: true,
+                      churchTaxRate: true,
+                      exemptionOrderEur: true,
                     },
                   },
                 },
@@ -107,13 +113,21 @@ export async function GET(
         `${item.shareholder.person.firstName ?? ""} ${item.shareholder.person.lastName ?? ""}`.trim() ||
         "Unbekannt";
 
+      const person = item.shareholder.person;
       const kapest = isNatural
         ? computeKapESt({
             grossAmount: amount,
-            freibetragRemaining: freibetragPerShareholder,
-            kirchensteuerRate,
             kapestRate,
             soliRate,
+            ...resolvePersonKapESt({
+              churchTaxLiable: person.churchTaxLiable,
+              churchTaxRate:
+                person.churchTaxRate === null ? null : Number(person.churchTaxRate),
+              exemptionOrderEur:
+                person.exemptionOrderEur === null ? null : Number(person.exemptionOrderEur),
+              fallbackKirchensteuerRate: kirchensteuerRate,
+              fallbackFreibetragEur: freibetragPerShareholder,
+            }),
           })
         : computeKapESt({
             grossAmount: amount,
@@ -167,6 +181,7 @@ export async function GET(
       soliRate,
       kirchensteuerRate,
       freibetragPerShareholder,
+      warnings: leaflet.warnings,
       rows: pdfRows,
       totals: {
         grossTotal: leaflet.totals.grossTotal,

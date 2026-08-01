@@ -39,6 +39,11 @@ interface ContactData {
   country: string;
   contactType: string | null;
   notes: string | null;
+  // A3: Kapitalertragsteuer-Merkmale. Sie standen bisher nur als Vorgabe für
+  // die ganze Ausschüttung zur Verfügung — hier werden sie je Person gepflegt.
+  churchTaxLiable?: boolean;
+  churchTaxRate?: string | number | null;
+  exemptionOrderEur?: string | number | null;
 }
 
 interface ContactEditDialogProps {
@@ -83,6 +88,15 @@ export function ContactEditDialog({
     country: contact.country ?? "Deutschland",
     contactType: contact.contactType ?? "",
     notes: contact.notes ?? "",
+    churchTaxLiable: contact.churchTaxLiable ?? false,
+    churchTaxRate:
+      contact.churchTaxRate === null || contact.churchTaxRate === undefined
+        ? ""
+        : String(contact.churchTaxRate),
+    exemptionOrderEur:
+      contact.exemptionOrderEur === null || contact.exemptionOrderEur === undefined
+        ? ""
+        : String(contact.exemptionOrderEur),
   });
 
   // Reset form when contact changes
@@ -103,19 +117,39 @@ export function ContactEditDialog({
         country: contact.country ?? "Deutschland",
         contactType: contact.contactType ?? "",
         notes: contact.notes ?? "",
+        churchTaxLiable: contact.churchTaxLiable ?? false,
+        churchTaxRate:
+          contact.churchTaxRate === null || contact.churchTaxRate === undefined
+            ? ""
+            : String(contact.churchTaxRate),
+        exemptionOrderEur:
+          contact.exemptionOrderEur === null || contact.exemptionOrderEur === undefined
+            ? ""
+            : String(contact.exemptionOrderEur),
       });
     }
   }, [open, contact]);
 
-  function update(field: string, value: string) {
+  function update(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
   async function handleSave() {
     setSaving(true);
     try {
-      const body: Record<string, string | null> = {};
+      const body: Record<string, string | number | boolean | null> = {};
       for (const [key, value] of Object.entries(form)) {
+        // Zahlfelder gehen als Zahl heraus, nicht als Text — sonst weist die
+        // Zod-Pruefung sie ab. Leer heisst NICHT ERFASST und damit null; das
+        // ist ein anderer Zustand als der Wert 0 (siehe schema.prisma).
+        if (key === "churchTaxRate" || key === "exemptionOrderEur") {
+          body[key] = value === "" ? null : Number(value);
+          continue;
+        }
+        if (typeof value === "boolean") {
+          body[key] = value;
+          continue;
+        }
         body[key] = value === "" ? null : value;
       }
 
@@ -284,6 +318,63 @@ export function ContactEditDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Kapitalertragsteuer (A3) */}
+          <div className="space-y-3 rounded-md border p-3">
+            <div>
+              <p className="text-sm font-medium">{t("kapestSectionTitle")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("kapestSectionHint")}
+              </p>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-input"
+                checked={form.churchTaxLiable}
+                onChange={(e) => update("churchTaxLiable", e.target.checked)}
+              />
+              {t("churchTaxLiableLabel")}
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("churchTaxRateLabel")}</Label>
+                <Select
+                  value={form.churchTaxRate || "none"}
+                  onValueChange={(v) =>
+                    update("churchTaxRate", v === "none" ? "" : v)
+                  }
+                  disabled={!form.churchTaxLiable}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("churchTaxRateUnset")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Auswahl statt Freitext: 8 und 9 Prozent sind die einzigen
+                        gesetzlichen Saetze, und die Eingabe „9" statt „0.09"
+                        waere sonst erst im gedruckten Beiblatt aufgefallen. */}
+                    <SelectItem value="none">{t("churchTaxRateUnset")}</SelectItem>
+                    <SelectItem value="0.08">{t("churchTaxRate8")}</SelectItem>
+                    <SelectItem value="0.09">{t("churchTaxRate9")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t("exemptionOrderLabel")}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.exemptionOrderEur}
+                  onChange={(e) => update("exemptionOrderEur", e.target.value)}
+                  placeholder={t("exemptionOrderPlaceholder")}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Notes */}

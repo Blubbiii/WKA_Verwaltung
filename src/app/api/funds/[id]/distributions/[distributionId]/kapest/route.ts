@@ -24,7 +24,11 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { computeKapESt, buildKapEStLeaflet } from "@/lib/accounting/kapesta-calculator";
+import {
+  computeKapESt,
+  buildKapEStLeaflet,
+  resolvePersonKapESt,
+} from "@/lib/accounting/kapesta-calculator";
 import { getSystemSetting } from "@/lib/system-settings";
 
 export async function GET(
@@ -84,6 +88,11 @@ export async function GET(
                     lastName: true,
                     companyName: true,
                     personType: true,
+                    // A3: personenbezogene KapESt-Merkmale statt eines
+                    // Einheitswerts fuer die ganze Ausschuettung.
+                    churchTaxLiable: true,
+                    churchTaxRate: true,
+                    exemptionOrderEur: true,
                   },
                 },
               },
@@ -109,13 +118,21 @@ export async function GET(
         "Unbekannt";
 
       // Bei juristischen Personen: KapESt = 0 (keine Pflicht, da §44a EStG nur natürliche)
+      const person = item.shareholder.person;
       const kapest = isNatural
         ? computeKapESt({
             grossAmount: amount,
-            freibetragRemaining: freibetragPerShareholder,
-            kirchensteuerRate,
             kapestRate,
             soliRate,
+            ...resolvePersonKapESt({
+              churchTaxLiable: person.churchTaxLiable,
+              churchTaxRate:
+                person.churchTaxRate === null ? null : Number(person.churchTaxRate),
+              exemptionOrderEur:
+                person.exemptionOrderEur === null ? null : Number(person.exemptionOrderEur),
+              fallbackKirchensteuerRate: kirchensteuerRate,
+              fallbackFreibetragEur: freibetragPerShareholder,
+            }),
           })
         : computeKapESt({
             grossAmount: amount,

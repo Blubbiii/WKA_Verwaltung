@@ -68,6 +68,13 @@ interface CrmContactDetail {
   contactType: string | null;
   status: string;
   notes: string | null;
+  // A3: Ohne diese drei Felder hier kaeme im Bearbeiten-Dialog `undefined` an
+  // und er zeigte dauerhaft „nicht erfasst" — obwohl der Wert in der Datenbank
+  // steht. Die Felder sind im Dialog optional, der Fehler waere also nicht
+  // aufgefallen.
+  churchTaxLiable: boolean;
+  churchTaxRate: string | null;
+  exemptionOrderEur: string | null;
   lastActivityAt: string | null;
   contact360: Contact360Dto;
   tags: PersonTag[];

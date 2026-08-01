@@ -4016,7 +4016,16 @@
       "saving": "Saving...",
       "cancelButton": "Cancel",
       "saveSuccess": "Contact updated",
-      "saveError": "Failed to save"
+      "saveError": "Failed to save",
+      "kapestSectionTitle": "Withholding tax on capital gains",
+      "kapestSectionHint": "Used for the withholding-tax sheet accompanying distributions. Blank means “not recorded” — the sheet says so instead of applying a default.",
+      "churchTaxLiableLabel": "Liable for church tax (§ 51a EStG)",
+      "churchTaxRateLabel": "Church tax rate",
+      "churchTaxRateUnset": "Not recorded",
+      "churchTaxRate8": "8 % (Bavaria, Baden-Württemberg)",
+      "churchTaxRate9": "9 % (all other federal states)",
+      "exemptionOrderLabel": "Exemption order (EUR)",
+      "exemptionOrderPlaceholder": "Not recorded"
     },
     "contactLink": {
       "title": "Create link",

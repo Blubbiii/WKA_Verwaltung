@@ -47,6 +47,15 @@ export interface KapEStPdfData {
   freibetragPerShareholder: number;
   rows: KapEStPdfRow[];
   totals: KapEStPdfTotals;
+  /**
+   * Vorbehalte zu diesem Blatt — fehlende Kirchensteuersätze, nicht erfasste
+   * Freistellungsaufträge.
+   *
+   * Ohne sie liest sich ein Beiblatt wie eine geprüfte Abrechnung. Wo Angaben
+   * auf einem Vorgabewert beruhen, muss das auf dem Papier stehen und nicht
+   * nur in der Oberfläche, aus der es gedruckt wurde.
+   */
+  warnings?: string[];
 }
 
 const styles = StyleSheet.create({
@@ -234,6 +243,19 @@ export function KapEStTemplate({ data }: { data: KapEStPdfData }) {
             <Text style={styles.colNum}>{fmt(data.totals.netPayoutTotal)}</Text>
           </View>
         </View>
+
+        {data.warnings && data.warnings.length > 0 && (
+          <View style={styles.footerNote}>
+            <Text style={{ fontWeight: "bold", marginBottom: 2 }}>
+              Vorbehalte zu diesem Blatt:
+            </Text>
+            {data.warnings.map((w, i) => (
+              <Text key={i} style={{ marginBottom: 2 }}>
+                · {w}
+              </Text>
+            ))}
+          </View>
+        )}
 
         <View style={styles.footerNote}>
           <Text>

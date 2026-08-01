@@ -4016,7 +4016,16 @@
       "saving": "Speichert...",
       "cancelButton": "Abbrechen",
       "saveSuccess": "Kontakt aktualisiert",
-      "saveError": "Fehler beim Speichern"
+      "saveError": "Fehler beim Speichern",
+      "kapestSectionTitle": "Kapitalertragsteuer",
+      "kapestSectionHint": "Wird für das KapESt-Beiblatt bei Ausschüttungen verwendet. Leer heißt „nicht erfasst“ — das Beiblatt weist das aus, statt mit einem Standardwert zu rechnen.",
+      "churchTaxLiableLabel": "Kirchensteuerpflichtig (§ 51a EStG)",
+      "churchTaxRateLabel": "Kirchensteuersatz",
+      "churchTaxRateUnset": "Nicht erfasst",
+      "churchTaxRate8": "8 % (Bayern, Baden-Württemberg)",
+      "churchTaxRate9": "9 % (übrige Bundesländer)",
+      "exemptionOrderLabel": "Freistellungsauftrag (EUR)",
+      "exemptionOrderPlaceholder": "Nicht erfasst"
     },
     "contactLink": {
       "title": "Beziehung anlegen",
