@@ -63,6 +63,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { downloadBlob } from "@/lib/download";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 // -- Types --
 
@@ -179,6 +180,8 @@ function SortIcon({
 
 export default function ServiceEventsPage() {
   const t = useTranslations("serviceEvents");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const tType = useTranslations("serviceEvents.eventTypes");
   const router = useRouter();
 
@@ -335,7 +338,7 @@ export default function ServiceEventsPage() {
   // Batch delete
   const handleBatchDelete = useCallback(async () => {
     const ids = Array.from(selectedIds);
-    if (!confirm(t("batch.confirm", { count: ids.length }))) return;
+    if (!(await confirm({ title: tc("bulkDeleteTitle", { count: ids.length }), description: t("batch.confirm", { count: ids.length }), variant: "destructive" }))) return;
     let success = 0;
     let failed = 0;
     for (const id of ids) {
@@ -355,7 +358,7 @@ export default function ServiceEventsPage() {
     if (failed > 0) {
       toast.error(t("batch.failed", { count: failed }));
     }
-  }, [selectedIds, clearSelection, invalidate, t]);
+  }, [selectedIds, clearSelection, invalidate, t, tc, confirm]);
 
   if (error) {
     return (
@@ -774,6 +777,7 @@ export default function ServiceEventsPage() {
             : undefined
         }
       />
+      {confirmDialog}
     </div>
   );
 }

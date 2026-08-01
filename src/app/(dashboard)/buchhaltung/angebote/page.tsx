@@ -45,6 +45,7 @@ import {
   Clock,
 } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface QuoteItem {
   id: string;
@@ -122,6 +123,8 @@ const emptyItem = (): NewItemRow => ({
 
 export default function AngebotePage() {
   const t = useTranslations("buchhaltung.angebote");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -224,7 +227,7 @@ export default function AngebotePage() {
   }
 
   async function performAction(quoteId: string, action: string, confirmMsg: string) {
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirm({ title: t("confirmActionTitle"), description: confirmMsg }))) return;
     try {
       const res = await fetch(`/api/buchhaltung/angebote/${quoteId}/${action}`, { method: "POST" });
       if (!res.ok) {
@@ -239,7 +242,7 @@ export default function AngebotePage() {
   }
 
   async function deleteQuote(quoteId: string) {
-    if (!confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ title: tc("deleteTitle"), description: t("confirmDelete"), variant: "destructive" }))) return;
     try {
       const res = await fetch(`/api/buchhaltung/angebote/${quoteId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
@@ -472,6 +475,7 @@ export default function AngebotePage() {
           )}
         </CardContent>
       </Card>
+      {confirmDialog}
     </div>
   );
 }

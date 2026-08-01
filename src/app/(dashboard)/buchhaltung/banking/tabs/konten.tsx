@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, RefreshCw, Pencil, Trash2, Landmark } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface BankAccount {
   id: string;
@@ -55,6 +56,8 @@ function formatIban(iban: string): string {
 
 export default function BankKontenContent() {
   const t = useTranslations("buchhaltung.bankingKonten");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const tCommon = useTranslations("common");
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +152,8 @@ export default function BankKontenContent() {
   }
 
   async function deleteAccount(id: string) {
-    if (!confirm(t("confirmDeactivate"))) return;
+    // Deaktivieren, nicht loeschen — deshalb kein roter Dialog.
+    if (!(await confirm({ title: tc("deactivateTitle"), description: t("confirmDeactivate") }))) return;
     try {
       const res = await fetch(`/api/buchhaltung/bank/accounts/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
@@ -304,6 +308,7 @@ export default function BankKontenContent() {
           )}
         </CardContent>
       </Card>
+      {confirmDialog}
     </>
   );
 }

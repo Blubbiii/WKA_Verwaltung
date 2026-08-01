@@ -61,6 +61,7 @@ import { StatsCards } from "@/components/ui/stats-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { downloadBlob } from "@/lib/download";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface Park {
   id: string;
@@ -96,6 +97,8 @@ interface ParksResponse {
 export default function ParksPage() {
   const router = useRouter();
   const t = useTranslations("parks.list");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
   // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
@@ -156,7 +159,7 @@ export default function ParksPage() {
   }
 
   async function handleBulkDelete() {
-    if (!confirm(t("bulkDeleteConfirm", { count: selectedCount }))) return;
+    if (!(await confirm({ title: tc("bulkDeleteTitle", { count: selectedCount }), description: t("bulkDeleteConfirm", { count: selectedCount }), variant: "destructive" }))) return;
     let deleted = 0;
     for (const id of selectedIds) {
       try {
@@ -618,6 +621,7 @@ export default function ParksPage() {
           { label: t("delete"), icon: <Trash2 className="h-4 w-4" />, onClick: handleBulkDelete, variant: "destructive" as const },
         ]}
       />
+      {confirmDialog}
     </div>
   );
 }

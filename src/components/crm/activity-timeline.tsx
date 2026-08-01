@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActivityFormDialog } from "./activity-form-dialog";
 import type { ActivityType, ActivityFormData } from "./activity-form-dialog";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 // ============================================================================
 // Types
@@ -98,6 +99,8 @@ function ActivityCard({
   onUpdated: (id: string) => void;
 }) {
   const t = useTranslations("crm.activityTimeline");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
   const dateFormat = locale === "en" ? "yyyy-MM-dd" : "dd.MM.yyyy";
@@ -128,7 +131,7 @@ function ActivityCard({
   };
 
   const handleDelete = async () => {
-    if (!confirm(t("deleteConfirm"))) return;
+    if (!(await confirm({ title: tc("deleteTitle"), description: t("deleteConfirm"), variant: "destructive" }))) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/crm/activities/${activity.id}`, {
@@ -268,6 +271,7 @@ function ActivityCard({
         activity={{ id: activity.id, ...(activity as unknown as ActivityFormData) }}
         onSuccess={() => onUpdated(activity.id)}
       />
+      {confirmDialog}
     </>
   );
 }

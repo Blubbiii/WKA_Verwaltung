@@ -204,6 +204,14 @@
         "thisYear": "Dieses Jahr",
         "lastYear": "Letztes Jahr"
       }
+    },
+    "confirmDialog": {
+      "confirm": "Bestätigen",
+      "cancel": "Abbrechen",
+      "irreversible": "Diese Aktion kannst du nicht rückgängig machen.",
+      "deleteTitle": "Löschen bestätigen",
+      "bulkDeleteTitle": "{count, plural, one {# Eintrag löschen} other {# Einträge löschen}}",
+      "deactivateTitle": "Deaktivieren bestätigen"
     }
   },
   "statusLabels": {
@@ -1867,7 +1875,10 @@
       "productionDataSaved": "Produktionsdaten gespeichert",
       "updateError": "Fehler beim Aktualisieren",
       "saveError": "Fehler beim Speichern",
-      "createError": "Fehler beim Erstellen"
+      "createError": "Fehler beim Erstellen",
+      "discardCalculationTitle": "Berechnung verwerfen",
+      "discardCalculation": "Wenn du zurückgehst, wird die bestehende Berechnung verworfen. Beim erneuten Vorgehen wird neu gerechnet.",
+      "discardCalculationConfirm": "Zurückgehen und verwerfen"
     },
     "production": "Produktion",
     "settlements": "Abrechnungen",
@@ -5221,7 +5232,8 @@
       "toastActionSuccess": "Aktion erfolgreich",
       "toastActionError": "Fehler bei der Aktion",
       "toastDeleteSuccess": "Angebot gelöscht",
-      "toastDeleteError": "Angebot konnte nicht gelöscht werden"
+      "toastDeleteError": "Angebot konnte nicht gelöscht werden",
+      "confirmActionTitle": "Aktion bestätigen"
     },
     "abschlussEbilanz": {
       "info": "Erzeugt den XBRL-Datensatz für die elektronische Übermittlung der Bilanz nach §5b EStG an ELSTER. Die Datei wird nicht automatisch übermittelt — Du musst sie im ELSTER-Portal oder in Deiner Steuersoftware einreichen.",
@@ -8254,7 +8266,9 @@
       "toasts": {
         "approved": "Freigegeben",
         "rejected": "Abgelehnt"
-      }
+      },
+      "confirmApproveTitle": "Bankverbindung freigeben",
+      "confirmRejectTitle": "Änderung ablehnen"
     },
     "analyticsDashboard": {
       "loading": "Lade Analytics...",
@@ -10014,7 +10028,8 @@
       "deleted": "{count, plural, one {# Buchung gelöscht} other {# Buchungen gelöscht}}",
       "failed": "{count} Buchung(en) konnten nicht gelöscht werden",
       "exported": "{count, plural, one {# Buchung exportiert} other {# Buchungen exportiert}}",
-      "csvHeader": "Datum;Buchungsnummer;Beschreibung;Soll;Haben;Status"
+      "csvHeader": "Datum;Buchungsnummer;Beschreibung;Soll;Haben;Status",
+      "confirmTitle": "{count, plural, one {# Entwurf löschen} other {# Entwürfe löschen}}"
     },
     "pagination": {
       "pageOf": "Seite {page} von {totalPages} ({totalCount} Einträge)",

@@ -33,6 +33,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Loader2, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -106,6 +107,8 @@ const EMPTY_FORM: FormData = {
 
 export default function KontenrahmenPage() {
   const t = useTranslations("admin.kontenrahmen");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const [accounts, setAccounts] = useState<LedgerAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -195,7 +198,7 @@ export default function KontenrahmenPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm(t("deleteConfirm"))) return;
+    if (!(await confirm({ title: tc("deleteTitle"), description: t("deleteConfirm"), variant: "destructive" }))) return;
     try {
       const res = await fetch(`/api/buchhaltung/accounts/${id}`, {
         method: "DELETE",
@@ -417,6 +420,7 @@ export default function KontenrahmenPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

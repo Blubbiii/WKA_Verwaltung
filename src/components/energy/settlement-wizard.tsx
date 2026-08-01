@@ -60,6 +60,7 @@ import {
   monthNames,
   distributionModeLabels,
 } from "@/hooks/useEnergySettlements";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 // =============================================================================
 // TYPES
@@ -193,6 +194,7 @@ const MONTH_OPTIONS = [
 
 export function SettlementWizard() {
   const t = useTranslations("energy.componentToasts");
+  const { confirm, confirmDialog } = useConfirm();
 
   // Step navigation
   const [step, setStep] = useState(0);
@@ -530,12 +532,14 @@ export function SettlementWizard() {
   // -------------------------------------------------------------------------
   // Navigation
   // -------------------------------------------------------------------------
-  function handleBack() {
+  async function handleBack() {
     if (step === 2 && settlementId) {
       // Warn when going back from calculation step
-      const confirmed = window.confirm(
-        "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
-      );
+      const confirmed = await confirm({
+        title: t("discardCalculationTitle"),
+        description: t("discardCalculation"),
+        confirmLabel: t("discardCalculationConfirm"),
+      });
       if (!confirmed) return;
       // Verwerfen bedeutet auch: settlementId + calculationResult zurücksetzen,
       // damit ein erneutes "Weiter → Berechnen" eine frische Settlement erzeugt
@@ -1654,13 +1658,15 @@ export function SettlementWizard() {
       <Stepper
         steps={WIZARD_STEPS}
         currentStep={step}
-        onStepClick={(clickedStep) => {
+        onStepClick={async (clickedStep) => {
           // Only allow navigating to completed steps
           if (clickedStep < step) {
             if (step >= 2 && clickedStep < 2 && settlementId) {
-              const confirmed = window.confirm(
-                "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Fortfahren?"
-              );
+              const confirmed = await confirm({
+                title: t("discardCalculationTitle"),
+                description: t("discardCalculation"),
+                confirmLabel: t("discardCalculationConfirm"),
+              });
               if (!confirmed) return;
             }
             setStep(clickedStep);
@@ -1731,6 +1737,7 @@ export function SettlementWizard() {
           )}
         </StepActions>
       )}
+      {confirmDialog}
     </div>
   );
 }

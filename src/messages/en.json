@@ -204,6 +204,14 @@
         "thisYear": "This year",
         "lastYear": "Last year"
       }
+    },
+    "confirmDialog": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "irreversible": "This action cannot be undone.",
+      "deleteTitle": "Confirm deletion",
+      "bulkDeleteTitle": "{count, plural, one {Delete # entry} other {Delete # entries}}",
+      "deactivateTitle": "Confirm deactivation"
     }
   },
   "statusLabels": {
@@ -1867,7 +1875,10 @@
       "productionDataSaved": "Production data saved",
       "updateError": "Error updating",
       "saveError": "Error saving",
-      "createError": "Error creating"
+      "createError": "Error creating",
+      "discardCalculationTitle": "Discard calculation",
+      "discardCalculation": "Going back discards the existing calculation. Moving forward again will recalculate from scratch.",
+      "discardCalculationConfirm": "Go back and discard"
     },
     "production": "Production",
     "settlements": "Settlements",
@@ -5221,7 +5232,8 @@
       "toastActionSuccess": "Action successful",
       "toastActionError": "Error during action",
       "toastDeleteSuccess": "Quote deleted",
-      "toastDeleteError": "Quote could not be deleted"
+      "toastDeleteError": "Quote could not be deleted",
+      "confirmActionTitle": "Confirm action"
     },
     "abschlussEbilanz": {
       "info": "Generates the XBRL record for electronic submission of the balance sheet under §5b EStG to ELSTER. The file is not submitted automatically — file it via the ELSTER portal or your tax software.",
@@ -8254,7 +8266,9 @@
       "toasts": {
         "approved": "Approved",
         "rejected": "Rejected"
-      }
+      },
+      "confirmApproveTitle": "Approve bank details",
+      "confirmRejectTitle": "Reject change"
     },
     "analyticsDashboard": {
       "loading": "Loading analytics data...",
@@ -10014,7 +10028,8 @@
       "deleted": "{count, plural, one {# entry deleted} other {# entries deleted}}",
       "failed": "Failed to delete {count} entry/entries",
       "exported": "{count, plural, one {# entry exported} other {# entries exported}}",
-      "csvHeader": "Date;Number;Description;Debit;Credit;Status"
+      "csvHeader": "Date;Number;Description;Debit;Credit;Status",
+      "confirmTitle": "{count, plural, one {Delete # draft} other {Delete # drafts}}"
     },
     "pagination": {
       "pageOf": "Page {page} of {totalPages} ({totalCount} entries)",

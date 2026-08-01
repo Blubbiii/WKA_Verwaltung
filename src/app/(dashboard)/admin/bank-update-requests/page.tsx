@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, ShieldAlert, RefreshCw } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface PendingRequest {
   id: string;
@@ -34,6 +35,7 @@ interface PendingRequest {
 
 export default function BankUpdateRequestsPage() {
   const t = useTranslations("admin.bankUpdateRequests");
+  const { confirm, confirmDialog } = useConfirm();
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"PENDING" | "ALL">("PENDING");
@@ -68,10 +70,22 @@ export default function BankUpdateRequestsPage() {
   }, [fetchRequests]);
 
   async function decide(id: string, action: "APPROVE" | "REJECT") {
-    if (action === "APPROVE" && !confirm(t("confirmApprove"))) {
-      return;
-    }
-    if (action === "REJECT" && !confirm(t("confirmReject"))) return;
+    // Beides greift auf Zahlungsdaten durch: die Freigabe uebernimmt die neue
+    // Bankverbindung sofort, die Ablehnung verwirft die Meldung endgueltig.
+    const confirmed = await confirm(
+      action === "APPROVE"
+        ? {
+            title: t("confirmApproveTitle"),
+            description: t("confirmApprove"),
+            irreversible: true,
+          }
+        : {
+            title: t("confirmRejectTitle"),
+            description: t("confirmReject"),
+            variant: "destructive",
+          },
+    );
+    if (!confirmed) return;
 
     setBusy(id);
     try {
@@ -231,6 +245,7 @@ export default function BankUpdateRequestsPage() {
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

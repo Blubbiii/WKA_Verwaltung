@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Mail, Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface EmailRoute {
   id: string;
@@ -33,6 +34,8 @@ interface EmailRoute {
 
 export default function EmailRoutesPage() {
   const t = useTranslations("admin.emailRoutes");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const [routes, setRoutes] = useState<EmailRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -119,7 +122,7 @@ export default function EmailRoutesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(t("deleteConfirm"))) return;
+    if (!(await confirm({ title: tc("deleteTitle"), description: t("deleteConfirm"), variant: "destructive" }))) return;
     try {
       const res = await fetch(`/api/admin/email-routes/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -284,6 +287,7 @@ export default function EmailRoutesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -58,6 +58,7 @@ import { JournalAttachmentsList } from "@/components/buchhaltung/JournalAttachme
 import { Combobox } from "@/components/ui/combobox";
 import { parseAmount, parseAmountOr } from "@/lib/parse-amount";
 import { downloadBlob } from "@/lib/download";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 // ============================================================================
 // TYPES
@@ -759,6 +760,7 @@ interface PaginationInfo {
 
 function JournalEntriesPageInner() {
   const t = useTranslations("journalEntries");
+  const { confirm, confirmDialog } = useConfirm();
   const searchParams = useSearchParams();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -893,7 +895,41 @@ function JournalEntriesPageInner() {
       return;
     }
     const skipped = selectedIds.size - draftIds.length;
-    if (!confirm(skipped > 0 ? t("batch.confirmWithSkipped", { count: draftIds.length, skipped }) : t("batch.confirm", { count: draftIds.length }))) return;
+    // Die Anzahl allein beantwortet nicht, WELCHE Buchungen gemeint sind —
+    // gerade wenn ein Teil der Auswahl uebersprungen wird, weil er schon
+    // festgeschrieben ist. Deshalb die betroffenen Belege mit im Dialog.
+    const draftEntries = draftIds
+      .map((id) => entries.find((e) => e.id === id))
+      .filter((e): e is JournalEntry => e !== undefined);
+    const confirmed = await confirm({
+      title: t("batch.confirmTitle", { count: draftIds.length }),
+      description:
+        skipped > 0
+          ? t("batch.confirmWithSkipped", { count: draftIds.length, skipped })
+          : t("batch.confirm", { count: draftIds.length }),
+      variant: "destructive",
+      details: (
+        <ul className="space-y-1">
+          {draftEntries.map((entry) => {
+            const total = entry.lines.reduce(
+              (sum, line) => sum + (line.debitAmount ? parseFloat(line.debitAmount) : 0),
+              0,
+            );
+            return (
+              <li key={entry.id} className="flex justify-between gap-4">
+                <span className="truncate">
+                  {formatDate(entry.entryDate)} · {entry.description}
+                </span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {formatCurrency(total)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ),
+    });
+    if (!confirmed) return;
     const progressToast = toast.loading(t("batch.deleting", { count: draftIds.length }));
     const results = await Promise.allSettled(
       draftIds.map((id) => fetch(`/api/journal-entries/${id}`, { method: "DELETE" }))
@@ -913,7 +949,7 @@ function JournalEntriesPageInner() {
     if (failed > 0) {
       toast.error(t("batch.failed", { count: failed }));
     }
-  }, [selectedIds, entries, clearSelection, load, t]);
+  }, [selectedIds, entries, clearSelection, load, t, confirm]);
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
@@ -1253,6 +1289,7 @@ function JournalEntriesPageInner() {
         duplicateFrom={duplicateFrom}
       />
 
+      {confirmDialog}
       <ReverseDialog
         entry={reversingEntry}
         onClose={() => setReversingEntry(null)}

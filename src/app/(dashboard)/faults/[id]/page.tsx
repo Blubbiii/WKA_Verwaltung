@@ -49,6 +49,7 @@ import {
   CLAIMABLE_CAUSES,
   type CauseCategory,
 } from "@/lib/faults/constants";
+import { useConfirm } from "@/components/ui/use-confirm";
 
 interface LostEnergyBasis {
   expectedKwh?: number;
@@ -96,6 +97,8 @@ interface FaultCaseDetail {
 export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("faults");
+  const { confirm, confirmDialog } = useConfirm();
+  const tc = useTranslations("common.confirmDialog");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
   const router = useRouter();
@@ -492,7 +495,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
           variant="destructive"
           disabled={saving}
           onClick={async () => {
-            if (!window.confirm(t("detail.confirmDelete"))) return;
+            if (!(await confirm({ title: tc("deleteTitle"), description: t("detail.confirmDelete"), variant: "destructive" }))) return;
             const res = await fetch(`/api/faults/${id}`, { method: "DELETE" });
             if (!res.ok) {
               const error = await res.json().catch(() => ({}));
@@ -513,6 +516,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
           {t("detail.closed")}
         </p>
       )}
+      {confirmDialog}
     </div>
   );
 }
