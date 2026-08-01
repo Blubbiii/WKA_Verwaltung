@@ -1,0 +1,3909 @@
+{
+  "files": [
+    {
+      "file": "e2e/auth.setup.ts",
+      "items": [
+        "e2e/auth.setup.ts"
+      ]
+    },
+    {
+      "file": "prisma/migrate-roles.ts",
+      "items": [
+        "prisma/migrate-roles.ts"
+      ]
+    },
+    {
+      "file": "prisma/migrate-tenant-memberships.ts",
+      "items": [
+        "prisma/migrate-tenant-memberships.ts"
+      ]
+    },
+    {
+      "file": "prisma/migrate-timescaledb-hypertable.ts",
+      "items": [
+        "prisma/migrate-timescaledb-hypertable.ts"
+      ]
+    },
+    {
+      "file": "public/pdf.worker.min.mjs",
+      "items": [
+        "public/pdf.worker.min.mjs"
+      ]
+    },
+    {
+      "file": "scripts/backfill-balance-sheet-section.ts",
+      "items": [
+        "scripts/backfill-balance-sheet-section.ts"
+      ]
+    },
+    {
+      "file": "scripts/backfill-tax-codes.ts",
+      "items": [
+        "scripts/backfill-tax-codes.ts"
+      ]
+    },
+    {
+      "file": "scripts/check-incoming-invoice-duplicates.ts",
+      "items": [
+        "scripts/check-incoming-invoice-duplicates.ts"
+      ]
+    },
+    {
+      "file": "scripts/encrypt-webhook-secrets.ts",
+      "items": [
+        "scripts/encrypt-webhook-secrets.ts"
+      ]
+    },
+    {
+      "file": "scripts/post-deploy-setup.ts",
+      "items": [
+        "scripts/post-deploy-setup.ts"
+      ]
+    },
+    {
+      "file": "src/hooks/useT.ts",
+      "items": [
+        "src/hooks/useT.ts"
+      ]
+    },
+    {
+      "file": "src/hooks/useUnreadNotifications.ts",
+      "items": [
+        "src/hooks/useUnreadNotifications.ts"
+      ]
+    },
+    {
+      "file": "src/lib/api-error-client.ts",
+      "items": [
+        "src/lib/api-error-client.ts"
+      ]
+    },
+    {
+      "file": "src/lib/client-fetch.ts",
+      "items": [
+        "src/lib/client-fetch.ts"
+      ]
+    },
+    {
+      "file": "src/lib/db-health-check.ts",
+      "items": [
+        "src/lib/db-health-check.ts"
+      ]
+    },
+    {
+      "file": "src/types/reports.ts",
+      "items": [
+        "src/types/reports.ts"
+      ]
+    },
+    {
+      "file": "src/components/admin/ResourceAccessDialog.tsx",
+      "items": [
+        "src/components/admin/ResourceAccessDialog.tsx"
+      ]
+    },
+    {
+      "file": "src/components/buchhaltung/LiquidityIndicatorWidget.tsx",
+      "items": [
+        "src/components/buchhaltung/LiquidityIndicatorWidget.tsx"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/onboarding-complete-modal.tsx",
+      "items": [
+        "src/components/dashboard/onboarding-complete-modal.tsx"
+      ]
+    },
+    {
+      "file": "src/components/ui/amount-input.tsx",
+      "items": [
+        "src/components/ui/amount-input.tsx"
+      ]
+    },
+    {
+      "file": "src/components/ui/loading-button.tsx",
+      "items": [
+        "src/components/ui/loading-button.tsx"
+      ]
+    },
+    {
+      "file": "src/components/ui/toast-helpers.ts",
+      "items": [
+        "src/components/ui/toast-helpers.ts"
+      ]
+    },
+    {
+      "file": "src/components/ui/toaster.tsx",
+      "items": [
+        "src/components/ui/toaster.tsx"
+      ]
+    },
+    {
+      "file": "src/lib/bank-import/csv-parser.ts",
+      "items": [
+        "src/lib/bank-import/csv-parser.ts"
+      ]
+    },
+    {
+      "file": "src/lib/bank-import/index.ts",
+      "items": [
+        "src/lib/bank-import/index.ts"
+      ]
+    },
+    {
+      "file": "src/lib/energy/solar-performance.ts",
+      "items": [
+        "src/lib/energy/solar-performance.ts"
+      ]
+    },
+    {
+      "file": "src/lib/dashboard/index.ts",
+      "items": [
+        "src/lib/dashboard/index.ts"
+      ]
+    },
+    {
+      "file": "src/lib/email/weekly-digest.tsx",
+      "items": [
+        "src/lib/email/weekly-digest.tsx"
+      ]
+    },
+    {
+      "file": "src/lib/scada/index.ts",
+      "items": [
+        "src/lib/scada/index.ts"
+      ]
+    },
+    {
+      "file": "src/lib/security/safe-path.ts",
+      "items": [
+        "src/lib/security/safe-path.ts"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/index.ts",
+      "items": [
+        "src/lib/shapefile/index.ts"
+      ]
+    },
+    {
+      "file": "src/lib/weather/dwd-client.ts",
+      "items": [
+        "src/lib/weather/dwd-client.ts"
+      ]
+    },
+    {
+      "file": "src/components/admin/system-config/index.ts",
+      "items": [
+        "src/components/admin/system-config/index.ts"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widgets/since-last-visit-widget.tsx",
+      "items": [
+        "src/components/dashboard/widgets/since-last-visit-widget.tsx"
+      ]
+    },
+    {
+      "file": "src/components/energy/analytics/market-comparison.tsx",
+      "items": [
+        "src/components/energy/analytics/market-comparison.tsx"
+      ]
+    },
+    {
+      "file": "src/components/energy/reports/energy-report-builder.tsx",
+      "items": [
+        "src/components/energy/reports/energy-report-builder.tsx"
+      ]
+    },
+    {
+      "file": "src/components/energy/reports/load-config-dialog.tsx",
+      "items": [
+        "src/components/energy/reports/load-config-dialog.tsx"
+      ]
+    },
+    {
+      "file": "src/components/energy/reports/save-config-dialog.tsx",
+      "items": [
+        "src/components/energy/reports/save-config-dialog.tsx"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/webhook.worker.ts",
+      "items": [
+        "src/lib/queue/workers/webhook.worker.ts"
+      ]
+    }
+  ],
+  "exports": [
+    {
+      "file": "src/components/layout/mobile-sidebar.tsx",
+      "items": [
+        "openMobileSidebar:43"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/calculator.ts",
+      "items": [
+        "formatPersonAddressInline:1157",
+        "saveSettlementCalculation:1191"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/depreciation.ts",
+      "items": [
+        "calculateLinearDepreciation:39"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/consolidation.ts",
+      "items": [
+        "addSectionGroups:125"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/index.ts",
+      "items": [
+        "calculateKPIs:52",
+        "calculateChartData:297",
+        "serializeKPIs:476",
+        "calculateTrend:477",
+        "DOCUMENT_CATEGORY_COLORS:478",
+        "DOCUMENT_CATEGORY_LABELS:479",
+        "formatCurrency:483",
+        "formatCurrencyCompact:484",
+        "formatNumber:485",
+        "formatPercent:486"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/allocator.ts",
+      "items": [
+        "calculateCostAllocation:72",
+        "loadOperatorShares:138"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/lease-advance.ts",
+      "items": [
+        "LeaseAdvanceHandler:252"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/calculator.ts",
+      "items": [
+        "getActiveRevenuePhase:36",
+        "calculateSettlementFees:68",
+        "calculateAdvanceFees:177",
+        "loadAdvancePaymentsForFinal:274",
+        "loadSettlementData:325"
+      ]
+    },
+    {
+      "file": "src/lib/scada/aggregation.ts",
+      "items": [
+        "aggregateMonthlyProduction:76"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/kpis.ts",
+      "items": [
+        "formatCurrency:120",
+        "formatCurrencyCompact:120",
+        "formatNumber:120",
+        "formatPercent:126"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/index.ts",
+      "items": [
+        "WORKER_NAMES:142",
+        "startWorker:396",
+        "stopWorker:428",
+        "isWorkerRunning:483",
+        "getWorkerByName:491",
+        "getRegisteredWorkerNames:499",
+        "startEmailWorker:509",
+        "stopEmailWorker:510",
+        "isEmailWorkerRunning:511",
+        "getEmailWorker:512",
+        "startPdfWorker:518",
+        "stopPdfWorker:519",
+        "isPdfWorkerRunning:520",
+        "getPdfWorker:521",
+        "startBillingWorker:533",
+        "stopBillingWorker:534",
+        "isBillingWorkerRunning:535",
+        "getBillingWorker:536",
+        "startWeatherWorker:550",
+        "stopWeatherWorker:551",
+        "isWeatherWorkerRunning:552",
+        "getWeatherWorker:553",
+        "startReportWorker:559",
+        "stopReportWorker:560",
+        "isReportWorkerRunning:561",
+        "getReportWorker:562",
+        "startReminderWorker:568",
+        "stopReminderWorker:569",
+        "isReminderWorkerRunning:570",
+        "getReminderWorker:571",
+        "startScadaAutoImportWorker:577",
+        "stopScadaAutoImportWorker:578",
+        "isScadaAutoImportWorkerRunning:579",
+        "getScadaAutoImportWorker:580",
+        "startPaperlessWorker:586",
+        "stopPaperlessWorker:587",
+        "isPaperlessWorkerRunning:588",
+        "getPaperlessWorker:589",
+        "startInboxOcrWorker:595",
+        "stopInboxOcrWorker:596",
+        "isInboxOcrWorkerRunning:597",
+        "getInboxOcrWorker:598",
+        "startApprovalsExpiryWorker:604",
+        "stopApprovalsExpiryWorker:605",
+        "isApprovalsExpiryWorkerRunning:606",
+        "getApprovalsExpiryWorker:607",
+        "startApprovalsReconcileWorker:613",
+        "stopApprovalsReconcileWorker:614",
+        "isApprovalsReconcileWorkerRunning:615",
+        "getApprovalsReconcileWorker:616",
+        "startRetentionCronWorker:622",
+        "stopRetentionCronWorker:623",
+        "isRetentionCronWorkerRunning:624",
+        "getRetentionCronWorker:625",
+        "startTusGcWorker:631",
+        "stopTusGcWorker:632",
+        "isTusGcWorkerRunning:633",
+        "getTusGcWorker:634"
+      ]
+    },
+    {
+      "file": "src/lib/queue/connection.ts",
+      "items": [
+        "getSubscriberConnection:68",
+        "getBullMQWorkerConnection:196"
+      ]
+    },
+    {
+      "file": "src/lib/logger.ts",
+      "items": [
+        "default:59"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/approvals-expiry.queue.ts",
+      "items": [
+        "enqueueApprovalsExpiryNow:103",
+        "removeApprovalsExpirySchedule:117"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/retention-cron.queue.ts",
+      "items": [
+        "getRetentionCronQueue:48",
+        "enqueueRetentionSweepNow:93",
+        "removeRetentionCronSchedule:102",
+        "closeRetentionCronQueue:121"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/tus-gc.queue.ts",
+      "items": [
+        "getTusGcQueue:36",
+        "closeTusGcQueue:67"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/daily-digest.queue.ts",
+      "items": [
+        "getDailyDigestQueue:44",
+        "enqueueDailyDigestNow:80",
+        "removeDailyDigestSchedule:89",
+        "closeDailyDigestQueue:105"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/daily-digest.worker.ts",
+      "items": [
+        "stopDailyDigestWorker:263"
+      ]
+    },
+    {
+      "file": "src/lib/auth/sync-permissions.ts",
+      "items": [
+        "_resetSyncStateForTests:104"
+      ]
+    },
+    {
+      "file": "src/components/ui/route-error-boundary.tsx",
+      "items": [
+        "default:107"
+      ]
+    },
+    {
+      "file": "src/lib/auth/index.ts",
+      "items": [
+        "signIn:94",
+        "signOut:95"
+      ]
+    },
+    {
+      "file": "src/lib/marketing/types.ts",
+      "items": [
+        "SECTION_IDS:7",
+        "sectionOrderSchema:39",
+        "featureSchema:44",
+        "statSchema:50",
+        "testimonialSchema:57",
+        "workflowStepSchema:65",
+        "moduleSchema:71",
+        "showcaseTabSchema:79"
+      ]
+    },
+    {
+      "file": "src/lib/format.ts",
+      "items": [
+        "LOCALE_EN:10",
+        "CURRENCY_EUR:11"
+      ]
+    },
+    {
+      "file": "src/lib/iban.ts",
+      "items": [
+        "IBAN_LENGTHS:38"
+      ]
+    },
+    {
+      "file": "src/lib/rate-limit.ts",
+      "items": [
+        "PDF_RATE_LIMIT:57"
+      ]
+    },
+    {
+      "file": "src/lib/status-config.ts",
+      "items": [
+        "SHAREHOLDER_STATUS:80"
+      ]
+    },
+    {
+      "file": "src/components/ui/form.tsx",
+      "items": [
+        "useFormField:172"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/afa.ts",
+      "items": [
+        "GWG_SOFORT_THRESHOLD_NET_EUR:62",
+        "GWG_POOL_LOWER_NET_EUR:64",
+        "GWG_POOL_UPPER_NET_EUR:66",
+        "GWG_POOL_YEARS:68",
+        "DEGRESSIVE_CUTOFF:70",
+        "DEFAULT_AFA_CONFIG:73"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/incoming-invoice-validator.ts",
+      "items": [
+        "DEFAULT_USTG_CONFIG:48"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/interest.ts",
+      "items": [
+        "DEFAULT_VERZUGSZINS_CONFIG:72"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/query-helpers.ts",
+      "items": [
+        "numberFormatter:114"
+      ]
+    },
+    {
+      "file": "src/lib/banking/skonto-matcher.ts",
+      "items": [
+        "DEFAULT_ROUNDING_TOLERANCE_EUR:19"
+      ]
+    },
+    {
+      "file": "src/lib/export/sepa-export.ts",
+      "items": [
+        "AWV_THRESHOLD_EUR:102"
+      ]
+    },
+    {
+      "file": "src/components/ui/safe-html.tsx",
+      "items": [
+        "default:68"
+      ]
+    },
+    {
+      "file": "src/components/ui/dialog.tsx",
+      "items": [
+        "DialogPortal:118",
+        "DialogOverlay:119",
+        "DialogClose:120"
+      ]
+    },
+    {
+      "file": "src/hooks/useDebounce.ts",
+      "items": [
+        "useDebouncedCallback:46"
+      ]
+    },
+    {
+      "file": "src/components/ui/table.tsx",
+      "items": [
+        "TableCaption:117"
+      ]
+    },
+    {
+      "file": "src/components/ui/dropdown-menu.tsx",
+      "items": [
+        "DropdownMenuCheckboxItem:190",
+        "DropdownMenuRadioItem:191",
+        "DropdownMenuShortcut:194",
+        "DropdownMenuGroup:195",
+        "DropdownMenuPortal:196",
+        "DropdownMenuSub:197",
+        "DropdownMenuSubContent:198",
+        "DropdownMenuSubTrigger:199",
+        "DropdownMenuRadioGroup:200"
+      ]
+    },
+    {
+      "file": "src/components/ui/badge.tsx",
+      "items": [
+        "badgeVariants:55"
+      ]
+    },
+    {
+      "file": "src/components/ui/select.tsx",
+      "items": [
+        "SelectSeparator:157",
+        "SelectScrollUpButton:158",
+        "SelectScrollDownButton:159"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/index.ts",
+      "items": [
+        "KPICard:3",
+        "KPICardGrid:4",
+        "KPICardSkeleton:5",
+        "KPICardGridSkeleton:6",
+        "QuickStats:11",
+        "QuickStatsSkeleton:12",
+        "CompactQuickStats:13",
+        "MonthlyInvoicesChart:19",
+        "CapitalDevelopmentChart:20",
+        "DocumentsByTypeChart:21",
+        "AnalyticsCharts:22",
+        "ChartSkeleton:23",
+        "AnalyticsChartsSkeleton:24",
+        "WidgetWrapper:28",
+        "WidgetSkeleton:28",
+        "EmptyWidgetState:28",
+        "WidgetRenderer:29",
+        "WidgetPreview:29",
+        "DashboardGrid:30",
+        "DashboardGridSkeleton:30",
+        "EmptyDashboard:30",
+        "WidgetSidebar:31",
+        "WidgetSidebarSheet:31",
+        "DeadlinesWidget:42",
+        "ActivitiesWidget:43",
+        "WeatherWidget:44",
+        "ExpiringContractsWidget:45",
+        "QuickActionsWidget:46",
+        "QuickActionsWidgetCompact:47",
+        "SystemStatusWidget:48",
+        "UserStatsWidget:49"
+      ]
+    },
+    {
+      "file": "src/hooks/useDashboardConfig.ts",
+      "items": [
+        "getWidgetById:455",
+        "DEFAULT_DASHBOARD_WIDGETS:490",
+        "DEFAULT_AVAILABLE_WIDGETS:490"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/kpi-card.tsx",
+      "items": [
+        "KPICardSkeleton:232"
+      ]
+    },
+    {
+      "file": "src/hooks/useEnergySettlements.ts",
+      "items": [
+        "updateEnergySettlement:200"
+      ]
+    },
+    {
+      "file": "src/lib/status-labels.ts",
+      "items": [
+        "INVOICE_STATUS:61",
+        "CONTRACT_STATUS:81",
+        "APPROVAL_STATUS:89",
+        "TURBINE_STATUS:97",
+        "VOTE_STATUS:106"
+      ]
+    },
+    {
+      "file": "src/lib/invoices/skonto.ts",
+      "items": [
+        "calculateSkontoPaymentAmount:38"
+      ]
+    },
+    {
+      "file": "src/components/invoices/index.ts",
+      "items": [
+        "DatevExportDialog:6",
+        "RecurringInvoicesManager:7"
+      ]
+    },
+    {
+      "file": "src/components/leases/index.ts",
+      "items": [
+        "PaymentCalendar:2"
+      ]
+    },
+    {
+      "file": "src/components/maps/index.ts",
+      "items": [
+        "LocationPreviewMapContainer:5"
+      ]
+    },
+    {
+      "file": "src/lib/config/pagination.ts",
+      "items": [
+        "PAGE_SIZE_CSV_EXPORT:29",
+        "PAGE_DEFAULT:35"
+      ]
+    },
+    {
+      "file": "src/components/settings/notification-preferences.tsx",
+      "items": [
+        "default:368"
+      ]
+    },
+    {
+      "file": "src/lib/config/upload-limits.ts",
+      "items": [
+        "formatFileSize:57"
+      ]
+    },
+    {
+      "file": "src/components/ui/alert-dialog.tsx",
+      "items": [
+        "AlertDialogPortal:131",
+        "AlertDialogOverlay:132"
+      ]
+    },
+    {
+      "file": "src/lib/api-errors.ts",
+      "items": [
+        "defaultErrorMessage:192"
+      ]
+    },
+    {
+      "file": "src/lib/auth/permissions.ts",
+      "items": [
+        "isAtLeastAdmin:227",
+        "isSuperadmin:235",
+        "isAtLeastManager:243",
+        "isHierarchyAtLeast:252",
+        "getSessionPermissions:263",
+        "sessionHasPermission:272",
+        "sessionHasAllPermissions:281",
+        "sessionHasAnyPermission:290",
+        "getSessionHierarchy:300",
+        "sessionIsAtLeastAdmin:309",
+        "sessionIsSuperadmin:318"
+      ]
+    },
+    {
+      "file": "src/lib/api-utils.ts",
+      "items": [
+        "badRequest:24",
+        "notFound:29",
+        "forbidden:34",
+        "serverError:39",
+        "paginatedResponse:66",
+        "getClientIp:171"
+      ]
+    },
+    {
+      "file": "src/lib/constants/time.ts",
+      "items": [
+        "MS_PER_SECOND:8",
+        "MS_PER_MINUTE:9",
+        "MS_PER_HOUR:10",
+        "MS_PER_WEEK:12",
+        "daysBetween:18"
+      ]
+    },
+    {
+      "file": "src/lib/email/index.ts",
+      "items": [
+        "SmtpProvider:60",
+        "SendGridProvider:61",
+        "SesProvider:62",
+        "createProvider:63",
+        "getProvider:64",
+        "getCachedProvider:65",
+        "getDefaultSmtpConfig:67",
+        "getDefaultSenderInfo:68",
+        "encrypt:76",
+        "decrypt:77",
+        "renderTemplate:89",
+        "renderCustomTemplate:90",
+        "renderEmail:91",
+        "previewTemplate:92",
+        "getBaseTemplateProps:93",
+        "replacePlaceholders:94",
+        "sendEmailIfAllowed:106",
+        "sendBulkEmail:107",
+        "shouldSendEmail:108",
+        "BaseLayout:118",
+        "Button:119",
+        "Heading:120",
+        "Paragraph:121",
+        "InfoBox:122",
+        "WelcomeEmail:123",
+        "PasswordResetEmail:124",
+        "NewInvoiceEmail:125",
+        "VoteInvitationEmail:126",
+        "TenantAdminInvitationEmail:127"
+      ]
+    },
+    {
+      "file": "src/lib/storage-tracking.ts",
+      "items": [
+        "decrementStorageUsage:65",
+        "formatBytes:226"
+      ]
+    },
+    {
+      "file": "src/lib/webhooks/index.ts",
+      "items": [
+        "WEBHOOK_EVENTS:3",
+        "WEBHOOK_EVENT_CATEGORIES:3"
+      ]
+    },
+    {
+      "file": "src/lib/config/index.ts",
+      "items": [
+        "getConfigNumber:500"
+      ]
+    },
+    {
+      "file": "src/lib/cache/invalidation.ts",
+      "items": [
+        "invalidateCaches:51",
+        "withCacheInvalidation:324"
+      ]
+    },
+    {
+      "file": "src/lib/auth/fund-access.ts",
+      "items": [
+        "hasFundAccess:58",
+        "getFundFilter:72"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/inbox-ocr.queue.ts",
+      "items": [
+        "closeInboxOcrQueue:50"
+      ]
+    },
+    {
+      "file": "src/lib/invoices/numberGenerator.ts",
+      "items": [
+        "generateInvoiceNumber:20",
+        "getDefaultTaxRateByType:235"
+      ]
+    },
+    {
+      "file": "src/lib/metrics/prometheus.ts",
+      "items": [
+        "httpRequestsTotal:44",
+        "httpDurationSeconds:56",
+        "queueJobsActive:69",
+        "weatherSyncsTotal:81",
+        "documentsUploadedTotal:93"
+      ]
+    },
+    {
+      "file": "src/lib/system-settings.ts",
+      "items": [
+        "getSystemSetting:140"
+      ]
+    },
+    {
+      "file": "src/components/ui/last-edit-strip.tsx",
+      "items": [
+        "LastEditStripUserIcon:207"
+      ]
+    },
+    {
+      "file": "src/components/contracts/index.ts",
+      "items": [
+        "ContractWizard:2",
+        "ExpiringContractsWidget:4"
+      ]
+    },
+    {
+      "file": "src/types/document-explorer.ts",
+      "items": [
+        "CATEGORY_ICONS:59"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/type-detector.ts",
+      "items": [
+        "detectTypeFromAttribute:77"
+      ]
+    },
+    {
+      "file": "src/components/ui/sheet.tsx",
+      "items": [
+        "SheetPortal:131",
+        "SheetOverlay:132",
+        "SheetTrigger:133",
+        "SheetClose:134"
+      ]
+    },
+    {
+      "file": "src/components/ui/calendar.tsx",
+      "items": [
+        "CalendarDayButton:215"
+      ]
+    },
+    {
+      "file": "src/hooks/useDistributions.ts",
+      "items": [
+        "useDistribution:86",
+        "DISTRIBUTION_STATUS:191",
+        "getStatusBadge:191"
+      ]
+    },
+    {
+      "file": "src/hooks/useParks.ts",
+      "items": [
+        "usePark:49"
+      ]
+    },
+    {
+      "file": "src/types/billing.ts",
+      "items": [
+        "AdvanceInterval:57"
+      ]
+    },
+    {
+      "file": "src/components/parks/index.ts",
+      "items": [
+        "WeatherWidget:3",
+        "WeatherChart:4",
+        "MultiWeatherChart:4"
+      ]
+    },
+    {
+      "file": "src/lib/archive/gobd-archive.ts",
+      "items": [
+        "hashDocument:148",
+        "createChainHash:157",
+        "verifyDocumentIntegrity:170"
+      ]
+    },
+    {
+      "file": "src/lib/archive/auto-archive.ts",
+      "items": [
+        "autoArchiveSettlement:166",
+        "autoArchiveGenericDocument:325"
+      ]
+    },
+    {
+      "file": "src/lib/audit.ts",
+      "items": [
+        "getEntityDisplayName:9",
+        "getActionDisplayName:9"
+      ]
+    },
+    {
+      "file": "src/lib/export/excel.ts",
+      "items": [
+        "generateExcelMultiSheet:201"
+      ]
+    },
+    {
+      "file": "src/lib/export/csv.ts",
+      "items": [
+        "generateCsv:193",
+        "parseCsv:256"
+      ]
+    },
+    {
+      "file": "src/lib/backup.ts",
+      "items": [
+        "downloadFromS3:535"
+      ]
+    },
+    {
+      "file": "src/lib/cache/dashboard.ts",
+      "items": [
+        "cacheDashboardStats:310",
+        "getCachedDashboardStats:311",
+        "invalidateDashboardStats:312"
+      ]
+    },
+    {
+      "file": "src/lib/billing/index.ts",
+      "items": [
+        "FREQUENCY_CRON_PATTERNS:30",
+        "FREQUENCY_LABELS:31",
+        "RULE_TYPE_LABELS:32",
+        "monthlyLeaseHandler:37",
+        "leaseAdvanceHandler:38",
+        "distributionHandler:39",
+        "managementFeeHandler:40",
+        "customRuleHandler:41",
+        "previewRule:47",
+        "executeAllDueRules:48",
+        "getHandler:50",
+        "scheduleAllRules:56",
+        "getDueRules:57",
+        "getUpcomingRuns:58",
+        "formatCronPattern:59",
+        "validateCronExpression:60"
+      ]
+    },
+    {
+      "file": "src/types/pdf.ts",
+      "items": [
+        "DEFAULT_COMPANY_INFO:167"
+      ]
+    },
+    {
+      "file": "src/lib/validation/patterns.ts",
+      "items": [
+        "isValidEmail:9"
+      ]
+    },
+    {
+      "file": "src/lib/email/renderer.ts",
+      "items": [
+        "renderTemplate:177",
+        "renderCustomTemplate:252"
+      ]
+    },
+    {
+      "file": "src/lib/queue/registry.ts",
+      "items": [
+        "getQueueByName:135",
+        "getQueueInfoByName:143",
+        "getQueueStats:164",
+        "getAllQueueStats:189"
+      ]
+    },
+    {
+      "file": "src/lib/invoice-templates/default-template.ts",
+      "items": [
+        "createDefaultBlocks:24"
+      ]
+    },
+    {
+      "file": "src/lib/invoices/recurring-invoice-service.ts",
+      "items": [
+        "calculateNextRunDate:50",
+        "getUpcomingRecurringInvoices:379"
+      ]
+    },
+    {
+      "file": "src/lib/auth/resourceAccess.ts",
+      "items": [
+        "getResourceAccessLevel:132",
+        "getUserResourceAccess:236",
+        "getResourceAccessList:264",
+        "cleanupExpiredAccess:335",
+        "grantResourceAccessBulk:350",
+        "revokeAllResourceAccess:374",
+        "hasAccessToResource:406"
+      ]
+    },
+    {
+      "file": "src/lib/email/provider.ts",
+      "items": [
+        "SendGridProvider:172",
+        "SesProvider:298",
+        "getDefaultSmtpConfig:424",
+        "getDefaultSenderInfo:446",
+        "createProvider:462"
+      ]
+    },
+    {
+      "file": "src/lib/tax/position-tax-mapping.ts",
+      "items": [
+        "DEFAULT_POSITION_TAX_MAPPINGS:8",
+        "getPositionTaxType:41"
+      ]
+    },
+    {
+      "file": "src/lib/email/sender.ts",
+      "items": [
+        "shouldSendEmail:337",
+        "sendEmailIfAllowed:361",
+        "sendBulkEmail:394"
+      ]
+    },
+    {
+      "file": "src/lib/dashboard/widget-registry.ts",
+      "items": [
+        "getWidgetsByCategory:652",
+        "isWidgetAvailable:686"
+      ]
+    },
+    {
+      "file": "src/lib/security/safe-fetch.ts",
+      "items": [
+        "SafeFetchError:32",
+        "assertSafeUrl:45",
+        "safeFetch:72"
+      ]
+    },
+    {
+      "file": "src/lib/approvals/manager.ts",
+      "items": [
+        "APPROVAL_TTL_DAYS:28",
+        "createApprovalRequest:42"
+      ]
+    },
+    {
+      "file": "src/lib/quotes/numberGenerator.ts",
+      "items": [
+        "generateQuoteNumber:12"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/base-interest-rate.ts",
+      "items": [
+        "BUNDESBANK_BASE_RATES:15"
+      ]
+    },
+    {
+      "file": "src/lib/export/index.ts",
+      "items": [
+        "generateCsv:14",
+        "generateDatevExport:18",
+        "invoiceToBookingEntries:21",
+        "journalEntryToBookingEntries:22",
+        "generateDatevJournalExport:23",
+        "shareholderColumns:37",
+        "parkColumns:38",
+        "turbineColumns:39",
+        "invoiceColumns:40",
+        "contractColumns:41",
+        "personColumns:42",
+        "fundColumns:43",
+        "leaseColumns:44",
+        "plotColumns:45",
+        "getColumnsForType:46",
+        "getEntityDisplayName:47"
+      ]
+    },
+    {
+      "file": "src/lib/crm/derived-labels.ts",
+      "items": [
+        "DERIVED_LABEL_KEYS:22",
+        "computeDerivedLabels:38"
+      ]
+    },
+    {
+      "file": "src/lib/crm/person-dedup.ts",
+      "items": [
+        "hasDedupKey:43"
+      ]
+    },
+    {
+      "file": "src/lib/auth/resourceFilter.ts",
+      "items": [
+        "filterByResourceAccess:41",
+        "hasAccessToItem:110",
+        "buildResourceWhereClause:180",
+        "extendWhereWithResourceFilter:211",
+        "hasWriteAccess:246",
+        "hasAdminAccess:259",
+        "filterAccessibleIds:271",
+        "hasAccessViaParent:308",
+        "hasTurbineAccessViaPark:330"
+      ]
+    },
+    {
+      "file": "src/types/dashboard.ts",
+      "items": [
+        "ROLE_HIERARCHY:128"
+      ]
+    },
+    {
+      "file": "src/lib/export/columns.ts",
+      "items": [
+        "shareholderColumns:12",
+        "parkColumns:37",
+        "turbineColumns:58",
+        "invoiceColumns:77",
+        "contractColumns:102",
+        "personColumns:136",
+        "fundColumns:160",
+        "leaseColumns:178",
+        "plotColumns:209"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/index.ts",
+      "items": [
+        "generateVoteResultPdf:14",
+        "generateVoteResultPdfBase64:14",
+        "generateAccessReportPdf:15",
+        "generateAccessReportPdfBase64:15",
+        "generatePermissionMatrixPdf:16",
+        "generatePermissionMatrixPdfBase64:16",
+        "generateAuditLogPdf:17",
+        "generateAuditLogPdfBase64:17",
+        "generateMonthlyReportPdf:19",
+        "generateMonthlyReportPdfBase64:20",
+        "getMonthlyReportFilename:21",
+        "generateAnnualReportPdf:24",
+        "generateAnnualReportPdfBase64:25",
+        "getAnnualReportFilename:26",
+        "resolveTemplate:31",
+        "resolveLetterhead:32",
+        "resolveTemplateAndLetterhead:33",
+        "formatCurrency:40",
+        "formatNumber:41",
+        "formatDate:42",
+        "formatPercent:43",
+        "formatPeriod:44",
+        "formatAddress:45",
+        "formatSenderLine:46",
+        "calculateTotals:47",
+        "BaseDocument:51",
+        "InvoiceTemplate:52",
+        "VoteResultTemplate:53",
+        "AccessReportTemplate:54",
+        "PermissionMatrixTemplate:55",
+        "AuditLogTemplate:56",
+        "MonthlyReportTemplate:57",
+        "AnnualReportTemplate:58",
+        "Header:59",
+        "RecipientBlock:60",
+        "ItemsTable:61",
+        "Footer:62",
+        "PageNumber:62",
+        "Watermark:63",
+        "getWatermarkConfig:71",
+        "getWatermarkTypes:72",
+        "shouldShowWatermark:73",
+        "parseWatermarkParam:74",
+        "getWatermarkLabel:75"
+      ]
+    },
+    {
+      "file": "src/lib/management-billing/calculator.ts",
+      "items": [
+        "calculateManagementBilling:29"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/field-mapping.ts",
+      "items": [
+        "getPlotMappableFields:340",
+        "getOwnerMappableFields:358"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/annualReportPdf.tsx",
+      "items": [
+        "generateAnnualReportPdfBase64:740"
+      ]
+    },
+    {
+      "file": "src/lib/reports/archive.ts",
+      "items": [
+        "getReportTypeName:121"
+      ]
+    },
+    {
+      "file": "src/lib/reminders/index.ts",
+      "items": [
+        "checkAndSendReminders:21",
+        "DEFAULT_REMINDER_CONFIG:25"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/monthlyReportPdf.tsx",
+      "items": [
+        "generateMonthlyReportPdfBase64:633"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/quarterlyReportPdf.tsx",
+      "items": [
+        "generateQuarterlyReportPdfBase64:430"
+      ]
+    },
+    {
+      "file": "src/lib/sidebar-counts.ts",
+      "items": [
+        "SIDEBAR_COUNT_KEYS:15"
+      ]
+    },
+    {
+      "file": "src/lib/dashboard/default-layouts.ts",
+      "items": [
+        "VIEWER_DEFAULT_LAYOUT:25",
+        "MANAGER_DEFAULT_LAYOUT:44",
+        "ADMIN_DEFAULT_LAYOUT:70",
+        "SUPERADMIN_DEFAULT_LAYOUT:100",
+        "DEFAULT_LAYOUTS:137",
+        "createMinimalLayout:162",
+        "mergeWithDefault:266"
+      ]
+    },
+    {
+      "file": "src/lib/weather/index.ts",
+      "items": [
+        "WMO_CODES:20",
+        "WEATHER_CONDITIONS:21",
+        "getWindDirectionLabel:22",
+        "getWindDirectionFullLabel:23",
+        "WeatherErrorCode:25",
+        "getForecast:32",
+        "getHistoricalWeatherFromApi:34",
+        "getHistoricalRange:35",
+        "getRateLimitStatus:36",
+        "testApiConnection:37",
+        "getCachedWeather:42",
+        "invalidateParkCache:44",
+        "invalidateTenantCache:45",
+        "getCacheStats:46",
+        "isCacheAvailable:47",
+        "getCachedCurrentWeather:48",
+        "setCachedCurrentWeather:49",
+        "getCachedWeatherBulk:50",
+        "clearAllWeatherCaches:51",
+        "getLastSyncTime:53",
+        "syncWeatherForAllParks:60",
+        "refreshWeatherForPark:61",
+        "getWeatherStatistics:63",
+        "getParkLastSyncTime:64",
+        "isWeatherSyncNeeded:65",
+        "getParksNeedingSync:66",
+        "scheduleWeatherSyncForTenant:71",
+        "scheduleDailyWeatherSyncForTenant:72",
+        "removeScheduledSyncsForTenant:73",
+        "triggerImmediateSyncForTenant:74",
+        "scheduleWeatherSyncForPark:75",
+        "removeScheduledSyncForPark:76",
+        "getWeatherQueueStatus:77",
+        "getScheduledWeatherJobs:78",
+        "pauseWeatherQueue:79",
+        "resumeWeatherQueue:80",
+        "cleanWeatherQueue:81",
+        "initializeWeatherScheduling:82"
+      ]
+    },
+    {
+      "file": "src/hooks/useSettlementPeriods.ts",
+      "items": [
+        "calculateSettlement:172"
+      ]
+    },
+    {
+      "file": "src/components/parks/weather-chart-dynamic.tsx",
+      "items": [
+        "default:15"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/accessReportPdf.tsx",
+      "items": [
+        "generateAccessReportPdfBase64:21"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/auditLogPdf.tsx",
+      "items": [
+        "generateAuditLogPdfBase64:30"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/permissionMatrixPdf.tsx",
+      "items": [
+        "generatePermissionMatrixPdfBase64:24"
+      ]
+    },
+    {
+      "file": "src/lib/retention/retention-service.ts",
+      "items": [
+        "getRetentionPolicy:69"
+      ]
+    },
+    {
+      "file": "src/lib/auth/permissionCache.ts",
+      "items": [
+        "setCacheTTL:70",
+        "getCacheTTL:75"
+      ]
+    },
+    {
+      "file": "src/lib/email/encryption.ts",
+      "items": [
+        "validateEncryptionSetup:61"
+      ]
+    },
+    {
+      "file": "src/lib/scada/anomaly-detection.ts",
+      "items": [
+        "checkPerformanceDrop:153",
+        "checkAvailability:279",
+        "checkCurveDeviation:438",
+        "checkDataQuality:573"
+      ]
+    },
+    {
+      "file": "src/lib/scada/auto-import-service.ts",
+      "items": [
+        "getLastImportDate:100",
+        "checkForNewFiles:135"
+      ]
+    },
+    {
+      "file": "src/lib/queue/index.ts",
+      "items": [
+        "getRedisConnection:39",
+        "getSubscriberConnection:40",
+        "closeConnections:41",
+        "isRedisHealthy:42",
+        "getBullMQConnection:43",
+        "getBullMQWorkerConnection:44",
+        "EMAIL_QUEUE_NAME:51",
+        "PDF_QUEUE_NAME:52",
+        "BILLING_QUEUE_NAME:53",
+        "WEATHER_QUEUE_NAME:54",
+        "REPORT_QUEUE_NAME:55",
+        "REMINDER_QUEUE_NAME:56",
+        "SCADA_AUTO_IMPORT_QUEUE_NAME:57",
+        "WEBHOOK_QUEUE_NAME:58",
+        "APPROVALS_EXPIRY_QUEUE_NAME:59",
+        "APPROVALS_RECONCILE_QUEUE_NAME:60",
+        "QUEUE_NAMES:65",
+        "getEmailQueue:85",
+        "enqueueEmailBulk:87",
+        "closeEmailQueue:88",
+        "getPdfQueue:101",
+        "enqueuePdfGeneration:102",
+        "enqueueInvoicePdf:103",
+        "enqueueReportPdf:104",
+        "enqueueVoteResultPdf:105",
+        "enqueuePdfBulk:106",
+        "closePdfQueue:107",
+        "getBillingQueue:120",
+        "enqueueBillingJob:121",
+        "scheduleRecurringBilling:122",
+        "removeRecurringBilling:123",
+        "enqueueBillingDryRun:124",
+        "enqueueBillingBulk:125",
+        "closeBillingQueue:126",
+        "getWeatherQueue:139",
+        "enqueueWeatherSync:140",
+        "scheduleWeatherSync:141",
+        "scheduleDailyWeatherSync:142",
+        "removeScheduledWeatherSync:143",
+        "enqueueWeatherSyncForTenant:144",
+        "enqueueWeatherSyncBulk:145",
+        "closeWeatherQueue:146",
+        "getReportQueue:159",
+        "enqueueScheduledReportProcessing:160",
+        "scheduleDailyReportProcessing:161",
+        "removeDailyReportProcessing:162",
+        "closeReportQueue:163",
+        "getReminderQueue:176",
+        "enqueueReminderCheck:177",
+        "scheduleDailyReminderCheck:178",
+        "removeDailyReminderCheck:179",
+        "closeReminderQueue:180",
+        "getScadaAutoImportQueue:193",
+        "enqueueScadaAutoImportAll:194",
+        "scheduleScadaAutoImport:196",
+        "removeScadaAutoImportSchedule:197",
+        "closeScadaAutoImportQueue:198",
+        "getWebhookQueue:211",
+        "enqueueWebhookDelivery:212",
+        "closeWebhookQueue:213",
+        "getApprovalsExpiryQueue:226",
+        "scheduleApprovalsExpiryCheck:227",
+        "enqueueApprovalsExpiryNow:228",
+        "removeApprovalsExpirySchedule:229",
+        "closeApprovalsExpiryQueue:230",
+        "getApprovalsReconcileQueue:243",
+        "scheduleApprovalsReconcileCheck:244",
+        "enqueueApprovalsReconcileNow:245",
+        "removeApprovalsReconcileSchedule:246",
+        "closeApprovalsReconcileQueue:247",
+        "getRetentionCronQueue:260",
+        "scheduleRetentionCron:261",
+        "enqueueRetentionSweepNow:262",
+        "removeRetentionCronSchedule:263",
+        "closeRetentionCronQueue:264",
+        "closeAllQueues:280",
+        "getQueueHealth:319"
+      ]
+    },
+    {
+      "file": "src/lib/scada/file-types.ts",
+      "items": [
+        "SCADA_FILE_TYPES:26",
+        "SCADA_EXTENSIONS:64",
+        "SCADA_FILE_TYPES_BY_GROUP:87",
+        "normalizeFileType:101"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/paperless.queue.ts",
+      "items": [
+        "closePaperlessQueue:65"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/utils/watermark.ts",
+      "items": [
+        "getWatermarkTypes:93",
+        "getWatermarkLabel:161"
+      ]
+    },
+    {
+      "file": "src/lib/einvoice/index.ts",
+      "items": [
+        "mapTaxTypeToCategory:10",
+        "mapUnitCode:11",
+        "validateXRechnungData:23"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/pdf.queue.ts",
+      "items": [
+        "enqueuePdfGeneration:92",
+        "enqueueInvoicePdf:119",
+        "enqueueReportPdf:145",
+        "enqueueVoteResultPdf:169",
+        "enqueuePdfBulk:240"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/voteResultPdf.tsx",
+      "items": [
+        "generateVoteResultPdfBase64:196"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/utils/templateResolver.ts",
+      "items": [
+        "MM_TO_PT:16",
+        "mm:17",
+        "resolveTemplate:148",
+        "resolveLetterhead:211"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/index.ts",
+      "items": [
+        "saveSettlementCalculation:13",
+        "calculateEnergySettlement:35",
+        "saveEnergySettlement:36",
+        "loadEnergySettlement:37",
+        "calculateProportionalDistribution:39",
+        "calculateSmoothedDistribution:40",
+        "calculateToleratedDistribution:41",
+        "calculateSingleTurbineAdjustment:43",
+        "aggregateByOperator:44",
+        "calculateOperatorSummary:45"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/settlementReportPdf.tsx",
+      "items": [
+        "generateSettlementReportPdfBase64:95"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/webhook.queue.ts",
+      "items": [
+        "WEBHOOK_QUEUE_NAME:28"
+      ]
+    },
+    {
+      "file": "src/lib/tax/tax-rates.ts",
+      "items": [
+        "DEFAULT_TAX_RATES:7",
+        "getAllTaxRates:51",
+        "getTaxRateByType:90"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/reminder.queue.ts",
+      "items": [
+        "enqueueReminderCheck:85",
+        "scheduleDailyReminderCheck:115",
+        "removeDailyReminderCheck:139"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/scada-auto-import.queue.ts",
+      "items": [
+        "enqueueScadaAutoImportAll:96",
+        "scheduleScadaAutoImport:158",
+        "removeScadaAutoImportSchedule:189"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/approvals-reconcile.queue.ts",
+      "items": [
+        "scheduleApprovalsReconcileCheck:69",
+        "enqueueApprovalsReconcileNow:95",
+        "removeApprovalsReconcileSchedule:106"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/weather.queue.ts",
+      "items": [
+        "enqueueWeatherSync:95",
+        "enqueueWeatherSyncBulk:268"
+      ]
+    },
+    {
+      "file": "src/lib/config/redis.ts",
+      "items": [
+        "DEFAULT_REDIS_URL:12",
+        "getRedisUrl:15"
+      ]
+    },
+    {
+      "file": "src/lib/request-context.ts",
+      "items": [
+        "enrichRequestContext:65"
+      ]
+    },
+    {
+      "file": "src/lib/config/queue-config.ts",
+      "items": [
+        "QUEUE_PRESETS:64"
+      ]
+    },
+    {
+      "file": "src/lib/auth/permissions.catalog.ts",
+      "items": [
+        "PERMISSION_CATALOG_BY_NAME:277",
+        "toConstKey:289"
+      ]
+    },
+    {
+      "file": "src/lib/auth/active-tenant-cookie.ts",
+      "items": [
+        "ACTIVE_TENANT_COOKIE:16"
+      ]
+    },
+    {
+      "file": "src/config/nav-config.ts",
+      "items": [
+        "Bell:65",
+        "LayoutDashboard:66",
+        "Wind:67",
+        "Wrench:68",
+        "Building2:69",
+        "FileText:70",
+        "Vote:71",
+        "FolderOpen:72",
+        "Receipt:73",
+        "BarChart3:74",
+        "Newspaper:75",
+        "Settings:76",
+        "Shield:77",
+        "LandPlot:78",
+        "Lock:79",
+        "ClipboardList:80",
+        "Activity:81",
+        "BarChart2:82",
+        "Mail:83",
+        "HardDrive:84",
+        "CreditCard:85",
+        "ScrollText:86",
+        "KeyRound:87",
+        "Archive:88",
+        "Cog:89",
+        "Zap:90",
+        "Radio:91",
+        "Users:92",
+        "CalendarClock:93",
+        "ToggleLeft:94",
+        "TrendingUp:95",
+        "FileBarChart:96",
+        "GitCompare:97",
+        "Banknote:98",
+        "Scale:99",
+        "Send:100",
+        "Network:101",
+        "AlertTriangle:102",
+        "Megaphone:103",
+        "Calculator:104",
+        "Coins:105",
+        "Upload:106",
+        "Briefcase:107",
+        "Percent:108",
+        "Landmark:109",
+        "BookOpen:110",
+        "ContactRound:111",
+        "Inbox:112",
+        "Wallet:113",
+        "FileSpreadsheet:114",
+        "FolderSync:115",
+        "Tag:116",
+        "Droplets:117",
+        "Code2:118",
+        "Link2:119",
+        "Map:120",
+        "ShieldCheck:121"
+      ]
+    },
+    {
+      "file": "src/hooks/useKeyboardShortcuts.ts",
+      "items": [
+        "isMac:59"
+      ]
+    },
+    {
+      "file": "src/lib/formatters.ts",
+      "items": [
+        "getNestedValue:28"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/awv-check.ts",
+      "items": [
+        "getIbanCountry:50",
+        "getBicCountry:63"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/quick-stats.tsx",
+      "items": [
+        "QuickStats:32",
+        "QuickStatsSkeleton:92",
+        "CompactQuickStats:125"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widget-wrapper.tsx",
+      "items": [
+        "WidgetSkeleton:161",
+        "EmptyWidgetState:178"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widget-renderer.tsx",
+      "items": [
+        "WidgetPreview:695"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/dashboard-grid.tsx",
+      "items": [
+        "DashboardGridSkeleton:318",
+        "EmptyDashboard:340"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widget-sidebar.tsx",
+      "items": [
+        "WidgetSidebar:69"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widgets/index.ts",
+      "items": [
+        "QuickActionsWidgetCompact:6",
+        "TurbineStatusChart:14",
+        "ProductionForecastChart:15",
+        "RevenueByParkChart:16",
+        "WirtschaftsplanPLChart:19"
+      ]
+    },
+    {
+      "file": "src/components/maps/ParkMapContainer.tsx",
+      "items": [
+        "LocationPreviewMapContainer:70"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/index.ts",
+      "items": [
+        "BaseLayout:7",
+        "Button:7",
+        "Heading:7",
+        "Paragraph:7",
+        "InfoBox:7",
+        "styles:7",
+        "WelcomeEmail:10",
+        "PasswordResetEmail:11",
+        "NewInvoiceEmail:12",
+        "VoteInvitationEmail:13",
+        "TenantAdminInvitationEmail:14"
+      ]
+    },
+    {
+      "file": "src/lib/cache/tenant.ts",
+      "items": [
+        "cacheTenantSettings:210",
+        "getCachedTenantSettings:211"
+      ]
+    },
+    {
+      "file": "src/hooks/use-toast.ts",
+      "items": [
+        "reducer:78"
+      ]
+    },
+    {
+      "file": "src/hooks/useGeneralSettings.ts",
+      "items": [
+        "DEFAULT_SETTINGS:28"
+      ]
+    },
+    {
+      "file": "src/components/contracts/expiring-contracts-widget.tsx",
+      "items": [
+        "ExpiringContractsWidget:80"
+      ]
+    },
+    {
+      "file": "src/components/parks/weather-widget.tsx",
+      "items": [
+        "WeatherWidget:102"
+      ]
+    },
+    {
+      "file": "src/lib/billing/types.ts",
+      "items": [
+        "FREQUENCY_CRON_PATTERNS:317",
+        "FREQUENCY_LABELS:327",
+        "RULE_TYPE_LABELS:338"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/index.ts",
+      "items": [
+        "MonthlyLeaseHandler:6",
+        "monthlyLeaseHandler:6",
+        "LeaseAdvanceHandler:7",
+        "leaseAdvanceHandler:7",
+        "DistributionHandler:8",
+        "distributionHandler:8",
+        "ManagementFeeHandler:9",
+        "managementFeeHandler:9",
+        "CustomRuleHandler:10",
+        "customRuleHandler:10"
+      ]
+    },
+    {
+      "file": "src/lib/billing/executor.ts",
+      "items": [
+        "getHandler:37",
+        "previewRule:181",
+        "executeAllDueRules:191"
+      ]
+    },
+    {
+      "file": "src/lib/billing/scheduler.ts",
+      "items": [
+        "scheduleAllRules:202",
+        "getDueRules:246",
+        "getUpcomingRuns:283",
+        "formatCronPattern:318",
+        "validateCronExpression:344"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/welcome.tsx",
+      "items": [
+        "default:117"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/password-reset.tsx",
+      "items": [
+        "default:125"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/new-invoice.tsx",
+      "items": [
+        "default:164"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/invoice-reminder.tsx",
+      "items": [
+        "default:213"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-invitation.tsx",
+      "items": [
+        "default:205"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/tenant-admin-invitation.tsx",
+      "items": [
+        "default:127"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/portal-invitation.tsx",
+      "items": [
+        "default:145"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-reminder.tsx",
+      "items": [
+        "default:101"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-result.tsx",
+      "items": [
+        "default:87"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/document-shared.tsx",
+      "items": [
+        "default:101"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/settlement-notification.tsx",
+      "items": [
+        "default:97"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/news-announcement.tsx",
+      "items": [
+        "default:97"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/service-event.tsx",
+      "items": [
+        "default:118"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/report-ready.tsx",
+      "items": [
+        "default:95"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/email.queue.ts",
+      "items": [
+        "enqueueEmailBulk:138"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/billing.queue.ts",
+      "items": [
+        "enqueueBillingJob:97",
+        "scheduleRecurringBilling:137",
+        "removeRecurringBilling:166",
+        "enqueueBillingDryRun:189",
+        "enqueueBillingBulk:211",
+        "scheduleRecurringInvoiceProcessing:248"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/report.queue.ts",
+      "items": [
+        "enqueueScheduledReportProcessing:76",
+        "scheduleDailyReportProcessing:102",
+        "removeDailyReportProcessing:127"
+      ]
+    },
+    {
+      "file": "src/lib/export/datev-export.ts",
+      "items": [
+        "invoiceToBookingEntries:478",
+        "generateDatevExport:686",
+        "journalEntryToBookingEntries:776",
+        "generateDatevJournalExport:863"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/gcd-taxonomy.ts",
+      "items": [
+        "GCD_PL_TOTALS:182"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/utils/formatters.ts",
+      "items": [
+        "formatAddress:45",
+        "formatSenderLine:62"
+      ]
+    },
+    {
+      "file": "src/lib/management-billing/cross-tenant-access.ts",
+      "items": [
+        "getClientParkDetails:152"
+      ]
+    },
+    {
+      "file": "src/lib/management-billing/types.ts",
+      "items": [
+        "TAX_RATES:77"
+      ]
+    },
+    {
+      "file": "src/lib/weather/types.ts",
+      "items": [
+        "WEATHER_CONDITIONS:45",
+        "getWindDirectionFullLabel:68"
+      ]
+    },
+    {
+      "file": "src/lib/weather/openmeteo.ts",
+      "items": [
+        "getForecast:172",
+        "getHistoricalWeather:309",
+        "getRateLimitStatus:402",
+        "testApiConnection:411"
+      ]
+    },
+    {
+      "file": "src/lib/weather/cache.ts",
+      "items": [
+        "invalidateTenantCache:148",
+        "getCacheStats:175",
+        "isCacheAvailable:224",
+        "getCachedCurrentWeather:241",
+        "setCachedCurrentWeather:268",
+        "getCachedWeatherBulk:292",
+        "clearAllWeatherCaches:329"
+      ]
+    },
+    {
+      "file": "src/lib/weather/service.ts",
+      "items": [
+        "syncWeatherForAllParks:292",
+        "refreshWeatherForPark:382",
+        "getWeatherStatistics:586",
+        "getParkLastSyncTime:674",
+        "isWeatherSyncNeeded:681",
+        "getParksNeedingSync:698"
+      ]
+    },
+    {
+      "file": "src/lib/weather/scheduler.ts",
+      "items": [
+        "scheduleWeatherSyncForTenant:24",
+        "scheduleDailyWeatherSyncForTenant:70",
+        "removeScheduledSyncsForTenant:116",
+        "triggerImmediateSyncForTenant:154",
+        "scheduleWeatherSyncForPark:193",
+        "removeScheduledSyncForPark:225",
+        "getWeatherQueueStatus:253",
+        "getScheduledWeatherJobs:286",
+        "pauseWeatherQueue:312",
+        "resumeWeatherQueue:321",
+        "cleanWeatherQueue:330",
+        "initializeWeatherScheduling:361"
+      ]
+    },
+    {
+      "file": "src/components/admin/billing-rules/rule-form.tsx",
+      "items": [
+        "default:664"
+      ]
+    },
+    {
+      "file": "src/components/admin/billing-rules/execution-log.tsx",
+      "items": [
+        "default:386"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/monthly-lease.ts",
+      "items": [
+        "MonthlyLeaseHandler:209"
+      ]
+    },
+    {
+      "file": "src/lib/auth/session-invalidation.ts",
+      "items": [
+        "getPermissionVersion:34",
+        "isPermissionVersionStale:55"
+      ]
+    },
+    {
+      "file": "src/lib/einvoice/xrechnung-validator.ts",
+      "items": [
+        "validateXRechnungData:310"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/energy-calculator.ts",
+      "items": [
+        "calculateEnergySettlement:138",
+        "calculateProportionalDistribution:300",
+        "calculateSmoothedDistribution:353",
+        "calculateToleratedDistribution:439",
+        "saveEnergySettlement:651",
+        "loadEnergySettlement:698",
+        "calculateSingleTurbineAdjustment:799",
+        "aggregateByOperator:817",
+        "calculateOperatorSummary:834"
+      ]
+    },
+    {
+      "file": "src/hooks/useAnalytics.ts",
+      "items": [
+        "useFormatCurrency:86"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/widgets/quick-actions-widget.tsx",
+      "items": [
+        "QuickActionsWidgetCompact:113"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/base-layout.tsx",
+      "items": [
+        "styles:263"
+      ]
+    },
+    {
+      "file": "src/components/ui/toast.tsx",
+      "items": [
+        "ToastProvider:122",
+        "ToastViewport:123",
+        "Toast:124",
+        "ToastTitle:125",
+        "ToastDescription:126",
+        "ToastClose:127",
+        "ToastAction:128"
+      ]
+    },
+    {
+      "file": "src/hooks/useInvoiceSequences.ts",
+      "items": [
+        "useInvoiceSequence:39"
+      ]
+    },
+    {
+      "file": "src/hooks/useInvoiceTemplates.ts",
+      "items": [
+        "useInvoiceTemplate:30"
+      ]
+    },
+    {
+      "file": "src/hooks/useDocumentTemplates.ts",
+      "items": [
+        "useDocumentTemplate:60"
+      ]
+    },
+    {
+      "file": "src/hooks/useLetterheads.ts",
+      "items": [
+        "useLetterhead:79"
+      ]
+    },
+    {
+      "file": "src/components/parks/turbine-dialogs/types.ts",
+      "items": [
+        "statusConfig:104"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/distribution.ts",
+      "items": [
+        "DistributionHandler:60"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/management-fee.ts",
+      "items": [
+        "ManagementFeeHandler:135"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/custom.ts",
+      "items": [
+        "CustomRuleHandler:23"
+      ]
+    },
+    {
+      "file": "src/types/energy.ts",
+      "items": [
+        "REVENUE_TYPE_CODES:66",
+        "calculateToleranceAdjustment:401",
+        "TAX_TREATMENT:424",
+        "BILLING_INTERVAL_LABELS:491",
+        "BILLING_INTERVAL_MONTHS:497"
+      ]
+    }
+  ],
+  "types": [
+    {
+      "file": "src/lib/scada/import-service.ts",
+      "items": [
+        "ScadaPeriodType:73"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/calculator.ts",
+      "items": [
+        "AdvanceCalculationResult:125",
+        "AdvancePaymentInfo:181",
+        "FinalLeaseCalculationResult:210"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/bilanz.ts",
+      "items": [
+        "BilanzAccountLine:48"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/gewerbesteuer.ts",
+      "items": [
+        "GewStAddBackKey:50",
+        "GewStLine:66"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/ustva.ts",
+      "items": [
+        "UstvaLine:41"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/budget-comparison.ts",
+      "items": [
+        "BudgetComparisonRow:11"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/depreciation.ts",
+      "items": [
+        "DepreciationScheduleItem:54"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/cashflow.ts",
+      "items": [
+        "CashflowLine:45"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/euer.ts",
+      "items": [
+        "EuerLine:14"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/kontoblatt.ts",
+      "items": [
+        "KontoblattLine:18"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/liquidity.ts",
+      "items": [
+        "LiquidityPeriod:16"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/costcenter.ts",
+      "items": [
+        "CostCenterReportRow:11"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/susa.ts",
+      "items": [
+        "SuSaRow:10"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/zm.ts",
+      "items": [
+        "ZmLine:11"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/index.ts",
+      "items": [
+        "DashboardKPIs:466",
+        "DashboardKPIsResponse:467",
+        "AnalyticsChartData:468",
+        "MonthlyInvoiceData:470",
+        "CapitalDevelopmentData:471",
+        "DocumentsByTypeData:472"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/allocator.ts",
+      "items": [
+        "OperatorShare:30",
+        "AllocationItemResult:52"
+      ]
+    },
+    {
+      "file": "src/lib/scada/aggregation.ts",
+      "items": [
+        "MonthlyAggregationResult:22"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/index.ts",
+      "items": [
+        "WorkerStatus:163",
+        "EmailJobData:514",
+        "EmailJobResult:514",
+        "PdfJobData:523",
+        "PdfJobResult:523",
+        "PdfType:525",
+        "InvoicePdfJobData:526",
+        "VoteResultPdfJobData:527",
+        "SettlementReportPdfJobData:528",
+        "BillingJobData:538",
+        "BillingJobResult:538",
+        "BillingJobType:540",
+        "GenerateInvoiceJobData:541",
+        "GenerateSettlementJobData:542",
+        "SendReminderJobData:543",
+        "CalculateFeesJobData:544",
+        "BulkInvoiceJobData:545",
+        "WeatherJobData:555",
+        "WeatherJobResult:555",
+        "ReportJobData:564",
+        "ReportJobResult:564",
+        "ReminderJobData:573",
+        "ReminderJobResult:573",
+        "ScadaAutoImportJobData:582",
+        "ScadaAutoImportJobResult:582",
+        "PaperlessJobData:591",
+        "PaperlessJobResult:591",
+        "InboxOcrJobData:600",
+        "InboxOcrJobResult:600",
+        "ApprovalsExpiryJobData:609",
+        "ApprovalsExpiryJobResult:609",
+        "ApprovalsReconcileJobData:618",
+        "ApprovalsReconcileJobResult:618",
+        "RetentionCronJobData:627",
+        "RetentionCronJobResult:627",
+        "TusGcJobData:636",
+        "TusGcJobResult:636"
+      ]
+    },
+    {
+      "file": "src/lib/marketing/types.ts",
+      "items": [
+        "ShowcaseTabConfig:179",
+        "SectionOrder:180"
+      ]
+    },
+    {
+      "file": "src/components/ui/badge.tsx",
+      "items": [
+        "BadgeProps:30"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/index.ts",
+      "items": [
+        "KPICardProps:7",
+        "QuickStatsProps:14",
+        "CompactQuickStatsProps:15"
+      ]
+    },
+    {
+      "file": "src/hooks/useDashboardConfig.ts",
+      "items": [
+        "WidgetPosition:10",
+        "DashboardConfig:27"
+      ]
+    },
+    {
+      "file": "src/hooks/useEnergySettlements.ts",
+      "items": [
+        "EnergySettlementItem:18",
+        "EnergySettlementsPagination:76",
+        "EnergySettlementsAggregations:83"
+      ]
+    },
+    {
+      "file": "src/lib/auth/permissions.ts",
+      "items": [
+        "PermissionName:537"
+      ]
+    },
+    {
+      "file": "src/lib/email/index.ts",
+      "items": [
+        "SmtpConfig:35",
+        "SendGridConfig:36",
+        "SesConfig:37",
+        "EmailProviderConfig:38",
+        "TenantEmailSettings:39",
+        "EmailAttachment:40",
+        "EmailTemplateName:43",
+        "BaseTemplateProps:44",
+        "WelcomeEmailProps:45",
+        "PasswordResetEmailProps:46",
+        "NewInvoiceEmailProps:47",
+        "VoteInvitationEmailProps:48",
+        "TenantAdminInvitationEmailProps:49",
+        "EmailProvider:59",
+        "RenderResult:95"
+      ]
+    },
+    {
+      "file": "src/lib/storage-tracking.ts",
+      "items": [
+        "StorageBreakdown:25"
+      ]
+    },
+    {
+      "file": "src/lib/webhooks/index.ts",
+      "items": [
+        "WebhookEventPayload:2",
+        "WebhookEventType:4"
+      ]
+    },
+    {
+      "file": "src/lib/cache/invalidation.ts",
+      "items": [
+        "InvalidatableEntity:16"
+      ]
+    },
+    {
+      "file": "src/lib/system-settings.ts",
+      "items": [
+        "SystemSettingKey:105"
+      ]
+    },
+    {
+      "file": "src/hooks/useDistributions.ts",
+      "items": [
+        "DistributionItem:13"
+      ]
+    },
+    {
+      "file": "src/types/billing.ts",
+      "items": [
+        "PlotSummaryItem:169"
+      ]
+    },
+    {
+      "file": "src/lib/audit.ts",
+      "items": [
+        "AuditAction:8"
+      ]
+    },
+    {
+      "file": "src/lib/billing/index.ts",
+      "items": [
+        "LeasePaymentParameters:10",
+        "LeaseAdvanceParameters:11",
+        "DistributionParameters:12",
+        "ManagementFeeParameters:13",
+        "CustomRuleParameters:14",
+        "BillingRuleParameters:15",
+        "ExecutionStatus:16",
+        "ExecuteRuleOptions:17",
+        "InvoiceCreationResult:18",
+        "ExecutionDetails:19",
+        "ExecutionResult:20",
+        "NextRunInfo:21",
+        "BillingJob:22",
+        "RuleHandler:23",
+        "BillingRuleDTO:24",
+        "BillingRuleExecutionDTO:25",
+        "CreateBillingRuleInput:26",
+        "UpdateBillingRuleInput:27",
+        "CronExpressionInfo:28",
+        "CustomRuleItem:29"
+      ]
+    },
+    {
+      "file": "src/types/pdf.ts",
+      "items": [
+        "DocumentType:3",
+        "PageSize:5",
+        "PageOrientation:6",
+        "LogoPosition:7",
+        "RecipientPosition:8",
+        "MetadataPosition:9",
+        "PdfGenerationOptions:179",
+        "InvoiceItemPdfData:328"
+      ]
+    },
+    {
+      "file": "src/lib/queue/registry.ts",
+      "items": [
+        "QueueStats:150"
+      ]
+    },
+    {
+      "file": "src/lib/invoices/recurring-invoice-service.ts",
+      "items": [
+        "RecurringPosition:25"
+      ]
+    },
+    {
+      "file": "src/lib/auth/resourceAccess.ts",
+      "items": [
+        "ResourceAccessWithUser:55",
+        "ResourceAccessWithResource:64"
+      ]
+    },
+    {
+      "file": "src/lib/export/index.ts",
+      "items": [
+        "DatevBookingEntry:29",
+        "DatevInvoiceItemData:31"
+      ]
+    },
+    {
+      "file": "src/lib/crm/derived-labels.ts",
+      "items": [
+        "DerivedLabel:23",
+        "LabelSource:29"
+      ]
+    },
+    {
+      "file": "src/lib/auth/resourceFilter.ts",
+      "items": [
+        "FilteredResult:15"
+      ]
+    },
+    {
+      "file": "src/types/dashboard.ts",
+      "items": [
+        "AvailableWidgetsResponse:100",
+        "DashboardConfigResponse:112",
+        "UpdateDashboardConfigRequest:120"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/index.ts",
+      "items": [
+        "InvoicePdfOptions:12",
+        "ResolvedTemplate:34",
+        "ResolvedLetterhead:35",
+        "VoteResultPdfData:53",
+        "AccessReportPdfData:54",
+        "PermissionMatrixPdfData:55",
+        "AuditLogPdfData:56",
+        "MonthlyReportData:57",
+        "AnnualReportData:58",
+        "WatermarkType:67",
+        "WatermarkConfig:68",
+        "WatermarkProps:69",
+        "WatermarkOptions:70"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/field-mapping.ts",
+      "items": [
+        "MappableFieldDescriptor:330"
+      ]
+    },
+    {
+      "file": "src/lib/reminders/index.ts",
+      "items": [
+        "ReminderCategory:28",
+        "ReminderItem:29",
+        "ReminderResult:30",
+        "ReminderUrgency:31",
+        "PendingActionsSummary:32",
+        "ReminderCategoryConfig:33",
+        "ReminderThreshold:34"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/generators/quarterlyReportPdf.tsx",
+      "items": [
+        "QuarterlyReportSections:428"
+      ]
+    },
+    {
+      "file": "src/lib/weather/index.ts",
+      "items": [
+        "CurrentWeather:10",
+        "DailyForecast:11",
+        "HourlyForecast:12",
+        "WeatherStatistics:13",
+        "WeatherResponse:14",
+        "HistoricalWeatherResponse:15",
+        "CachedWeatherData:16"
+      ]
+    },
+    {
+      "file": "src/lib/retention/retention-service.ts",
+      "items": [
+        "RetentionModel:57",
+        "RetentionPolicy:59"
+      ]
+    },
+    {
+      "file": "src/lib/scada/auto-import-service.ts",
+      "items": [
+        "LocationNewFiles:28"
+      ]
+    },
+    {
+      "file": "src/lib/queue/index.ts",
+      "items": [
+        "QueueName:78",
+        "PdfJobData:111",
+        "PdfDocumentType:112",
+        "BillingJobData:130",
+        "BillingJobResult:131",
+        "WeatherJobData:150",
+        "WeatherJobResult:151",
+        "ReportJobData:167",
+        "ReportJobResult:168",
+        "ReminderJobData:184",
+        "ReminderJobResult:185",
+        "ScadaAutoImportJobData:202",
+        "ScadaAutoImportJobResult:203",
+        "WebhookJobData:217",
+        "WebhookJobResult:218",
+        "ApprovalsExpiryJobData:234",
+        "ApprovalsExpiryJobResult:235",
+        "ApprovalsReconcileJobData:251",
+        "ApprovalsReconcileJobResult:252",
+        "RetentionCronJobData:268",
+        "RetentionCronJobResult:269"
+      ]
+    },
+    {
+      "file": "src/lib/einvoice/index.ts",
+      "items": [
+        "XRechnungInvoiceData:12",
+        "XRechnungParty:13",
+        "XRechnungLineItem:14",
+        "ValidationResult:24",
+        "ValidationError:25",
+        "ValidationWarning:26"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/pdf.queue.ts",
+      "items": [
+        "PdfDocumentType:16"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/index.ts",
+      "items": [
+        "CalculateSettlementOptions:18",
+        "AdvanceCalculationResult:20",
+        "MonthlyAdvanceResult:21",
+        "CalculateMonthlyAdvanceOptions:22",
+        "AdvancePaymentInfo:23",
+        "FinalSettlementResult:25",
+        "FinalLeaseCalculationResult:26",
+        "EnergySettlementInput:47",
+        "EnergySettlementResult:48",
+        "TurbineDistribution:49"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/webhook.queue.ts",
+      "items": [
+        "WebhookJobResult:22"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/scada-auto-import.queue.ts",
+      "items": [
+        "ScadaAutoImportJobType:22"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/quick-stats.tsx",
+      "items": [
+        "QuickStatsProps:19",
+        "CompactQuickStatsProps:115"
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/index.ts",
+      "items": [
+        "BaseLayoutProps:8",
+        "ButtonProps:8",
+        "HeadingProps:8",
+        "ParagraphProps:8",
+        "InfoBoxProps:8"
+      ]
+    },
+    {
+      "file": "src/lib/billing/types.ts",
+      "items": [
+        "CustomRuleItem:99",
+        "ExecutionStatus:124",
+        "ExecutionDetails:151",
+        "BillingJob:192",
+        "BillingRuleDTO:242",
+        "BillingRuleExecutionDTO:262",
+        "CreateBillingRuleInput:277",
+        "UpdateBillingRuleInput:291",
+        "CronExpressionInfo:308"
+      ]
+    },
+    {
+      "file": "src/lib/queue/queues/report.queue.ts",
+      "items": [
+        "ReportJobType:17"
+      ]
+    },
+    {
+      "file": "src/lib/export/datev-export.ts",
+      "items": [
+        "DatevBookingEntry:70",
+        "DatevInvoiceItemData:130"
+      ]
+    },
+    {
+      "file": "src/lib/einvoice/xrechnung-validator.ts",
+      "items": [
+        "ValidationError:23",
+        "ValidationWarning:29"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/energy-calculator.ts",
+      "items": [
+        "EnergySettlementInput:41",
+        "EnergySettlementResult:65",
+        "TurbineDistribution:81"
+      ]
+    },
+    {
+      "file": "src/components/parks/turbine-dialogs/types.ts",
+      "items": [
+        "ServiceEvent:31",
+        "TechnicianSessionInfo:54"
+      ]
+    },
+    {
+      "file": "src/types/energy.ts",
+      "items": [
+        "FundCategoryRef:14",
+        "ProductionDataSource:21",
+        "EnergyCalculationType:27",
+        "ProductionStatus:37",
+        "EnergySettlementStatus:42",
+        "EnergyRevenueType:52",
+        "RevenueTypeCode:73",
+        "EnergyMonthlyRate:79",
+        "EnergyMonthlyRateInput:91",
+        "TurbineProduction:105",
+        "TurbineProductionInput:119",
+        "ProductionImportRow:130",
+        "ProductionImportResult:140",
+        "ProductionImportError:147",
+        "TurbineOperator:158",
+        "TurbineOperatorInput:181",
+        "FundHierarchy:194",
+        "FundHierarchyInput:217",
+        "FundHierarchyNode:227",
+        "EnergySettlement:240",
+        "EnergySettlementInput:263",
+        "EnergySettlementItem:275",
+        "EnergyDistributionDetail:326",
+        "EnergySettlementListResponse:351",
+        "TurbineProductionListResponse:358",
+        "EnergyMonthlyRateListResponse:365",
+        "ToleranceCalculation:389",
+        "TaxTreatmentType:439",
+        "LeaseDistributionConfig:455",
+        "LeaseDistributionResult:461",
+        "BillingInterval:489",
+        "AnnualSettlementCalculation:507",
+        "LessorSettlementBreakdown:534"
+      ]
+    },
+    {
+      "file": "e2e/fixtures.ts",
+      "items": [
+        "Page:40",
+        "Locator:40"
+      ]
+    },
+    {
+      "file": "src/components/ui/button.tsx",
+      "items": [
+        "ButtonProps:38"
+      ]
+    },
+    {
+      "file": "src/components/layout/sidebar.tsx",
+      "items": [
+        "NavChild:64"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/gobd-export.ts",
+      "items": [
+        "GobdColumnType:28",
+        "GobdColumn:30"
+      ]
+    },
+    {
+      "file": "src/types/analytics.ts",
+      "items": [
+        "AvailabilityDetailResponse:152",
+        "PortalAnalyticsKpis:359",
+        "OperatingStatesResponse:443",
+        "AnalyticsModuleType:598",
+        "TCategory:611"
+      ]
+    },
+    {
+      "file": "src/lib/export/sepa-direct-debit.ts",
+      "items": [
+        "DirectDebitSequenceType:25",
+        "DirectDebitScheme:26",
+        "DirectDebitMandate:28",
+        "DirectDebitPayment:36"
+      ]
+    },
+    {
+      "file": "src/lib/search/types.ts",
+      "items": [
+        "SearchResult:54"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/anlagenspiegel.ts",
+      "items": [
+        "AnlagenspiegelRow:27"
+      ]
+    },
+    {
+      "file": "src/hooks/useFileUpload.ts",
+      "items": [
+        "FileUploadState:5"
+      ]
+    },
+    {
+      "file": "src/hooks/useDrillDown.ts",
+      "items": [
+        "DrillLevel:10",
+        "DrillDownState:12"
+      ]
+    },
+    {
+      "file": "src/types/topology.ts",
+      "items": [
+        "CableType:14",
+        "NetworkNodeApi:28",
+        "NetworkConnectionApi:51",
+        "SaveTopologyPayload:110"
+      ]
+    },
+    {
+      "file": "src/lib/bank-import/types.ts",
+      "items": [
+        "BankImportConfirmation:58",
+        "BankImportConfirmResponse:65"
+      ]
+    },
+    {
+      "file": "src/components/mailings/recipient-filter-form.tsx",
+      "items": [
+        "RecipientFilterType:15"
+      ]
+    },
+    {
+      "file": "src/lib/export/types.ts",
+      "items": [
+        "ExportResult:54",
+        "ExportFilters:82"
+      ]
+    },
+    {
+      "file": "src/lib/cache/types.ts",
+      "items": [
+        "CacheStats:137"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/bundesanzeiger-xbrl.ts",
+      "items": [
+        "CompanySize:28"
+      ]
+    },
+    {
+      "file": "src/lib/crm/expiring-items.ts",
+      "items": [
+        "ExpiringLease:12",
+        "ExpiringContract:23"
+      ]
+    },
+    {
+      "file": "src/components/crm/related-entities-panel.tsx",
+      "items": [
+        "LeaseItemDto:31",
+        "ShareholderItemDto:43",
+        "ContractItemDto:54",
+        "ParkRoleItemDto:68",
+        "InvoiceItemDto:77",
+        "DocumentItemDto:88"
+      ]
+    },
+    {
+      "file": "src/lib/scada/status-code-parser.ts",
+      "items": [
+        "ParsedStatusCode:22"
+      ]
+    },
+    {
+      "file": "src/lib/approvals/compute-diff.ts",
+      "items": [
+        "ApprovalDiffChange:23"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/elster-prep.ts",
+      "items": [
+        "ElsterDatenart:27",
+        "ElsterUstvaPayload:50"
+      ]
+    },
+    {
+      "file": "src/lib/crm/contact-360.ts",
+      "items": [
+        "LeaseItem:28",
+        "ShareholderItem:41",
+        "ContractItem:52",
+        "ParkRoleItem:67",
+        "InvoiceItem:76",
+        "DocumentItem:88",
+        "Contact360Stats:98"
+      ]
+    },
+    {
+      "file": "src/lib/scada/degradation-analysis.ts",
+      "items": [
+        "DegradationPoint:316"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/multi-layer-parser.ts",
+      "items": [
+        "ParsedLayer:11"
+      ]
+    },
+    {
+      "file": "src/lib/invoices/invoice-correction.ts",
+      "items": [
+        "CorrectionHistoryEntry:22"
+      ]
+    },
+    {
+      "file": "src/lib/weather/forecast.ts",
+      "items": [
+        "ForecastHour:157",
+        "ForecastDay:157"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/pdf.worker.ts",
+      "items": [
+        "PdfType:26",
+        "InvoicePdfJobData:51",
+        "VoteResultPdfJobData:60",
+        "SettlementReportPdfJobData:71",
+        "AnnualReportPdfJobData:82"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/billing.worker.ts",
+      "items": [
+        "BillingJobType:33",
+        "GenerateInvoiceJobData:56",
+        "GenerateSettlementJobData:76",
+        "SendReminderJobData:89",
+        "CalculateFeesJobData:100",
+        "BulkInvoiceJobData:113",
+        "ProcessRecurringInvoicesJobData:129"
+      ]
+    },
+    {
+      "file": "src/components/ui/shortcuts-dialog.tsx",
+      "items": [
+        "ShortcutDisplayItem:16"
+      ]
+    },
+    {
+      "file": "src/lib/scada/dbf-schemas.ts",
+      "items": [
+        "FieldDescriptor:57"
+      ]
+    },
+    {
+      "file": "src/lib/email/types.ts",
+      "items": [
+        "EmailProviderConfig:64",
+        "TenantEmailSettings:69",
+        "EmailAttachment:79",
+        "EncryptionUtils:300"
+      ]
+    },
+    {
+      "file": "src/lib/paperless/types.ts",
+      "items": [
+        "PaperlessNote:42",
+        "PaperlessCustomFieldValue:49"
+      ]
+    },
+    {
+      "file": "src/components/funds/FundHierarchyChart.tsx",
+      "items": [
+        "HierarchyFund:23",
+        "HierarchyRelation:30",
+        "OperatedTurbineInfo:35"
+      ]
+    },
+    {
+      "file": "src/components/energy/scada/UppyScadaUpload.tsx",
+      "items": [
+        "UppyScadaUploadResult:46"
+      ]
+    },
+    {
+      "file": "src/components/parks/TurbineDialogs.tsx",
+      "items": [
+        "Turbine:9"
+      ]
+    },
+    {
+      "file": "src/lib/invoice-templates/template-types.ts",
+      "items": [
+        "HeaderBlockConfig:45",
+        "SenderAddressBlockConfig:51",
+        "RecipientAddressBlockConfig:55",
+        "InvoiceMetaBlockConfig:59",
+        "PositionsTableBlockConfig:68",
+        "SubtotalBlockConfig:78",
+        "TaxSummaryBlockConfig:82",
+        "TotalBlockConfig:86",
+        "PaymentInfoBlockConfig:91",
+        "BankDetailsBlockConfig:96",
+        "NotesBlockConfig:102",
+        "FooterBlockConfig:106",
+        "CustomTextBlockConfig:111",
+        "SpacerBlockConfig:115",
+        "DividerBlockConfig:119",
+        "BlockConfig:125"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/templates/MonthlyReportTemplate.tsx",
+      "items": [
+        "ReportPeriodType:582"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/templates/components/Watermark.tsx",
+      "items": [
+        "WatermarkProps:116",
+        "WatermarkType:116"
+      ]
+    },
+    {
+      "file": "src/lib/reminders/reminder-types.ts",
+      "items": [
+        "ReminderThreshold:33"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/tokens.ts",
+      "items": [
+        "PdfColor:40"
+      ]
+    },
+    {
+      "file": "src/types/market-data.ts",
+      "items": [
+        "MarketPriceMonth:3"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/templates/GuvTemplate.tsx",
+      "items": [
+        "GuvPdfLine:9"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/templates/KapEStTemplate.tsx",
+      "items": [
+        "KapEStPdfRow:14",
+        "KapEStPdfTotals:27"
+      ]
+    },
+    {
+      "file": "src/components/gis/types.ts",
+      "items": [
+        "PlotAreaData:23",
+        "DrawnFeature:104"
+      ]
+    },
+    {
+      "file": "src/components/energy/analytics/kpi-row.tsx",
+      "items": [
+        "AnalyticsKpiDef:10"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/charts/PdfWindRose.tsx",
+      "items": [
+        "WindRoseSector:12",
+        "WindRoseMeta:19"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/charts/PdfWindDistribution.tsx",
+      "items": [
+        "WindDistributionBin:12"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/charts/PdfPowerCurve.tsx",
+      "items": [
+        "PowerCurveScatter:12",
+        "PowerCurveMean:17"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/charts/PdfDailyProfile.tsx",
+      "items": [
+        "DailyProfilePoint:12"
+      ]
+    },
+    {
+      "file": "src/components/maps/MapLayerControl.tsx",
+      "items": [
+        "OwnerLegendEntry:9"
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "file": "package.json",
+      "items": [
+        "@radix-ui/react-accordion",
+        "@tanstack/react-table",
+        "@tanstack/react-virtual",
+        "@types/uuid",
+        "@uppy/dashboard",
+        "@uppy/drag-drop",
+        "@uppy/progress-bar",
+        "@uppy/react",
+        "zustand"
+      ]
+    }
+  ],
+  "devDependencies": [
+    {
+      "file": "package.json",
+      "items": [
+        "@eslint/eslintrc",
+        "@types/bcryptjs",
+        "@types/react-grid-layout",
+        "pino-pretty",
+        "prettier",
+        "prettier-plugin-tailwindcss"
+      ]
+    }
+  ],
+  "duplicates": [
+    {
+      "file": "src/lib/settlement/calculator.ts",
+      "items": [
+        [
+          {
+            "name": "formatPersonAddressInline",
+            "line": 1157,
+            "col": 17,
+            "pos": 36195
+          },
+          {
+            "name": "formatAddress",
+            "line": 1182,
+            "col": 14,
+            "pos": 36956
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/logger.ts",
+      "items": [
+        [
+          {
+            "name": "logger",
+            "line": 25,
+            "col": 14,
+            "pos": 853
+          },
+          {
+            "name": "default",
+            "line": 59,
+            "col": 16,
+            "pos": 2247
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/ui/route-error-boundary.tsx",
+      "items": [
+        [
+          {
+            "name": "RouteErrorBoundary",
+            "line": 37,
+            "col": 17,
+            "pos": 1114
+          },
+          {
+            "name": "default",
+            "line": 107,
+            "col": 16,
+            "pos": 3389
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/ui/safe-html.tsx",
+      "items": [
+        [
+          {
+            "name": "SafeHtml",
+            "line": 19,
+            "col": 17,
+            "pos": 426
+          },
+          {
+            "name": "default",
+            "line": 68,
+            "col": 16,
+            "pos": 2272
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/settings/notification-preferences.tsx",
+      "items": [
+        [
+          {
+            "name": "NotificationPreferences",
+            "line": 158,
+            "col": 17,
+            "pos": 4369
+          },
+          {
+            "name": "default",
+            "line": 368,
+            "col": 16,
+            "pos": 10623
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/invoices/numberGenerator.ts",
+      "items": [
+        [
+          {
+            "name": "getDefaultTaxRateByType",
+            "line": 235,
+            "col": 17,
+            "pos": 6962
+          },
+          {
+            "name": "getTaxRateByType",
+            "line": 252,
+            "col": 14,
+            "pos": 7377
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/welcome.tsx",
+      "items": [
+        [
+          {
+            "name": "WelcomeEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 348
+          },
+          {
+            "name": "default",
+            "line": 117,
+            "col": 16,
+            "pos": 2978
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/password-reset.tsx",
+      "items": [
+        [
+          {
+            "name": "PasswordResetEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 353
+          },
+          {
+            "name": "default",
+            "line": 125,
+            "col": 16,
+            "pos": 3036
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/new-invoice.tsx",
+      "items": [
+        [
+          {
+            "name": "NewInvoiceEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 359
+          },
+          {
+            "name": "default",
+            "line": 164,
+            "col": 16,
+            "pos": 4002
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/invoice-reminder.tsx",
+      "items": [
+        [
+          {
+            "name": "InvoiceReminderEmail",
+            "line": 19,
+            "col": 17,
+            "pos": 476
+          },
+          {
+            "name": "default",
+            "line": 213,
+            "col": 16,
+            "pos": 6242
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-invitation.tsx",
+      "items": [
+        [
+          {
+            "name": "VoteInvitationEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 353
+          },
+          {
+            "name": "default",
+            "line": 205,
+            "col": 16,
+            "pos": 4940
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/tenant-admin-invitation.tsx",
+      "items": [
+        [
+          {
+            "name": "TenantAdminInvitationEmail",
+            "line": 20,
+            "col": 17,
+            "pos": 476
+          },
+          {
+            "name": "default",
+            "line": 127,
+            "col": 16,
+            "pos": 3221
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/portal-invitation.tsx",
+      "items": [
+        [
+          {
+            "name": "PortalInvitationEmail",
+            "line": 19,
+            "col": 17,
+            "pos": 444
+          },
+          {
+            "name": "default",
+            "line": 145,
+            "col": 16,
+            "pos": 3713
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-reminder.tsx",
+      "items": [
+        [
+          {
+            "name": "VoteReminderEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 370
+          },
+          {
+            "name": "default",
+            "line": 101,
+            "col": 16,
+            "pos": 2477
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/vote-result.tsx",
+      "items": [
+        [
+          {
+            "name": "VoteResultEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 376
+          },
+          {
+            "name": "default",
+            "line": 87,
+            "col": 16,
+            "pos": 2094
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/document-shared.tsx",
+      "items": [
+        [
+          {
+            "name": "DocumentSharedEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 362
+          },
+          {
+            "name": "default",
+            "line": 101,
+            "col": 16,
+            "pos": 2386
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/settlement-notification.tsx",
+      "items": [
+        [
+          {
+            "name": "SettlementNotificationEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 393
+          },
+          {
+            "name": "default",
+            "line": 97,
+            "col": 16,
+            "pos": 2431
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/news-announcement.tsx",
+      "items": [
+        [
+          {
+            "name": "NewsAnnouncementEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 374
+          },
+          {
+            "name": "default",
+            "line": 97,
+            "col": 16,
+            "pos": 2103
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/service-event.tsx",
+      "items": [
+        [
+          {
+            "name": "ServiceEventEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 375
+          },
+          {
+            "name": "default",
+            "line": 118,
+            "col": 16,
+            "pos": 2915
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/lib/email/templates/report-ready.tsx",
+      "items": [
+        [
+          {
+            "name": "ReportReadyEmail",
+            "line": 18,
+            "col": 17,
+            "pos": 362
+          },
+          {
+            "name": "default",
+            "line": 95,
+            "col": 16,
+            "pos": 2302
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/admin/billing-rules/rule-form.tsx",
+      "items": [
+        [
+          {
+            "name": "RuleForm",
+            "line": 90,
+            "col": 17,
+            "pos": 2739
+          },
+          {
+            "name": "default",
+            "line": 664,
+            "col": 16,
+            "pos": 23847
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/admin/billing-rules/execution-log.tsx",
+      "items": [
+        [
+          {
+            "name": "ExecutionLog",
+            "line": 302,
+            "col": 17,
+            "pos": 10505
+          },
+          {
+            "name": "default",
+            "line": 386,
+            "col": 16,
+            "pos": 13535
+          }
+        ]
+      ]
+    },
+    {
+      "file": "src/components/ui/rich-text-editor.tsx",
+      "items": [
+        [
+          {
+            "name": "RichTextEditor",
+            "line": 286,
+            "col": 17,
+            "pos": 7545
+          },
+          {
+            "name": "default",
+            "line": 376,
+            "col": 16,
+            "pos": 9982
+          }
+        ]
+      ]
+    }
+  ],
+  "enumMembers": [],
+  "unlisted": [
+    {
+      "file": "postcss.config.mjs",
+      "items": [
+        "postcss-load-config"
+      ]
+    },
+    {
+      "file": "src/components/layout/mobile-sidebar.tsx",
+      "items": [
+        "@radix-ui/react-visually-hidden"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/invoice-generator.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/scada/file-patterns.ts",
+      "items": [
+        "fast-glob"
+      ]
+    },
+    {
+      "file": "src/lib/scada/import-service.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/calculator.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/settlement/calculator.test.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/bilanz.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/gewerbesteuer.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/ustva.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/components/maps/MapAnnotationLayer.tsx",
+      "items": [
+        "geojson"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/budget-comparison.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/bwa.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/depreciation.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/cashflow.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/consolidation.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/datev-export.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/euer.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/guv.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/kontoblatt.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/liquidity.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/costcenter.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/buchhaltung/multi-park-soll-ist/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/buchhaltung/value-adjustments/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/susa.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/year-end-close.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/reports/zm.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/index.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/journal-entries/[id]/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/allocator.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/shapefile/shp-parser.ts",
+      "items": [
+        "proj4"
+      ]
+    },
+    {
+      "file": "src/app/api/portal/my-votes/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/billing/rules/lease-advance.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/invoice-payment.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/invoices/bank-import/confirm/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/invoices/[id]/mark-paid/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/accounting/write-off.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/journal-entries/[id]/post/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/leases/usage-fees/import/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/admin/settlement-periods/[id]/calculate/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/admin/settlement-periods/[id]/create-invoices/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/energy/settlements/[id]/calculate/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/energy/settlements/[id]/create-invoices/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/lease-revenue/calculator.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/app/api/wirtschaftsplan/budgets/[id]/lines/route.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/queue/workers/inbox-ocr.worker.ts",
+      "items": [
+        "pdfjs-dist"
+      ]
+    },
+    {
+      "file": "src/lib/scada/aggregation.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/components/maps/PlotGeoJsonLayer.tsx",
+      "items": [
+        "geojson"
+      ]
+    },
+    {
+      "file": "src/lib/analytics/kpis.ts",
+      "items": [
+        "@prisma/client-runtime-utils"
+      ]
+    },
+    {
+      "file": "src/lib/pdf/utils/staticMap.ts",
+      "items": [
+        "sharp"
+      ]
+    },
+    {
+      "file": "src/components/dashboard/grid-styles.css",
+      "items": [
+        "react-resizable"
+      ]
+    },
+    {
+      "file": "src/components/gis/GISMap.tsx",
+      "items": [
+        "geojson"
+      ]
+    }
+  ],
+  "unresolved": [],
+  "binaries": [],
+  "namespaceMembers": [],
+  "catalog": [],
+  "optionalPeerDependencies": []
+}

@@ -1,0 +1,39 @@
+{
+  "runs": [
+    {
+      "date": "2026-07-08T20:33:17.736864+00:00",
+      "input_tokens": 42000,
+      "output_tokens": 343,
+      "files": 16
+    },
+    {
+      "date": "2026-07-08T20:56:26.466565+00:00",
+      "input_tokens": 40000,
+      "output_tokens": 403,
+      "files": 2036
+    },
+    {
+      "date": "2026-07-08T21:05:57.407190+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 2066,
+      "note": "batch 2: +prisma (AST-only, no new semantic)"
+    },
+    {
+      "date": "2026-07-08T21:15:48.851150+00:00",
+      "input_tokens": 289000,
+      "output_tokens": 4677,
+      "files": 2194,
+      "note": "batch 3: full project (43 new semantic files: 42 docs + icon)"
+    },
+    {
+      "date": "2026-07-08T21:33:51.567594+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 2190,
+      "note": "batch 5: rebuild without PDF.js NOISE (via .graphifyignore)"
+    }
+  ],
+  "total_input_tokens": 371000,
+  "total_output_tokens": 5423
+}

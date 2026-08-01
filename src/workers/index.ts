@@ -363,6 +363,27 @@ async function main(): Promise<void> {
     });
   }
 
+  // Wartungsläufe registrieren (Fristen 07:00, Basiszinssatz Mo 04:00,
+  // Bankverbindungen 06:00).
+  //
+  // Diese drei gab es bisher nur als Endpunkte unter /api/cron/*, mit dem
+  // Hinweis "kann von einem externen Scheduler aufgerufen werden". Aufgerufen
+  // hat sie nie jemand — es gab im ganzen Codebase keinen Aufrufer. Sie liefen
+  // also seit jeher nicht, ohne dass irgendwo etwas fehlschlug.
+  try {
+    const { scheduleMaintenanceJobs } = await import(
+      "@/lib/queue/queues/maintenance.queue"
+    );
+    const scheduled = await scheduleMaintenanceJobs();
+    log("info", `Maintenance crons scheduled: ${scheduled.join(", ")}`, {
+      count: scheduled.length,
+    });
+  } catch (err) {
+    log("warn", "Failed to schedule maintenance crons", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
   // F8: SCADA-Auto-Import Cron registrieren (täglich 02:00).
   // Die UI bestätigt "Auto-Import aktiviert" — ohne diesen Cron passierte nichts.
   try {

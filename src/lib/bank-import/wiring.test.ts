@@ -133,17 +133,31 @@ describe("Verbindungen", () => {
 });
 
 describe("Der taegliche Lauf", () => {
+  // Welle 23: Die Logik lag in der Route und wurde nie ausgefuehrt — es gab
+  // keinen Aufrufer fuer /api/cron/bank-fetch. Sie liegt jetzt in
+  // lib/maintenance/tasks.ts und laeuft ueber die maintenance-Queue; die Route
+  // bleibt als Handausloeser. Die Zusicherungen gelten unveraendert, sie zeigen
+  // nur auf die Stelle, an der die Logik tatsaechlich steht.
+  const tasks = src("lib/maintenance/tasks.ts");
   const route = src("app/api/cron/bank-fetch/route.ts");
 
   it("meldet Verbindungen, von denen nichts mehr kommt", () => {
     // Ein automatischer Abruf, der still ausfaellt, erweckt den Eindruck, die
     // Umsaetze seien aktuell.
-    expect(route).toContain("STALE_AFTER_DAYS");
-    expect(route).toContain("sehen aber so aus");
+    expect(tasks).toContain("STALE_AFTER_DAYS");
+    expect(tasks).toContain("sehen aber so aus");
   });
 
   it("uebergeht nicht eingerichtete Verfahren nicht stumm", () => {
-    expect(route).toContain("notConfigured");
+    expect(tasks).toContain("notConfigured");
+  });
+
+  it("laeuft planmaessig, nicht nur auf Zuruf", () => {
+    // Der eigentliche Befund: die Pruefung war fertig, aber niemand stiess sie
+    // an. Ohne Eintrag im Zeitplan waere sie wieder tot.
+    const queue = src("lib/queue/queues/maintenance.queue.ts");
+    expect(queue).toContain("BANK_CONNECTION_CHECK");
+    expect(src("workers/index.ts")).toContain("scheduleMaintenanceJobs");
   });
 
   it("ist mit Bearer-Token geschuetzt", () => {

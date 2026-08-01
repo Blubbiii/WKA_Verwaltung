@@ -1,21 +1,21 @@
 /**
  * POST /api/cron/bundesbank-rate-fetch
  *
- * Cron-Trigger für die halbjährliche Bundesbank-Aktualisierung. Kann von
- * einem externen Scheduler (systemd-timer, GitHub Action, Kubernetes CronJob)
- * via Bearer-Token-Auth aufgerufen werden.
+ * Planmäßig läuft der Abruf seit Welle 23 im Worker (`maintenance`-Queue,
+ * montags 04:00 Europe/Berlin). Dieser Endpunkt bleibt für den Handbetrieb.
+ *
+ * Vorher stand hier „kann von einem externen Scheduler aufgerufen werden" —
+ * aufgerufen hat ihn nie jemand, es gab im ganzen Codebase keinen Aufrufer.
+ * Der Basiszinssatz wurde also nie aktualisiert.
  *
  * Auth: ENV CRON_BEARER_TOKEN muss als "Authorization: Bearer <token>"
  * mitgeschickt werden.
- *
- * Empfohlener Cron-Rhythmus: 1x pro Woche
- *   0 4 * * MON  # Montags um 04:00 UTC
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
-import { fetchAndUpsertBundesbankRates } from "@/lib/accounting/bundesbank-fetch";
+import { runBundesbankRateFetch } from "@/lib/maintenance/tasks";
 import { bearerTokenMatches } from "@/lib/auth/timing-safe";
 
 export async function POST(request: NextRequest) {
@@ -37,9 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await fetchAndUpsertBundesbankRates();
-
-    logger.info({ result }, "Cron: Bundesbank-Rate-Fetch ausgeführt");
+    const result = await runBundesbankRateFetch();
 
     return NextResponse.json({
       data: result,

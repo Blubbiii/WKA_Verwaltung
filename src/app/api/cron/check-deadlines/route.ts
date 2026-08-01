@@ -1,8 +1,20 @@
+/**
+ * POST /api/cron/check-deadlines
+ *
+ * Planmaessig laeuft die Fristenpruefung seit Welle 23 im Worker
+ * (`maintenance`-Queue, taeglich 07:00). Dieser Endpunkt bleibt fuer den
+ * Handbetrieb: nachziehen, wenn der Worker stand, oder pruefen, ob die
+ * Pruefung tut, was sie soll.
+ *
+ * Die Fachlogik liegt in `lib/maintenance/tasks.ts` — hier steht nur noch
+ * Authentifizierung und Antwort, damit Worker und Endpunkt nicht auseinander
+ * laufen koennen.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
-import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
+import { runDeadlineCheck } from "@/lib/maintenance/tasks";
 import { rateLimit, getClientIp, getRateLimitResponse } from "@/lib/rate-limit";
 import { bearerTokenMatches } from "@/lib/auth/timing-safe";
 
@@ -30,33 +42,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const tenants = await prisma.tenant.findMany({
-      select: { id: true },
-    });
-
-    let totalCreated = 0;
-
-    for (const tenant of tenants) {
-      try {
-        const result = await checkDeadlinesAndNotify(tenant.id);
-        totalCreated += result.created;
-      } catch (err) {
-        logger.error(
-          { tenantId: tenant.id, error: err },
-          "Failed to check deadlines for tenant"
-        );
-      }
-    }
-
-    logger.info(
-      { totalCreated, tenantsChecked: tenants.length },
-      "Deadline check completed"
-    );
-
-    return NextResponse.json({
-      totalCreated,
-      tenantsChecked: tenants.length,
-    });
+    const result = await runDeadlineCheck();
+    return NextResponse.json(result);
   } catch (err) {
     logger.error({ error: err }, "Deadline check cron failed");
     return apiError("INTERNAL_ERROR", 500, { message: "Internal server error" });

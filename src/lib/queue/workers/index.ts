@@ -148,6 +148,17 @@ import type {
   DailyDigestJobResult,
 } from "../queues/daily-digest.queue";
 
+import {
+  startMaintenanceWorker,
+  stopMaintenanceWorker,
+  isMaintenanceWorkerRunning,
+  getMaintenanceWorker,
+} from "./maintenance.worker";
+import type {
+  MaintenanceJobData,
+  MaintenanceJobResult,
+} from "../queues/maintenance.queue";
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -171,6 +182,7 @@ export const WORKER_NAMES = {
   TUS_GC: "tus-gc",
   WEBHOOK: "webhook",
   DAILY_DIGEST: "daily-digest",
+  MAINTENANCE: "maintenance",
 } as const;
 
 export type WorkerName = (typeof WORKER_NAMES)[keyof typeof WORKER_NAMES];
@@ -334,6 +346,14 @@ const workerRegistry: WorkerRegistryEntry[] = [
     stop: stopDailyDigestWorker,
     isRunning: isDailyDigestWorkerRunning,
     getWorker: getDailyDigestWorker as () => Worker<unknown, unknown> | null,
+  },
+  {
+    name: WORKER_NAMES.MAINTENANCE,
+    displayName: "Maintenance Worker",
+    start: startMaintenanceWorker as () => Worker<unknown, unknown>,
+    stop: stopMaintenanceWorker,
+    isRunning: isMaintenanceWorkerRunning,
+    getWorker: getMaintenanceWorker as () => Worker<unknown, unknown> | null,
   },
 ];
 
@@ -728,3 +748,12 @@ export {
   getDailyDigestWorker,
 };
 export type { DailyDigestJobData, DailyDigestJobResult };
+
+// Maintenance Worker (Fristen, Basiszinssatz, Bankverbindungen)
+export {
+  startMaintenanceWorker,
+  stopMaintenanceWorker,
+  isMaintenanceWorkerRunning,
+  getMaintenanceWorker,
+};
+export type { MaintenanceJobData, MaintenanceJobResult };
