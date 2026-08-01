@@ -20,8 +20,8 @@ import {
 } from "./lost-energy";
 import { apiLogger as logger } from "@/lib/logger";
 
-/** SCADA liefert Zehnminutenwerte. */
-const INTERVAL_MINUTES = 10;
+// Siehe curtailment/event-service.ts: dieselbe Größe, deshalb dieselbe Quelle.
+import { SCADA_INTERVAL_MINUTES } from "@/lib/config/scada";
 
 /**
  * Wie viele Referenzanlagen höchstens herangezogen werden.
@@ -115,7 +115,7 @@ export async function valuateFaultWindow(input: ValuationInput): Promise<Valuati
     references: referenceTurbines
       .map((t) => series.get(t.id))
       .filter((s): s is TurbineSeries => s !== undefined),
-    intervalMinutes: INTERVAL_MINUTES,
+    intervalMinutes: SCADA_INTERVAL_MINUTES,
   });
 
   const rate = await findRate(tenantId, startAt);

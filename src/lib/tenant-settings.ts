@@ -90,6 +90,16 @@ export interface TenantSettings {
   // GoBD retention
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
+  /**
+   * Aufbewahrung des Änderungsprotokolls.
+   *
+   * Wird beim Löschlauf nie unterschritten, sondern gegen die beiden Fristen
+   * darüber gedeckelt: das Protokoll erklärt, wer einen Beleg wann geändert
+   * hat. Verschwände es früher als der Beleg, bliebe der Beleg ohne seine
+   * Nachvollziehbarkeit zurück — genau das, was § 147 Abs. 1 Nr. 1 AO in
+   * Verbindung mit den GoBD verhindern soll.
+   */
+  gobdRetentionYearsAuditLog: number;
   // Mahnwesen
   reminderEnabled: boolean;
   reminderDays1: number;
@@ -201,6 +211,7 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   // GoBD retention (§147 AO)
   gobdRetentionYearsInvoice: 10,
   gobdRetentionYearsContract: 10,
+  gobdRetentionYearsAuditLog: 10,
   // Mahnwesen defaults
   reminderEnabled: true,
   reminderDays1: 7,

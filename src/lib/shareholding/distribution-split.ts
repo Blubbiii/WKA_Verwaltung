@@ -38,6 +38,7 @@ import {
   roundCents,
   type TimedShare,
 } from "@/lib/period-shares/segments";
+import { shareSumTolerance } from "@/lib/config/share-tolerance";
 
 export interface ShareholderShare extends TimedShare {
   shareholderId: string;
@@ -74,8 +75,9 @@ export interface DistributionSplitFailure {
   reason: string;
 }
 
-/** Toleranz der Quotensumme, fängt Bruchquoten ab. */
-const SHARE_TOLERANCE = 0.011;
+// Die Toleranz der Quotensumme kommt aus @/lib/config/share-tolerance und
+// richtet sich nach der Zahl der Gesellschafter — siehe dort, warum ein fester
+// Wert bei sechs gleichen Anteilen nicht mehr trägt.
 
 export function splitDistribution(input: {
   shares: readonly ShareholderShare[];
@@ -104,7 +106,7 @@ export function splitDistribution(input: {
   let undistributed = 0;
 
   for (const segment of segments) {
-    if (segment.sumPercent > 100 + SHARE_TOLERANCE) {
+    if (segment.sumPercent > 100 + shareSumTolerance(segment.active.length)) {
       // Über 100 % ist immer ein Fehler — anders als darunter gibt es dafür
       // keine zulässige Auslegung.
       return {
@@ -133,7 +135,11 @@ export function splitDistribution(input: {
     // Der Teil des Abschnitts, der keinem Gesellschafter zugeordnet ist.
     // NICHT auf die übrigen verteilen — das ist Finding 4.1.
     const unassignedPercent = Math.max(0, 100 - segment.sumPercent);
-    if (unassignedPercent > SHARE_TOLERANCE) {
+    // Unterhalb der Rundungstoleranz ist der Rest kein eigener Anteil, sondern
+    // die Ungenauigkeit der Quoten selbst. Er wird dann weder ausgewiesen noch
+    // verteilt — das Geld bleibt in beiden Fällen liegen, es wird nur nicht
+    // als Fehlbetrag gemeldet.
+    if (unassignedPercent > shareSumTolerance(segment.active.length)) {
       undistributed += (segmentAmount * unassignedPercent) / 100;
       warnings.push(
         `Im Abschnitt ${formatDay(segment.start)}–${formatDay(segment.end)} sind nur ${segment.sumPercent.toFixed(

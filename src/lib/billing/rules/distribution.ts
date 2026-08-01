@@ -26,11 +26,11 @@ import {
   InvoiceCreationResult,
 } from "../types";
 
-/**
- * Zulaessige Abweichung der Summe aller Ausschuettungsanteile von 100%
- * (in Prozentpunkten).
- */
-const PERCENTAGE_TOLERANCE = 0.01;
+// Die zulaessige Abweichung der Anteilssumme von 100 % stand hier als feste
+// 0,01 — und damit STRENGER als in Ausschuettung und Pachtverteilung (je
+// 0,011). Eine Drittelung (33,33 x 3 = 99,99) wurde hier abgelehnt und dort
+// angenommen. Jetzt eine gemeinsame Quelle, siehe @/lib/config/share-tolerance.
+import { shareSumTolerance } from "@/lib/config/share-tolerance";
 
 /** Anzahl Versuche bei Nummern-Kollision (paralleles execute()). */
 const NUMBER_RETRY_ATTEMPTS = 5;
@@ -92,7 +92,9 @@ function allocateByPercentage(totalAmount: number, percentages: number[]): numbe
   // Maximal moeglicher Rundungsfehler: 0,5 Cent pro Empfaenger, plus der
   // Spielraum aus der tolerierten Abweichung der Anteilssumme von 100%.
   const maxRoundingError =
-    0.005 * amounts.length + (Math.abs(totalAmount) * PERCENTAGE_TOLERANCE) / 100 + 0.005;
+    0.005 * amounts.length +
+    (Math.abs(totalAmount) * shareSumTolerance(amounts.length)) / 100 +
+    0.005;
 
   if (difference !== 0 && Math.abs(difference) <= maxRoundingError) {
     for (let i = amounts.length - 1; i >= 0; i--) {
@@ -108,10 +110,16 @@ function allocateByPercentage(totalAmount: number, percentages: number[]): numbe
 
 /**
  * Prueft, ob die Summe der Anteile ~100% ergibt.
+ *
+ * @param shareCount Anzahl der aufsummierten Anteile — die zulaessige
+ *   Abweichung waechst mit ihr, weil jede Quote fuer sich gerundet ist.
  * @returns Fehlermeldung oder null wenn gueltig.
  */
-function checkPercentageSum(totalPercentage: number): string | null {
-  if (Math.abs(totalPercentage - 100) > PERCENTAGE_TOLERANCE) {
+function checkPercentageSum(
+  totalPercentage: number,
+  shareCount: number,
+): string | null {
+  if (Math.abs(totalPercentage - 100) > shareSumTolerance(shareCount)) {
     return `Summe der Ausschuettungsanteile ist ${totalPercentage.toFixed(2)}% (erwartet: 100%)`;
   }
   return null;
@@ -278,7 +286,7 @@ export class DistributionHandler implements RuleHandler {
     const totalPercentage = percentages.reduce((sum, p) => sum + p, 0);
 
     // Validiere dass Anteile ~100% ergeben
-    const percentageError = checkPercentageSum(totalPercentage);
+    const percentageError = checkPercentageSum(totalPercentage, percentages.length);
     if (percentageError) {
       results.push({
         success: false,
@@ -372,7 +380,7 @@ export class DistributionHandler implements RuleHandler {
     // auf 100.000 EUR stehen bliebe — Status trotzdem EXECUTED, kein Fehler.
     const percentages = shareholders.map((s) => Number(s.distributionPercentage) || 0);
     const totalPercentage = percentages.reduce((sum, p) => sum + p, 0);
-    const percentageError = checkPercentageSum(totalPercentage);
+    const percentageError = checkPercentageSum(totalPercentage, percentages.length);
 
     if (percentageError) {
       return {

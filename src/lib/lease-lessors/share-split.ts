@@ -35,6 +35,7 @@ import {
   formatDay,
   roundCents,
 } from "@/lib/period-shares/segments";
+import { shareSumTolerance } from "@/lib/config/share-tolerance";
 
 export interface LessorShare {
   /** Person, die den Anteil hält. */
@@ -71,11 +72,9 @@ export interface SplitFailure {
   reason: string;
 }
 
-/**
- * Toleranz für die Anteilssumme. 0,01 Prozentpunkte fangen Rundungen aus
- * Bruchquoten ab (1/3 = 33,33 %), ohne echte Lücken zu verstecken.
- */
-const SHARE_TOLERANCE = 0.011;
+// Die Toleranz für die Anteilssumme stand hier als feste 0,011 und ist jetzt
+// gemeinsam in @/lib/config/share-tolerance — sie hängt an der Zahl der
+// Quoten, weil bei sechs gleichen Anteilen (16,67 × 6) auch 0,011 nicht reicht.
 
 /**
  * Betrag auf die Verpächter verteilen.
@@ -124,7 +123,7 @@ export function splitByLessor(input: {
       };
     }
 
-    if (Math.abs(segment.sumPercent - 100) > SHARE_TOLERANCE) {
+    if (Math.abs(segment.sumPercent - 100) > shareSumTolerance(segment.active.length)) {
       return {
         allocations: null,
         reason: `Die Anteile im Abschnitt ${formatDay(segment.start)}–${formatDay(
@@ -216,7 +215,7 @@ export function validateShares(shares: readonly LessorShare[]): string[] {
     const at = new Date(time);
     const active = shares.filter((share) => isActiveInSegment(share, at, at));
     const sum = active.reduce((total, share) => total + share.sharePercent, 0);
-    if (active.length > 0 && Math.abs(sum - 100) > SHARE_TOLERANCE) {
+    if (active.length > 0 && Math.abs(sum - 100) > shareSumTolerance(active.length)) {
       problems.push(`Am ${formatDay(at)} ergeben die Anteile ${sum.toFixed(2)} % statt 100 %`);
     }
   }

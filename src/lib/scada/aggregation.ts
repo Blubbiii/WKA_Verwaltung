@@ -51,11 +51,12 @@ export interface MonthlyAggregationResult {
 // Konstanten
 // ---------------------------------------------------------------
 
-/** Dauer eines SCADA-Messintervalls in Minuten */
-const INTERVAL_MINUTES = 10;
-
-/** Anzahl 10-Min-Intervalle pro Stunde */
-const INTERVALS_PER_HOUR = 60 / INTERVAL_MINUTES; // 6
+// Intervall und Ableitungen kommen aus @/lib/config/scada — eine Stelle für
+// alle fünf Module, die daraus Arbeit rechnen.
+import {
+  SCADA_INTERVAL_MINUTES as INTERVAL_MINUTES,
+  SCADA_INTERVALS_PER_HOUR as INTERVALS_PER_HOUR,
+} from "@/lib/config/scada";
 
 /**
  * Zeitzone der Abrechnungsperiode.

@@ -30,8 +30,42 @@ let retentionCronWorker: Worker<
   RetentionCronJobResult
 > | null = null;
 
-/** AuditLog-Retention: gesetzlich 10 Jahre (§147 AO). */
-const AUDIT_LOG_RETENTION_YEARS = 10;
+/**
+ * Wie lange das Änderungsprotokoll aufbewahrt wird.
+ *
+ * Stand hier als feste 10, während Rechnungen und Verträge schon der
+ * Mandanteneinstellung folgten. Wer die Rechnungsfrist auf 12 Jahre hob,
+ * verlängerte das Protokoll nicht mit — nach zehn Jahren wäre der Beleg noch
+ * da gewesen, die Auskunft darüber, wer ihn geändert hat, aber nicht mehr.
+ *
+ * Deshalb keine dritte, frei stellbare Zahl, sondern eine Untergrenze: das
+ * Protokoll lebt mindestens so lange wie das Längste, was es dokumentiert.
+ * Eine niedrigere Einstellung wird angehoben und das im Log vermerkt — still
+ * übergehen wäre genau der Fehler, den wir hier beheben.
+ */
+function auditLogRetentionYears(settings: {
+  gobdRetentionYearsAuditLog: number;
+  gobdRetentionYearsInvoice: number;
+  gobdRetentionYearsContract: number;
+}): number {
+  const floor = Math.max(
+    settings.gobdRetentionYearsInvoice,
+    settings.gobdRetentionYearsContract,
+  );
+  if (settings.gobdRetentionYearsAuditLog < floor) {
+    logger.warn(
+      {
+        configured: settings.gobdRetentionYearsAuditLog,
+        appliedFloor: floor,
+        invoice: settings.gobdRetentionYearsInvoice,
+        contract: settings.gobdRetentionYearsContract,
+      },
+      "[RetentionCronWorker] Protokollfrist liegt unter der längsten Belegfrist — es wird die längere angewandt",
+    );
+    return floor;
+  }
+  return settings.gobdRetentionYearsAuditLog;
+}
 
 function isDryRun(forceDryRun?: boolean): boolean {
   if (forceDryRun !== undefined) return forceDryRun;
@@ -110,8 +144,9 @@ async function processRetentionCronJob(
         invoicesAffectedTotal += cancelledCount;
       }
 
-      // 2. AuditLog älter als 10 Jahre
-      const auditCutoff = addYearsSafe(new Date(), -AUDIT_LOG_RETENTION_YEARS);
+      // 2. AuditLog älter als die (gedeckelte) Protokollfrist
+      const auditRetentionYears = auditLogRetentionYears(settings);
+      const auditCutoff = addYearsSafe(new Date(), -auditRetentionYears);
 
       const auditCandidates = await prisma.auditLog.count({
         where: {
@@ -129,6 +164,7 @@ async function processRetentionCronJob(
               tenantName: tenant.name,
               auditCandidates,
               cutoff: auditCutoff.toISOString(),
+              retentionYears: auditRetentionYears,
               action: "would-delete (DRY-RUN)",
             },
             `[RetentionCronWorker] AuditLog records eligible for deletion`,

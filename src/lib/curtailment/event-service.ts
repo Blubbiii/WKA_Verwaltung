@@ -15,8 +15,11 @@ import {
 } from "./compensation";
 import { apiLogger as logger } from "@/lib/logger";
 
-/** SCADA liefert Zehnminutenwerte. */
-const INTERVAL_MINUTES = 10;
+// Das Intervall stand hier als eigene Konstante. Es bestimmt, wie aus der
+// Leistung die entgangene ARBEIT wird — wäre es hier ein anderes als in der
+// Ertragsausfall-Bewertung, ergäben beide Wege verschiedene Zahlen, ohne dass
+// eine davon auffiele. Deshalb eine gemeinsame Quelle.
+import { SCADA_INTERVAL_MINUTES } from "@/lib/config/scada";
 
 export interface EventComputation {
   lostWorkKwh: number | null;
@@ -85,7 +88,7 @@ export async function computeCurtailmentEvent(input: {
     event.endAt,
   );
 
-  const work = computeLostWorkFromSignal(samples, { intervalMinutes: INTERVAL_MINUTES });
+  const work = computeLostWorkFromSignal(samples, { intervalMinutes: SCADA_INTERVAL_MINUTES });
 
   if (work.lostWorkKwh === null) {
     return empty(work.reason);

@@ -3,6 +3,10 @@ import { Prisma } from "@prisma/client";
 import type { AnalyticsTurbineMeta } from "@/types/analytics";
 import { LOCALE_DE } from "@/lib/format";
 import { cache } from "@/lib/cache";
+import {
+  SCADA_INTERVAL_MINUTES,
+  SCADA_INTERVALS_PER_HOUR,
+} from "@/lib/config/scada";
 
 // =============================================================================
 // Analytics Query Helpers
@@ -90,10 +94,10 @@ export function hoursInPeriod(from: Date, to: Date): number {
   return (to.getTime() - from.getTime()) / (1000 * 60 * 60);
 }
 
-/** SCADA-Messintervall in Minuten (WSD: 10-Minuten-Mittelwerte). */
-export const SCADA_INTERVAL_MINUTES = 10;
-/** 10-Minuten-Intervalle pro Stunde. */
-export const SCADA_INTERVALS_PER_HOUR = 60 / SCADA_INTERVAL_MINUTES;
+// Das Messintervall lag als eigene Konstante in fünf Modulen. Es steht jetzt
+// in @/lib/config/scada — hier nur noch weitergereicht, damit bestehende
+// Importe aus diesem Modul weiter aufgehen.
+export { SCADA_INTERVAL_MINUTES, SCADA_INTERVALS_PER_HOUR };
 
 /**
  * Begrenzt das Ende eines Auswertungszeitraums auf "jetzt".

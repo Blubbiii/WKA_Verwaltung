@@ -72,10 +72,10 @@ const DEFAULT_CONFIG: AnomalyConfig = {
 // Invalid SCADA measurement markers
 const _INVALID_VALUES = [32767, 65535, 6553.5];
 
-// SCADA measurement interval in minutes
-const INTERVAL_MINUTES = 10;
-const INTERVALS_PER_HOUR = 60 / INTERVAL_MINUTES; // 6
-const INTERVALS_PER_DAY = 24 * INTERVALS_PER_HOUR; // 144
+// Intervall und Ableitungen kommen aus @/lib/config/scada.
+// INTERVALS_PER_DAY steckt hier in Schwellen ("weniger als 144 Werte am Tag =
+// unvollständig") — mit einem abweichenden Takt waeren die sonst still falsch.
+import { SCADA_INTERVALS_PER_DAY as INTERVALS_PER_DAY } from "@/lib/config/scada";
 
 // =============================================================================
 // Config Helpers
@@ -619,7 +619,9 @@ export async function checkDataQuality(
     const turbine = turbineMap.get(row.turbineId);
     if (!turbine) continue;
 
-    const expectedRecords = INTERVALS_PER_DAY; // 144 for a full day
+    // Bei 10-Minuten-Werten sind das 144 pro Tag; der Wert folgt jetzt dem
+    // konfigurierten Intervall, damit die Vollstaendigkeitsschwelle mitgeht.
+    const expectedRecords = INTERVALS_PER_DAY;
     const coveragePct = (row.total_records / expectedRecords) * 100;
 
     // Coverage check
