@@ -192,6 +192,30 @@ S3_BUCKET=wpm-documents
 ACME_EMAIL=admin@example.com
 ```
 
+#### Vor dem Livegang nachziehen
+
+Zwei Variablen bleiben bis kurz vor dem Livegang bewusst ungesetzt. Beide
+brauchen einen Gegenpart, der noch nicht existiert — sie zu setzen, solange es
+den nicht gibt, erzeugt nur ein Geheimnis mehr, das gepflegt werden will.
+
+| Variable | Wird gebraucht, sobald … | Verhalten ohne sie |
+|---|---|---|
+| `METRICS_TOKEN` | ein Monitoring `/api/metrics` abfragen soll | Der Endpunkt antwortet in Produktion mit **503** — fail-closed und beabsichtigt. Unbewacht dürfen die Kennzahlen nicht heraus. |
+| `INBOUND_EMAIL_API_KEY` | ein Mail-Gateway Eingangspost an `/api/email/inbound` zustellen soll | Der Endpunkt lehnt ab. Ohne Gateway gibt es ohnehin keinen Zusteller. |
+
+Beide erzeugen:
+
+```bash
+openssl rand -base64 32
+```
+
+**Nicht zu verwechseln** mit `CRON_SECRET` und `CRON_BEARER_TOKEN`. Die
+schützten früher die Läufe unter `/api/cron/*`, die kein Scheduler je aufrief.
+Seit Welle 23 laufen Fristenprüfung, Basiszinssatz und Bankprüfung über die
+`maintenance`-Queue im Worker (siehe `lib/queue/queues/maintenance.queue.ts`).
+Die beiden Variablen sind damit **optional** — sie sichern nur noch den
+Handauslöser zum Nachziehen eines versäumten Laufs.
+
 ### 2. Container starten
 
 ```bash
