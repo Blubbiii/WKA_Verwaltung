@@ -57,6 +57,8 @@ interface TurbineFormFieldsProps {
   warrantyEndDateText: string;
   setWarrantyEndDateText: Dispatch<SetStateAction<string>>;
   funds: Fund[];
+  /** Gemeinden des Mandanten fuer die Standortzuordnung (A5). */
+  municipalities: { id: string; name: string }[];
   onCreateNewFund: (target: "operator" | "netzgesellschaft") => void;
 }
 
@@ -73,6 +75,7 @@ export function TurbineFormFields({
   warrantyEndDateText,
   setWarrantyEndDateText,
   funds,
+  municipalities,
   onCreateNewFund,
 }: TurbineFormFieldsProps) {
   const p = idPrefix ? `${idPrefix}-` : "";
@@ -157,6 +160,40 @@ export function TurbineFormFields({
               onChange={(e) => setFormData({ ...formData, mastrNumber: e.target.value })}
             />
           </div>
+        </div>
+        {/*
+          Standortgemeinde (A5). Nicht ueber den Park ableitbar — ein Park
+          liegt regelmaessig in mehreren Gemeinden, und genau deshalb wird der
+          Gewerbesteuermessbetrag nach § 29 GewStG zerlegt.
+        */}
+        <div className="space-y-2">
+          <Label htmlFor={`${p}municipality`}>Standortgemeinde</Label>
+          <Select
+            value={formData.municipalityId || "__none__"}
+            onValueChange={(value) =>
+              setFormData({
+                ...formData,
+                municipalityId: value === "__none__" ? "" : value,
+              })
+            }
+          >
+            <SelectTrigger id={`${p}municipality`}>
+              <SelectValue placeholder="Nicht zugeordnet" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">-- Nicht zugeordnet --</SelectItem>
+              {municipalities.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Grundlage fuer die Zerlegung nach &sect; 29 GewStG. Ohne Zuordnung
+            faellt die Anlage aus der Auswertung heraus und die Anteile der
+            uebrigen Gemeinden sind zu hoch.
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor={`${p}status`}>Status</Label>

@@ -33,6 +33,9 @@ export type AuditEntityType =
   | "BankConnection"
   | "News"
   | "Person"
+  // A5 (Audit 2026-08): Gemeinde als Stammdatensatz — Grundlage der
+  // Zerlegung nach § 29 GewStG.
+  | "Municipality"
   // Bedienaufwand #22: Der CSV-Import protokolliert auch Lieferanten.
   | "Vendor"
   | "User"
@@ -57,6 +60,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
   const displayNames: Record<AuditEntityType, string> = {
     Park: "Windpark",
     Turbine: "Anlage",
+    Municipality: "Gemeinde",
     TurbineProduction: "Netzbetreiber-Daten",
     Fund: "Gesellschaft",
     FundHierarchy: "Gesellschafts-Hierarchie",

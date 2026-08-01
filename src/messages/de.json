@@ -422,7 +422,8 @@
     "hgbSystemSettings": "HGB-Einstellungen",
     "taxCategoryTemplates": "Steuerkategorie-Vorlagen",
     "regulatory": "Regulatorik",
-    "portfolioCockpit": "Portfolio-Cockpit"
+    "portfolioCockpit": "Portfolio-Cockpit",
+    "municipalities": "Gemeinden"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",

@@ -26,6 +26,14 @@ export type TurbineFormData = {
   designation: string;
   serialNumber: string;
   mastrNumber: string;
+  /**
+   * Standortgemeinde (A5). Leer = nicht zugeordnet.
+   *
+   * Ueber den Park nicht ableitbar: ein Park liegt regelmaessig in
+   * mehreren Gemeinden — genau deshalb wird der Gewerbesteuermessbetrag
+   * nach § 29 GewStG zerlegt.
+   */
+  municipalityId: string;
   manufacturer: string;
   model: string;
   ratedPowerKw: string;
@@ -67,6 +75,7 @@ const EMPTY_FORM: TurbineFormData = {
   designation: "",
   serialNumber: "",
   mastrNumber: "",
+  municipalityId: "",
   manufacturer: "",
   model: "",
   ratedPowerKw: "",
@@ -96,6 +105,10 @@ export function useTurbineForm(turbine?: Turbine | null) {
 
   const [funds, setFunds] = useState<Fund[]>([]);
   const [fundCategories, setFundCategories] = useState<FundCategory[]>([]);
+  /** Gemeinden fuer die Standortzuordnung (A5). */
+  const [municipalities, setMunicipalities] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   const [fundCreationTarget, setFundCreationTarget] = useState<
     "operator" | "netzgesellschaft"
@@ -128,6 +141,25 @@ export function useTurbineForm(turbine?: Turbine | null) {
     }
   }, []);
 
+  const loadMunicipalities = useCallback(async () => {
+    try {
+      const response = await fetch("/api/municipalities");
+      if (response.ok) {
+        const data = await response.json();
+        setMunicipalities(
+          (data.data ?? []).map((m: { id: string; name: string }) => ({
+            id: m.id,
+            name: m.name,
+          })),
+        );
+      }
+    } catch {
+      // Ohne Liste bleibt die Auswahl leer — die Anlage laesst sich weiter
+      // speichern, sie ist dann eben nicht zugeordnet und faellt in der
+      // Auswertung als Luecke auf.
+    }
+  }, []);
+
   const loadFundCategories = useCallback(async () => {
     try {
       const response = await fetch("/api/fund-categories");
@@ -144,7 +176,8 @@ export function useTurbineForm(turbine?: Turbine | null) {
   useEffect(() => {
     loadFunds();
     loadFundCategories();
-  }, [loadFunds, loadFundCategories]);
+    loadMunicipalities();
+  }, [loadFunds, loadFundCategories, loadMunicipalities]);
 
   // Reload fund categories when the inline fund creation dialog opens
   useEffect(() => {
@@ -161,6 +194,7 @@ export function useTurbineForm(turbine?: Turbine | null) {
         designation: turbine.designation,
         serialNumber: turbine.serialNumber || "",
         mastrNumber: turbine.mastrNumber || "",
+        municipalityId: turbine.municipalityId || "",
         manufacturer: turbine.manufacturer || "",
         model: turbine.model || "",
         ratedPowerKw: turbine.ratedPowerKw?.toString() || "",
@@ -265,6 +299,7 @@ export function useTurbineForm(turbine?: Turbine | null) {
       designation: formData.designation,
       serialNumber: formData.serialNumber || null,
       mastrNumber: formData.mastrNumber || null,
+      municipalityId: formData.municipalityId || null,
       manufacturer: formData.manufacturer || null,
       model: formData.model || null,
       ratedPowerKw: formData.ratedPowerKw
@@ -312,6 +347,8 @@ export function useTurbineForm(turbine?: Turbine | null) {
     // Fund State
     funds,
     fundCategories,
+    // Gemeinden (A5)
+    municipalities,
     // Inline Fund Creation
     fundCreationTarget,
     setFundCreationTarget,

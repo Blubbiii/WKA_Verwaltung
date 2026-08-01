@@ -95,6 +95,7 @@ export function AddTurbineDialog({
             warrantyEndDateText={form.warrantyEndDateText}
             setWarrantyEndDateText={form.setWarrantyEndDateText}
             funds={form.funds}
+            municipalities={form.municipalities}
             onCreateNewFund={(target) => {
               form.setFundCreationTarget(target);
               form.setShowNewFundDialog(true);

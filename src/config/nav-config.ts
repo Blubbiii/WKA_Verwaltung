@@ -401,6 +401,14 @@ export const navGroups: NavGroup[] = [
         icon: ScrollText,
         permission: "turbines:read",
       },
+      {
+        // A5: Standortgemeinden — Grundlage der Zerlegung nach § 29 GewStG.
+        title: "Gemeinden",
+        titleKey: "municipalities",
+        href: "/verwaltung/gemeinden",
+        icon: Building2,
+        permission: "turbines:read",
+      },
     ],
   },
 

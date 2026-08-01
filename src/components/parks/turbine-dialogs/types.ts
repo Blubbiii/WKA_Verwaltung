@@ -5,6 +5,8 @@ export interface Turbine {
   designation: string;
   serialNumber: string | null;
   mastrNumber: string | null;
+  /** Standortgemeinde (A5). Nicht ueber den Park ableitbar. */
+  municipalityId?: string | null;
   manufacturer: string | null;
   model: string | null;
   deviceType?: "WEA" | "PARKRECHNER" | "NVP";

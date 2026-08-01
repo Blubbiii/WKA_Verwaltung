@@ -15,6 +15,10 @@ const turbineCreateSchema = z.object({
   designation: z.string().min(1, "Bezeichnung ist erforderlich"),
   serialNumber: z.string().optional().nullable(),
   mastrNumber: z.string().optional().nullable(),
+  // A5: Standortgemeinde. Nicht ueber den Park ableitbar — ein Park
+  // liegt regelmaessig in mehreren Gemeinden, und genau deshalb wird der
+  // Gewerbesteuermessbetrag nach § 29 GewStG zerlegt.
+  municipalityId: z.string().uuid().optional().nullable(),
   netzgesellschaftFundId: z.uuid().optional().nullable(),
   manufacturer: z.string().optional().nullable(),
   model: z.string().optional().nullable(),

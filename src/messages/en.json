@@ -422,7 +422,8 @@
     "hgbSystemSettings": "HGB settings",
     "taxCategoryTemplates": "Tax category templates",
     "regulatory": "Regulatory",
-    "portfolioCockpit": "Portfolio cockpit"
+    "portfolioCockpit": "Portfolio cockpit",
+    "municipalities": "Municipalities"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
