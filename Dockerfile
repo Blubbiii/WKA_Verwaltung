@@ -139,6 +139,23 @@ ENV PATH="/prisma-cli/node_modules/.bin:$PATH"
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# -----------------------------------------------------------------------------
+# Worker-Quellen (F1) — AUSDRUECKLICH, nicht auf den Tracer vertrauend
+# -----------------------------------------------------------------------------
+# Der Worker laeuft ueber `tsx src/workers/index.ts`. Diese Dateien liegen
+# heute bereits im Standalone-Output — aber nur, weil Next den GESAMTEN
+# Quellbaum traced ("Encountered unexpected file in NFT list", ausgeloest ueber
+# next.config.ts). Das ist ein Fehler, kein Feature: wird er behoben,
+# verschwaende src/workers still aus dem Image und der Worker startete nicht
+# mehr, ohne dass sich am Compose-File etwas geaendert haette.
+#
+# Deshalb hier ausdruecklich. Der Platzbedarf ist null, solange der Tracer die
+# Dateien ohnehin mitbringt — und wenn nicht, sind sie trotzdem da.
+#
+# tsconfig.json wird gebraucht, weil tsx die @/*-Aliase daraus aufloest.
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+
 # Entrypoint Script kopieren
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
