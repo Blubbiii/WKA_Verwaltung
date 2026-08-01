@@ -14,6 +14,7 @@ import { recordPayment } from "@/lib/accounting/invoice-payment";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { withIdempotency } from "@/lib/idempotency";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 const markPaidSchema = z.object({
   // F12-Compliance: paidAt darf nicht in der Zukunft liegen (kein Vorbuchen).
@@ -23,7 +24,7 @@ const markPaidSchema = z.object({
     .iso.datetime({ message: "Ungültiges paidAt-Format (ISO 8601 erwartet)" })
     .optional()
     .refine(
-      (v) => !v || new Date(v).getTime() <= Date.now(),
+      (v) => !v || isNotInFuture(v),
       { message: "Zahlungsdatum darf nicht in der Zukunft liegen" },
     ),
   applySkonto: z.boolean().optional(), // Whether to apply Skonto discount

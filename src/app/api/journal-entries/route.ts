@@ -10,6 +10,7 @@ import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-loc
 import { parsePaginationParams } from "@/lib/api-utils";
 import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import { withIdempotency } from "@/lib/idempotency";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 // ============================================================================
 // VALIDATION
@@ -35,7 +36,7 @@ const createSchema = z.object({
     // F13-Compliance: GoBD §146 AO — Buchungsdatum darf nicht in der Zukunft
     // liegen. Verhindert Vorbuchungen (Bilanzmanipulation / falsche Periode).
     .refine(
-      (v) => new Date(v).getTime() <= Date.now(),
+      (v) => isNotInFuture(v),
       { message: "Buchungsdatum darf nicht in der Zukunft liegen" },
     ),
   description: z.string().min(1, "Beschreibung darf nicht leer sein").max(200),

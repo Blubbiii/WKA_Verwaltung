@@ -290,3 +290,47 @@ export async function selectOption(
   ).toBeVisible({ timeout: 10_000 });
   await option.click();
 }
+
+/**
+ * Ein Datum ueber einen Popover-Kalender waehlen.
+ *
+ * Der Assistent zeigt kein `<input type="date">`, sondern eine Schaltflaeche
+ * mit der Aufschrift „Datum waehlen“, die einen Kalender oeffnet. Der
+ * generische Laeufer fuellt Felder — an diese Schaltflaeche kommt er nicht
+ * heran, und ein Pflichtfeld, das er nicht bedienen kann, sieht fuer ihn
+ * genauso aus wie ein Assistent, der gesperrt bleibt.
+ *
+ * Gewaehlt wird ein Tag aus der Mitte des angezeigten Monats. Der erste und
+ * der letzte Eintrag im Raster koennen zum Vor- oder Folgemonat gehoeren —
+ * fuer die Pruefung ist nur wichtig, DASS ein Datum gesetzt wird.
+ *
+ * @param beschriftung Aufschrift der Schaltflaeche, solange kein Datum steht.
+ */
+export async function pickDate(
+  page: Page,
+  beschriftung: string | RegExp = /datum w(ä|ae)hlen/i,
+): Promise<void> {
+  const trigger = page.getByRole("button", { name: beschriftung }).first();
+  await must(trigger, `Datumsfeld mit der Aufschrift ${beschriftung}`);
+  await trigger.click();
+
+  // react-day-picker setzt data-day auf jede waehlbare Zelle. Ueber dieses
+  // Attribut zu gehen ist stabiler als ueber die Tageszahl: die kommt im
+  // Raster doppelt vor, sobald Tage des Nachbarmonats mit angezeigt werden.
+  const tage = page.locator("button[data-day]:not([disabled])");
+  await expect(
+    tage.first(),
+    "Der Kalender hat sich nicht geoeffnet oder enthaelt keinen waehlbaren Tag",
+  ).toBeVisible({ timeout: 10_000 });
+
+  const anzahl = await tage.count();
+  await tage.nth(Math.min(14, anzahl - 1)).click();
+
+  // Die Aufschrift muss sich geaendert haben — sonst wurde zwar geklickt,
+  // aber nichts uebernommen, und der naechste Schritt scheiterte an einer
+  // Stelle, die nichts mit der Ursache zu tun hat.
+  await expect(
+    trigger,
+    "Nach der Auswahl steht immer noch die Aufforderung im Datumsfeld",
+  ).not.toHaveText(beschriftung, { timeout: 10_000 });
+}

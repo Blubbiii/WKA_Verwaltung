@@ -13,6 +13,7 @@ import {
 } from "@/lib/accounting/invoice-payment";
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 // ============================================================================
 // VALIDATION SCHEMA
@@ -27,7 +28,7 @@ const confirmationSchema = z.object({
         paidAt: z
           .string()
           .datetime("Ungültiges Datum")
-          .refine((v) => new Date(v).getTime() <= Date.now(), {
+          .refine((v) => isNotInFuture(v), {
             message: "Zahlungsdatum darf nicht in der Zukunft liegen",
           }),
         paymentReference: z.string().max(200).optional(),

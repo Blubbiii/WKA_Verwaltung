@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 const createEntrySchema = z.object({
   entryDate: z.string(),
@@ -71,9 +72,11 @@ export async function POST(request: NextRequest) {
     //  2) nicht vor dem juengsten locked Tag (backdating wuerde die
     //     runningBalance-Sequenz zerreissen; separates Ticket fuer den
     //     Recompute-Flow bei berechtigten Nachtragsbuchungen).
-    const nowEndOfDay = new Date();
-    nowEndOfDay.setUTCHours(23, 59, 59, 999);
-    if (entryDate.getTime() > nowEndOfDay.getTime()) {
+    // Die Absicht war hier schon richtig ("heute inklusive erlaubt"), die
+    // Rechnung lief aber in UTC. Um 00:30 Berliner Zeit liegt der heutige Tag
+    // in UTC noch im Gestern — isNotInFuture vergleicht Kalendertage in der
+    // Zeitzone des Betriebs und macht das gleich fuer alle Routen.
+    if (!isNotInFuture(entryDate)) {
       return apiError("VALIDATION_FAILED", 422, {
         message: "Buchungsdatum darf nicht in der Zukunft liegen",
       });

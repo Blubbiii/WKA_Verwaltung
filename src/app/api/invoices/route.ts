@@ -15,6 +15,7 @@ import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 // Schema für Invoice-Items
 const invoiceItemSchema = z.object({
@@ -37,7 +38,7 @@ const invoiceCreateSchema = z.object({
     .string()
     .refine((v) => {
       const d = new Date(v);
-      return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
+      return !Number.isNaN(d.getTime()) && isNotInFuture(d);
     }, {
       message: "Rechnungsdatum darf nicht in der Zukunft liegen",
     }),

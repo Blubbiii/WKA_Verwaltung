@@ -22,6 +22,7 @@ import {
 import { PeriodLockedError } from "@/lib/accounting/period-lock";
 import { withIdempotency } from "@/lib/idempotency";
 import { invalidateReportsCache } from "@/lib/cache/reports";
+import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
@@ -29,7 +30,7 @@ const paymentSchema = z.object({
   paymentDate: z
     .iso.datetime()
     .optional()
-    .refine((v) => !v || new Date(v).getTime() <= Date.now(), {
+    .refine((v) => !v || isNotInFuture(v), {
       message: "Zahlungsdatum darf nicht in der Zukunft liegen",
     }),
   paymentMethod: z.enum(["BANK", "CASH", "SEPA", "OTHER"]).optional(),

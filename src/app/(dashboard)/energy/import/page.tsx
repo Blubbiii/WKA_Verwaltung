@@ -48,6 +48,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
+import type { GridColumnMapping } from "@/lib/energy/grid-import-mapping";
+import {
+  autoDetectGridMapping as autoDetectMapping,
+  GRID_REQUIRED_FIELDS,
+  REMUNERATION_CODES,
+} from "@/lib/energy/grid-import-mapping";
 
 // ============================================================================
 // Types
@@ -57,15 +63,9 @@ interface ParsedRow {
   [key: string]: string | number | null;
 }
 
-interface ColumnMapping {
-  turbineId: string | null;
-  turbineName: string | null;
-  year: string | null;
-  month: string | null;
-  remunerationType: string | null;
-  production: string | null;
-  revenue: string | null;
-}
+// Definiert in lib/energy/grid-import-mapping.ts, zusammen mit der Erkennung
+// und der Kopfzeile der Beispieldatei.
+type ColumnMapping = GridColumnMapping;
 
 interface ValidationResult {
   rowIndex: number;
@@ -92,12 +92,10 @@ const STEPS = [
   { id: "import", title: "Import", description: "Daten importieren" },
 ];
 
-const REQUIRED_FIELDS: (keyof ColumnMapping)[] = [
-  "year",
-  "month",
-  "remunerationType",
-  "production",
-];
+// Pflichtfelder, Erkennung und die Kopfzeile der Beispieldatei stehen
+// zusammen in lib/energy/grid-import-mapping.ts — sonst laufen sie wieder
+// auseinander, wie zuletzt bei der fehlenden Spalte "Verguetungsart".
+const REQUIRED_FIELDS = GRID_REQUIRED_FIELDS;
 
 const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
   turbineId: "WKA-ID",
@@ -109,7 +107,7 @@ const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
   revenue: "Erlös (EUR)",
 };
 
-const REMUNERATION_CODES = ["EEG", "DIRECT", "PPA", "SPOT", "OTHER"];
+
 
 const MAX_FILE_SIZE = UPLOAD_LIMITS.energyImport;
 const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
@@ -148,43 +146,6 @@ function parseCSV(text: string): { headers: string[]; rows: ParsedRow[] } {
   }
 
   return { headers, rows };
-}
-
-function autoDetectMapping(headers: string[]): ColumnMapping {
-  const mapping: ColumnMapping = {
-    turbineId: null,
-    turbineName: null,
-    year: null,
-    month: null,
-    remunerationType: null,
-    production: null,
-    revenue: null,
-  };
-
-  const lowerHeaders = headers.map((h) => h.toLowerCase());
-
-  // Auto-detect based on common column names
-  headers.forEach((header, index) => {
-    const lower = lowerHeaders[index];
-
-    if (lower.includes("wka") && (lower.includes("id") || lower.includes("nr"))) {
-      mapping.turbineId = header;
-    } else if (lower.includes("wka") || lower.includes("anlage") || lower.includes("turbine")) {
-      if (!mapping.turbineName) mapping.turbineName = header;
-    } else if (lower === "jahr" || lower === "year") {
-      mapping.year = header;
-    } else if (lower === "monat" || lower === "month") {
-      mapping.month = header;
-    } else if (lower.includes("vergue") || lower.includes("art") || lower.includes("type") || lower.includes("code")) {
-      mapping.remunerationType = header;
-    } else if (lower.includes("prod") || lower.includes("kwh") || lower.includes("energie") || lower.includes("energy")) {
-      mapping.production = header;
-    } else if (lower.includes("erl") || lower.includes("eur") || lower.includes("revenue") || lower.includes("betrag")) {
-      mapping.revenue = header;
-    }
-  });
-
-  return mapping;
 }
 
 // ============================================================================

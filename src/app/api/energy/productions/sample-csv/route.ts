@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { GRID_SAMPLE_HEADER } from "@/lib/energy/grid-import-mapping";
 
 // GET /api/energy/productions/sample-csv
 // Generates a sample CSV with actual turbines for the current tenant (production data only)
@@ -29,7 +30,15 @@ export async function GET() {
     const baseHours = 720; // approx hours per month
 
     const lines: string[] = [];
-    lines.push("WKA-Nr;Anlage;Jahr;Monat;Produktion_kWh;Betriebsstunden;Verfügbarkeit_Pct;Bemerkungen");
+    // The header lives next to the wizard's required fields and its column
+    // detection, and grid-import-mapping.test.ts asserts they still match.
+    // It used to be a literal here, copied from the turbine sample — which
+    // has no "Vergütungsart" field. The wizard requires one, so its own
+    // sample file could not pass its own mapping step: the user downloads
+    // what the UI offers, uploads it, and is stuck with no reason to suspect
+    // the sample. Fixing the literal would have fixed the symptom; sharing
+    // the definition is what keeps the two from drifting apart again.
+    lines.push(GRID_SAMPLE_HEADER);
 
     // Use up to 3 turbines for the example
     const sampleTurbines = turbines.slice(0, 3);
@@ -54,8 +63,12 @@ export async function GET() {
         if (month === 8 && turbine === sampleTurbines[0])
           remark = "Kurzzeitige Abschaltung wg. Fledermausschutz";
 
+        // EEG as the sample value — it is the code most grid-operator
+        // statements carry, and it is one of REMUNERATION_CODES the wizard
+        // accepts. A value the wizard would reject would move the failure
+        // from the mapping step to the validation step, not remove it.
         lines.push(
-          `${turbine.designation};${turbine.designation};2024;${month};${production};${hours};${availability};${remark}`
+          `${turbine.designation};${turbine.designation};2024;${month};EEG;${production};${hours};${availability};${remark}`
         );
       }
     }

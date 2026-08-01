@@ -29,7 +29,7 @@
 import { test, expect } from "../support/fixtures";
 import { testName } from "../support/run-context";
 import { must, ready } from "../support/strict";
-import { currentStep, goToNextStep, stepCount } from "../support/wizard";
+import { currentStep, goToNextStep, pickDate, stepCount } from "../support/wizard";
 
 test.describe("Vertrags-Assistent", () => {
   test("vier Schritte durchklicken und den Vertrag speichern", async ({
@@ -69,9 +69,25 @@ test.describe("Vertrags-Assistent", () => {
     await weiter.click();
     await expect.poll(() => currentStep(page), { timeout: 10_000 }).toBe(1);
 
-    // --- Schritte 2 bis 4 -------------------------------------------------
-    // Ab hier traegt der generische Laeufer: Schritt 2 verlangt nur ein
-    // Startdatum, die uebrigen nichts.
+    // --- Schritt 2: Vertragsbeginn ---------------------------------------
+    // Auch hier scheitert der generische Laeufer, und zwar mit derselben
+    // Meldung wie beim Pacht-Assistenten: er hat drei Felder gefuellt, und
+    // Weiter blieb gesperrt. Der Grund ist ein Pflichtfeld, das kein Feld
+    // ist — der Vertragsbeginn haengt an einem Popover-Kalender.
+    await expect(
+      weiter,
+      "Weiter muesste ohne Vertragsbeginn gesperrt sein",
+    ).toBeDisabled();
+
+    await pickDate(page);
+
+    await expect(
+      weiter,
+      "Weiter bleibt gesperrt, obwohl ein Vertragsbeginn gewaehlt wurde",
+    ).toBeEnabled({ timeout: 10_000 });
+
+    // --- Schritte 3 und 4 -------------------------------------------------
+    // Ab hier ist alles freiwillig; der generische Laeufer traegt.
     const gesamt = await stepCount(page);
     for (let i = await currentStep(page); i < gesamt - 1; i = await currentStep(page)) {
       await goToNextStep(page, "Vertrag anlegen");
