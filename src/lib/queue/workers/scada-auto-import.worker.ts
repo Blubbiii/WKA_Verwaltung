@@ -19,6 +19,7 @@ import type {
   ScadaAutoImportJobResult,
 } from '../queues/scada-auto-import.queue';
 import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
+import { isFinalAttempt } from "../dead-letter";
 
 // ---------------------------------------------------------------
 // Logger
@@ -228,7 +229,14 @@ export function startScadaAutoImportWorker(): Worker<ScadaAutoImportJobData, Sca
 
   scadaAutoImportWorker.on('failed', (job, error) => {
     const jobId = job?.id || 'unknown';
-    log('error', jobId, 'Job failed permanently', {
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    log(isFinal ? "error" : "warn", jobId, isFinal
+      ? "Job endgueltig gescheitert"
+      : "Versuch fehlgeschlagen, wird wiederholt", {
+      maxAttempts: job?.opts?.attempts ?? 1,
       error: error.message,
       attempts: job?.attemptsMade,
     });

@@ -17,6 +17,7 @@ import type {
 } from "../queues/webhook.queue";
 import { WEBHOOK_QUEUE_NAME } from "../queues/webhook.queue";
 import type { Prisma } from "@prisma/client";
+import { isFinalAttempt } from "../dead-letter";
 
 /**
  * Lohnt sich bei diesem HTTP-Status ein weiterer Versuch?
@@ -234,10 +235,21 @@ export function startWebhookWorker(): Worker<
   });
 
   webhookWorker.on("failed", (job, error) => {
-    logger.error(
-      { jobId: job?.id, error: error.message, attempts: job?.attemptsMade },
-      "[Webhook Worker] Job failed permanently"
-    );
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    const meta = {
+      jobId: job?.id,
+      error: error.message,
+      attempt: job?.attemptsMade,
+      maxAttempts: job?.opts?.attempts ?? 1,
+    };
+    if (isFinal) {
+      logger.error(meta, "[Webhook Worker] Job endgueltig gescheitert");
+    } else {
+      logger.warn(meta, "[Webhook Worker] Versuch fehlgeschlagen, wird wiederholt");
+    }
   });
 
   webhookWorker.on("error", (error) => {

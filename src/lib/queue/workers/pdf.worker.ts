@@ -15,6 +15,7 @@ import { generateVoteResultPdf } from "@/lib/pdf/generators/voteResultPdf";
 import { generateSettlementReportPdf } from "@/lib/pdf/generators/settlementReportPdf";
 import { generateAnnualReportPdf } from "@/lib/pdf/generators/annualReportPdf";
 import { jobLogger } from "@/lib/logger";
+import { isFinalAttempt } from "../dead-letter";
 
 // =============================================================================
 // Types
@@ -395,7 +396,14 @@ export function startPdfWorker(): Worker<PdfJobData, PdfJobResult> {
 
   pdfWorker.on("failed", (job, error) => {
     const jobId = job?.data?.jobId || job?.id || "unknown";
-    log("error", jobId, "Job failed permanently", {
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    log(isFinal ? "error" : "warn", jobId, isFinal
+      ? "Job endgueltig gescheitert"
+      : "Versuch fehlgeschlagen, wird wiederholt", {
+      maxAttempts: job?.opts?.attempts ?? 1,
       type: job?.data?.type,
       error: error.message,
       attempts: job?.attemptsMade,

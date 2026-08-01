@@ -19,6 +19,7 @@ import { EMAIL_REGEX } from "@/lib/validation/patterns";
 // desselben Namens — gleicher Typname, anderes Datenmodell, kein Import
 // dazwischen, also fuer TypeScript unsichtbar.
 import type { EmailJobData } from "../queues/email.queue";
+import { isFinalAttempt } from "../dead-letter";
 
 export type { EmailJobData, EmailTemplate } from "../queues/email.queue";
 
@@ -284,7 +285,14 @@ export function startEmailWorker(): Worker<EmailJobData, EmailJobResult> {
 
   emailWorker.on("failed", (job, error) => {
     const jobId = job?.data?.jobId || job?.id || "unknown";
-    log("error", jobId, "Job failed permanently", {
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    log(isFinal ? "error" : "warn", jobId, isFinal
+      ? "Job endgueltig gescheitert"
+      : "Versuch fehlgeschlagen, wird wiederholt", {
+      maxAttempts: job?.opts?.attempts ?? 1,
       error: error.message,
       attempts: job?.attemptsMade,
     });

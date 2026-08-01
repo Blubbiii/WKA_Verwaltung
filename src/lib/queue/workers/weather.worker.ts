@@ -21,6 +21,7 @@ import {
 } from "../../weather";
 import { WeatherJobData, WeatherJobResult } from "../queues/weather.queue";
 import { WORKER_LOCK_MS } from "@/lib/config/queue-config";
+import { isFinalAttempt } from "../dead-letter";
 
 // =============================================================================
 // Helper Functions
@@ -265,7 +266,14 @@ export function startWeatherWorker(): Worker<WeatherJobData, WeatherJobResult> {
 
   weatherWorker.on("failed", (job, error) => {
     const jobId = job?.id || "unknown";
-    log("error", jobId, "Job failed permanently", {
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    log(isFinal ? "error" : "warn", jobId, isFinal
+      ? "Job endgueltig gescheitert"
+      : "Versuch fehlgeschlagen, wird wiederholt", {
+      maxAttempts: job?.opts?.attempts ?? 1,
       parkId: job?.data?.parkId,
       error: error.message,
       attempts: job?.attemptsMade,

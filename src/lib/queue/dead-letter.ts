@@ -47,8 +47,14 @@ export interface PersistFailedJobInput {
  *
  * ACHTUNG: INNERHALB eines Prozessors ist der Zaehler noch nicht erhoeht —
  * dort braucht es `attemptsMade + 1` (siehe inbox-ocr.worker.ts).
+ *
+ * Exportiert, weil dieselbe Unterscheidung auch fuer die PROTOKOLLIERUNG
+ * gebraucht wird: sieben Worker meldeten "Job failed permanently" schon
+ * beim ersten von drei Versuchen. Eine Open-Meteo-Stoerung, die sich nach
+ * fuenf Sekunden von selbst erledigte, erzeugte damit zwei Fehleintraege —
+ * wer auf diesen Text alarmiert, bekommt Fehlalarme.
  */
-function isFinalAttempt(job: Job): boolean {
+export function isFinalAttempt(job: Job): boolean {
   const maxAttempts = job.opts?.attempts ?? 1;
   return (job.attemptsMade ?? 0) >= maxAttempts;
 }

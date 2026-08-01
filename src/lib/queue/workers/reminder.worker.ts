@@ -20,6 +20,7 @@ import type {
   ReminderJobData,
   ReminderJobResult,
 } from "../queues/reminder.queue";
+import { isFinalAttempt } from "../dead-letter";
 
 // =============================================================================
 // Logger
@@ -188,7 +189,14 @@ export function startReminderWorker(): Worker<
 
   reminderWorker.on("failed", (job, error) => {
     const jobId = job?.id || "unknown";
-    log("error", jobId, "Job failed permanently", {
+    // BullMQ feuert `failed` bei JEDEM Versuch, nicht nur beim letzten.
+    // Ohne diese Unterscheidung stand "endgueltig gescheitert" schon beim
+    // ersten von drei Versuchen im Log — auch wenn der zweite gelang.
+    const isFinal = job ? isFinalAttempt(job) : true;
+    log(isFinal ? "error" : "warn", jobId, isFinal
+      ? "Job endgueltig gescheitert"
+      : "Versuch fehlgeschlagen, wird wiederholt", {
+      maxAttempts: job?.opts?.attempts ?? 1,
       tenantId: job?.data?.tenantId,
       error: error.message,
       attempts: job?.attemptsMade,
