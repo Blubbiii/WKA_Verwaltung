@@ -299,8 +299,11 @@ jobs:
       # db push statt migrate deploy — dieselbe Reihenfolge wie im Container.
       # Ein Schema, das hier nicht durchgeht, geht auch beim Deployment nicht
       # durch, und das faellt lieber jetzt auf.
+      # Kein --skip-generate: die Option gibt es in Prisma 7 nicht mehr, der
+      # erste CI-Lauf ist genau daran gescheitert. `--accept-data-loss` wie im
+      # Container-Entrypoint — die Datenbank ist hier ohnehin frisch.
       - name: Schema anlegen
-        run: npx prisma db push --skip-generate
+        run: npx prisma db push --accept-data-loss
 
       - name: Seed-Daten laden
         run: npm run db:seed
