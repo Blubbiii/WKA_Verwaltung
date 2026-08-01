@@ -40,8 +40,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useConfirm } from "@/components/ui/use-confirm";
+import { DataTable } from "@/components/ui/data-table";
 import { formatCurrency, formatNumber } from "@/lib/format";
 
 const MAX_RATE = 0.2;
@@ -267,66 +267,101 @@ export function MunicipalityBenefitSection({
 
         <div>
           <p className="mb-2 text-sm font-medium">Vereinbarungen</p>
-          {isLoading ? (
-            <Skeleton className="h-24" />
-          ) : benefits.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              {municipalities.length === 0
-                ? "Zuerst eine Gemeinde anlegen — ohne sie lässt sich keine Vereinbarung erfassen."
-                : "Noch keine Vereinbarung erfasst. Ohne Vereinbarung wird nichts berechnet."}
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Anlage</TableHead>
-                  <TableHead>Gemeinde</TableHead>
-                  <TableHead className="text-right">Flächenanteil</TableHead>
-                  <TableHead className="text-right">Satz</TableHead>
-                  <TableHead>Aktenzeichen</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {benefits.map((b) => {
-                  const rate = Number(b.rateCtPerKwh);
-                  return (
-                    <TableRow key={b.id}>
-                      <TableCell>
-                        <span className="font-medium">{b.turbine.designation}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {b.turbine.park.name}
-                        </span>
-                      </TableCell>
-                      <TableCell>{b.municipality.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatNumber(Number(b.areaShare) * 100, 2)} %
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        <span className={rate > MAX_RATE ? "text-destructive" : ""}>
-                          {formatNumber(rate, 4)} ct/kWh
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {b.reference ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(b)}
-                          aria-label="Vereinbarung entfernen"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            rows={benefits}
+            getRowId={(b) => b.id}
+            isLoading={isLoading}
+            searchPlaceholder="Anlage oder Gemeinde suchen"
+            pageSize={0}
+            empty={{
+              icon: HandCoins,
+              title:
+                municipalities.length === 0
+                  ? "Zuerst eine Gemeinde anlegen"
+                  : "Noch keine Vereinbarung erfasst",
+              description:
+                municipalities.length === 0
+                  ? "Ohne Gemeinde lässt sich keine Vereinbarung erfassen."
+                  : "Ohne Vereinbarung wird nichts berechnet.",
+            }}
+            columns={[
+              {
+                id: "turbine",
+                header: "Anlage",
+                cell: (b) => (
+                  <>
+                    <span className="font-medium">{b.turbine.designation}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {b.turbine.park.name}
+                    </span>
+                  </>
+                ),
+                sortValue: (b) => b.turbine.designation,
+                searchValue: (b) => `${b.turbine.designation} ${b.turbine.park.name}`,
+              },
+              {
+                id: "municipality",
+                header: "Gemeinde",
+                cell: (b) => b.municipality.name,
+                sortValue: (b) => b.municipality.name,
+                searchValue: (b) => b.municipality.name,
+              },
+              {
+                id: "share",
+                header: "Flächenanteil",
+                align: "right",
+                cell: (b) => (
+                  <span className="tabular-nums">
+                    {formatNumber(Number(b.areaShare) * 100, 2)} %
+                  </span>
+                ),
+                sortValue: (b) => Number(b.areaShare),
+              },
+              {
+                id: "rate",
+                header: "Satz",
+                align: "right",
+                cell: (b) => (
+                  <span
+                    className={
+                      Number(b.rateCtPerKwh) > MAX_RATE
+                        ? "tabular-nums text-destructive"
+                        : "tabular-nums"
+                    }
+                  >
+                    {formatNumber(Number(b.rateCtPerKwh), 4)} ct/kWh
+                  </span>
+                ),
+                sortValue: (b) => Number(b.rateCtPerKwh),
+              },
+              {
+                id: "reference",
+                header: "Aktenzeichen",
+                cell: (b) => (
+                  <span className="text-xs text-muted-foreground">
+                    {b.reference ?? "—"}
+                  </span>
+                ),
+                searchValue: (b) => b.reference ?? "",
+              },
+              {
+                id: "actions",
+                header: "",
+                align: "right",
+                cell: (b) => (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(b)}
+                    aria-label="Vereinbarung entfernen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ),
+              },
+            ]}
+          />
         </div>
       </CardContent>
 

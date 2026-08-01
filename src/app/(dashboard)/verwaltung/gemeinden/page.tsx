@@ -41,6 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { formatNumber } from "@/lib/format";
 import { MunicipalityBenefitSection } from "@/components/regulatory/MunicipalityBenefitSection";
+import { DataTable } from "@/components/ui/data-table";
 
 interface Municipality {
   id: string;
@@ -293,59 +294,91 @@ export default function GemeindenPage() {
           <CardTitle>Stammdaten</CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingMunicipalities ? (
-            <Skeleton className="h-32" />
-          ) : municipalities.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Noch keine Gemeinde angelegt. Ohne Gemeinden lässt sich keine
-              Anlage zuordnen und die Auswertung bleibt leer.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Gemeindeschlüssel</TableHead>
-                  <TableHead>Bundesland</TableHead>
-                  <TableHead className="text-right">Anlagen</TableHead>
-                  <TableHead className="text-right">Flurstücke</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {municipalities.map((m) => (
-                  <TableRow key={m.id}>
-                    <TableCell className="font-medium">{m.name}</TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {m.officialKey ?? "—"}
-                    </TableCell>
-                    <TableCell>{m.state ?? "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {m._count.turbines > 0 ? (
-                        m._count.turbines
-                      ) : (
-                        <Badge variant="outline">0</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {m._count.plots}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(m)}
-                        aria-label={`${m.name} löschen`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            rows={municipalities}
+            getRowId={(m) => m.id}
+            isLoading={loadingMunicipalities}
+            searchPlaceholder="Gemeinde oder Gemeindeschlüssel suchen"
+            empty={{
+              icon: Building2,
+              title: "Noch keine Gemeinde angelegt",
+              description:
+                "Ohne Gemeinden lässt sich keine Anlage zuordnen und die Auswertung bleibt leer.",
+              action: (
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Gemeinde anlegen
+                </Button>
+              ),
+            }}
+            columns={[
+              {
+                id: "name",
+                header: "Name",
+                cell: (m) => <span className="font-medium">{m.name}</span>,
+                sortValue: (m) => m.name,
+                searchValue: (m) => m.name,
+              },
+              {
+                id: "officialKey",
+                header: "Gemeindeschlüssel",
+                cell: (m) => (
+                  <span className="font-mono text-xs">{m.officialKey ?? "—"}</span>
+                ),
+                sortValue: (m) => m.officialKey,
+                searchValue: (m) => m.officialKey ?? "",
+              },
+              {
+                id: "state",
+                header: "Bundesland",
+                cell: (m) => m.state ?? "—",
+                sortValue: (m) => m.state,
+                searchValue: (m) => m.state ?? "",
+              },
+              {
+                id: "turbines",
+                header: "Anlagen",
+                align: "right",
+                cell: (m) => (
+                  <span className="tabular-nums">
+                    {m._count.turbines > 0 ? (
+                      m._count.turbines
+                    ) : (
+                      <Badge variant="outline">0</Badge>
+                    )}
+                  </span>
+                ),
+                sortValue: (m) => m._count.turbines,
+              },
+              {
+                id: "plots",
+                header: "Flurstücke",
+                align: "right",
+                cell: (m) => (
+                  <span className="tabular-nums">{m._count.plots}</span>
+                ),
+                sortValue: (m) => m._count.plots,
+              },
+              {
+                id: "actions",
+                header: "",
+                align: "right",
+                // Ohne sortValue: eine Spalte mit Schaltflächen zu sortieren
+                // ergibt nichts.
+                cell: (m) => (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(m)}
+                    aria-label={`${m.name} löschen`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                ),
+              },
+            ]}
+          />
         </CardContent>
       </Card>
 

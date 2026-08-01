@@ -62,6 +62,42 @@ const createPark = useMutation({
 });
 ```
 
+## 📋 Neue Listen: DataTable, nicht `<Table>` von Hand
+
+**Status Quo (Audit 2026-08, C1):** 157 Dateien binden shadcn-`<Table>` direkt ein, 12 weitere bauen ein rohes `<table>`. Jede Liste bringt Sortierung, Suche, Paginierung und Leerzustand selbst mit — oder eben nicht: von rund 169 Listen haben 29 einen gestalteten Leerzustand.
+
+**Regel ab jetzt:**
+- **Neue** Listen: `<DataTable>` aus `@/components/ui/data-table`
+- **Bestehende**: NUR umziehen, wenn du eh in der Datei arbeitest — kein Migrations-PR
+
+```tsx
+import { DataTable } from "@/components/ui/data-table";
+
+<DataTable
+  rows={parks}
+  getRowId={(p) => p.id}
+  isLoading={isLoading}
+  searchPlaceholder="Park suchen"
+  empty={{ icon: Wind, title: "Noch kein Park angelegt", action: <Button…/> }}
+  columns={[
+    { id: "name", header: "Name", cell: (p) => p.name,
+      sortValue: (p) => p.name, searchValue: (p) => p.name },
+    { id: "power", header: "Leistung", align: "right",
+      cell: (p) => formatNumber(p.kw, 2), sortValue: (p) => p.kw },
+    // Ohne sortValue → kein klickbarer Kopf. Absicht bei Aktionsspalten.
+    { id: "actions", header: "", align: "right", cell: (p) => <Button…/> },
+  ]}
+/>
+```
+
+**Was sie mitbringt und du nicht mehr selbst bauen musst:**
+- Sortierung mit deutscher Kollation und natürlicher Zahlenfolge (`WEA 10` hinter `WEA 9`)
+- Leere Werte **immer am Ende** — auch absteigend
+- Leerzustand, der „noch nichts angelegt" von „Filter passt auf nichts" unterscheidet
+- Suche und Paginierung
+
+**Wofür sie NICHT gedacht ist:** serverseitig paginierte Listen. Sie würde nur die geladene Seite durchsuchen und vorspiegeln, das sei alles. Solche Listen behalten ihre eigene Steuerung mit `PAGE_SIZE_*` aus `@/lib/config/pagination`.
+
 ## Weitere verbindliche Konventionen
 
 - **API-Routes:** IMMER `apiError("CODE", status, { message?, details? })` aus `@/lib/api-errors`. NIEMALS `NextResponse.json({ error })` direkt.
