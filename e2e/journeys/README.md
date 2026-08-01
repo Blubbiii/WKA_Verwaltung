@@ -87,8 +87,10 @@ Konto geben, statt die Grenzen anzuheben.
 | Admin — Einstellung ändern, prüfen, exakt zurücksetzen; 22 Seiten erreichbar | ✅ |
 | Pacht — Verpächter anlegen, im Assistenten auswählen, Schritt 1 → 2 | ✅ |
 | Pacht — Schritte 2–4 (brauchen Flurstücke) | offen |
-| GIS — Flächen einzeichnen, SHP-Import | offen |
-| SCADA — Import ausführen, Anomalie erzeugen | offen |
+| GIS — Polygon anlegen und unverändert auslesen, Seiten erreichbar | ✅ |
+| GIS — Zeichnen auf der Karte (Mausbewegung auf Canvas) | bewusst nicht |
+| SCADA — Seiten erreichbar, Anomalie-Auswertung antwortet | ✅ |
+| SCADA — Import mit echter WSD-Datei ausführen | offen |
 | Acht Assistenten ohne generischen Durchlauf und ohne eigenen Test | offen |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
