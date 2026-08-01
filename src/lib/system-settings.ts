@@ -79,6 +79,24 @@ export const SYSTEM_SETTING_DEFAULTS = {
     category: "GEWST",
     description: "§8 Nr 1f GewStG — Lizenzen (1/4)",
   },
+  // Kapitalertragsteuer §43a EStG / §4 SolZG
+  //
+  // Standen als feste Konstanten in kapesta-calculator.ts, während GWG-Grenzen,
+  // GewSt-Quoten und Verzugszins-Aufschläge längst hier lagen. Kein Rechenfehler,
+  // aber eine Inkonsistenz mit Folgen: wird der Solidaritätszuschlag weiter
+  // abgebaut — für die Kapitalertragsteuer besteht er anders als bei der
+  // Einkommensteuer unverändert fort —, wäre das ein Deployment statt einer
+  // Eingabe.
+  KAPEST_RATE: {
+    value: 0.25 as number,
+    category: "KAPEST",
+    description: "§43a Abs. 1 Nr. 1 EStG — Kapitalertragsteuersatz",
+  },
+  SOLI_RATE: {
+    value: 0.055 as number,
+    category: "KAPEST",
+    description: "§4 SolZG — Solidaritätszuschlag auf die Kapitalertragsteuer",
+  },
   // Verzugszinsen §288 BGB
   VERZUGSZINS_B2B_LUMP_SUM_EUR: {
     value: 40 as number,

@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Calendar, FileText } from "lucide-react";
-import { LOCALE_DE } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 interface CpiDueRow {
   leaseId: string;
@@ -122,7 +122,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
                         {t("intervalMonths", { months: row.cpiAdjustmentMonths })} ·{" "}
                         {row.cpiLastAdjustedAt
                           ? t("lastAdjusted", {
-                              date: new Date(row.cpiLastAdjustedAt).toLocaleDateString(LOCALE_DE),
+                              date: formatDate(new Date(row.cpiLastAdjustedAt)),
                             })
                           : t("neverAdjusted")}
                       </div>
@@ -130,7 +130,7 @@ export function CpiReminderWidget({ horizonDays = 90 }: { horizonDays?: number }
                     <Badge variant={overdue ? "destructive" : "default"}>
                       {overdue
                         ? t("overdueBadge", { days: row.daysOverdue })
-                        : new Date(row.nextDueDate).toLocaleDateString(LOCALE_DE)}
+                        : formatDate(new Date(row.nextDueDate))}
                     </Badge>
                   </Link>
                 );

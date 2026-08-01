@@ -49,7 +49,7 @@ import {
   Legend,
 } from "recharts";
 import type { DailyOverviewResponse } from "@/types/analytics";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 // =============================================================================
 // Helpers
@@ -368,7 +368,7 @@ export function DailyOverview() {
                       }}
                       labelFormatter={(v) => {
                         const d = new Date(v);
-                        return d.toLocaleDateString(LOCALE_DE);
+                        return formatDate(d);
                       }}
                     />
                     <Legend

@@ -25,6 +25,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { computeKapESt, buildKapEStLeaflet } from "@/lib/accounting/kapesta-calculator";
+import { getSystemSetting } from "@/lib/system-settings";
 
 export async function GET(
   request: NextRequest,
@@ -43,6 +44,14 @@ export async function GET(
       0,
       Math.min(parseFloat(searchParams.get("kirchensteuerRate") ?? "0") || 0, 0.09),
     );
+
+    // Kapitalertragsteuer- und Soli-Satz aus den System-Einstellungen statt
+    // fest im Rechner. Beide sind Rechtsstaende, keine Mandantenwahl — deshalb
+    // system- und nicht mandantenweit gepflegt.
+    const [kapestRate, soliRate] = await Promise.all([
+      getSystemSetting("KAPEST_RATE"),
+      getSystemSetting("SOLI_RATE"),
+    ]);
     const freibetragPerShareholder = Math.max(
       0,
       parseFloat(searchParams.get("freibetragPerShareholder") ?? "1000") || 0,
@@ -105,8 +114,16 @@ export async function GET(
             grossAmount: amount,
             freibetragRemaining: freibetragPerShareholder,
             kirchensteuerRate,
+            kapestRate,
+            soliRate,
           })
-        : computeKapESt({ grossAmount: amount, freibetragRemaining: amount, kirchensteuerRate: 0 });
+        : computeKapESt({
+            grossAmount: amount,
+            freibetragRemaining: amount,
+            kirchensteuerRate: 0,
+            kapestRate,
+            soliRate,
+          });
 
       return {
         shareholderName: name,
@@ -140,8 +157,11 @@ export async function GET(
       settings: {
         kirchensteuerRate,
         freibetragPerShareholder,
-        kapestRate: 0.25,
-        soliRate: 0.055,
+        // Nicht erneut hinschreiben: die Antwort meldet die Saetze, mit denen
+        // tatsaechlich gerechnet wurde. Feste Werte hier haetten der Oberflaeche
+        // 25 % gezeigt, waehrend die Tabelle darunter anders rechnet.
+        kapestRate,
+        soliRate,
       },
       ...leaflet,
     });

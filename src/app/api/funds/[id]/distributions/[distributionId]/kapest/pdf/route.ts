@@ -19,6 +19,7 @@ import {
   buildKapEStLeaflet,
 } from "@/lib/accounting/kapesta-calculator";
 import { generateKapEStPdf } from "@/lib/pdf/generators/kapestPdf";
+import { getSystemSetting } from "@/lib/system-settings";
 
 export async function GET(
   request: NextRequest,
@@ -37,6 +38,14 @@ export async function GET(
       0,
       Math.min(parseFloat(searchParams.get("kirchensteuerRate") ?? "0") || 0, 0.09),
     );
+
+    // Kapitalertragsteuer- und Soli-Satz aus den System-Einstellungen statt
+    // fest im Rechner. Beide sind Rechtsstaende, keine Mandantenwahl — deshalb
+    // system- und nicht mandantenweit gepflegt.
+    const [kapestRate, soliRate] = await Promise.all([
+      getSystemSetting("KAPEST_RATE"),
+      getSystemSetting("SOLI_RATE"),
+    ]);
     const freibetragPerShareholder = Math.max(
       0,
       parseFloat(searchParams.get("freibetragPerShareholder") ?? "1000") || 0,
@@ -103,11 +112,15 @@ export async function GET(
             grossAmount: amount,
             freibetragRemaining: freibetragPerShareholder,
             kirchensteuerRate,
+            kapestRate,
+            soliRate,
           })
         : computeKapESt({
             grossAmount: amount,
             freibetragRemaining: amount,
             kirchensteuerRate: 0,
+            kapestRate,
+            soliRate,
           });
 
       return {
@@ -146,8 +159,12 @@ export async function GET(
       distributionNumber: distribution.distributionNumber,
       distributionDate: distribution.distributionDate.toISOString(),
       grossTotal: Number(distribution.totalAmount),
-      kapestRate: 0.25,
-      soliRate: 0.055,
+      // Standen hier ein drittes Mal fest verdrahtet — das Beiblatt haette
+      // also 25 % gedruckt, waehrend die Tabelle darunter bereits mit einem
+      // geaenderten Satz gerechnet haette. Jetzt dieselbe Quelle wie die
+      // Berechnung.
+      kapestRate,
+      soliRate,
       kirchensteuerRate,
       freibetragPerShareholder,
       rows: pdfRows,

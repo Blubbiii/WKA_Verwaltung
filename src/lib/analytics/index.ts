@@ -18,6 +18,7 @@ import { cache as redisCache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { logger } from "@/lib/logger";
 import { LOCALE_DE } from "@/lib/format";
+import { DAYS_PER_YEAR_AVERAGE, MS_PER_DAY } from "@/lib/constants/time";
 
 // =============================================================================
 // REDIS CACHE HELPERS
@@ -226,7 +227,10 @@ export async function calculateKPIs(tenantId: string): Promise<DashboardKPIs> {
   if (turbinesWithCommissionDate.length > 0) {
     const totalAge = turbinesWithCommissionDate.reduce((sum, t) => {
       const commDate = t.commissioningDate!;
-      const ageYears = (now.getTime() - commDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      // Mittleres Anlagenalter ueber viele Jahre — Schaltjahre laufen mit,
+      // siehe DAYS_PER_YEAR_AVERAGE.
+      const ageYears =
+        (now.getTime() - commDate.getTime()) / (DAYS_PER_YEAR_AVERAGE * MS_PER_DAY);
       return sum + ageYears;
     }, 0);
     averageTurbineAge = totalAge / turbinesWithCommissionDate.length;

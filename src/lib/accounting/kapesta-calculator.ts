@@ -19,6 +19,18 @@ export interface KapEStInput {
   freibetragRemaining?: number;
   /** Kirchensteuer-Satz (0.08 = Bayern/BW, 0.09 = alle anderen) oder 0 falls nicht KiSt-pflichtig. */
   kirchensteuerRate?: number;
+  /**
+   * Kapitalertragsteuersatz (§43a Abs. 1 Nr. 1 EStG).
+   *
+   * Bewusst als Eingabe statt als Konstante in diesem Modul: der Wert liegt in
+   * den System-Einstellungen und wird dort gepflegt. Diese Funktion bleibt
+   * dadurch rein und synchron — sie rechnet, sie lädt nicht.
+   *
+   * Ohne Angabe gilt der Rechtsstand vom 01.06.2026 (siehe DEFAULT_KAPEST_RATE).
+   */
+  kapestRate?: number;
+  /** Solidaritätszuschlag auf die Kapitalertragsteuer (§4 SolZG). Siehe `kapestRate`. */
+  soliRate?: number;
 }
 
 export interface KapEStResult {
@@ -35,8 +47,16 @@ export interface KapEStResult {
   netPayout: number;
 }
 
-const KAPEST_RATE = 0.25;
-const SOLI_RATE = 0.055; // 5.5% auf KapESt
+/**
+ * Rückfallwerte, Rechtsstand 01.06.2026.
+ *
+ * Die maßgeblichen Werte stehen in den System-Einstellungen (`KAPEST_RATE`,
+ * `SOLI_RATE`) und werden von den Aufrufern übergeben. Diese Konstanten greifen
+ * nur, wenn keine übergeben wurden — damit ein Aufruf ohne Einstellungen nicht
+ * mit 0 % rechnet und dabei wie ein gültiges Ergebnis aussieht.
+ */
+export const DEFAULT_KAPEST_RATE = 0.25;
+export const DEFAULT_SOLI_RATE = 0.055; // 5,5 % auf die KapESt, nicht auf den Ertrag
 
 /**
  * Berechnet KapESt + SolZ + ggf. KiSt pro Ausschüttung an einen Gesellschafter.
@@ -50,11 +70,14 @@ export function computeKapESt(input: KapEStInput): KapEStResult {
   const freibetragRemaining = Math.max(0, input.freibetragRemaining ?? 0);
   const kirchensteuerRate = Math.max(0, Math.min(input.kirchensteuerRate ?? 0, 0.09));
 
+  const kapestRate = input.kapestRate ?? DEFAULT_KAPEST_RATE;
+  const soliRate = input.soliRate ?? DEFAULT_SOLI_RATE;
+
   const freibetragApplied = Math.min(gross, freibetragRemaining);
   const taxableAmount = Math.max(0, gross - freibetragApplied);
 
-  const kapestAmount = roundCent(taxableAmount * KAPEST_RATE);
-  const soliAmount = roundCent(kapestAmount * SOLI_RATE);
+  const kapestAmount = roundCent(taxableAmount * kapestRate);
+  const soliAmount = roundCent(kapestAmount * soliRate);
   const kirchensteuerAmount = roundCent(kapestAmount * kirchensteuerRate);
 
   const totalDeducted = roundCent(kapestAmount + soliAmount + kirchensteuerAmount);
@@ -64,9 +87,9 @@ export function computeKapESt(input: KapEStInput): KapEStResult {
     grossAmount: gross,
     freibetragApplied,
     taxableAmount,
-    kapestRate: KAPEST_RATE,
+    kapestRate,
     kapestAmount,
-    soliRate: SOLI_RATE,
+    soliRate,
     soliAmount,
     kirchensteuerRate,
     kirchensteuerAmount,

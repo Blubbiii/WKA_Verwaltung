@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LOCALE_DE } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -58,7 +58,7 @@ const SEVERITY_OPTIONS = [
 // =============================================================================
 
 function formatReportLabel(report: ReportOption): string {
-  const date = new Date(report.inspectionDate).toLocaleDateString(LOCALE_DE);
+  const date = formatDate(new Date(report.inspectionDate));
   const inspector = report.inspector ?? "Unbekannt";
   const park = report.park?.name ?? "";
   return `${date} - ${inspector}${park ? ` (${park})` : ""}`;

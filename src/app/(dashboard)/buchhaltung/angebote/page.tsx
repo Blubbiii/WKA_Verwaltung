@@ -44,7 +44,7 @@ import {
   Trash2,
   Clock,
 } from "lucide-react";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 import { useConfirm } from "@/components/ui/use-confirm";
 
 interface QuoteItem {
@@ -102,7 +102,7 @@ function fmt(n: number | string): string {
 }
 
 function fmtDate(d: string): string {
-  return new Date(d).toLocaleDateString(LOCALE_DE);
+  return formatDate(new Date(d));
 }
 
 interface NewItemRow {

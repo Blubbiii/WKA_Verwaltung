@@ -37,7 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 interface PersonRef {
   id: string;
@@ -273,7 +273,7 @@ export function ShareTransfersCard({ fundId }: { fundId: string }) {
                           <span className="font-mono">{transfer.transferNumber}</span>
                           <br />
                           <span className="text-muted-foreground">
-                            {new Date(transfer.effectiveDate).toLocaleDateString("de-DE")}
+                            {formatDate(new Date(transfer.effectiveDate))}
                           </span>
                         </TableCell>
                         <TableCell className="text-xs">{t(`types.${transfer.type}`)}</TableCell>

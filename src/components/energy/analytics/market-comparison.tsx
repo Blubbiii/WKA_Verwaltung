@@ -19,7 +19,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import type { MarketComparisonResponse } from "@/types/market-data";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 interface MarketComparisonProps {
   parks: { id: string; name: string; shortName: string | null }[];
@@ -131,7 +131,7 @@ export function MarketComparison({ parks }: MarketComparisonProps) {
 
         {data?.meta.lastSyncAt && (
           <span className="text-xs text-muted-foreground">
-            Letzte Aktualisierung: {new Date(data.meta.lastSyncAt).toLocaleDateString(LOCALE_DE)}
+            Letzte Aktualisierung: {formatDate(new Date(data.meta.lastSyncAt))}
           </span>
         )}
       </div>

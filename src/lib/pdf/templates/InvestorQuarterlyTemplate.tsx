@@ -9,7 +9,7 @@
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 import { PDF_COLORS as C } from "@/lib/pdf/tokens";
 
 // ============================================================
@@ -446,7 +446,7 @@ export function InvestorQuarterlyTemplate({ data }: InvestorQuarterlyTemplatePro
             Dieser Bericht wurde automatisch erstellt. — WindparkManager
           </Text>
           <Text style={s.footerText}>
-            {new Date().toLocaleDateString(LOCALE_DE)}
+            {formatDate(new Date())}
           </Text>
         </View>
         <Text

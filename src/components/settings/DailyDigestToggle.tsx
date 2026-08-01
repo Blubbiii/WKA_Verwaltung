@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/format";
 
 export function DailyDigestToggle() {
   const t = useTranslations("settings.dailyDigest");
@@ -93,7 +94,7 @@ export function DailyDigestToggle() {
               {lastSentAt && (
                 <span className="block text-xs text-muted-foreground mt-1">
                   {t("lastSent", {
-                    date: new Date(lastSentAt).toLocaleDateString("de-DE"),
+                    date: formatDate(new Date(lastSentAt)),
                   })}
                 </span>
               )}

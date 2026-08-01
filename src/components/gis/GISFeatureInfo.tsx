@@ -25,7 +25,7 @@ import type {
   AnnotationData,
 } from "./types";
 import { PLOT_AREA_COLORS, PLOT_AREA_LABELS, LEASE_STATUS_COLORS } from "./types";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 interface GISFeatureInfoProps {
   feature: SelectedFeature | null;
@@ -73,17 +73,6 @@ function getAnnotationTypeLabel(type: string): string {
     case "EXCLUSION_ZONE": return "Sperrzone";
     case "CUSTOM": return "Sonstiges";
     default: return type;
-  }
-}
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
-  try {
-    return new Date(dateStr).toLocaleDateString(LOCALE_DE, {
-      day: "2-digit", month: "2-digit", year: "numeric",
-    });
-  } catch {
-    return dateStr;
   }
 }
 

@@ -1,4 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+// ../utils/formatters reicht formatDate aus @/lib/format nur durch — ein
+// zweiter Import derselben Funktion waere reine Doppelung.
 import { formatDate } from "../utils/formatters";
 import { LOCALE_DE } from "@/lib/format";
 
@@ -271,11 +273,7 @@ interface AuditLogTemplateProps {
 function formatDateTime(dateStr: string): { date: string; time: string } {
   const d = new Date(dateStr);
   return {
-    date: d.toLocaleDateString(LOCALE_DE, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }),
+    date: formatDate(d),
     time: d.toLocaleTimeString(LOCALE_DE, {
       hour: "2-digit",
       minute: "2-digit",

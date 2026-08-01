@@ -35,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 
 interface Provision {
   id: string;
@@ -207,7 +207,7 @@ export function DismantlingCard({ parkId }: { parkId: string }) {
             hint={
               obligation.costEstimateDate
                 ? t("estimateFrom", {
-                    date: new Date(obligation.costEstimateDate).toLocaleDateString("de-DE"),
+                    date: formatDate(new Date(obligation.costEstimateDate)),
                   })
                 : // Ein Kostenansatz ohne Datum lässt sich nicht beurteilen.
                   t("estimateUndated")
@@ -227,7 +227,7 @@ export function DismantlingCard({ parkId }: { parkId: string }) {
             label={t("securityValidTo")}
             value={
               obligation.securityValidTo
-                ? new Date(obligation.securityValidTo).toLocaleDateString("de-DE")
+                ? formatDate(new Date(obligation.securityValidTo))
                 : t("securityNoExpiry")
             }
             hint={

@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
+import { formatDate } from "@/lib/format";
 
 interface AgendaItem {
   id: string;
@@ -148,7 +149,7 @@ export function MeetingsCard({ fundId }: { fundId: string }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs">{meeting.meetingNumber}</span>
                 <span className="text-sm font-medium">
-                  {new Date(meeting.scheduledAt).toLocaleDateString("de-DE")}
+                  {formatDate(new Date(meeting.scheduledAt))}
                 </span>
                 <Badge variant="outline" className="text-xs">
                   {t(`types.${meeting.type}`)}

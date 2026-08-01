@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useApiQuery } from "@/hooks/useApiQuery";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { ComponentLifetime } from "@/lib/components/lifetime";
 
 interface ComponentRow {
@@ -203,7 +203,7 @@ export function MajorComponentsCard({
                           <br />
                           <Badge variant="outline" className="mt-1 text-xs">
                             {t("removedOn", {
-                              date: new Date(component.removedAt).toLocaleDateString("de-DE"),
+                              date: formatDate(new Date(component.removedAt)),
                             })}
                             {component.removalReason
                               ? ` · ${t(`removalReasons.${component.removalReason}`)}`
@@ -226,7 +226,7 @@ export function MajorComponentsCard({
                     </TableCell>
                     <TableCell className="text-xs">
                       {component.installedAt
-                        ? new Date(component.installedAt).toLocaleDateString("de-DE")
+                        ? formatDate(new Date(component.installedAt))
                         : "–"}
                       {/* Die Tauschkette: „das dritte Getriebe" ohne Nachzählen. */}
                       {component.replaces && (
@@ -306,7 +306,7 @@ function WarrantyCell({ component }: { component: ComponentRow }) {
       <span className="flex items-center gap-1 text-destructive">
         <ShieldAlert className="h-3 w-3" aria-hidden />
         {t("warrantyEnded", {
-          date: new Date(component.warrantyEndDate!).toLocaleDateString("de-DE"),
+          date: formatDate(new Date(component.warrantyEndDate!)),
         })}
       </span>
     );
@@ -316,7 +316,7 @@ function WarrantyCell({ component }: { component: ComponentRow }) {
   return (
     <span className={soon ? "flex items-center gap-1 text-amber-600" : "flex items-center gap-1"}>
       <ShieldCheck className="h-3 w-3" aria-hidden />
-      {new Date(component.warrantyEndDate!).toLocaleDateString("de-DE")}
+      {formatDate(new Date(component.warrantyEndDate!))}
       {soon && ` · ${t("daysLeft", { days: warrantyDaysLeft })}`}
     </span>
   );

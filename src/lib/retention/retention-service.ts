@@ -20,12 +20,28 @@
 
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
-import { MS_PER_DAY } from "@/lib/constants/time";
+import { MS_PER_DAY, DAYS_PER_YEAR_AVERAGE } from "@/lib/constants/time";
+import { addYearsSafe } from "@/lib/date-utils";
 import { getTenantSettings } from "@/lib/tenant-settings";
 
 const logger = jobLogger.child({ component: "retention" });
 
-const YEARS_TO_MS = (years: number) => years * 365.25 * MS_PER_DAY;
+/**
+ * Stichtag „vor N Jahren" — kalendergenau.
+ *
+ * Stand hier als `years * 365.25 * MS_PER_DAY`. Für ein mittleres Alter wäre
+ * das richtig, für eine Aufbewahrungsfrist nicht: „zehn Jahre ab dem 15. März"
+ * endet am 15. März und nicht 3652,5 Tage später. Der Unterschied betrug bis
+ * zu einem halben Tag — praktisch harmlos, aber der Löschlauf im Worker
+ * rechnete bereits mit `addYearsSafe`, und zwei Wege zur selben Frist sind
+ * genau die Sorte Abweichung, die niemandem auffällt.
+ *
+ * `addYearsSafe` behandelt zudem den 29. Februar: ein schlichtes
+ * `setFullYear(-10)` rutscht in einem Nicht-Schaltjahr auf den 1. März.
+ */
+function cutoffYearsAgo(years: number): Date {
+  return addYearsSafe(new Date(), -years);
+}
 
 /**
  * Retention-Schwellen pro Model (DEFAULT — pro Tenant überschreibbar via
@@ -128,7 +144,7 @@ async function purgeModel(
   retentionYears: number,
   tenantId?: string,
 ): Promise<RetentionRunResult> {
-  const cutoffDate = new Date(Date.now() - YEARS_TO_MS(retentionYears));
+  const cutoffDate = cutoffYearsAgo(retentionYears);
 
   try {
     // Prisma deleteMany auf dem entsprechenden Model. Der Model-Accessor
@@ -202,7 +218,7 @@ async function purgeCreatedAtModel(
     );
     return {
       model: modelName,
-      retentionYears: retentionDays / 365.25,
+      retentionYears: retentionDays / DAYS_PER_YEAR_AVERAGE,
       cutoffDate,
       deletedCount: result.count,
     };
@@ -214,7 +230,7 @@ async function purgeCreatedAtModel(
     );
     return {
       model: modelName,
-      retentionYears: retentionDays / 365.25,
+      retentionYears: retentionDays / DAYS_PER_YEAR_AVERAGE,
       cutoffDate,
       deletedCount: 0,
       error: message,

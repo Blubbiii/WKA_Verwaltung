@@ -44,6 +44,7 @@ import {
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { deadlineUrgency } from "@/lib/regulatory/deadline-rules";
 import { RegulatoryProfileDialog } from "@/components/parks/regulatory-profile-dialog";
+import { formatDate } from "@/lib/format";
 
 interface ParkRef {
   id: string;
@@ -240,7 +241,7 @@ export default function RegulatoryPage() {
                                   : ""
                             }
                           >
-                            {new Date(deadline.dueDate).toLocaleDateString("de-DE")}
+                            {formatDate(new Date(deadline.dueDate))}
                           </span>
                           {urgency === "overdue" && (
                             <>

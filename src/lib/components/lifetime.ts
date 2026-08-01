@@ -19,6 +19,8 @@
  * Rückstellung oder in einem Bankgespräch.
  */
 
+import { DAYS_PER_YEAR_AVERAGE } from "@/lib/constants/time";
+
 export interface ComponentLifetimeInput {
   installedAt: Date | null;
   /** Ausbau. Gesetzt = die Komponente ist historisch. */
@@ -57,8 +59,10 @@ export const WARRANTY_WARN_DAYS = 180;
  */
 export const PLANNING_THRESHOLD = 0.8;
 
+// Alter und verbrauchte Lebensdauer sind Zeitraeume ueber viele Jahre — hier
+// ist der Mittelwert mit Schaltjahren richtig, siehe @/lib/constants/time.
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const DAYS_PER_YEAR = 365.25;
+const DAYS_PER_YEAR = DAYS_PER_YEAR_AVERAGE;
 
 export function computeLifetime(
   input: ComponentLifetimeInput,

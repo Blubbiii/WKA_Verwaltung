@@ -26,7 +26,7 @@ import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatsCards } from "@/components/ui/stats-cards";
-import { LOCALE_DE } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -83,15 +83,6 @@ const priorityColors: Record<number, string> = {
   2: "bg-blue-100 text-blue-800",
   3: "bg-gray-100 text-gray-800",
 };
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "-";
-  try {
-    return new Date(dateStr).toLocaleDateString(LOCALE_DE);
-  } catch {
-    return "-";
-  }
-}
 
 function isOverdue(task: Task): boolean {
   if (!task.dueDate || task.status === "DONE" || task.status === "CANCELLED")

@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { LOCALE_DE } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 // =============================================================================
 // TYPES
@@ -120,7 +120,7 @@ export default function NewTaskPage() {
                   checklistId: template.id,
                   checklistData: items,
                   parkId: template.park?.id ?? prev.parkId,
-                  title: `${template.title} - ${new Date().toLocaleDateString(LOCALE_DE)}`,
+                  title: `${template.title} - ${formatDate(new Date())}`,
                 }));
               }
             }

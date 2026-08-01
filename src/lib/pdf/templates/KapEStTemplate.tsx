@@ -9,7 +9,7 @@
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 export interface KapEStPdfRow {
   shareholderName: string;
@@ -148,7 +148,7 @@ function fmtPct(n: number): string {
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(LOCALE_DE);
+  return formatDate(d);
 }
 
 export function KapEStTemplate({ data }: { data: KapEStPdfData }) {
@@ -247,7 +247,7 @@ export function KapEStTemplate({ data }: { data: KapEStPdfData }) {
         </View>
 
         <Text style={styles.footer} fixed>
-          Erzeugt mit WindparkManager · {new Date().toLocaleDateString(LOCALE_DE)}
+          Erzeugt mit WindparkManager · {formatDate(new Date())}
         </Text>
       </Page>
     </Document>

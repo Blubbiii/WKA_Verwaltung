@@ -4,7 +4,7 @@
  */
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 export interface GuvPdfLine {
   position: number | string;
@@ -106,7 +106,7 @@ function fmtDateRange(start: string, end: string): string {
   const s = new Date(start);
   const e = new Date(end);
   if (isNaN(s.getTime()) || isNaN(e.getTime())) return `${start} – ${end}`;
-  return `${s.toLocaleDateString(LOCALE_DE)} – ${e.toLocaleDateString(LOCALE_DE)}`;
+  return `${formatDate(s)} – ${formatDate(e)}`;
 }
 
 export function GuvTemplate({ data }: { data: GuvPdfData }) {
@@ -170,7 +170,7 @@ export function GuvTemplate({ data }: { data: GuvPdfData }) {
         </View>
 
         <Text style={styles.footer} fixed>
-          Erzeugt mit WindparkManager · {new Date().toLocaleDateString(LOCALE_DE)}
+          Erzeugt mit WindparkManager · {formatDate(new Date())}
         </Text>
       </Page>
     </Document>

@@ -37,7 +37,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { LOCALE_DE } from "@/lib/format";
+import { LOCALE_DE, formatDate } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -77,15 +77,6 @@ const MESSAGE_TYPE_COLORS: Record<string, string> = {
   W: "secondary",
   I: "outline",
 };
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString(LOCALE_DE, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Component
