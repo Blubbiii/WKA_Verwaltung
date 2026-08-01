@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { formatNumber } from "@/lib/format";
+import { MunicipalityBenefitSection } from "@/components/regulatory/MunicipalityBenefitSection";
 
 interface Municipality {
   id: string;
@@ -281,6 +282,8 @@ export default function GemeindenPage() {
           )}
         </CardContent>
       </Card>
+
+      <MunicipalityBenefitSection year={year} municipalities={municipalities} />
 
       {/* ------------------------------------------------------------------ */}
       {/* Stammdaten                                                          */}
