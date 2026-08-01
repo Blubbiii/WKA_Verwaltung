@@ -43,18 +43,53 @@ const envSchema = z
 
 export type Env = z.infer<typeof envSchema>;
 
+/**
+ * Wird gerade gebaut statt ausgeführt?
+ *
+ * `next build` importiert beim „Collecting page data" jedes Route-Modul, um
+ * dessen Metadaten zu ermitteln — und damit transitiv auch dieses hier. Ein
+ * Image braucht zum BAUEN aber keine Datenbank: seine echte Umgebung bekommt
+ * es erst bei `docker run`. Ein Wurf an dieser Stelle bricht deshalb den
+ * Build, ohne über die Produktionskonfiguration irgendetwas auszusagen.
+ *
+ * `NEXT_PHASE` setzt Next selbst; `SKIP_ENV_VALIDATION` ist der ausdrückliche
+ * Schalter, den das Dockerfile setzt — damit der Build nicht davon abhängt,
+ * dass die Phasenerkennung greift.
+ */
+const isBuildTime =
+  process.env.NEXT_PHASE === "phase-production-build" ||
+  process.env.SKIP_ENV_VALIDATION === "1" ||
+  process.env.SKIP_ENV_VALIDATION === "true";
+
 function parseEnv(): Env {
   const result = envSchema.safeParse(process.env);
-  if (!result.success) {
-    const issues = result.error.issues
-      .map((i) => `  - ${i.path.join(".") || "(root)"}: ${i.message}`)
-      .join("\n");
-    console.error(`[env] Invalid environment variables:\n${issues}`);
-    throw new Error(
-      "Invalid environment configuration - see stderr for details.",
+  if (result.success) return result.data;
+
+  const issues = result.error.issues
+    .map((i) => `  - ${i.path.join(".") || "(root)"}: ${i.message}`)
+    .join("\n");
+
+  if (isBuildTime) {
+    // Laut, aber nicht tödlich: niemand soll glauben, hier sei geprüft worden.
+    // Die echte Prüfung läuft beim Start über `instrumentation.ts` — dort
+    // liegen die Werte an, und dort ist ein Abbruch auch richtig.
+    console.warn(
+      `[env] Build-Zeit: Umgebungsprüfung übersprungen. Beim Start wird geprüft.\n${issues}`,
     );
+    return {
+      DATABASE_URL: process.env.DATABASE_URL ?? "",
+      AUTH_SECRET: process.env.AUTH_SECRET,
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+      REDIS_URL: process.env.REDIS_URL,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NODE_ENV: (process.env.NODE_ENV as Env["NODE_ENV"]) ?? "production",
+    };
   }
-  return result.data;
+
+  console.error(`[env] Invalid environment variables:\n${issues}`);
+  throw new Error(
+    "Invalid environment configuration - see stderr for details.",
+  );
 }
 
 /**

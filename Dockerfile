@@ -62,6 +62,18 @@ ENV NEXT_PUBLIC_COMMIT_SHA=${NEXT_PUBLIC_COMMIT_SHA}
 ARG NEXT_PUBLIC_BUILD_TIME=unknown
 ENV NEXT_PUBLIC_BUILD_TIME=${NEXT_PUBLIC_BUILD_TIME}
 
+# Umgebungspruefung beim BAUEN aussetzen.
+#
+# `next build` importiert beim "Collecting page data" jedes Route-Modul und
+# damit transitiv src/lib/env.ts. Im Build-Kontext gibt es keine DATABASE_URL —
+# .env steht in .dockerignore, und das ist richtig so: Zugangsdaten haben in
+# einem Image nichts verloren. Die Pruefung laeuft beim START ueber
+# instrumentation.ts, wo die echten Werte anliegen.
+#
+# Die Alternative waere, Platzhalter-Zugangsdaten in den Build zu reichen —
+# das haette die Pruefung erfuellt, ohne irgendetwas zu pruefen.
+ENV SKIP_ENV_VALIDATION=1
+
 # Build mit erhoehtem Memory-Limit (Next.js Build braucht ~2GB)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN npm run build
