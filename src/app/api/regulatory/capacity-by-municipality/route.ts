@@ -45,7 +45,21 @@ export async function GET(request: NextRequest) {
     }
 
     const turbines = await prisma.turbine.findMany({
-      where: { park: { tenantId: check.tenantId } },
+      where: {
+        park: { tenantId: check.tenantId },
+        // NUR echte Windkraftanlagen.
+        //
+        // `Turbine` traegt auch die virtuelle Infrastruktur, die POST
+        // /api/parks zu jedem Park anlegt: Netzverknuepfungspunkt und
+        // Parkrechner. Ohne diese Einschraenkung stehen sie in der Auswertung
+        // als „Anlage ohne Standortgemeinde" — und loesen die Warnung aus, die
+        // ausgewiesenen Anteile seien zu hoch. Sie sind keine Betriebsstaette
+        // im Sinn des § 29 GewStG und haben keine Nennleistung.
+        //
+        // Aufgefallen an der Antwort der Produktionsinstanz, nicht im Test:
+        // die Testdaten hatten noch keine Parks mit Infrastruktur.
+        deviceType: "WEA",
+      },
       select: {
         id: true,
         designation: true,

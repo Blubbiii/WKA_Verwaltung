@@ -65,6 +65,7 @@ interface BenefitResult {
 interface TurbineOption {
   id: string;
   designation: string;
+  deviceType?: string;
   park: { name: string } | null;
 }
 
@@ -111,7 +112,13 @@ export function MunicipalityBenefitSection({
     queryFn: async () => {
       const res = await fetch("/api/turbines?limit=500");
       if (!res.ok) throw new Error(await res.text());
-      return (await res.json()).data;
+      // Nur echte Windkraftanlagen zur Auswahl stellen. `Turbine` traegt auch
+      // die virtuelle Infrastruktur jedes Parks (Netzverknuepfungspunkt,
+      // Parkrechner) — fuer die gibt es keinen 2.500-m-Umkreis und keine
+      // Gemeindebeteiligung. Stuenden sie in der Liste, waere die erste
+      // fehlerhafte Vereinbarung nur eine Frage der Zeit.
+      const rows: TurbineOption[] = (await res.json()).data ?? [];
+      return rows.filter((t) => (t.deviceType ?? "WEA") === "WEA");
     },
     staleTime: 300_000,
     enabled: dialogOpen,

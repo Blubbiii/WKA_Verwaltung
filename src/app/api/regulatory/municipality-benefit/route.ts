@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
       where: {
         park: { tenantId: check.tenantId },
         municipalityBenefits: { some: {} },
+        // Nur echte Windkraftanlagen — siehe capacity-by-municipality.
+        // Der 2.500-m-Umkreis haengt am Turm; ein Parkrechner hat keinen.
+        deviceType: "WEA",
       },
       select: {
         id: true,
