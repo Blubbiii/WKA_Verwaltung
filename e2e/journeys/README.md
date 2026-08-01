@@ -92,11 +92,21 @@ Konto geben, statt die Grenzen anzuheben.
 | GIS — Zeichnen auf der Karte (Mausbewegung auf Canvas) | bewusst nicht |
 | SCADA — Seiten erreichbar, Anomalie-Auswertung antwortet | ✅ |
 | SCADA — Import mit echter WSD-Datei ausführen | offen |
-| Sieben Assistenten ohne generischen Durchlauf und ohne eigenen Test | offen |
+| Anlagen-Import — eigene Beispieldatei hochladen, zuordnen, validieren | ✅ |
+| Anlagen-Import — Einspielen ausführen | bewusst nicht |
+| Sechs Assistenten ohne generischen Durchlauf und ohne eigenen Test | offen |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
 Fehler am meisten weh.
+
+Zwei Einträge stehen auf **„bewusst nicht"**, und zwar aus verschiedenen
+Gründen. Das Zeichnen auf der Karte wäre ein Test der Kartenbibliothek. Das
+Einspielen des Anlagen-Imports dagegen wäre ein Test, der Schaden anrichtet:
+die Beispieldatei enthält zwölf Monate erfundener Erträge für die **echten**
+Anlagen, und aus diesem Bestand werden Abrechnung und Ausschüttung gerechnet.
+Der Test geht bis zur Validierung — die ruft die API mit `action: "validate"`
+und schreibt nichts. Der nächste Klick wäre `action: "import"`.
 
 ## In CI
 
