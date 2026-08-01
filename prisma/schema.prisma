@@ -66,6 +66,7 @@ model Tenant {
   persons                   Person[]
   plots                     Plot[]
   municipalities            Municipality[]
+  municipalityBenefits      MunicipalityBenefit[]
   recurringInvoices         RecurringInvoice[]
   reminderLogs              ReminderLog[]
   roles                     Role[]
@@ -522,6 +523,7 @@ model Turbine {
   netzgesellschaftFund           Fund?                     @relation(fields: [netzgesellschaftFundId], references: [id], onDelete: SetNull)
   park                           Park                      @relation(fields: [parkId], references: [id], onDelete: Cascade)
   municipalityRef                Municipality?             @relation(fields: [municipalityId], references: [id], onDelete: SetNull)
+  municipalityBenefits           MunicipalityBenefit[]
   costCenters                    CostCenter[]
   operationalTasks               OperationalTask[]
   inspectionPlans                InspectionPlan[]
@@ -7461,6 +7463,7 @@ model Municipality {
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   plots    Plot[]
   turbines Turbine[]
+  benefits MunicipalityBenefit[]
 
   /// Derselbe Name darf im Mandanten nur einmal vorkommen — das ist die
   /// Bremse gegen genau die Fragmentierung, die den Freitext unbrauchbar
@@ -7469,4 +7472,72 @@ model Municipality {
   @@index([tenantId])
   @@index([tenantId, officialKey])
   @@map("municipalities")
+}
+
+// =============================================================================
+// A2 (Audit 2026-08): Gemeindebeteiligung nach § 6 EEG
+// =============================================================================
+//
+// Betreiber duerfen den Gemeinden im Umkreis von 2.500 Metern um den Turm bis
+// zu 0,2 ct/kWh anbieten — auf die eingespeiste Menge und auf die fiktive
+// Menge bei Abregelung. Faellt der Umkreis in mehrere Gemeinden, wird nach dem
+// Anteil der KREISFLAECHE verteilt, nicht nach Kopfzahl oder Gemeindeflaeche.
+//
+// Anders als bei der Gewerbesteuer rechnet WPM hier: es ist eine Zahlung, die
+// der Betreiber selbst leistet und selbst abrechnen muss.
+//
+// ## Warum je Anlage und nicht je Park
+//
+// Der Umkreis haengt am einzelnen Turm. Zwei Anlagen desselben Parks koennen
+// verschiedene Gemeinden beruehren — bei einem Park, der sich ueber mehrere
+// Kilometer zieht, ist das der Normalfall.
+//
+// ## Warum der Flaechenanteil erfasst und nicht gerechnet wird
+//
+// Er ergaebe sich aus der Verschneidung des 2.500-m-Kreises mit den
+// Gemeindegrenzen. Die Gemeindegrenzen liegen nicht im System, und ein aus
+// Naeherungswerten gerechneter Anteil saehe genauso aus wie ein aus dem
+// Vertrag uebernommener. Er wird deshalb erfasst — er steht ohnehin in der
+// Vereinbarung mit der Gemeinde.
+model MunicipalityBenefit {
+  id       String @id @default(uuid())
+  tenantId String
+
+  turbineId      String
+  municipalityId String
+
+  /// Anteil der 2.500-m-Kreisflaeche, der auf diese Gemeinde entfaellt (0–1).
+  ///
+  /// Die Anteile aller Gemeinden einer Anlage sollen 1 ergeben. Tun sie es
+  /// nicht, wird das ausgewiesen statt hochgerechnet: eine fehlende Gemeinde
+  /// wuerde sonst die Zahlung an die uebrigen erhoehen.
+  areaShare Decimal @db.Decimal(9, 8)
+
+  /// Vereinbarter Satz in ct/kWh. Hoechstens 0,2 (§ 6 Abs. 1 EEG); ein
+  /// niedrigerer Satz ist zulaessig, ein hoeherer nicht foerderfaehig.
+  rateCtPerKwh Decimal @db.Decimal(6, 4)
+
+  /// Gueltigkeit der Vereinbarung. `null` = seit Beginn / unbefristet.
+  validFrom  DateTime?
+  validUntil DateTime?
+
+  /// Aktenzeichen oder Vertragsbezeichnung, damit die Zahlung belegbar ist.
+  reference String? @db.VarChar(200)
+  notes     String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  turbine      Turbine      @relation(fields: [turbineId], references: [id], onDelete: Cascade)
+  municipality Municipality @relation(fields: [municipalityId], references: [id], onDelete: Restrict)
+
+  /// Je Anlage und Gemeinde eine Vereinbarung. Aendert sich der Satz, wird
+  /// die bestehende befristet und eine neue angelegt — deshalb gehoert
+  /// validFrom in den Schluessel.
+  @@unique([turbineId, municipalityId, validFrom])
+  @@index([tenantId])
+  @@index([turbineId])
+  @@index([municipalityId])
+  @@map("municipality_benefits")
 }
