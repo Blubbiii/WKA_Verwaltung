@@ -97,6 +97,35 @@ RUN node -e "require('pg'); console.log('pg OK')"
 RUN node -e "require('@prisma/adapter-pg'); console.log('@prisma/adapter-pg OK')"
 
 # -----------------------------------------------------------------------------
+# Stage 2c: Laufzeit-Abhaengigkeiten fuer den Worker
+# -----------------------------------------------------------------------------
+# Next buendelt den Server und legt in .next/standalone/node_modules nur ab, was
+# der GEBUENDELTE Code zur Laufzeit noch aufloesen muss. Alles andere ist in die
+# Bundles eingebacken und als Paket verschwunden — von 86 Produktions-
+# Abhaengigkeiten bleiben 15 uebrig.
+#
+# Fuer die App ist das richtig. Der Worker laeuft aber nicht gebuendelt, sondern
+# als roher Quelltext ueber tsx: er sucht die Pakete auf dem normalen Weg und
+# faende einen ausgeduennten Baum. Konkret gescheitert ist er an
+# @aws-sdk/s3-request-presigner; dahinter warteten @prisma/adapter-pg,
+# nodemailer, pdf-lib, tesseract.js, mt940js, date-fns, zod, bcryptjs.
+#
+# Deshalb der vollstaendige Produktionsbaum statt einer handgepflegten Liste:
+# eine Liste waere genau so lange richtig, bis ein Worker einen neuen Import
+# bekommt — und faellt dann in Produktion auf, nicht im Build.
+FROM deps AS worker-deps
+# prune raeumt den bereits installierten Baum aus (Sekunden, kein Netz). Der
+# Rueckfall ist kein Verstecken eines Fehlers, sondern derselbe Zielzustand auf
+# dem langsamen Weg — falls prune an einem halb aufgeraeumten Baum abbricht.
+RUN npm prune --omit=dev || npm install --omit=dev
+# Pakete, von denen es nur EINE Instanz im Prozess geben darf, hier entfernen.
+# Sie liegen bereits im Standalone-Baum; laegen sie zusaetzlich im Rueckfall,
+# koennte ein Modul die eine und ein anderes die andere Kopie erwischen —
+# bei @prisma/client waere die hiesige zudem ungeneriert (kein .prisma).
+RUN rm -rf node_modules/@prisma/client node_modules/.prisma node_modules/prisma \
+           node_modules/react node_modules/react-dom node_modules/next
+
+# -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
 # Minimales Production Image
 # -----------------------------------------------------------------------------
@@ -138,6 +167,14 @@ ENV PATH="/prisma-cli/node_modules/.bin:$PATH"
 # Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Rueckfall-Aufloesung fuer den Worker (siehe Stage worker-deps).
+# Bewusst nach /node_modules und NICHT nach /app/node_modules gemischt:
+# Node sucht beim Aufloesen aufwaerts, also gewinnt /app/node_modules weiterhin
+# fuer alles, was der Standalone-Baum mitbringt. Nur was dort fehlt, faellt eine
+# Ebene hoeher durch. Damit aendert sich fuer die App nichts — bei ihr hat noch
+# nie eine Aufloesung /app/node_modules verlassen.
+COPY --from=worker-deps /app/node_modules /node_modules
 
 # -----------------------------------------------------------------------------
 # Worker-Quellen (F1) — AUSDRUECKLICH, nicht auf den Tracer vertrauend
