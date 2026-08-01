@@ -54,6 +54,8 @@ interface WizardCase {
    */
   walkable: boolean;
   needs?: string;
+  /** Datei mit einem eigenen Test — dann ist der fehlende Durchlauf keine Luecke. */
+  ownTest?: string;
   /** Erstes Eingabefeld, für die Zustandsprüfung bei „Zurück“. */
   firstField?: string;
 }
@@ -83,6 +85,7 @@ const WIZARDS: WizardCase[] = [
     // verlangt die AUSWAHL eines Verpaechters aus einer Suchliste — Tippen
     // allein reicht nicht.
     needs: "Schritt 1 verlangt die Auswahl eines bestehenden Verpaechters",
+    ownTest: "lease-wizard.spec.ts",
   },
   {
     name: "Pacht-Abrechnung",
@@ -233,16 +236,21 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
   // Kein test.skip: das waere ein Eintrag, den man wegklickt. Diese Zahl ist
   // eine sichtbare Aufgabe — waechst sie, ist ein Assistent dazugekommen, den
   // niemand durchklickt.
-  const offen = WIZARDS.filter((w) => !w.walkable);
+  // Ein Assistent zaehlt nur dann als offen, wenn er WEDER generisch
+  // durchklickbar ist NOCH einen eigenen Test hat. Der Pacht-Assistent hat
+  // seit lease-wizard.spec.ts einen — er ist keine Luecke mehr, auch wenn der
+  // Laeufer ihn nicht bedienen kann.
+  const offen = WIZARDS.filter((w) => !w.walkable && !w.ownTest);
 
-  test("nicht mehr Assistenten ohne Durchlauf als bekannt", () => {
+  test("nicht mehr Assistenten ohne Pruefung als bekannt", () => {
     expect(
       offen.length,
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 01.08.2026: neun. Die Zahl darf NICHT steigen, ohne dass ein
-      // eigener Test dazukommt — sie ist die Schuldenliste dieser Suite.
-    ).toBeLessThanOrEqual(9);
+      // Stand 01.08.2026: acht, nachdem der Pacht-Assistent einen eigenen
+      // Test bekommen hat. Die Zahl darf NICHT steigen — sie ist die
+      // Schuldenliste dieser Suite.
+    ).toBeLessThanOrEqual(8);
   });
 });

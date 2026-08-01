@@ -38,6 +38,28 @@ export interface CreatedRef {
  * einem Validierungsfehler steht die Ursache aber im Rumpf. Ohne sie sucht
  * man den Fehler in der falschen Ecke.
  */
+/**
+ * Wartet bei HTTP 429 einmal ab und versucht es erneut.
+ *
+ * Die API begrenzt auf 100 Anfragen je Minute und Nutzer. Eine Suite mit
+ * sechzig Tests, die sich alle mit demselben Konto anmelden, erreicht das —
+ * jeder Seitenaufruf löst selbst mehrere Anfragen aus.
+ *
+ * Das ist KEIN Fehler der Anwendung, den man wegretryen müsste, sondern eine
+ * Eigenschaft, die ein Client zu respektieren hat: bei 429 wartet man und
+ * versucht es noch einmal. Genau einmal — bleibt es dabei, ist etwas anderes
+ * los als eine kurze Spitze, und dann soll der Test scheitern.
+ */
+async function withBackoff<T>(
+  ausfuehren: () => Promise<T>,
+  status: (r: T) => number,
+): Promise<T> {
+  const erste = await ausfuehren();
+  if (status(erste) !== 429) return erste;
+  await new Promise((r) => setTimeout(r, 20_000));
+  return ausfuehren();
+}
+
 async function readOrFail(res: Awaited<ReturnType<APIRequestContext["post"]>>, what: string) {
   const body = await res.text();
   if (!res.ok()) {
@@ -81,7 +103,10 @@ export class WpmApi {
     data: Record<string, unknown>,
     nameField = "name",
   ): Promise<CreatedRef> {
-    const res = await this.request.post(`/api/${collection}`, { data });
+    const res = await withBackoff(
+      () => this.request.post(`/api/${collection}`, { data }),
+      (r) => r.status(),
+    );
     const json = await readOrFail(res, `POST /api/${collection}`);
     const entity = json.data ?? json;
     const ref: CreatedRef = {
@@ -94,7 +119,10 @@ export class WpmApi {
   }
 
   async get<T = unknown>(path: string): Promise<T> {
-    const res = await this.request.get(path);
+    const res = await withBackoff(
+      () => this.request.get(path),
+      (r) => r.status(),
+    );
     return readOrFail(res, `GET ${path}`);
   }
 

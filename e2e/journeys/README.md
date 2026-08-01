@@ -61,10 +61,20 @@ npm run test:e2e -- e2e/journeys
 E2E_BASE_URL=http://192.168.178.101:3050 npx playwright test e2e/journeys --project=chromium
 ```
 
-Achtung bei einer gemeinsam genutzten Instanz: die Anmeldung ist auf **5
-Versuche je 15 Minuten** begrenzt, gezählt pro E-Mail. Jeder Aufruf von
+## Zwei Sperren, die die Suite selbst trifft
+
+**Anmeldung: 5 Versuche je 15 Minuten**, gezählt pro E-Mail. Jeder Aufruf von
 `playwright test` meldet sich einmal an — mehrere Läufe kurz hintereinander
 sperren sich selbst aus. Deshalb möglichst alles in **einem** Aufruf.
+
+**API: 100 Anfragen je Minute**, gezählt pro Nutzer. Ein vollständiger
+Durchlauf streift diese Grenze: jeder Seitenaufruf löst mehrere Anfragen aus.
+`WpmApi` wartet bei HTTP 429 einmal 20 Sekunden ab und versucht es erneut —
+genau einmal. Bleibt es dabei, ist etwas anderes los als eine kurze Spitze.
+
+Beides ist **kein Fehler**, sondern gewolltes Verhalten, das ein Client zu
+respektieren hat. Wer die Suite deutlich ausbaut, sollte ihr ein eigenes
+Konto geben, statt die Grenzen anzuheben.
 
 ## Stand und was fehlt
 
@@ -75,10 +85,11 @@ sperren sich selbst aus. Deshalb möglichst alles in **einem** Aufruf.
 | Rechnung — anlegen, Betrag prüfen, suchen, löschen | ✅ |
 | Buchhaltung — Soll=Haben, Vorbuchung, Festschreiben, Storno, Bilanzdifferenz | ✅ |
 | Admin — Einstellung ändern, prüfen, exakt zurücksetzen; 22 Seiten erreichbar | ✅ |
-| Pacht — Assistent über 4 Schritte | offen (Schritt 1 verlangt eine Auswahl) |
+| Pacht — Verpächter anlegen, im Assistenten auswählen, Schritt 1 → 2 | ✅ |
+| Pacht — Schritte 2–4 (brauchen Flurstücke) | offen |
 | GIS — Flächen einzeichnen, SHP-Import | offen |
 | SCADA — Import ausführen, Anomalie erzeugen | offen |
-| Die neun Assistenten ohne generischen Durchlauf | offen |
+| Acht Assistenten ohne generischen Durchlauf und ohne eigenen Test | offen |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein

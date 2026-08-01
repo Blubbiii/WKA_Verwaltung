@@ -227,3 +227,39 @@ export async function assertBackKeepsInput(
     `${wizardName}: Nach dem Zurueckgehen ist die Eingabe aus Schritt 1 verloren`,
   ).toHaveValue(marker);
 }
+
+/**
+ * Einen Eintrag in einem Combobox auswählen.
+ *
+ * Der Combobox ist eine Schaltfläche mit `role="combobox"`, die ein Popover
+ * mit Suchfeld und Liste öffnet. Ein `fill()` auf das sichtbare Element
+ * bewirkt nichts — genau deshalb blieb „Weiter“ im Pacht-Assistenten
+ * gesperrt, obwohl der Läufer meldete, ein Feld gefüllt zu haben.
+ *
+ * @param label   Beschriftung oder Platzhalter der Schaltfläche.
+ * @param suchen  Text, nach dem im Popover gesucht wird.
+ */
+export async function selectFromCombobox(
+  page: Page,
+  label: string | RegExp,
+  suchen: string,
+): Promise<void> {
+  const trigger = page.getByRole("combobox", { name: label }).first();
+  const fallback = page.locator('[role="combobox"]').first();
+  const box = (await trigger.count()) > 0 ? trigger : fallback;
+
+  await must(box, `Auswahlfeld ${label}`);
+  await box.click();
+
+  const suche = page.locator('[role="dialog"] input, [cmdk-input]').first();
+  await must(suche, `Suchfeld im Auswahlfeld ${label}`);
+  await suche.fill(suchen);
+
+  const treffer = page.getByRole("option", { name: new RegExp(suchen, "i") }).first();
+  await expect(
+    treffer,
+    `Kein Eintrag „${suchen}“ im Auswahlfeld ${label} — entweder ist der ` +
+      `Datensatz nicht angelegt oder die Liste laedt ihn nicht.`,
+  ).toBeVisible({ timeout: 10_000 });
+  await treffer.click();
+}
