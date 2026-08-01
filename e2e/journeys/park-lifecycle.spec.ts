@@ -101,18 +101,47 @@ test.describe("Park-Lebenszyklus", () => {
       `Aendern fehlgeschlagen: HTTP ${patch.status()} ${await patch.text()}`,
     ).toBe(true);
 
+    // Geprueft wird der gespeicherte WERT, nicht seine Darstellung.
+    //
+    // Der erste Entwurf suchte „18.500" auf der Detailseite und scheiterte —
+    // zu Recht, aber aus einem anderen Grund als vermutet: die Seite zeigt
+    // unter „Leistung" die Summe ueber die ANLAGEN, nicht das Feld am Park.
+    // Ohne erfasste Nennleistungen steht dort ein Strich, egal was am Park
+    // hinterlegt ist. Das ist eine Beobachtung ueber die Oberflaeche und
+    // gehoert nicht in die Pruefung des Speicherns.
+    const reloaded = await api.get<{ data?: { totalCapacityKw?: unknown } }>(
+      `/api/parks/${created.id}`,
+    );
+    const park = (reloaded.data ?? reloaded) as { totalCapacityKw?: unknown };
+    expect(
+      Number(park.totalCapacityKw),
+      "Die geaenderte Leistung wurde nicht gespeichert",
+    ).toBe(18500);
+
+    // Und die Detailseite laedt den Park ueberhaupt.
     await page.goto(`/parks/${created.id}`);
     await ready(page);
     await expect(
       page.locator("body"),
-      "Die geaenderte Leistung steht nicht auf der Detailseite",
-    ).toContainText(/18[.,]?500/, { timeout: 15_000 });
+      "Die Detailseite zeigt den Parknamen nicht",
+    ).toContainText(name, { timeout: 15_000 });
 
     // ---------------------------------------------------------------------
     // 6 · Löschen — und zwar wirklich
     // ---------------------------------------------------------------------
+    // Ein frisch angelegter Park MUSS loeschbar sein.
+    //
+    // Das war er nicht: POST /api/parks legt zu jedem Park zwei virtuelle
+    // Geraete an (Netzverknuepfungspunkt, Parkrechner), und die Loeschsperre
+    // zaehlte sie als "Anlagen" mit. Der Park blockierte sich damit selbst —
+    // mit Objekten, die der Nutzer nie angelegt hat. Behoben, indem die Sperre
+    // nur noch echte Windkraftanlagen (deviceType WEA) zaehlt.
     const del = await page.request.delete(`/api/parks/${created.id}`);
-    expect(del.ok(), `Loeschen fehlgeschlagen: HTTP ${del.status()}`).toBe(true);
+    expect(
+      del.ok(),
+      `Ein Park ohne echte Anlagen muss loeschbar sein. HTTP ${del.status()}: ` +
+        `${await del.text()}`,
+    ).toBe(true);
 
     // Aus der Ansicht verschwunden ist nicht dasselbe wie geloescht.
     const after = await api.findByName("parks", name);
@@ -124,17 +153,51 @@ test.describe("Park-Lebenszyklus", () => {
     api.untrack(created.id);
   });
 
-  test("Pflichtfeld: ohne Namen laesst sich nicht speichern", async ({ page }) => {
+  test("Park mit echter Anlage bleibt gesperrt", async ({ page, api }) => {
+    // Die Kehrseite des Fehlers oben: die Sperre muss WEITER greifen, sobald
+    // eine echte Windkraftanlage haengt. Ohne diesen Test waere die Korrektur
+    // ein Freibrief zum Loeschen bestueckter Parks.
+    const name = testName("Park mit Anlage");
+    const park = await api.create("parks", { name, status: "ACTIVE" });
+
+    const turbine = await page.request.post("/api/turbines", {
+      data: {
+        designation: testName("WEA"),
+        deviceType: "WEA",
+        parkId: park.id,
+        status: "ACTIVE",
+      },
+    });
+    expect(
+      turbine.ok(),
+      `Anlage anlegen fehlgeschlagen: ${await turbine.text()}`,
+    ).toBe(true);
+    const created = await turbine.json();
+    api.track({
+      collection: "turbines",
+      id: (created.data ?? created).id,
+      name: testName("WEA"),
+    });
+
+    const del = await page.request.delete(`/api/parks/${park.id}`);
+    expect(
+      del.status(),
+      "Ein Park MIT Windkraftanlage darf nicht loeschbar sein",
+    ).toBe(400);
+    expect(await del.text()).toMatch(/Anlagen/i);
+  });
+
+  test("Pflichtfeld: ohne Namen bleibt Weiter gesperrt", async ({ page }) => {
     await page.goto("/parks/new");
     await ready(page);
 
-    // Direkt weiter, ohne Namen.
-    await clickButton(page, /weiter/i, "Schaltflaeche Weiter");
-
-    // Der Assistent darf NICHT in Schritt 2 wechseln.
+    await expect(
+      page.getByRole("button", { name: /weiter/i }).first(),
+      "Weiter muesste ohne Namen gesperrt sein",
+    ).toBeDisabled();
     await expect(
       page.locator("#park-wea-share"),
-      "Der Assistent ist ohne Pflichtfeld in den naechsten Schritt gewechselt",
+      "Schritt 2 ist sichtbar, obwohl Schritt 1 unvollstaendig ist",
     ).toHaveCount(0);
   });
 
@@ -143,9 +206,10 @@ test.describe("Park-Lebenszyklus", () => {
     await ready(page);
 
     const row = await firstRow(page, "Parkliste");
-    const link = row.locator("a").first();
-    await must(link, "Verweis auf die Detailseite in der ersten Zeile");
-    await link.click();
+    // Die Zeile selbst traegt die Navigation — ein <a> darin gibt es nicht.
+    // Erste Fassung suchte danach und scheiterte an einer falschen Annahme
+    // ueber die Umsetzung, nicht an einem Fehler der Anwendung.
+    await row.click();
 
     await expect(page, "Kein Wechsel auf eine Park-Detailseite").toHaveURL(
       /\/parks\/[0-9a-f-]{36}/,

@@ -123,18 +123,25 @@ test.describe("Assistenten", () => {
     ).toHaveValue(marker);
   });
 
-  test("Park-Assistent: Weiter ohne Pflichtfeld kommt nicht durch", async ({ page }) => {
+  test("Park-Assistent: Weiter ist ohne Pflichtfeld gesperrt", async ({ page }) => {
+    // Erste Fassung dieses Tests wollte klicken und pruefen, dass nichts
+    // passiert. Der Lauf zeigte etwas Besseres: die Schaltflaeche ist
+    // `disabled={!canProceed()}`. Die Anwendung laesst den Fehler gar nicht
+    // erst zu, statt ihn hinterher zu melden — und der Test prueft jetzt das.
     await page.goto("/parks/new");
     await ready(page);
 
-    await page.getByRole("button", { name: /weiter/i }).first().click();
-
-    // Der Beweis ist NICHT eine Fehlermeldung — die könnte auch erscheinen,
-    // während der Assistent trotzdem weiterspringt. Der Beweis ist, dass
-    // Schritt 2 nicht da ist.
+    const next = page.getByRole("button", { name: /weiter/i }).first();
     await expect(
-      page.locator("#park-wea-share"),
-      "Der Assistent ist ohne Pflichtfeld weitergesprungen",
-    ).toHaveCount(0);
+      next,
+      "Weiter muesste ohne Namen gesperrt sein",
+    ).toBeDisabled();
+
+    // Mit Namen wird sie frei — sonst waere sie schlicht immer gesperrt.
+    await page.locator("#park-name").fill("E2E-Sperrtest");
+    await expect(
+      next,
+      "Weiter bleibt trotz ausgefuelltem Pflichtfeld gesperrt",
+    ).toBeEnabled();
   });
 });

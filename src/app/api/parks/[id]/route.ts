@@ -330,7 +330,17 @@ export async function DELETE(
       include: {
         _count: {
           select: {
-            turbines: true,
+            // NUR echte Windkraftanlagen zaehlen.
+            //
+            // POST /api/parks legt zu jedem Park zwei virtuelle Geraete an —
+            // Netzverknuepfungspunkt und Parkrechner. Ohne diese Einschraenkung
+            // zaehlte die Sperre sie mit, und ein frisch angelegter Park waere
+            // NIE loeschbar: er blockiert sich mit Objekten, die der Nutzer
+            // nicht angelegt hat und die keine Anlagen im gemeinten Sinn sind.
+            //
+            // Gefunden von e2e/journeys/park-lifecycle.spec.ts — der erste
+            // Test, der einen Park anlegt und wieder loeschen will.
+            turbines: { where: { deviceType: "WEA" } },
             plots: true,
             contracts: true,
           },

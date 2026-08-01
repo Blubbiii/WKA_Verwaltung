@@ -92,6 +92,46 @@ export async function ready(page: Page): Promise<void> {
     .catch(() => {
       // Kein Platzhalter vorhanden — die Seite rendert direkt. Kein Fehler.
     });
+  await dismissOverlays(page);
+}
+
+/**
+ * Entfernt, was über der Seite liegt und Klicks abfängt.
+ *
+ * Aufgefallen beim ersten Lauf der neuen Ablauf-Tests: Klicks auf eine
+ * sichtbare, aktive und ruhige Schaltfläche liefen in die Zeitüberschreitung.
+ * Die Ursache liegt nicht am Ziel, sondern über ihm — die Einführungstour
+ * (driver.js) legt ein SVG über die ganze Seite, und der Cookie-Hinweis sitzt
+ * unten fest.
+ *
+ * Playwright meldet das nicht immer als „intercepts pointer events": liegt die
+ * Überlagerung ausserhalb des Klickpunkts, aber im Weg der Ereigniskette,
+ * bleibt die Meldung aus und man sucht den Fehler beim Ziel.
+ *
+ * Bewusst tolerant: ist nichts davon da, passiert nichts. Das ist der eine
+ * Fall, in dem ein stiller Zweig richtig ist — es geht nicht um den
+ * Prüfgegenstand, sondern darum, überhaupt an ihn heranzukommen.
+ */
+export async function dismissOverlays(page: Page): Promise<void> {
+  // Einführungstour: über die eigene Schaltfläche schliessen, sonst hart
+  // entfernen. Sie kommt je Nutzer und Version wieder.
+  const tourClose = page.locator(".driver-popover-close-btn").first();
+  if (await tourClose.isVisible({ timeout: 500 }).catch(() => false)) {
+    await tourClose.click().catch(() => {});
+  }
+  await page
+    .evaluate(() => {
+      document
+        .querySelectorAll(".driver-overlay, .driver-popover, #driver-popover-item")
+        .forEach((el) => el.remove());
+      document.body.classList.remove("driver-active", "driver-fade");
+    })
+    .catch(() => {});
+
+  const cookieBtn = page.getByRole("button", { name: /verstanden|akzeptieren/i }).first();
+  if (await cookieBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+    await cookieBtn.click().catch(() => {});
+  }
 }
 
 /**
