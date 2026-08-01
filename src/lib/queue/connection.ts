@@ -137,16 +137,30 @@ export const isRedisHealthy = async (): Promise<boolean> => {
  * Inspect Redis server config and warn if the OOM-safety settings are weak.
  *
  * WPM stores rate-limit counters, tenant-settings cache, permission cache,
- * BullMQ job data and dashboard widgets in Redis. Without a `maxmemory` limit
- * and a sensible eviction policy the server will OOM under load and crash the
- * entire worker pool.
+ * BullMQ job data and dashboard widgets in ONE Redis instance. Cache und Queue
+ * stellen dabei gegensaetzliche Anforderungen, und die Verdraengungsstrategie
+ * gilt serverweit — sie laesst sich nicht pro Zweck einstellen.
  *
- * Recommended production config:
- *   maxmemory 256mb (or more, depending on tenant count)
- *   maxmemory-policy allkeys-lru
+ * Fuer einen reinen Cache ist `allkeys-lru` richtig: laeuft der Speicher voll,
+ * fliegt der aelteste Eintrag raus und wird beim naechsten Zugriff neu
+ * berechnet. Fuer BullMQ ist genau das fatal — dort ist der verdraengte
+ * Schluessel ein Auftrag. Eine Rechnung, ein Mahnlauf, ein OCR-Durchgang
+ * verschwindet dann lautlos: kein Fehler, kein Log, der Job war nie da.
  *
- * Logs a warning (not error) at startup so the operator can fix it, but the
- * app keeps running — this is a recommendation, not a hard gate.
+ * Deshalb `noeviction`, obwohl es der Cache-Logik widerspricht. Ist der
+ * Speicher voll, scheitern Schreibvorgaenge sichtbar statt Auftraege still zu
+ * verschwinden. Ein fehlgeschlagener Cache-Schreibvorgang kostet eine
+ * Neuberechnung; ein verlorener Job kostet einen Geschaeftsvorfall.
+ *
+ * Empfohlene Produktionskonfiguration:
+ *   maxmemory 256mb (oder mehr, je nach Mandantenzahl)
+ *   maxmemory-policy noeviction
+ *
+ * Beides gehoert zusammen: `noeviction` OHNE `maxmemory` heisst unbegrenzt
+ * wachsen, bis der Host stirbt.
+ *
+ * Warnung, kein Abbruch — der Betreiber soll es sehen und richten koennen,
+ * ohne dass die Anwendung stehen bleibt.
  */
 export const checkRedisMemoryConfig = async (): Promise<void> => {
   try {
@@ -157,29 +171,35 @@ export const checkRedisMemoryConfig = async (): Promise<void> => {
     const rawPolicy = (await redis.config("GET", "maxmemory-policy")) as string[];
     const policy = rawPolicy[1] ?? "noeviction";
 
-    const safePolicies = new Set([
-      "allkeys-lru",
-      "allkeys-lfu",
-      "allkeys-random",
-      "volatile-lru",
-      "volatile-lfu",
-    ]);
+    let complained = false;
 
     if (maxmemory === "0") {
       logger.warn(
         { maxmemory, policy },
-        "[Redis] maxmemory is UNLIMITED — server will OOM under load. Set `maxmemory 256mb` (or more) in redis.conf or via CONFIG SET",
+        "[Redis] maxmemory ist UNBEGRENZT — der Server waechst unter Last bis zum OOM. Setze `maxmemory 256mb` (oder mehr) in redis.conf bzw. per CONFIG SET",
       );
-    } else if (!safePolicies.has(policy)) {
+      complained = true;
+    }
+
+    if (policy.startsWith("allkeys-")) {
+      // Trifft JEDEN Schluessel, also auch BullMQ-Job-Hashes und Queue-Listen.
       logger.warn(
         { maxmemory, policy },
-        `[Redis] maxmemory-policy '${policy}' will reject writes when full. Recommended: 'allkeys-lru'`,
+        `[Redis] maxmemory-policy '${policy}' verdraengt bei vollem Speicher auch BullMQ-Schluessel — Auftraege verschwinden dann OHNE Fehlermeldung. Erforderlich: 'noeviction'`,
       );
-    } else {
-      logger.info(
+      complained = true;
+    } else if (policy.startsWith("volatile-")) {
+      // Trifft nur Schluessel mit Ablaufzeit. BullMQ setzt die auf seinen
+      // Sperren — eine verdraengte Sperre laesst denselben Job doppelt laufen.
+      logger.warn(
         { maxmemory, policy },
-        "[Redis] Memory config OK",
+        `[Redis] maxmemory-policy '${policy}' verdraengt Schluessel mit Ablaufzeit, darunter die Job-Sperren von BullMQ — derselbe Auftrag kann dann doppelt laufen. Empfohlen: 'noeviction'`,
       );
+      complained = true;
+    }
+
+    if (!complained) {
+      logger.info({ maxmemory, policy }, "[Redis] Memory config OK");
     }
   } catch (err) {
     // Some managed Redis services disable CONFIG GET (e.g. Redis Cloud).

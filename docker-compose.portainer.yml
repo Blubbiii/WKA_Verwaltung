@@ -182,7 +182,10 @@ services:
     image: redis:7-alpine
     container_name: wpm-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory-policy noeviction --requirepass ${REDIS_PASSWORD}
+    # noeviction, obwohl Redis hier auch Cache ist: die Strategie gilt serverweit,
+    # und ein verdraengter BullMQ-Schluessel ist ein lautlos verlorener Auftrag.
+    # Zwingend zusammen mit maxmemory — noeviction ohne Grenze waechst bis zum OOM.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction --requirepass ${REDIS_PASSWORD}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
