@@ -118,12 +118,30 @@ FROM deps AS worker-deps
 # Rueckfall ist kein Verstecken eines Fehlers, sondern derselbe Zielzustand auf
 # dem langsamen Weg — falls prune an einem halb aufgeraeumten Baum abbricht.
 RUN npm prune --omit=dev || npm install --omit=dev
-# Pakete, von denen es nur EINE Instanz im Prozess geben darf, hier entfernen.
-# Sie liegen bereits im Standalone-Baum; laegen sie zusaetzlich im Rueckfall,
-# koennte ein Modul die eine und ein anderes die andere Kopie erwischen —
-# bei @prisma/client waere die hiesige zudem ungeneriert (kein .prisma).
-RUN rm -rf node_modules/@prisma/client node_modules/.prisma node_modules/prisma \
-           node_modules/react node_modules/react-dom node_modules/next
+# Prisma ausnehmen: der generierte Client entsteht im Builder (prisma generate),
+# die Fassung hier waere ungeneriert. Sie darf die generierte nicht ueberdecken.
+RUN rm -rf node_modules/@prisma/client node_modules/.prisma node_modules/prisma
+
+# -----------------------------------------------------------------------------
+# Stage 2d: Anwendungsbaum zusammenlegen
+# -----------------------------------------------------------------------------
+# Der Tracer arbeitet auf DATEI-, nicht auf Paketebene: von `uuid` lagen
+# package.json und der vom Bundle benutzte Zweig im Standalone-Baum, aber nicht
+# das in "exports" eingetragene dist-node/index.js. Ein Rueckfall NEBEN dem
+# Standalone-Baum half deshalb nicht — Node fand /app/node_modules/uuid, hielt
+# die Suche fuer beendet und scheiterte an der fehlenden Datei.
+#
+# Also darueber statt daneben. Der Produktionsbaum ergaenzt fehlende Pakete UND
+# fehlende Dateien in halb kopierten Paketen. Ueberschrieben wird dabei nichts
+# Fremdes: beide Baeume stammen aus demselben npm install, die Versionen sind
+# identisch — es kommen nur Dateien hinzu.
+#
+# Nebenbei loest das die Frage nach doppelten Instanzen von react oder prisma:
+# es gibt weiterhin genau EINEN Baum unter /app/node_modules.
+FROM node:24-alpine AS app-tree
+WORKDIR /out
+COPY --from=builder /app/.next/standalone ./
+COPY --from=worker-deps /app/node_modules ./node_modules
 
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
@@ -153,8 +171,9 @@ RUN apk add --no-cache curl openssl
 # Statische Assets kopieren
 COPY --from=builder /app/public ./public
 
-# Standalone Output kopieren (inkl. Server und App-Runtime node_modules)
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# Anwendungsbaum kopieren: Standalone-Output plus aufgefuellte Abhaengigkeiten
+# (siehe Stage app-tree)
+COPY --from=app-tree --chown=nextjs:nodejs /out ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Prisma CLI in separates Verzeichnis kopieren (NICHT in /app/node_modules!)
@@ -167,14 +186,6 @@ ENV PATH="/prisma-cli/node_modules/.bin:$PATH"
 # Prisma Schema und generierter Client kopieren
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-# Rueckfall-Aufloesung fuer den Worker (siehe Stage worker-deps).
-# Bewusst nach /node_modules und NICHT nach /app/node_modules gemischt:
-# Node sucht beim Aufloesen aufwaerts, also gewinnt /app/node_modules weiterhin
-# fuer alles, was der Standalone-Baum mitbringt. Nur was dort fehlt, faellt eine
-# Ebene hoeher durch. Damit aendert sich fuer die App nichts — bei ihr hat noch
-# nie eine Aufloesung /app/node_modules verlassen.
-COPY --from=worker-deps /app/node_modules /node_modules
 
 # -----------------------------------------------------------------------------
 # Worker-Quellen (F1) — AUSDRUECKLICH, nicht auf den Tracer vertrauend
