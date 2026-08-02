@@ -97,7 +97,7 @@ async function getHandler(request: NextRequest) {
             select: { id: true, ratedPowerKw: true, status: true },
           },
           _count: {
-            select: { turbines: true, documents: true, contracts: true },
+            select: { turbines: true, documents: { where: { deletedAt: null } }, contracts: { where: { deletedAt: null } } },
           },
         },
         orderBy: { [sortBy]: sortOrder },

@@ -63,7 +63,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
           orderBy: { createdAt: "desc" },
         },
         _count: {
-          select: { documents: true },
+          select: { documents: { where: { deletedAt: null } } },
         },
       },
     });

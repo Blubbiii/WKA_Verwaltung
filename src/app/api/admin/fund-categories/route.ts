@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       ],
       include: {
         _count: {
-          select: { funds: true },
+          select: { funds: { where: { deletedAt: null } } },
         },
       },
     });
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         _count: {
-          select: { funds: true },
+          select: { funds: { where: { deletedAt: null } } },
         },
       },
     });

@@ -164,8 +164,8 @@ export async function GET(
           select: {
             shareholders: true,
             votes: true,
-            documents: true,
-            invoices: true,
+            documents: { where: { deletedAt: null } },
+            invoices: { where: { deletedAt: null } },
           },
         },
       },

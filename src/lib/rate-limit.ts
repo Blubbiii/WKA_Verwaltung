@@ -41,33 +41,85 @@ export interface RateLimitResult {
 // Preset configurations
 // ---------------------------------------------------------------------------
 
+/**
+ * Ein Limit lesen — Vorgabe, falls keine Umgebungsvariable gesetzt ist.
+ *
+ * ## Warum das überhaupt einstellbar ist
+ *
+ * Die Werte standen fest im Quelltext. Für den Alltag sind sie richtig: 100
+ * Anfragen je Minute sind für einen Menschen reichlich. Zwei Fälle sprengen
+ * das trotzdem, und für beide gab es bisher keinen Hebel ausser einem neuen
+ * Build:
+ *
+ *  - Ein Mandant mit angebundenen Systemen (SCADA-Abruf, Buchhaltungs-Export),
+ *    die im Takt fragen.
+ *  - Die Ablauf-Testsuite. 92 Tests in dreieinhalb Minuten erzeugen mehr Last
+ *    als jeder Mensch, und die abgewiesenen Anfragen kommen dann von der
+ *    ANWENDUNG selbst — eine leere Auswahlliste sieht dann aus wie ein Fehler
+ *    im Programm.
+ *
+ * ## Und warum das mit Vorsicht zu behandeln ist
+ *
+ * Das hier ist eine Schutzmassnahme, keine Komforteinstellung. Eine zu hoch
+ * gesetzte Grenze macht sie wirkungslos, ohne dass etwas kaputt aussieht.
+ * Deshalb: die Vorgaben bleiben unverändert, jede Abweichung wird beim Start
+ * **laut protokolliert**, und unsinnige Werte werden verworfen statt
+ * stillschweigend übernommen.
+ *
+ * Insbesondere `AUTH_RATE_LIMIT` schützt gegen das Durchprobieren von
+ * Passwörtern. Wer den hochsetzt, sollte wissen warum.
+ */
+function readLimit(envVar: string, vorgabe: number): number {
+  const roh = process.env[envVar];
+  if (!roh) return vorgabe;
+
+  const wert = Number.parseInt(roh, 10);
+  if (!Number.isFinite(wert) || wert < 1) {
+    // Nicht stillschweigend die Vorgabe nehmen: wer die Variable setzt, will
+    // etwas anderes, und ein ignorierter Wert waere schwer zu bemerken.
+    console.warn(
+      `[rate-limit] ${envVar}="${roh}" ist keine gueltige Zahl >= 1 — ` +
+        `es gilt weiter die Vorgabe ${vorgabe}.`,
+    );
+    return vorgabe;
+  }
+
+  if (wert !== vorgabe) {
+    console.warn(
+      `[rate-limit] ${envVar}=${wert} statt der Vorgabe ${vorgabe}. ` +
+        `Das ist eine Schutzmassnahme — bitte nur bewusst abweichen.`,
+    );
+  }
+  return wert;
+}
+
 /** 5 requests per 15 minutes -- for authentication endpoints. */
 export const AUTH_RATE_LIMIT: RateLimitConfig = {
-  limit: 5,
+  limit: readLimit("AUTH_RATE_LIMIT", 5),
   windowMs: 15 * 60 * 1000,
 };
 
 /** 20 requests per minute -- for file upload endpoints. */
 export const UPLOAD_RATE_LIMIT: RateLimitConfig = {
-  limit: 20,
+  limit: readLimit("UPLOAD_RATE_LIMIT", 20),
   windowMs: 60 * 1000,
 };
 
 /** 10 requests per minute -- for PDF generation endpoints. */
 export const PDF_RATE_LIMIT: RateLimitConfig = {
-  limit: 10,
+  limit: readLimit("PDF_RATE_LIMIT", 10),
   windowMs: 60 * 1000,
 };
 
 /** 100 requests per minute -- general API endpoints. */
 export const API_RATE_LIMIT: RateLimitConfig = {
-  limit: 100,
+  limit: readLimit("API_RATE_LIMIT", 100),
   windowMs: 60 * 1000,
 };
 
 /** 10 requests per 5 minutes -- for public technician check-in/out endpoints. */
 export const TECHNICIAN_RATE_LIMIT: RateLimitConfig = {
-  limit: 10,
+  limit: readLimit("TECHNICIAN_RATE_LIMIT", 10),
   windowMs: 5 * 60 * 1000,
 };
 

@@ -60,7 +60,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
         where,
         include: {
           _count: {
-            select: { shareholders: true, leases: true },
+            select: { shareholders: true, leases: { where: { deletedAt: null } } },
           },
         },
         orderBy: [

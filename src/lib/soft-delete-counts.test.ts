@@ -185,14 +185,16 @@ describe("Anzeigezaehler — Schuldenliste", () => {
       }
     }
 
-    // Stand 02.08.2026: 37. Darin enthalten sind die fuenf Loeschsperren
-    // oben, die ABSICHTLICH ungefiltert zaehlen — der Scanner kann beides
-    // nicht unterscheiden, und ein Scanner, der raet, waere schlechter als
-    // eine Zahl mit Erklaerung.
+    // Stand 02.08.2026: 5 — und das sind AUSSCHLIESSLICH die Loeschsperren
+    // oben, die absichtlich ungefiltert zaehlen. Der Scanner kann Sperre und
+    // Anzeige nicht unterscheiden; einer, der raet, waere schlechter als eine
+    // Zahl mit Erklaerung.
     //
-    // Die uebrigen sind reine Anzeigen: "3 Dokumente" bei zwei vorhandenen
-    // und einem geloeschten. Falsch, aber ohne Folgen fuer die Datenlage —
-    // deshalb nicht im selben Zug korrigiert.
+    // Vorher waren es 37. Die uebrigen 32 waren reine Anzeigen — "3
+    // Dokumente" bei zwei vorhandenen und einem geloeschten. Ohne Folgen
+    // fuer die Datenlage, aber schlicht falsch, und ueber 18 Dateien
+    // verteilt. Am 02.08.2026 in einem Zug korrigiert, jeweils nur
+    // AUSSERHALB der DELETE-Funktion.
     //
     // Die Zahl darf NICHT steigen. Wer einen neuen ANZEIGE-Zaehler auf ein
     // weich geloeschtes Modell setzt, soll hier stolpern und
@@ -201,6 +203,6 @@ describe("Anzeigezaehler — Schuldenliste", () => {
     expect(
       funde.length,
       `Ungefilterte Zaehler auf weich geloeschten Modellen:\n${funde.join("\n")}`,
-    ).toBeLessThanOrEqual(37);
+    ).toBeLessThanOrEqual(5);
   });
 });

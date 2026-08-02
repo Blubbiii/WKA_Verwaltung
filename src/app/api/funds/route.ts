@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
             select: {
               shareholders: true,
               votes: true,
-              documents: true,
+              documents: { where: { deletedAt: null } },
             },
           },
         },

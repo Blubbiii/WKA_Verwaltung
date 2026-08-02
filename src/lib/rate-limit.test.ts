@@ -254,3 +254,100 @@ describe("getClientIp", () => {
     expect(getClientIp(request)).toBe("10.0.0.1");
   });
 });
+
+/**
+ * Die Grenzen sind seit dem 02.08.2026 einstellbar — aber nicht versehentlich
+ * abschaltbar.
+ *
+ * Sie standen fest im Quelltext. Für den Alltag richtig: 100 Anfragen je
+ * Minute sind für einen Menschen reichlich. Zwei Fälle sprengen das trotzdem,
+ * und für beide gab es keinen Hebel ausser einem neuen Build — ein Mandant mit
+ * angebundenen Systemen, und die Ablauf-Testsuite.
+ *
+ * Einstellbarkeit ist hier kein Komfort, sondern ein Risiko: eine zu hoch
+ * gesetzte Grenze macht die Schutzmassnahme wirkungslos, **ohne dass etwas
+ * kaputt aussieht**. Deshalb wird hier festgehalten, was gelten muss.
+ */
+describe("Ratengrenzen aus der Umgebung", () => {
+  const URSPRUNG = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...URSPRUNG };
+  });
+
+  async function ladeGrenzen() {
+    vi.resetModules();
+    return import("./rate-limit");
+  }
+
+  it("ohne Umgebungsvariablen gelten die geprueften Vorgaben", async () => {
+    for (const v of [
+      "AUTH_RATE_LIMIT",
+      "UPLOAD_RATE_LIMIT",
+      "PDF_RATE_LIMIT",
+      "API_RATE_LIMIT",
+      "TECHNICIAN_RATE_LIMIT",
+    ]) {
+      delete process.env[v];
+    }
+
+    const m = await ladeGrenzen();
+
+    // Diese Zahlen sind der Ausgangszustand des Systems. Aendert sie jemand im
+    // Quelltext, soll das eine Entscheidung sein und keine Nebenwirkung.
+    expect(m.AUTH_RATE_LIMIT.limit, "Schutz gegen Passwort-Durchprobieren").toBe(5);
+    expect(m.AUTH_RATE_LIMIT.windowMs).toBe(15 * 60 * 1000);
+    expect(m.API_RATE_LIMIT.limit).toBe(100);
+    expect(m.API_RATE_LIMIT.windowMs).toBe(60 * 1000);
+    expect(m.UPLOAD_RATE_LIMIT.limit).toBe(20);
+    expect(m.PDF_RATE_LIMIT.limit).toBe(10);
+    expect(m.TECHNICIAN_RATE_LIMIT.limit).toBe(10);
+  });
+
+  it("ein abweichender Wert wird uebernommen UND protokolliert", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.API_RATE_LIMIT = "500";
+
+    const m = await ladeGrenzen();
+
+    expect(m.API_RATE_LIMIT.limit).toBe(500);
+    expect(
+      warn.mock.calls.some((c) => String(c[0]).includes("API_RATE_LIMIT=500")),
+      "Eine geaenderte Schutzmassnahme muss sich bemerkbar machen — sonst " +
+        "faellt eine versehentlich abgeschaltete Grenze niemandem auf",
+    ).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("unsinnige Werte werden verworfen statt uebernommen", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    for (const unsinn of ["0", "-5", "viele"]) {
+      process.env.API_RATE_LIMIT = unsinn;
+      const m = await ladeGrenzen();
+      expect(
+        m.API_RATE_LIMIT.limit,
+        `API_RATE_LIMIT="${unsinn}" haette die Grenze verstellt`,
+      ).toBe(100);
+    }
+
+    expect(
+      warn.mock.calls.length,
+      "Ein ignorierter Wert muss gemeldet werden — wer die Variable setzt, " +
+        "will etwas anderes, und stilles Ignorieren faellt nicht auf",
+    ).toBeGreaterThanOrEqual(3);
+    warn.mockRestore();
+  });
+
+  it("auch die Anmelde-Grenze ist einstellbar", async () => {
+    // Bewusst mitgeprueft: gerade DIESE darf nicht versehentlich
+    // unveraenderlich sein. Sonst weicht jemand auf einen Patch im Quelltext
+    // aus — und der taucht in keinem Protokoll auf.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    process.env.AUTH_RATE_LIMIT = "20";
+
+    const m = await ladeGrenzen();
+    expect(m.AUTH_RATE_LIMIT.limit).toBe(20);
+    warn.mockRestore();
+  });
+});

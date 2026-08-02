@@ -92,7 +92,7 @@ export async function GET(
           take: 20,
           include: {
             _count: {
-              select: { documents: true },
+              select: { documents: { where: { deletedAt: null } } },
             },
           },
         },
@@ -120,7 +120,7 @@ export async function GET(
           take: 10,
         },
         _count: {
-          select: { serviceEvents: true, documents: true, contracts: true, technicianSessions: true },
+          select: { serviceEvents: true, documents: { where: { deletedAt: null } }, contracts: { where: { deletedAt: null } }, technicianSessions: true },
         },
       },
     });

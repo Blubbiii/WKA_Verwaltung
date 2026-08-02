@@ -173,7 +173,7 @@ async function getHandler(request: NextRequest) {
             select: { id: true, firstName: true, lastName: true, companyName: true, personType: true },
           },
           _count: {
-            select: { documents: true },
+            select: { documents: { where: { deletedAt: null } } },
           },
         },
         orderBy: [{ status: "asc" }, { endDate: "asc" }, { createdAt: "desc" }],

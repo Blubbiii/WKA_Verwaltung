@@ -64,10 +64,10 @@ const check = await requireSuperadmin();
         _count: {
           select: {
             users: true,
-            parks: true,
-            funds: true,
-            contracts: true,
-            documents: true,
+            parks: { where: { deletedAt: null } },
+            funds: { where: { deletedAt: null } },
+            contracts: { where: { deletedAt: null } },
+            documents: { where: { deletedAt: null } },
           },
         },
       },
@@ -175,7 +175,7 @@ export async function PATCH(
       },
       include: {
         _count: {
-          select: { users: true, parks: true },
+          select: { users: true, parks: { where: { deletedAt: null } } },
         },
       },
     });

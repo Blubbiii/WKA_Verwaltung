@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             users: true,
-            parks: true,
-            funds: true,
+            parks: { where: { deletedAt: null } },
+            funds: { where: { deletedAt: null } },
           },
         },
       },
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
         },
         include: {
           _count: {
-            select: { users: true, parks: true, funds: true },
+            select: { users: true, parks: { where: { deletedAt: null } }, funds: { where: { deletedAt: null } } },
           },
         },
       });

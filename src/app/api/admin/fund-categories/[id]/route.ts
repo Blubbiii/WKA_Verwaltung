@@ -69,7 +69,7 @@ export async function GET(
       },
       include: {
         _count: {
-          select: { funds: true },
+          select: { funds: { where: { deletedAt: null } } },
         },
       },
     });
@@ -179,7 +179,7 @@ export async function PATCH(
       data: updateData,
       include: {
         _count: {
-          select: { funds: true },
+          select: { funds: { where: { deletedAt: null } } },
         },
       },
     });

@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest) {
         _count: {
           select: {
             users: true,
-            parks: true,
+            parks: { where: { deletedAt: null } },
           },
         },
       },

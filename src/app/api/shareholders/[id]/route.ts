@@ -112,7 +112,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
           take: 10,
         },
         _count: {
-          select: { voteResponses: true, documents: true },
+          select: { voteResponses: true, documents: { where: { deletedAt: null } } },
         },
       },
     });

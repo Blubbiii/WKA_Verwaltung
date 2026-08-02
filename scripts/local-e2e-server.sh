@@ -39,13 +39,40 @@ else
 fi
 sleep 2
 
-if [ "${1:-}" != "--no-build" ]; then
+if [ "${1:-}" = "--no-build" ]; then
+  # Warnen, wenn der Build aelter ist als der Quelltext.
+  #
+  # DREIMAL hintereinander habe ich gegen einen veralteten Build getestet und
+  # daraus falsche Schluesse gezogen: einmal hielt ich einen Fix fuer
+  # wirkungslos, einmal eine Ursachenanalyse fuer widerlegt. Der Fehler ist
+  # besonders tueckisch, weil alles funktioniert — nur eben das Alte.
+  if [ -f .next/BUILD_ID ]; then
+    NEUER=$(find src prisma -newer .next/BUILD_ID -name "*.ts" -o -newer .next/BUILD_ID -name "*.tsx" 2>/dev/null | head -1)
+    if [ -n "$NEUER" ]; then
+      echo "✗ --no-build, aber der Quelltext ist neuer als der Build:"
+      echo "    $NEUER"
+      echo "  Ohne Neubau testest du den ALTEN Stand. Ruf das Skript ohne"
+      echo "  --no-build auf, oder loesche .next/BUILD_ID wenn das Absicht ist."
+      exit 1
+    fi
+  fi
+else
   echo "→ bauen"
   npm run build 2>&1 | grep -E "Compiled|Failed|error" || true
 fi
 
 echo "→ starten"
-nohup npx next start -p "$PORT" > "$LOG" 2>&1 &
+# API_RATE_LIMIT hochgesetzt — NUR fuer diese Testinstanz.
+#
+# Die Suite erzeugt rund 26 Tests je Minute mit je mehreren Anfragen und reisst
+# damit die Vorgabe von 100. Die abgewiesenen Anfragen kommen dann von der
+# ANWENDUNG selbst (die Auswahllisten der Assistenten), nicht von den
+# Testaufrufen — dort hilft kein Rueckzieher, und eine leere Liste sieht aus
+# wie ein Fehler im Programm.
+#
+# Die Vorgabe im Quelltext bleibt unveraendert. Der Server meldet die
+# Abweichung beim Start.
+API_RATE_LIMIT=2000 nohup npx next start -p "$PORT" > "$LOG" 2>&1 &
 sleep 8
 
 # Der eigentliche Zweck: nachsehen, ob der Start GELUNGEN ist. Ohne diese

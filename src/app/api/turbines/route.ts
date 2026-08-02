@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
             },
           },
           _count: {
-            select: { serviceEvents: true, documents: true },
+            select: { serviceEvents: true, documents: { where: { deletedAt: null } } },
           },
         },
         orderBy: [{ park: { name: "asc" } }, { designation: "asc" }],

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
           select: { id: true, firstName: true, lastName: true },
         },
         _count: {
-          select: { invoices: true },
+          select: { invoices: { where: { deletedAt: null } } },
         },
       },
       orderBy: [{ year: "desc" }, { month: "desc" }, { park: { name: "asc" } }],

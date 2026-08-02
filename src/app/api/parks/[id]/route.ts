@@ -194,8 +194,8 @@ export async function GET(
         _count: {
           select: {
             turbines: true,
-            documents: true,
-            contracts: true,
+            documents: { where: { deletedAt: null } },
+            contracts: { where: { deletedAt: null } },
             plots: true,
           },
         },

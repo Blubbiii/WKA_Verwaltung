@@ -144,7 +144,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
             },
           },
           _count: {
-            select: { voteResponses: true, documents: true },
+            select: { voteResponses: true, documents: { where: { deletedAt: null } } },
           },
         },
         orderBy: [{ status: "asc" }, { ownershipPercentage: "desc" }],
