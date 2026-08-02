@@ -40,12 +40,18 @@
  * „je zur Hälfte" von einer korrekten nicht zu unterscheiden — und genau so
  * ein Fehler bliebe unentdeckt.
  *
- * ## Wo der Test aufhört
+ * ## Und weiter bis zu den Gutschriften
  *
- * Vor Schritt 4. Der erzeugt **Gutschriften** an die Betreibergesellschaften:
- * echte Belege mit Nummernkreis, die sich nur stornieren und nicht
- * zurücknehmen lassen. Der Rechenweg dorthin ist geprüft; das Auslösen bleibt
- * einem Menschen vorbehalten.
+ * Schritt 4 erzeugt echte Belege mit Nummernkreis. Ich hatte davor
+ * aufgehört — auf einer Testinstanz, die vor dem Echtbetrieb ohnehin
+ * zurückgesetzt wird, war das die falsche Vorsicht. Der wertvollste Teil
+ * liegt dahinter: **wird der berechnete Anteil auch zum Betrag auf der
+ * Gutschrift?**
+ *
+ * Zwischen Verteilung und Beleg liegen Steuerermittlung, Rundung und
+ * Nummernvergabe. Jeder dieser Schritte kann den Betrag verändern, und keiner
+ * würde dabei auffallen — eine Gutschrift über einen falschen Betrag sieht aus
+ * wie eine über den richtigen.
  */
 
 import { test, expect } from "../support/fixtures";
@@ -360,10 +366,84 @@ test.describe("Energie-Abrechnung", () => {
         page.getByRole("button", { name: /weiter zu gutschriften/i }).first(),
         "Schaltflaeche „Weiter zu Gutschriften“ nach der Berechnung",
       );
+      // =================================================================
+      // Schritt 4: Gutschriften
+      // =================================================================
+      await page.getByRole("button", { name: /weiter zu gutschriften/i }).first().click();
+      await expect
+        .poll(() => currentStep(page), {
+          message: "Der Wechsel auf die Gutschriften hat nicht stattgefunden",
+          timeout: 15_000,
+        })
+        .toBe(3);
+
+      const gutschriften = page.waitForResponse(
+        (r) =>
+          r.url().includes("/create-invoices") && r.request().method() === "POST",
+        { timeout: 60_000 },
+      );
+
+      const erstellen = page
+        .getByRole("button", { name: /gutschrift.*erstellen/i })
+        .first();
+      await must(erstellen, "Schaltflaeche zum Erstellen der Gutschriften");
+      await erstellen.click();
+
+      const belege = await gutschriften;
+      expect(
+        belege.ok(),
+        `Gutschriften konnten nicht erstellt werden: HTTP ${belege.status()}
+` +
+          `${await belege.text()}`,
+      ).toBe(true);
+
+      const belegDaten = await belege.json();
+      const erzeugte = (belegDaten.invoices ?? belegDaten.data?.invoices ?? []) as {
+        invoiceId: string;
+        amount?: number;
+      }[];
+
+      expect(
+        erzeugte.length,
+        "Es wurde keine Gutschrift erzeugt, obwohl die Verteilung Anteile " +
+          "ausweist — die Betreibergesellschaft bekaeme nichts",
+      ).toBeGreaterThan(0);
+
+      for (const beleg of erzeugte) {
+        api.track({
+          collection: "invoices",
+          id: beleg.invoiceId,
+          name: testName("Gutschrift"),
+        });
+      }
+
+      // --- Der Betrag: wird aus dem Anteil auch Geld? -------------------
+      // Beide Anlagen gehoeren derselben Gesellschaft, also muss die Summe
+      // aller Gutschriften dem gesamten verteilten Erloes entsprechen.
+      let belegsumme = 0;
+      for (const beleg of erzeugte) {
+        const rechnung = await api.get<Record<string, unknown>>(
+          `/api/invoices/${beleg.invoiceId}`,
+        );
+        const daten = (rechnung.data ?? rechnung) as Record<string, unknown>;
+        expect(
+          daten.invoiceType,
+          "Der erzeugte Beleg ist keine Gutschrift, sondern eine Rechnung — " +
+            "die Richtung des Geldflusses waere umgekehrt",
+        ).toBe("CREDIT_NOTE");
+        belegsumme += Number(daten.netAmount);
+      }
+
+      expect(
+        belegsumme,
+        `Die Gutschriften summieren sich auf ${belegsumme} € statt auf den ` +
+          `verteilten Erloes von ${ERLOES_EUR} €. Zwischen Verteilung und ` +
+          `Beleg liegen Steuerermittlung, Rundung und Nummernvergabe — jeder ` +
+          `Schritt kann den Betrag veraendern, ohne dass es auffiele.`,
+      ).toBeCloseTo(ERLOES_EUR, 2);
     } finally {
-      // Loeschen, nicht stornieren: solange keine Gutschriften daraus
-      // entstanden sind, laesst sich die Abrechnung entfernen. Genau deshalb
-      // hoert dieser Test vor Schritt 4 auf.
+      // Erst die Gutschriften, dann die Abrechnung: mit Belegen laesst sie
+      // sich nicht mehr loeschen, und das ist richtig so.
       const weg = await page.request.delete(
         `/api/energy/settlements/${abrechnungId}`,
       );

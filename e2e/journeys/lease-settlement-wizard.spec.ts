@@ -37,11 +37,17 @@
  * bestehen; das ist keine Panne, sondern der vorgesehene Weg — der
  * Rechenweg bleibt für die Prüfbarkeit erhalten.
  *
- * ## Wo der Test aufhört
+ * ## Und weiter bis zu den Gutschriften
  *
- * Vor dem Abschluss. Der letzte Schritt erzeugt Rechnungen an die
- * Verpächter — echtes Geld, echte Belege, nicht rückholbar. Der Rechenweg
- * dorthin ist geprüft, das Auslösen bleibt einem Menschen vorbehalten.
+ * Der letzte Schritt erzeugt Belege an die Verpächter. Ich hatte davor
+ * aufgehört; auf einer Testinstanz, die vor dem Echtbetrieb zurückgesetzt
+ * wird, war das die falsche Vorsicht.
+ *
+ * Dahinter liegt die Frage, die zählt: **wird aus dem berechneten Vorschuss
+ * auch der Betrag auf dem Beleg?** Zwischen Berechnung und Gutschrift liegen
+ * Verteilung auf die Verpächter, Steuerermittlung (§ 4 Nr. 12 UStG für die
+ * Standortpacht, steuerpflichtig für die Poolfläche) und Rundung. Jeder
+ * dieser Schritte kann den Betrag verändern, und keiner fiele dabei auf.
  */
 
 import { test, expect } from "../support/fixtures";
@@ -364,6 +370,79 @@ test.describe("Pacht-Abrechnung", () => {
           timeout: 30_000,
         })
         .toBe(3);
+      // =================================================================
+      // Abschluss: Gutschriften an die Verpaechter
+      // =================================================================
+      const belege = page.waitForResponse(
+        (r) =>
+          r.url().includes(`/api/leases/settlement/${abrechnungId}/invoices`) &&
+          r.request().method() === "POST",
+        { timeout: 60_000 },
+      );
+
+      const erzeugen = page
+        .getByRole("button", { name: /gutschriften erzeugen/i })
+        .first();
+      await must(erzeugen, "Schaltflaeche zum Erzeugen der Gutschriften");
+      await erzeugen.click();
+
+      const antwortBelege = await belege;
+      expect(
+        antwortBelege.ok(),
+        `Gutschriften konnten nicht erzeugt werden: HTTP ${antwortBelege.status()}
+` +
+          `${await antwortBelege.text()}`,
+      ).toBe(true);
+
+      const belegDaten = await antwortBelege.json();
+      const erzeugte = (belegDaten.invoices ?? belegDaten.data?.invoices ?? []) as {
+        id: string;
+      }[];
+
+      expect(
+        erzeugte.length,
+        "Es wurde keine Gutschrift erzeugt, obwohl ein Vorschuss berechnet " +
+          "wurde — der Verpaechter bekaeme nichts",
+      ).toBeGreaterThan(0);
+
+      // --- Wird aus dem Vorschuss auch Geld? ----------------------------
+      let belegsumme = 0;
+      for (const beleg of erzeugte) {
+        api.track({
+          collection: "invoices",
+          id: beleg.id,
+          name: testName("Pacht-Gutschrift"),
+        });
+        const rechnung = await api.get<Record<string, unknown>>(
+          `/api/invoices/${beleg.id}`,
+        );
+        const daten = (rechnung.data ?? rechnung) as Record<string, unknown>;
+        expect(
+          daten.invoiceType,
+          "Der Beleg an den Verpaechter ist keine Gutschrift, sondern eine " +
+            "Rechnung — die Richtung des Geldflusses waere umgekehrt",
+        ).toBe("CREDIT_NOTE");
+        belegsumme += Number(daten.netAmount);
+      }
+
+      // Ein Verpaechter, alle Flaechen: die Summe der Belege muss dem
+      // verteilten Betrag entsprechen. Mehr waere Geld aus dem Nichts,
+      // weniger bliebe liegen.
+      const gelesenNachher = await api.get<{
+        data?: Record<string, unknown>;
+        settlement?: Record<string, unknown>;
+      }>(`/api/leases/settlement/${abrechnungId}`);
+      const nachher = (gelesenNachher.data ??
+        gelesenNachher.settlement ??
+        gelesenNachher) as Record<string, unknown>;
+
+      expect(
+        belegsumme,
+        `Die Gutschriften summieren sich auf ${belegsumme} € statt auf die ` +
+          `verteilten ${nachher.actualFeeEur} €. Zwischen Berechnung und Beleg ` +
+          `liegen Verteilung, Steuerermittlung und Rundung — jeder Schritt ` +
+          `kann den Betrag veraendern, ohne dass es auffiele.`,
+      ).toBeCloseTo(Number(nachher.actualFeeEur), 2);
     } finally {
       // Stornieren, nicht loeschen: geloescht werden duerfen nur offene
       // Abrechnungen, und diese steht auf „berechnet". Die stornierte

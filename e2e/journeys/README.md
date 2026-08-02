@@ -118,7 +118,9 @@ Konto geben, statt die Grenzen anzuheben.
 | SCADA — Seiten erreichbar, Anomalie-Auswertung antwortet | ✅ |
 | SCADA — Import mit echter WSD-Datei ausführen | offen |
 | Anlagen-Import — eigene Beispieldatei hochladen, zuordnen, validieren | ✅ |
-| Anlagen-Import — Einspielen ausführen | bewusst nicht |
+| Energie-Abrechnung — bis zu den Gutschriften, Beträge geprüft | ✅ |
+| Pacht-Abrechnung — bis zu den Gutschriften, Beträge geprüft | ✅ |
+| Anlagen-Import — Einspielen ausführen | offen |
 | SEPA-Zahllauf — vier Schritte bis zum XML, Inhalt geprüft | ✅ |
 | Pacht-Abrechnung — Vorschuss nachgerechnet | ✅ |
 | Energie-Abrechnung — Verteilung nachgerechnet | ✅ |
@@ -130,13 +132,17 @@ Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
 Fehler am meisten weh.
 
-Zwei Einträge stehen auf **„bewusst nicht"**, und zwar aus verschiedenen
-Gründen. Das Zeichnen auf der Karte wäre ein Test der Kartenbibliothek. Das
-Einspielen des Anlagen-Imports dagegen wäre ein Test, der Schaden anrichtet:
-die Beispieldatei enthält zwölf Monate erfundener Erträge für die **echten**
-Anlagen, und aus diesem Bestand werden Abrechnung und Ausschüttung gerechnet.
-Der Test geht bis zur Validierung — die ruft die API mit `action: "validate"`
-und schreibt nichts. Der nächste Klick wäre `action: "import"`.
+Nur noch ein Eintrag steht auf **„bewusst nicht"**: das Zeichnen auf der
+Karte wäre ein Test der Kartenbibliothek, nicht des Programms.
+
+Die Abrechnungen gehen inzwischen **bis zu den Belegen** durch. Vorher endeten
+sie vor dem letzten Schritt, mit dem Argument, echte Gutschriften seien nicht
+rückholbar. Auf einer Testinstanz, die vor dem Echtbetrieb zurückgesetzt wird,
+war das die falsche Vorsicht — und der wertvollste Teil liegt genau dahinter:
+zwischen Berechnung und Beleg liegen Verteilung, Steuerermittlung, Rundung und
+Nummernvergabe. Jeder dieser Schritte kann den Betrag verändern, und keiner
+fiele dabei auf. Eine Gutschrift über einen falschen Betrag sieht aus wie eine
+über den richtigen.
 
 ## Was der erste Gesamtlauf gefunden hat (02.08.2026)
 

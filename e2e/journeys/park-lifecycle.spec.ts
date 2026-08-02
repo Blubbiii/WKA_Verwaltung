@@ -81,7 +81,17 @@ test.describe("Park-Lebenszyklus", () => {
     // ---------------------------------------------------------------------
     await page.goto("/parks");
     await ready(page);
-    const search = page.getByPlaceholder(/suche/i).first();
+    // Ausdruecklich das Suchfeld DER LISTE, nicht das erste mit "Suche".
+    //
+    // `getByPlaceholder(/suche/i).first()` traf die globale Suche im
+    // Kopfbereich. Der Test bestand trotzdem — solange wenige Parks
+    // existierten, war der neue ohnehin sichtbar, auch ungefiltert. Mit
+    // zwanzig Parks stand er auf Seite zwei, und der Test scheiterte an einer
+    // Filterung, die nie stattgefunden hatte.
+    //
+    // Derselbe Fehler wie im Buchungsjournal. Ein Test, der auf das erste
+    // beste Element zeigt, prueft irgendwann etwas anderes als gemeint.
+    const search = page.getByPlaceholder(/suchen nach name/i).first();
     await must(search, "Suchfeld in der Parkliste");
     await search.fill(name);
     await expect(

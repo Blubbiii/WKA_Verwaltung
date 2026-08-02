@@ -213,7 +213,10 @@ test.describe("Rechnungs-Lebenszyklus", () => {
     await page.goto("/invoices");
     await ready(page);
 
-    const search = page.getByPlaceholder(/suche/i).first();
+    // Ausdruecklich das Suchfeld DER LISTE. `/suche/i` traf sonst die globale
+    // Suche im Kopfbereich — derselbe Fehler wie in park-lifecycle und im
+    // Buchungsjournal, und er faellt erst auf, wenn genug Daten da sind.
+    const search = page.getByPlaceholder(/suchen nach nummer/i).first();
     await must(search, "Suchfeld in der Rechnungsliste");
     await search.fill(recipient);
 
