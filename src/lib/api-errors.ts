@@ -50,6 +50,19 @@ export type ApiErrorCode =
   // Business logic
   | "OPERATION_NOT_ALLOWED"
   | "DEPENDENCY_EXISTS"
+  /**
+   * Gesperrt, weil ein AUFBEWAHRTER Datensatz darauf verweist.
+   *
+   * Der Unterschied zu DEPENDENCY_EXISTS ist der entscheidende: dort lässt
+   * sich die Abhängigkeit auflösen, hier nicht. Ein weich gelöschter Beleg
+   * bleibt nach § 147 AO erhalten und muss seine Bezüge weiter benennen
+   * können — ihn zu entfernen ist keine Option, die man dem Nutzer anbieten
+   * dürfte.
+   *
+   * Ohne eigenen Code müsste ein Client den deutschen Meldungstext
+   * durchsuchen, um beides zu unterscheiden.
+   */
+  | "RETENTION_BLOCKED"
   | "QUOTA_EXCEEDED"
   | "FEATURE_DISABLED"
   // Generic
@@ -90,6 +103,7 @@ const DEFAULT_MESSAGES: Record<ApiErrorCode, string> = {
   EXTERNAL_SERVICE_FAILED: "Externer Dienst nicht erreichbar",
   OPERATION_NOT_ALLOWED: "Aktion nicht erlaubt",
   DEPENDENCY_EXISTS: "Abhängige Einträge vorhanden",
+  RETENTION_BLOCKED: "Durch einen aufbewahrungspflichtigen Datensatz gesperrt",
   QUOTA_EXCEEDED: "Kontingent überschritten",
   FEATURE_DISABLED: "Funktion deaktiviert",
   INTERNAL_ERROR: "Interner Server-Fehler",
@@ -127,6 +141,7 @@ const DEFAULT_STATUS: Record<ApiErrorCode, number> = {
   EXTERNAL_SERVICE_FAILED: 502,
   OPERATION_NOT_ALLOWED: 409,
   DEPENDENCY_EXISTS: 409,
+  RETENTION_BLOCKED: 409,
   QUOTA_EXCEEDED: 429,
   FEATURE_DISABLED: 403,
   INTERNAL_ERROR: 500,

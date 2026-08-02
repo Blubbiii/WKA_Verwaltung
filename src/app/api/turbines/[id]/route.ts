@@ -275,8 +275,10 @@ export async function DELETE(
           select: {
             serviceEvents: true,
             documents: true,
-            // Weich geloeschte Vertraege duerfen die Anlage nicht sperren.
-            contracts: { where: { deletedAt: null } },
+            // BEWUSST OHNE Filter auf deletedAt — siehe plots/[id]/route.ts.
+            // Contract.turbine traegt onDelete: SetNull; ein Hart-Loeschen
+            // naehme dem aufbewahrten Vertrag seinen Anlagenbezug.
+            contracts: true,
             // Abrechnungsgrundlage: hängt per Cascade / SetNull am Hard-Delete
             turbineProductions: true,
             energySettlementItems: true,
@@ -292,7 +294,13 @@ export async function DELETE(
 
     // Prüfe auf aktive Verknüpfungen
     if (existingTurbine._count.contracts > 0) {
-      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Anlage hat noch aktive Verträge und kann nicht gelöscht werden" });
+      return apiError("RETENTION_BLOCKED", undefined, {
+        message:
+          `An der Anlage hängen ${existingTurbine._count.contracts} Vertrag/` +
+          `Verträge — gelöschte eingeschlossen. Gelöschte Verträge werden ` +
+          `aufbewahrt (§ 147 AO) und müssen ihre Anlage weiter benennen ` +
+          `können. Setzen Sie die Anlage stattdessen auf einen inaktiven Status.`,
+      });
     }
 
     // GoBD-Guard: TurbineProduction und ScadaMeasurement hängen per onDelete:Cascade,

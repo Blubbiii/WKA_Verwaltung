@@ -38,6 +38,19 @@ export interface CreatedRef {
    * hängt, nennt ihren Grund — er gehört in die Meldung.
    */
   grund?: string;
+  /**
+   * Bleibt dieser Datensatz **absichtlich** liegen?
+   *
+   * Die Anwendung antwortet mit `RETENTION_BLOCKED`, wenn ein aufbewahrter
+   * Beleg auf den Datensatz verweist (§ 147 AO). Ein Pachtvertrag wird beim
+   * Löschen nur weich gelöscht, also aufbewahrt — sein Verpächter und seine
+   * Flurstücke bleiben danach dauerhaft gesperrt, und das ist richtig so.
+   *
+   * Ohne diese Unterscheidung meldete das Aufräumen einen Fehlschlag für
+   * etwas, das gar nicht anders sein darf. Solche Meldungen gewöhnt man sich
+   * ab zu lesen — und übersieht dann die echten.
+   */
+  aufbewahrt?: boolean;
 }
 
 /**
@@ -199,6 +212,9 @@ export class WpmApi {
       try {
         const json = JSON.parse(rumpf);
         grund = json.message ?? json.error ?? rumpf;
+        // Ueber den Fehlercode, nicht ueber den Meldungstext. Ein Client, der
+        // deutsche Prosa durchsucht, bricht beim naechsten Umformulieren.
+        ref.aufbewahrt = json.code === "RETENTION_BLOCKED";
       } catch {
         // Kein JSON — dann eben der Rohtext.
       }
@@ -215,8 +231,13 @@ export class WpmApi {
    * NICHT ab — ein Objekt, das sich nicht löschen lässt, darf die übrigen
    * nicht mit stehen lassen.
    */
-  async cleanup(): Promise<{ removed: number; failed: CreatedRef[] }> {
+  async cleanup(): Promise<{
+    removed: number;
+    failed: CreatedRef[];
+    aufbewahrt: CreatedRef[];
+  }> {
     const failed: CreatedRef[] = [];
+    const aufbewahrt: CreatedRef[] = [];
     let removed = 0;
     // Vorwärts durch `created` — und das IST bereits die umgekehrte
     // Anlegereihenfolge, weil `track()` mit `unshift` einfügt.
@@ -228,13 +249,19 @@ export class WpmApi {
     // Anlagen zuerst zu entfernen. Vier Datensätze blieben liegen.
     for (const ref of this.created) {
       try {
-        (await this.remove(ref)) ? removed++ : failed.push(ref);
+        if (await this.remove(ref)) {
+          removed++;
+        } else if (ref.aufbewahrt) {
+          aufbewahrt.push(ref);
+        } else {
+          failed.push(ref);
+        }
       } catch {
         failed.push(ref);
       }
     }
     this.created.length = 0;
-    return { removed, failed };
+    return { removed, failed, aufbewahrt };
   }
 
   get tracked(): readonly CreatedRef[] {

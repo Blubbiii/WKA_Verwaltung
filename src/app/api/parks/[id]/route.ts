@@ -342,10 +342,12 @@ export async function DELETE(
             // Test, der einen Park anlegt und wieder loeschen will.
             turbines: { where: { deviceType: "WEA" } },
             plots: true,
-            // Vertraege sind weich geloescht — ohne diesen Filter zaehlt
-            // der Zaehler geloeschte mit, und der Park bliebe fuer immer
-            // gesperrt mit "hat noch Vertraege", obwohl keiner mehr steht.
-            contracts: { where: { deletedAt: null } },
+            // BEWUSST OHNE Filter auf deletedAt — siehe plots/[id]/route.ts.
+            // Contract.park traegt onDelete: SetNull. Ein Hart-Loeschen des
+            // Parks wuerde dem weich geloeschten, also AUFBEWAHRTEN Vertrag
+            // stillschweigend seinen Parkbezug nehmen. Ein aufbewahrter Beleg
+            // ohne Bezug ist keine Aufbewahrung mehr.
+            contracts: true,
           },
         },
       },
@@ -365,7 +367,13 @@ export async function DELETE(
     }
 
     if (existingPark._count.contracts > 0) {
-      return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Verträge und kann nicht gelöscht werden. Bitte zuerst alle Verträge entfernen." });
+      return apiError("RETENTION_BLOCKED", undefined, {
+        message:
+          `Am Park hängen ${existingPark._count.contracts} Vertrag/Verträge — ` +
+          `gelöschte eingeschlossen. Gelöschte Verträge werden aufbewahrt ` +
+          `(§ 147 AO) und müssen ihren Park weiter benennen können. Der Park ` +
+          `lässt sich deshalb nicht entfernen; setzen Sie ihn auf "inaktiv".`,
+      });
     }
 
     // Hard-Delete: Park unwiderruflich löschen — scoped to tenantId

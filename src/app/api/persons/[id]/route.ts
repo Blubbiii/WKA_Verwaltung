@@ -215,13 +215,14 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
         _count: {
           select: {
             shareholders: true,
-            // Pachtvertraege und Vertraege sind weich geloescht. Ohne den
-            // Filter zaehlen geloeschte mit, und die Person bleibt fuer immer
-            // gesperrt — mit einer Meldung, die dem Zustand widerspricht:
-            // "wird noch verwendet (1 Pachtvertraege)", obwohl der einzige
-            // Pachtvertrag geloescht ist.
-            leases: { where: { deletedAt: null } },
-            contracts: { where: { deletedAt: null } },
+            // BEWUSST OHNE Filter auf deletedAt — siehe plots/[id]/route.ts.
+            // Ich hatte hier gefiltert, damit eine Person nach dem Loeschen
+            // ihres Pachtvertrags wieder entfernbar wird. Ergebnis war kein
+            // sauberes Loeschen, sondern HTTP 500: Lease.lessor ist eine
+            // Pflichtbeziehung ohne onDelete-Regel, die Datenbank blockiert
+            // also ohnehin. Die Sperre hat das vorher sauber abgefangen.
+            leases: true,
+            contracts: true,
           },
         },
       },
@@ -238,7 +239,15 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
       existingPerson._count.contracts;
 
     if (totalReferences > 0) {
-      return apiError("BAD_REQUEST", undefined, { message: `Person kann nicht gelöscht werden, da sie noch verwendet wird (${existingPerson._count.shareholders} Beteiligungen, ${existingPerson._count.leases} Pachtverträge, ${existingPerson._count.contracts} Verträge)` });
+      return apiError("RETENTION_BLOCKED", undefined, {
+        message:
+          `Die Person ist verknüpft mit ${existingPerson._count.shareholders} ` +
+          `Beteiligung(en), ${existingPerson._count.leases} Pachtvertrag/` +
+          `Pachtverträgen und ${existingPerson._count.contracts} Vertrag/` +
+          `Verträgen — gelöschte eingeschlossen. Gelöschte Verträge werden ` +
+          `aufbewahrt (§ 147 AO) und müssen ihren Vertragspartner weiter ` +
+          `benennen können. Die Person lässt sich deshalb nicht entfernen.`,
+      });
     }
 
     // F5-Kompromiss: Person hat KEIN deletedAt-Feld im Schema, daher bleibt

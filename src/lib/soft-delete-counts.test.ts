@@ -1,29 +1,39 @@
 /**
- * Zähler, die weich gelöschte Datensätze mitzählen.
+ * Zähler auf weich gelöschten Beziehungen — und wann sie filtern dürfen.
  *
- * ## Der Fehler, den das festhält
+ * ## Die Falle, in die ich selbst getappt bin
  *
  * `_count` in Prisma zählt ungefiltert. Bei einem weich gelöschten Modell
- * heisst das: gelöschte Zeilen zählen mit. Steht so ein Zähler vor einer
- * **Löschsperre**, wird die Sperre zur Sackgasse — der Datensatz ist gelöscht
- * und blockiert trotzdem weiter, mit einer Meldung, die dem Zustand
- * widerspricht:
+ * zählen gelöschte Zeilen mit. Vor einer **Löschsperre** sieht das nach einem
+ * Fehler aus, und die Meldungen bestärkten das:
  *
  *     "Flurstück hat noch aktive Pachtverträge"   (der Pachtvertrag ist gelöscht)
  *     "wird noch verwendet (1 Pachtverträge)"     (dito)
  *
- * Gefunden hat das der Aufräumer der Ablauf-Suite: nach dem Löschen eines
- * Pachtvertrags liessen sich weder seine Flurstücke noch sein Verpächter
- * jemals wieder entfernen. Das trifft echte Nutzer genauso — es gibt keinen
- * Weg heraus, weil der Zustand, den die Meldung verlangt, schon hergestellt
- * ist.
+ * Ich habe daraufhin `where: { deletedAt: null }` ergänzt — und damit einen
+ * echten Schaden eingebaut. Die Fremdschlüssel sagen, warum:
  *
- * ## Zwei verschiedene Schweregrade
+ * | Beziehung | onDelete | Folge des Hart-Löschens |
+ * |---|---|---|
+ * | `LeasePlot → Plot` | **Cascade** | Der aufbewahrte Pachtvertrag verliert seine Flächen |
+ * | `Lease → Person` | Restrict | HTTP 500 statt sauberer Sperre |
+ * | `Contract → Park`/`Turbine` | SetNull | Der aufbewahrte Vertrag verliert seinen Bezug |
  *
- * Ein Zähler vor einer Sperre ist eine Sackgasse. Ein Zähler in einer Anzeige
- * ist bloss eine falsche Zahl — ärgerlich, aber ohne Folgen. Dieser Test
- * behandelt beide getrennt: die Sperren müssen sauber sein, die Anzeigen sind
- * eine Schuldenliste, die nicht wachsen darf.
+ * **Weich gelöscht heisst aufbewahrt, nicht weg.** § 147 AO verlangt die
+ * Aufbewahrung, und ein aufbewahrter Beleg, dessen Bezüge ins Leere zeigen,
+ * ist keine Aufbewahrung. Die Sperren waren also in der Sache richtig — falsch
+ * war nur ihr Wortlaut, der behauptete, es gäbe einen Weg heraus.
+ *
+ * ## Die Regel, die daraus folgt
+ *
+ * - **Löschsperren zählen ungefiltert.** Alles, worauf ein aufbewahrter
+ *   Datensatz zeigt, bleibt gesperrt. Die Meldung sagt das offen, statt zu
+ *   einer Aufräumarbeit aufzufordern, die nicht möglich ist.
+ * - **Anzeigezähler filtern.** „3 Dokumente" bei zwei vorhandenen und einem
+ *   gelöschten ist schlicht falsch — und ohne Folgen für die Datenlage.
+ *
+ * Dieser Test hält beide Seiten fest. Die erste Hälfte existiert vor allem,
+ * damit niemand denselben Weg noch einmal geht, den ich gegangen bin.
  */
 
 import { describe, it, expect } from "vitest";
@@ -55,7 +65,7 @@ function alleRouteDateien(verzeichnis: string): string[] {
   return treffer;
 }
 
-/** Alle `_count: { select: { … } }`-Blöcke einer Datei, als Rohtext. */
+/** Alle `_count: { select: { … } }`-Blöcke einer Quelle, als Rohtext. */
 function zaehlerbloecke(quelle: string): string[] {
   const bloecke: string[] = [];
   const start = /_count:\s*\{\s*select:\s*\{/g;
@@ -86,16 +96,12 @@ function ungefiltert(block: string): string[] {
   });
 }
 
-const ROUTEN = alleRouteDateien("src/app/api");
-
 /**
  * Der Rumpf einer HTTP-Funktion — von `export async function X` bis zum
  * nächsten `export async function` oder Dateiende.
  *
  * Ohne diese Eingrenzung greift die Prüfung den falschen Block: eine Route
- * hat meist mehrere `_count`-Vorkommen, und der erste steht im GET. Mein
- * erster Versuch prüfte genau den — und meldete die Sperre als kaputt,
- * obwohl sie korrekt war.
+ * hat meist mehrere `_count`-Vorkommen, und der erste steht im GET.
  */
 function funktionsrumpf(quelle: string, methode: string): string {
   const beginn = quelle.indexOf(`export async function ${methode}`);
@@ -104,19 +110,19 @@ function funktionsrumpf(quelle: string, methode: string): string {
   return quelle.slice(beginn, naechste < 0 ? quelle.length : naechste);
 }
 
-describe("Loeschsperren zaehlen nichts Geloeschtes mit", () => {
-  // Die Sperren, an denen es hing. Jede blockierte einen Datensatz dauerhaft,
-  // nachdem das, worauf sie verweist, laengst geloescht war.
+const ROUTEN = alleRouteDateien("src/app/api");
+
+describe("Loeschsperren zaehlen Aufbewahrtes MIT", () => {
   const SPERREN = [
-    ["src/app/api/plots/[id]/route.ts", "leasePlots"],
-    ["src/app/api/persons/[id]/route.ts", "leases"],
-    ["src/app/api/persons/[id]/route.ts", "contracts"],
-    ["src/app/api/parks/[id]/route.ts", "contracts"],
-    ["src/app/api/turbines/[id]/route.ts", "contracts"],
+    ["src/app/api/plots/[id]/route.ts", "leasePlots", "LeasePlot.plot ist onDelete: Cascade"],
+    ["src/app/api/persons/[id]/route.ts", "leases", "Lease.lessor ist Restrict — sonst HTTP 500"],
+    ["src/app/api/persons/[id]/route.ts", "contracts", "Contract.partner ist SetNull"],
+    ["src/app/api/parks/[id]/route.ts", "contracts", "Contract.park ist SetNull"],
+    ["src/app/api/turbines/[id]/route.ts", "contracts", "Contract.turbine ist SetNull"],
   ] as const;
 
-  for (const [datei, relation] of SPERREN) {
-    it(`${datei.split("/").slice(-2).join("/")}: ${relation} filtert Geloeschtes heraus`, () => {
+  for (const [datei, relation, grund] of SPERREN) {
+    it(`${datei.split("/").slice(-2).join("/")}: ${relation} filtert NICHT`, () => {
       const rumpf = funktionsrumpf(readFileSync(datei, "utf-8"), "DELETE");
       expect(rumpf, `Kein DELETE in ${datei}`).not.toBe("");
 
@@ -128,14 +134,42 @@ describe("Loeschsperren zaehlen nichts Geloeschtes mit", () => {
         zeile,
         `${relation} kommt im DELETE-Zaehler von ${datei} nicht vor`,
       ).toBeTruthy();
+
       expect(
         zeile,
-        `${datei}: "${relation}" wird in der Loeschsperre ohne where gezaehlt. ` +
-          `Weich geloeschte Datensaetze zaehlen dann mit, und die Sperre wird ` +
-          `zur Sackgasse — geloescht und trotzdem blockiert.`,
-      ).toContain("where");
+        `${datei}: "${relation}" wird in der Loeschsperre GEFILTERT gezaehlt.\n\n` +
+          `Das sieht nach der richtigen Korrektur aus und ist es nicht — ich ` +
+          `habe genau das schon einmal eingebaut und zuruecknehmen muessen.\n\n` +
+          `Grund hier: ${grund}. Weich geloescht heisst AUFBEWAHRT (§ 147 AO), ` +
+          `nicht weg. Wird die Sperre gefiltert, laesst sie das Hart-Loeschen ` +
+          `zu, und der aufbewahrte Datensatz verliert stillschweigend seinen ` +
+          `Bezug — oder die Datenbank bricht mit 500 ab.\n\n` +
+          `Wenn die Meldung irrefuehrend ist, gehoert die MELDUNG geaendert, ` +
+          `nicht die Zaehlung.`,
+      ).not.toContain("where");
     });
   }
+
+  it("die Meldungen behaupten nicht, es gaebe einen Weg heraus", () => {
+    // Der eigentliche Mangel war der Wortlaut: "hat noch AKTIVE
+    // Pachtvertraege" bei einem geloeschten Pachtvertrag, oder die
+    // Aufforderung, zuerst etwas zu entfernen, das sich nicht entfernen
+    // laesst. Wer das liest, sucht den Fehler bei sich.
+    const IRREFUEHREND = [
+      ["src/app/api/plots/[id]/route.ts", /noch aktive Pachtverträge/],
+      ["src/app/api/turbines/[id]/route.ts", /noch aktive Verträge/],
+      ["src/app/api/parks/[id]/route.ts", /Bitte zuerst alle Verträge entfernen/],
+    ] as const;
+
+    for (const [datei, muster] of IRREFUEHREND) {
+      const quelle = readFileSync(datei, "utf-8");
+      expect(
+        muster.test(quelle),
+        `${datei} enthaelt wieder eine Meldung, die zu einer Aufraeumarbeit ` +
+          `auffordert, die nicht moeglich ist: ${muster}`,
+      ).toBe(false);
+    }
+  });
 });
 
 describe("Anzeigezaehler — Schuldenliste", () => {
@@ -151,21 +185,22 @@ describe("Anzeigezaehler — Schuldenliste", () => {
       }
     }
 
-    // Stand 02.08.2026: 32. Ich hatte 15 geschaetzt — die Zahl steht hier,
-    // weil sie gemessen und nicht geraten gehoert.
+    // Stand 02.08.2026: 37. Darin enthalten sind die fuenf Loeschsperren
+    // oben, die ABSICHTLICH ungefiltert zaehlen — der Scanner kann beides
+    // nicht unterscheiden, und ein Scanner, der raet, waere schlechter als
+    // eine Zahl mit Erklaerung.
     //
-    // Diese Zaehler loesen keine Sperre aus. Sie zeigen nur eine zu hohe Zahl
-    // an, etwa "3 Dokumente" bei zwei vorhandenen und einem geloeschten.
-    // Aergerlich, aber ohne Folgen — deshalb nicht im selben Zug mit den
-    // Sperren korrigiert, wo eine zu hohe Zahl eine Sackgasse erzeugt.
+    // Die uebrigen sind reine Anzeigen: "3 Dokumente" bei zwei vorhandenen
+    // und einem geloeschten. Falsch, aber ohne Folgen fuer die Datenlage —
+    // deshalb nicht im selben Zug korrigiert.
     //
-    // Die Zahl darf NICHT steigen. Wer einen neuen Zaehler auf ein weich
-    // geloeschtes Modell setzt, soll hier stolpern und `where: { deletedAt:
-    // null }` ergaenzen — und wer einen alten korrigiert, zieht die Schranke
-    // mit nach unten.
+    // Die Zahl darf NICHT steigen. Wer einen neuen ANZEIGE-Zaehler auf ein
+    // weich geloeschtes Modell setzt, soll hier stolpern und
+    // `where: { deletedAt: null }` ergaenzen. Wer eine neue LOESCHSPERRE
+    // baut, traegt sie oben in SPERREN ein und zieht diese Zahl hoch.
     expect(
       funde.length,
       `Ungefilterte Zaehler auf weich geloeschten Modellen:\n${funde.join("\n")}`,
-    ).toBeLessThanOrEqual(32);
+    ).toBeLessThanOrEqual(37);
   });
 });

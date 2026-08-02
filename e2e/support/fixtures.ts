@@ -46,13 +46,27 @@ export const test = base.extend<{ api: WpmApi }>({
     const api = new WpmApi(request);
     await use(api);
 
-    const { removed, failed } = await api.cleanup();
+    const { removed, failed, aufbewahrt } = await api.cleanup();
     if (removed > 0) {
       testInfo.annotations.push({
         type: "aufgeraeumt",
         description: `${removed} Datensatz/Datensaetze entfernt`,
       });
     }
+    if (aufbewahrt.length > 0) {
+      // Kein Fehlschlag und keine Warnung: diese Datensaetze duerfen gar
+      // nicht verschwinden. Ein Pachtvertrag wird beim Loeschen aufbewahrt
+      // (§ 147 AO), und sein Verpaechter und seine Flurstuecke muessen
+      // benennbar bleiben. Sichtbar bleibt es trotzdem — sonst waere unklar,
+      // woher die Reste in der Datenbank stammen.
+      testInfo.annotations.push({
+        type: "aufbewahrt",
+        description: aufbewahrt
+          .map((f) => `${f.collection}/${f.name}`)
+          .join(", "),
+      });
+    }
+
     if (failed.length > 0) {
       const bericht = failed
         .map((f) => `  ${f.collection}/${f.id} (${f.name}) — ${f.grund ?? "ohne Angabe"}`)

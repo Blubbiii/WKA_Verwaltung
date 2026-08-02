@@ -201,12 +201,21 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
       include: {
         _count: {
           select: {
-            // Ueber die Relation filtern: LeasePlot ist eine reine
-            // Verknuepfungszeile und wird nicht weich geloescht — der
-            // Pachtvertrag dahinter schon. Ohne diesen Filter blieb ein
-            // Flurstueck nach dem Loeschen seines Pachtvertrags fuer immer
-            // gesperrt, mit der Meldung "hat noch aktive Pachtvertraege".
-            leasePlots: { where: { lease: { deletedAt: null } } },
+            // BEWUSST OHNE Filter auf deletedAt. Nicht "vergessen" — ich hatte
+            // hier schon einmal `where: { lease: { deletedAt: null } }` stehen
+            // und musste es zuruecknehmen.
+            //
+            // Der Gedanke war: ein geloeschter Pachtvertrag darf das
+            // Flurstueck nicht mehr sperren. Der Fehler daran ist LeasePlot.plot
+            // mit onDelete: Cascade — das Hart-Loeschen des Flurstuecks
+            // entfernt die Verknuepfungszeile MIT, und der weich geloeschte
+            // Pachtvertrag verliert stillschweigend seine Flaechen.
+            //
+            // Weich geloescht heisst aufbewahrt (§ 147 AO), nicht weg. Was ein
+            // aufbewahrter Beleg referenziert, muss aufloesbar bleiben, sonst
+            // ist die Aufbewahrung wertlos. Die Sperre gehoert also hierhin —
+            // nur ihre Meldung war falsch und sagt jetzt die Wahrheit.
+            leasePlots: true,
           },
         },
       },
@@ -217,7 +226,14 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     }
 
     if (plotToDelete._count.leasePlots > 0) {
-      return apiError("BAD_REQUEST", undefined, { message: "Flurstück hat noch aktive Pachtverträge" });
+      return apiError("RETENTION_BLOCKED", undefined, {
+        message:
+          `Das Flurstück ist mit ${plotToDelete._count.leasePlots} Pachtvertrag/` +
+          `Pachtverträgen verknüpft — gelöschte eingeschlossen. Gelöschte ` +
+          `Pachtverträge werden aufbewahrt (§ 147 AO) und müssen ihre Flächen ` +
+          `weiter benennen können. Das Flurstück lässt sich deshalb nicht ` +
+          `entfernen; setzen Sie es stattdessen auf "inaktiv".`,
+      });
     }
 
     // Perform the deletion

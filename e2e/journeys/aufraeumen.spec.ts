@@ -51,6 +51,7 @@ test.describe("Aufraeumen", () => {
 
     const entfernt: string[] = [];
     const geblieben: string[] = [];
+    const aufbewahrt: string[] = [];
 
     for (const { sammlung, feld } of REIHENFOLGE) {
       const antwort = await api.get<{ data?: Record<string, unknown>[] }>(
@@ -75,9 +76,23 @@ test.describe("Aufraeumen", () => {
         );
         if (res.ok()) {
           entfernt.push(`${sammlung}/${bezeichnung}`);
+          continue;
+        }
+
+        const rumpf = await res.text();
+        let code = "";
+        try {
+          code = String(JSON.parse(rumpf).code ?? "");
+        } catch {
+          // Kein JSON — dann bleibt der Code leer und es gilt als Fehlschlag.
+        }
+
+        if (code === "RETENTION_BLOCKED") {
+          // Absicht, kein Fehlschlag: ein aufbewahrter Beleg verweist darauf.
+          aufbewahrt.push(`${sammlung}/${bezeichnung}`);
         } else {
           geblieben.push(
-            `${sammlung}/${bezeichnung} — HTTP ${res.status()}: ${(await res.text()).slice(0, 160)}`,
+            `${sammlung}/${bezeichnung} — HTTP ${res.status()}: ${rumpf.slice(0, 160)}`,
           );
         }
       }
@@ -87,6 +102,22 @@ test.describe("Aufraeumen", () => {
       type: "entfernt",
       description: entfernt.length ? entfernt.join(", ") : "nichts gefunden",
     });
+
+    if (aufbewahrt.length > 0) {
+      // Diese bleiben absichtlich. Ein Pachtvertrag wird beim Loeschen nur
+      // weich geloescht — sein Verpaechter und seine Flurstuecke muessen
+      // danach weiter benennbar sein (§ 147 AO). Sie zaehlen deshalb nicht
+      // als Rest, den jemand beseitigen koennte.
+      test.info().annotations.push({
+        type: "aufbewahrt",
+        description: aufbewahrt.join(", "),
+      });
+      console.warn(
+        `\n[aufraeumen] ${aufbewahrt.length} Datensatz/Datensaetze bleiben ` +
+          `absichtlich stehen — ein aufbewahrter Beleg verweist darauf:\n  ` +
+          `${aufbewahrt.join("\n  ")}\n`,
+      );
+    }
 
     // Was bleibt, bleibt mit Begruendung. Ein stiller Rest ist schlimmer als
     // ein lauter: er waechst.
