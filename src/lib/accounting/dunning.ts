@@ -144,10 +144,15 @@ async function findDunningCandidatesWithTx(tx: PrismaTransactionClient, tenantId
       deletedAt: null,
       dueDate: { lt: now },
       // Dunning-Hold: strittige Rechnungen ausschließen (permanent ODER abgelaufener temp-Hold)
-      AND: [
-        { OR: [{ dunningHold: false }, { dunningHold: null }] },
-        { OR: [{ dunningHoldUntil: null }, { dunningHoldUntil: { lt: now } }] },
-      ],
+      //
+      // `dunningHold` ist `Boolean @default(false)` — also niemals null. Hier
+      // stand trotzdem zusätzlich `{ dunningHold: null }`. Prisma 7 wertet
+      // einen null-Filter auf einem nicht-nullbaren Feld als "Argument fehlt"
+      // und weist die GANZE Abfrage ab: jeder Aufruf endete in HTTP 500.
+      // Damit war das Mahnwesen vollständig unbenutzbar — die Kandidatenliste
+      // wie der Mahnlauf selbst, beide laufen durch diese Abfrage.
+      dunningHold: false,
+      OR: [{ dunningHoldUntil: null }, { dunningHoldUntil: { lt: now } }],
     },
     select: {
       id: true,

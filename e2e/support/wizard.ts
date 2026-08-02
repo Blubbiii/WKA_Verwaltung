@@ -300,7 +300,14 @@ export async function selectOption(
   // Ein Versuch ueber die Tastatur (Typeahead + Enter) griff nicht
   // zuverlaessig — Radix sammelt getippte Zeichen mit eigenem Zeitfenster,
   // und ohne Verzoegerung getippte Zeichen kamen nicht als Suchbegriff an.
-  await option.scrollIntoViewIfNeeded();
+  // In die MITTE rollen, nicht nur „in den Sichtbereich".
+  //
+  // scrollIntoViewIfNeeded schiebt den Eintrag an den naechstgelegenen Rand.
+  // Genau dort liegen bei langen Listen die Rollpfeile von Radix — sie fangen
+  // den Klick ab, und Playwright versucht es bis zur Zeitgrenze weiter. Der
+  // Fehler sah dann nach einem fehlenden Eintrag aus, obwohl er sichtbar war.
+  // Aufgefallen, als die Liste durch angesammelte Testdaten lang wurde.
+  await option.evaluate((el) => el.scrollIntoView({ block: "center" }));
   await option.click();
 
   // Warten, bis die Liste wirklich zu ist. Sonst faengt ihre Ueberlagerung

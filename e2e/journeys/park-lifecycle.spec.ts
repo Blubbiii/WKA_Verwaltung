@@ -244,6 +244,21 @@ test.describe("Park-Lebenszyklus", () => {
     await page.goto("/parks");
     await ready(page);
 
+    // Die Parkliste ist SERVERSEITIG paginiert, zwanzig Zeilen je Seite. Der
+    // eben angelegte Park steht deshalb nicht zwangslaeufig auf Seite 1 — im
+    // vollen Testlauf stand er es nicht, und der Test scheiterte an der
+    // Sortierung statt an der Anwendung.
+    //
+    // Ausserdem merkt sich die Liste Suche und Filter ueber Aufrufe hinweg
+    // (usePersistedTableState). Was ein anderer Test dort stehen liess, wirkt
+    // hier weiter. Beides erledigt sich, indem der Test seine Zeile SUCHT.
+    //
+    // Nicht getByPlaceholder(/suche/i): das trifft die globale Kopfzeilensuche,
+    // die es an derselben Stelle auch gibt.
+    const suche = page.getByPlaceholder("Suchen nach Name, Ort...").first();
+    await must(suche, "Suchfeld der Parkliste");
+    await suche.fill(parkName);
+
     // Die Zeile selbst traegt die Navigation — ein <a> darin gibt es nicht.
     // Eine fruehere Fassung suchte danach und scheiterte an einer falschen
     // Annahme ueber die Umsetzung, nicht an einem Fehler der Anwendung.

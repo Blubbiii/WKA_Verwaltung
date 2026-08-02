@@ -26,6 +26,13 @@ interface DunningCandidate {
   invoiceNumber: string;
   recipientName: string;
   grossAmount: number;
+  /**
+   * Brutto abzueglich bereits Gezahltem. DAS ist die Forderung, die gemahnt
+   * wird — auf sie rechnet der Mahnlauf die Verzugszinsen, und mit ihr steht
+   * sie im Mahnposten. Die Liste zeigte frueher grossAmount: eine zu 80 %
+   * bezahlte Rechnung sah aus wie eine unbezahlte.
+   */
+  openAmount: number;
   dueDate: string;
   overdueDays: number;
   currentLevel: number;
@@ -158,7 +165,7 @@ export default function MahnwesenContent() {
                           </TableCell>
                           <TableCell className="font-mono">{c.invoiceNumber}</TableCell>
                           <TableCell>{c.recipientName}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(c.grossAmount)} EUR</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(c.openAmount)} EUR</TableCell>
                           <TableCell>{formatDate(c.dueDate)}</TableCell>
                           <TableCell className="text-right font-semibold text-red-600 dark:text-red-400">{c.overdueDays}</TableCell>
                           <TableCell><Badge variant="outline">{levelLabel(c.suggestedLevel)}</Badge></TableCell>
