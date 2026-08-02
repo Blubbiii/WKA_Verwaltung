@@ -41,6 +41,17 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         storageState: "e2e/.auth/user.json",
+        // Hoeher als die Voreinstellung von 720 Pixel.
+        //
+        // Auswahlfelder mit vielen Eintraegen (Parks, Jahre) reichen sonst
+        // ueber den Fensterrand hinaus. Der gesuchte Eintrag ist dann im DOM
+        // vorhanden und gilt als sichtbar, laesst sich aber nicht anklicken —
+        // Playwright meldet nach 15 Sekunden "element is outside of the
+        // viewport", und man sucht den Fehler bei den Daten.
+        //
+        // 1400 Pixel fassen rund vierzig Eintraege. Wird eine Liste laenger,
+        // braucht sie ohnehin ein Suchfeld statt eines Auswahlfelds.
+        viewport: { width: 1280, height: 1400 },
       },
       dependencies: ["setup"],
     },

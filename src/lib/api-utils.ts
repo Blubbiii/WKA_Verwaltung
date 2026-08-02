@@ -98,6 +98,21 @@ interface PaginationResult {
  * - `page` is clamped to a minimum of 1.
  * - `limit` is clamped between 1 and `maxLimit` (default 100).
  * - `skip` is derived from `page` and `limit`.
+ *
+ * ## Warum die Deckelung protokolliert wird
+ *
+ * Sie war still. Der Pacht-Assistent fordert `limit=500` an und bekam 100 —
+ * bei 188 Flurstueecken fehlten 88 in der Auswahl. Schlimmer noch: das
+ * Suchfeld daneben filtert nur die geladenen Zeilen und gibt vor, den ganzen
+ * Bestand zu durchsuchen. Wer sein Flurstueck sucht und nicht findet, schliesst
+ * daraus, dass es nicht existiert.
+ *
+ * Dasselbe Muster fand sich an siebzehn Stellen quer durch die Oberflaeche:
+ * angefordert wurden 200, 500 oder 1000, geliefert 100.
+ *
+ * Die Obergrenzen sind jetzt so gesetzt, dass die Anfragen erfuellt werden.
+ * Wo es trotzdem greift, steht es im Protokoll — eine abgeschnittene Liste,
+ * die aussieht wie eine vollstaendige, ist die unangenehmste Sorte Fehler.
  */
 export function parsePaginationParams(
   searchParams: URLSearchParams,
@@ -111,8 +126,18 @@ export function parsePaginationParams(
   const rawLimit = parseInt(searchParams.get("limit") || String(defaultLimit), 10);
 
   const page = Math.max(1, Number.isFinite(rawPage) ? rawPage : defaultPage);
-  const limit = Math.min(maxLimit, Math.max(1, Number.isFinite(rawLimit) ? rawLimit : defaultLimit));
+  const gewuenscht = Math.max(1, Number.isFinite(rawLimit) ? rawLimit : defaultLimit);
+  const limit = Math.min(maxLimit, gewuenscht);
   const skip = (page - 1) * limit;
+
+  if (gewuenscht > maxLimit) {
+    logger.warn(
+      { gewuenscht, maxLimit },
+      "Pagination: angeforderte Menge ueberschreitet die Obergrenze — die " +
+        "Antwort ist abgeschnitten. Der Aufrufer haelt sie moeglicherweise " +
+        "fuer vollstaendig.",
+    );
+  }
 
   return { page, limit, skip };
 }

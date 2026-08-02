@@ -288,7 +288,28 @@ export async function selectOption(
     option,
     `Kein Eintrag ${eintrag} im Auswahlfeld #${triggerId}`,
   ).toBeVisible({ timeout: 10_000 });
+
+  // Erst in den Sichtbereich rollen, dann klicken.
+  //
+  // Sobald die Liste laenger wurde, scheiterte der Klick mit "element is
+  // outside of the viewport" — nach 15 Sekunden, und die Meldung zeigte auf
+  // die Daten statt auf die Darstellung. Die Ursache lag am Fenster: bei 720
+  // Pixel Hoehe passen rund zwanzig Eintraege, danach liegt der Rest hinter
+  // den Rollpfeilen. Die Testfenster sind deshalb hoeher (playwright.config).
+  //
+  // Ein Versuch ueber die Tastatur (Typeahead + Enter) griff nicht
+  // zuverlaessig — Radix sammelt getippte Zeichen mit eigenem Zeitfenster,
+  // und ohne Verzoegerung getippte Zeichen kamen nicht als Suchbegriff an.
+  await option.scrollIntoViewIfNeeded();
   await option.click();
+
+  // Warten, bis die Liste wirklich zu ist. Sonst faengt ihre Ueberlagerung
+  // den naechsten Klick ab, und der scheitert an einem Feld, mit dem gar
+  // nichts ist — die Meldung zeigt dann auf das falsche Element.
+  await expect(
+    page.locator('[role="listbox"]'),
+    "Das Auswahlfeld hat sich nach der Auswahl nicht geschlossen",
+  ).toHaveCount(0, { timeout: 10_000 });
 }
 
 /**

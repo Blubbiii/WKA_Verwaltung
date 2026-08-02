@@ -113,7 +113,13 @@ export async function GET(request: NextRequest) {
     // Liste holte bis zu 200 Zeilen an, bekam hoechstens 100 und durchsuchte
     // nur diesen Ausschnitt — der 101. Pachtvertrag war nicht auffindbar.
     const search = (searchParams.get("search") || "").trim();
-    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50,
+      // 1000 statt der Vorgabe 100: die Oberflaeche laedt diese Liste vollstaendig
+      // in Auswahlfelder und filtert clientseitig. Bei 100 fehlten Eintraege,
+      // ohne dass es jemand bemerkt haette — die Suche daneben gibt vor,
+      // den ganzen Bestand zu durchsuchen.
+      maxLimit: 1000,
+    });
 
     // Build where clause - now using tenantId directly on lease
     // F4-Compliance: soft-deleted Pachtverträge nicht listen (Aufbewahrungspflicht §147 AO

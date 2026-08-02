@@ -88,8 +88,8 @@ const WIZARDS: WizardCase[] = [
     // gesperrt, obwohl 1 Feld gefuellt wurde: feld-0(search)." Schritt 1
     // verlangt die AUSWAHL eines Verpaechters aus einer Suchliste — Tippen
     // allein reicht nicht.
-    needs: "Schritt 1 verlangt die Auswahl eines bestehenden Verpaechters",
-    ownTest: "lease-wizard.spec.ts",
+    needs: "kein einziger Schritt laesst sich durch Tippen erledigen",
+    ownTest: "lease-wizard.spec.ts + lease-wizard-full.spec.ts",
   },
   {
     name: "Pacht-Abrechnung",
@@ -142,7 +142,8 @@ const WIZARDS: WizardCase[] = [
     path: "/buchhaltung/sepa/new",
     steps: 0,
     walkable: false,
-    needs: "erzeugt einen Zahllauf — gehoert in einen eigenen Test",
+    needs: "erzeugt einen Zahllauf mit Nummer aus dem Nummernkreis",
+    ownTest: "sepa-wizard.spec.ts",
   },
   {
     name: "Ersteinrichtung",
@@ -263,14 +264,13 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 02.08.2026: drei. Ohne eigenen Test sind nur noch die
-      // Assistenten, die einen Vorgang ausloesen (SEPA-Zahllauf), einen
-      // eigenen Ablauf ohne Schrittanzeiger haben (Beteiligung einrichten)
-      // oder je Mandant einmalig sind (Ersteinrichtung).
+      // Stand 02.08.2026: zwei. Ohne eigenen Test sind nur noch die
+      // Beteiligungs-Einrichtung (eigener Ablauf ohne Schrittanzeiger) und
+      // die Ersteinrichtung (je Mandant einmalig).
       //
       // Die Schranke wird bei jedem neuen Test mitgezogen — bliebe sie
       // stehen, waere sie kein Sperrklinken-Wert mehr, sondern eine Zahl,
       // die immer passt.
-    ).toBeLessThanOrEqual(3);
+    ).toBeLessThanOrEqual(2);
   });
 });

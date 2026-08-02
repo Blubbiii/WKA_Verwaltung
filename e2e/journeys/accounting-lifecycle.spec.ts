@@ -89,15 +89,36 @@ test.describe("Buchungssatz", () => {
     // liesse sich ein Tippfehler nur noch per Storno beheben.
     expect(entry.status, "Ein neuer Buchungssatz muss DRAFT sein").toBe("DRAFT");
 
-    await page.goto("/journal-entries");
+    // Ueber den Direktlink, nicht ueber die Liste.
+    //
+    // Meine erste Fassung tippte die Beschreibung in ein Feld mit dem
+    // Platzhalter „Suche" und erwartete sie danach in der Tabelle. Das ging
+    // gut, solange wenige Buchungen existierten — und wurde falsch, sobald es
+    // mehr als eine Seite gab.
+    //
+    // Der Grund: das Journal hat GAR KEIN Suchfeld. Getroffen wurde die
+    // globale Suche im Kopfbereich, die mit der Tabelle nichts zu tun hat.
+    // Der Test prueft also etwas, das es nicht gibt, und bestand nur durch
+    // Zufall — weil die neue Buchung ohnehin auf der ersten Seite stand.
+    //
+    // Die Seite kennt das Problem selbst: sie nimmt eine Kennung als
+    // Abfrageparameter entgegen, „weil der Eintrag oft nicht auf der
+    // aktuellen Seite liegt". Genau das wird hier benutzt.
+    await page.goto(`/journal-entries?id=${entry.id}`);
     await ready(page);
-    const suche = page.getByPlaceholder(/suche/i).first();
-    await must(suche, "Suchfeld im Buchungsjournal");
-    await suche.fill(beschreibung);
+
+    // Der Direktlink oeffnet den Bearbeiten-Dialog. Die Beschreibung steht
+    // darin in einem EINGABEFELD — eine Pruefung auf Fliesstext im Rumpf
+    // ginge daran vorbei, und genau das war mein zweiter Anlauf.
+    const dialog = page.getByRole("dialog");
+    await must(dialog, "Bearbeiten-Dialog nach dem Direktlink");
     await expect(
-      page.locator("table").first().locator("tbody"),
-      "Die angelegte Buchung erscheint nicht im Journal",
-    ).toContainText(beschreibung, { timeout: 15_000 });
+      dialog.locator(`input[value="${beschreibung}"]`),
+      "Der Dialog zeigt eine andere Buchung als die verlinkte",
+    ).toHaveCount(1, { timeout: 15_000 });
+
+    // Schliessen, sonst faengt die Ueberlagerung die naechsten Schritte ab.
+    await page.keyboard.press("Escape");
 
     const del = await page.request.delete(`/api/journal-entries/${entry.id}`);
     expect(

@@ -70,7 +70,11 @@ async function getHandler(request: NextRequest) {
     );
     const { page, limit, skip } = parsePaginationParams(searchParams, {
       defaultLimit: 20,
-      maxLimit: 100,
+            // 1000 statt der Vorgabe 100: die Oberflaeche laedt diese Liste vollstaendig
+      // in Auswahlfelder und filtert clientseitig. Bei 100 fehlten Eintraege,
+      // ohne dass es jemand bemerkt haette — die Suche daneben gibt vor,
+      // den ganzen Bestand zu durchsuchen.
+      maxLimit: 1000,
     });
 
     const where = {

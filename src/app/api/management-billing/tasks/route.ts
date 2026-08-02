@@ -78,7 +78,12 @@ export async function GET(request: NextRequest) {
     const assignedToId = searchParams.get("assignedToId");
     const taskType = searchParams.get("taskType");
     const search = searchParams.get("search");
-    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50,
+      // 200 statt der Vorgabe 100 — die Aufgabenliste wird vollstaendig
+      // geladen und clientseitig gefiltert. Bei 100 fehlten Aufgaben,
+      // ohne dass es auffiele.
+      maxLimit: 200,
+    });
 
     const where: Prisma.OperationalTaskWhereInput = {
       tenantId: check.tenantId,

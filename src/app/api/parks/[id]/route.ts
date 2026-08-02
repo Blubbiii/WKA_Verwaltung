@@ -363,6 +363,29 @@ export async function DELETE(
     }
 
     if (existingPark._count.plots > 0) {
+      // Unterscheiden, ob die Flurstuecke ueberhaupt entfernbar SIND.
+      //
+      // Haengt eines davon an einem Pachtvertrag, ist es dauerhaft gesperrt —
+      // auch an einem geloeschten, denn der wird aufbewahrt (§ 147 AO). Die
+      // alte Meldung forderte dann etwas, das der Nutzer nicht tun kann:
+      // "Bitte zuerst alle Flurstuecke entfernen". Er versucht es, scheitert,
+      // und sucht den Fehler bei sich.
+      const verpachtet = await prisma.plot.count({
+        where: { parkId: id, leasePlots: { some: {} } },
+      });
+
+      if (verpachtet > 0) {
+        return apiError("RETENTION_BLOCKED", undefined, {
+          message:
+            `Am Park hängen ${existingPark._count.plots} Flurstück(e), davon ` +
+            `${verpachtet} mit einem Pachtvertrag. Gelöschte Pachtverträge ` +
+            `werden aufbewahrt (§ 147 AO) und müssen ihre Flächen weiter ` +
+            `benennen können — diese Flurstücke lassen sich deshalb nicht ` +
+            `entfernen, und der Park damit auch nicht. Setzen Sie ihn ` +
+            `stattdessen auf "inaktiv".`,
+        });
+      }
+
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Park hat noch Flurstücke und kann nicht gelöscht werden. Bitte zuerst alle Flurstücke entfernen." });
     }
 

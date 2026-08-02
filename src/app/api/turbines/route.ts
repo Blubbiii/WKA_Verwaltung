@@ -58,7 +58,13 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
     const search = searchParams.get("search") || "";
     const status = enumParam(searchParams.get("status"), TURBINE_STATUSES);
-    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50 });
+    const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50,
+      // 1000 statt der Vorgabe 100: die Oberflaeche laedt diese Liste vollstaendig
+      // in Auswahlfelder und filtert clientseitig. Bei 100 fehlten Eintraege,
+      // ohne dass es jemand bemerkt haette — die Suche daneben gibt vor,
+      // den ganzen Bestand zu durchsuchen.
+      maxLimit: 1000,
+    });
 
     const where = {
       park: {

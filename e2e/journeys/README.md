@@ -110,7 +110,8 @@ Konto geben, statt die Grenzen anzuheben.
 | Buchhaltung — Soll=Haben, Vorbuchung, Festschreiben, Storno, Bilanzdifferenz | ✅ |
 | Admin — Einstellung ändern, prüfen, exakt zurücksetzen; 22 Seiten erreichbar | ✅ |
 | Pacht — Verpächter anlegen, im Assistenten auswählen, Schritt 1 → 2 | ✅ |
-| Pacht — Schritte 2–4 (brauchen Flurstücke) | offen |
+| Pacht — alle vier Schritte, gespeichert, Verpächter und Fläche geprüft | ✅ |
+| Pacht — doppelte Verpachtung: ausgeblendet UND unwählbar | ✅ |
 | Vertrag — vier Schritte durchklicken, speichern, Vertragsart prüfen, löschen | ✅ |
 | GIS — Polygon anlegen und unverändert auslesen, Seiten erreichbar | ✅ |
 | GIS — Zeichnen auf der Karte (Mausbewegung auf Canvas) | bewusst nicht |
@@ -118,7 +119,10 @@ Konto geben, statt die Grenzen anzuheben.
 | SCADA — Import mit echter WSD-Datei ausführen | offen |
 | Anlagen-Import — eigene Beispieldatei hochladen, zuordnen, validieren | ✅ |
 | Anlagen-Import — Einspielen ausführen | bewusst nicht |
-| Sechs Assistenten ohne generischen Durchlauf und ohne eigenen Test | offen |
+| SEPA-Zahllauf — vier Schritte bis zum XML, Inhalt geprüft | ✅ |
+| Pacht-Abrechnung — Vorschuss nachgerechnet | ✅ |
+| Energie-Abrechnung — Verteilung nachgerechnet | ✅ |
+| Zwei Assistenten ohne eigenen Test (Beteiligung, Ersteinrichtung) | offen |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
