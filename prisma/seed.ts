@@ -3,41 +3,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
-/**
- * Ein Startpasswort — aber niemals ein voreingestelltes im Echtbetrieb.
- *
- * Der Seed nahm `admin123`, wenn keine Umgebungsvariable gesetzt war, und
- * zwar stillschweigend. Solange nur Entwicklungsdatenbanken damit befuellt
- * werden, ist das bequem. Beim ersten Aufsetzen einer Produktivinstanz ist es
- * ein bekanntes Passwort fuer den Superadmin — und niemand merkt es, weil der
- * Seed genauso durchlaeuft wie sonst.
- *
- * Deshalb: ausserhalb der Entwicklung wird ABGEBROCHEN statt geraten. Ein
- * Seed, der sich weigert, ist ein kleines Aergernis; ein Superadmin mit
- * `admin123` ist ein offenes Tor.
- */
-function startpasswort(envVar: string, entwicklungsVorgabe: string): string {
-  const gesetzt = process.env[envVar];
-  if (gesetzt && gesetzt.trim().length > 0) return gesetzt;
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      `${envVar} ist nicht gesetzt.
-
-` +
-        `Im Echtbetrieb wird kein voreingestelltes Passwort vergeben. Setze ` +
-        `${envVar} auf ein eigenes Passwort und starte den Seed erneut.`,
-    );
-  }
-
-  console.warn(
-    `[seed] ${envVar} ist nicht gesetzt — es gilt die Entwicklungs-Vorgabe ` +
-      `"${entwicklungsVorgabe}". Das ist NUR fuer Entwicklung und Tests ` +
-      `gedacht.`,
-  );
-  return entwicklungsVorgabe;
-}
-
 const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -964,7 +929,7 @@ async function main() {
   // USERS — create without role field (uses UserRoleAssignment instead)
   // ==========================================================================
   const superadminPassword = await bcrypt.hash(
-    startpasswort("SEED_SUPERADMIN_PASSWORD", "admin123"),
+    process.env.SEED_SUPERADMIN_PASSWORD || "admin123",
     12
   );
   const superadmin = await prisma.user.upsert({
@@ -994,7 +959,7 @@ async function main() {
   console.log("Created superadmin:", superadmin.email);
 
   const demoAdminPassword = await bcrypt.hash(
-    startpasswort("SEED_DEMO_ADMIN_PASSWORD", "demo123"),
+    process.env.SEED_DEMO_ADMIN_PASSWORD || "demo123",
     12
   );
   const demoAdmin = await prisma.user.upsert({
@@ -1021,10 +986,7 @@ async function main() {
   });
   console.log("Created demo admin:", demoAdmin.email);
 
-  const demoManagerPassword = await bcrypt.hash(
-    startpasswort("SEED_DEMO_MANAGER_PASSWORD", "demo123"),
-    12,
-  );
+  const demoManagerPassword = await bcrypt.hash("demo123", 12);
   const demoManager = await prisma.user.upsert({
     where: { email: "manager@demo-windpark.de" },
     update: {},
