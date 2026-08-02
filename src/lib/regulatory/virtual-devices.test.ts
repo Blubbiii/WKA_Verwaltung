@@ -5,8 +5,8 @@
  * Netzverknüpfungspunkt und einen Parkrechner — und speichert sie in
  * derselben Tabelle wie die Anlagen, unterschieden nur durch `deviceType`.
  *
- * Das ist eine sinnvolle Modellierung und zugleich eine Falle, in die ich am
- * 01.08.2026 zweimal getappt bin:
+ * Das ist eine sinnvolle Modellierung und zugleich eine Falle, die inzwischen
+ * VIERMAL zugeschnappt ist:
  *
  *  1. Die Löschsperre für Parks zählte sie als Anlagen mit. Ein frisch
  *     angelegter Park war damit NIE löschbar — er blockierte sich selbst mit
@@ -16,8 +16,20 @@
  *     Anteile seien zu hoch — für Geräte, die keine Betriebsstätte begründen
  *     und keine Nennleistung haben.
  *
- * Beide Male fiel es erst an der laufenden Instanz auf, nicht im Test: die
- * Testdaten hatten keine Parks mit Infrastruktur.
+ *  3. Die Pacht-Berechnung multiplizierte die Mindestpacht mit der Zahl ALLER
+ *     aktiven Geraete. Jeder ueber die Anwendung angelegte Park hat zwei
+ *     virtuelle — bei zwei echten Anlagen war die Mindestpacht damit doppelt
+ *     so hoch. Gefunden am 02.08.2026 von
+ *     `e2e/journeys/lease-settlement-wizard.spec.ts`, weil der Test den
+ *     Betrag NACHRECHNET statt zu pruefen, dass eine Zahl dasteht.
+ *  4. Der Verteiler der Betreiberanteile hatte sie im Nenner.
+ *
+ * Die ersten drei fielen erst an einer laufenden Instanz auf, nicht im Test:
+ * die Testdaten hatten keine Parks mit Infrastruktur.
+ *
+ * Vier Fundstellen derselben Ursache sind kein Zufall mehr. Wer irgendwo
+ * `park.turbines` laedt und zaehlt, muss sich fragen, ob er Anlagen meint
+ * oder Geraete.
  *
  * Dieser Test ist deshalb eine Sperre auf Quelltextebene. Er prüft nicht das
  * Verhalten, sondern dass die Einschränkung überhaupt dasteht — wer eine neue
@@ -48,6 +60,22 @@ const MUST_FILTER = [
   {
     file: "app/api/regulatory/municipality-benefit/route.ts",
     why: "§ 6 EEG — der 2.500-m-Umkreis haengt am Turm, ein Parkrechner hat keinen",
+  },
+  // 02.08.2026, dritter und vierter Fund derselben Falle — diesmal nicht in
+  // einer Auswertung, sondern in der Berechnung von Geld.
+  {
+    file: "lib/lease-revenue/calculator.ts",
+    why:
+      "Mindestpacht = Mindestentgelt je WEA x Anzahl WEA. Ohne Filter zaehlen " +
+      "Netzverknuepfungspunkt und Parkrechner mit, und JEDER Park zahlt zwei " +
+      "Anlagen zu viel — bei zwei echten Anlagen also das Doppelte",
+  },
+  {
+    file: "lib/lease-revenue/allocator.ts",
+    why:
+      "Die virtuellen Geraete haben keinen Betreiber und fallen aus der " +
+      "Zuordnung — standen aber im Nenner und rechneten jeden Betreiberanteil " +
+      "zu klein",
   },
 ];
 

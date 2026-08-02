@@ -355,7 +355,15 @@ export async function loadSettlementData(
     include: {
       revenuePhases: { orderBy: { phaseNumber: "asc" } },
       turbines: {
-        where: { status: "ACTIVE" },
+        // deviceType: "WEA" — sonst zaehlen die beiden virtuellen Geraete
+        // mit, die POST /api/parks zu jedem Park anlegt
+        // (Netzverknuepfungspunkt und Parkrechner, beide status ACTIVE).
+        //
+        // Das ist hier kein Schoenheitsfehler: totalWEACount geht direkt in
+        // die Mindestpacht ein (minimumRentPerTurbine x totalWEACount). Ohne
+        // den Filter zahlt jeder Park zwei Anlagen zu viel — bei zwei echten
+        // Anlagen also das Doppelte.
+        where: { status: "ACTIVE", deviceType: "WEA" },
         select: {
           id: true,
           designation: true,
@@ -400,14 +408,26 @@ export async function loadSettlementData(
   });
 
   if (!park) throw new Error("Park nicht gefunden");
-  if (!park.commissioningDate)
-    throw new Error("Inbetriebnahmedatum fehlt");
-  if (!park.minimumRentPerTurbine)
-    throw new Error("Mindestnutzungsentgelt je WEA fehlt");
-  if (park.weaSharePercentage == null)
-    throw new Error("WEA-Standort-Anteil fehlt");
-  if (park.poolSharePercentage == null)
-    throw new Error("Pool-Flaechen-Anteil fehlt");
+
+  // Die Meldungen nennen den Park beim Namen und sagen, wo der Wert steht.
+  //
+  // Vorher hiess es nur "Inbetriebnahmedatum fehlt". Wer das im
+  // Abrechnungs-Assistenten liest, sucht es bei der Anlage oder beim
+  // Pachtvertrag — gemeint ist der Park. Ich bin selbst darauf
+  // hereingefallen und habe zuerst das Datum an den Anlagen gesetzt.
+  //
+  // Eine Meldung, die einen fehlenden Wert nennt, aber nicht wo er hingehoert,
+  // kostet den Nutzer die Suche, die sie ihm ersparen sollte.
+  const fehlt = (was: string) =>
+    new Error(
+      `${was} fehlt am Park „${park.name}". Der Wert steht in den ` +
+        `Pacht-Einstellungen des Parks und wird für die Abrechnung gebraucht.`,
+    );
+
+  if (!park.commissioningDate) throw fehlt("Das Inbetriebnahmedatum");
+  if (!park.minimumRentPerTurbine) throw fehlt("Das Mindestnutzungsentgelt je WEA");
+  if (park.weaSharePercentage == null) throw fehlt("Der WEA-Standort-Anteil");
+  if (park.poolSharePercentage == null) throw fehlt("Der Pool-Flächen-Anteil");
 
   // Determine revenue phase
   const commissioningYear = park.commissioningDate.getFullYear();
@@ -421,8 +441,19 @@ export async function loadSettlementData(
     year
   );
 
-  if (!activePhase)
-    throw new Error(`Keine Erlösphase für Jahr ${year} konfiguriert`);
+  if (!activePhase) {
+    // Die Phasen zählen BETRIEBSJAHRE, nicht Kalenderjahre. Die alte Meldung
+    // lautete „Keine Erlösphase für Jahr 2024 konfiguriert" — wer das liest,
+    // legt eine Phase mit startYear 2024 an und wundert sich, dass es wieder
+    // nicht greift. Die Zahl, auf die es ankommt, steht jetzt in der Meldung.
+    const betriebsjahr = year - commissioningYear + 1;
+    throw new Error(
+      `Keine Erlösphase für das ${betriebsjahr}. Betriebsjahr konfiguriert ` +
+        `(Abrechnungsjahr ${year}, Inbetriebnahme ${commissioningYear}). ` +
+        `Erlösphasen zählen Betriebsjahre ab 1, nicht Kalenderjahre — eine ` +
+        `Phase von 1 bis offen deckt die gesamte Laufzeit ab.`,
+    );
+  }
 
   // Load total park revenue for the year from EnergySettlements
   // If a specific EnergySettlement is linked, use that; otherwise aggregate all

@@ -145,7 +145,11 @@ export async function loadOperatorShares(
     where: { id: parkId, tenantId },
     include: {
       turbines: {
-        where: { status: "ACTIVE" },
+        // deviceType: "WEA" — die virtuellen Geraete haben keinen Betreiber
+        // und fielen in der Schleife unten ohnehin durch. Sie standen aber im
+        // NENNER (totalTurbines) und haetten damit jeden Betreiberanteil zu
+        // klein gerechnet.
+        where: { status: "ACTIVE", deviceType: "WEA" },
         include: {
           operatorHistory: {
             where: {

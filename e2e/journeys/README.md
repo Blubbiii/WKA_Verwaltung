@@ -128,6 +128,36 @@ Bemerkenswert am ersten: gefunden hat ihn nicht die Sorgfalt, sondern der
 **Zufall** — der Lauf startete kurz nach Mitternacht. Ein Testlauf, der immer
 zur selben Tageszeit läuft, hätte ihn nie gesehen.
 
+## Die Mindestpacht war zu hoch (gefunden 02.08.2026)
+
+Der schwerwiegendste Fund bisher, und er zeigt, warum Tests **nachrechnen**
+müssen statt zu prüfen, dass eine Zahl dasteht.
+
+`POST /api/parks` legt zu jedem Park zwei virtuelle Geräte an — einen
+Netzverknüpfungspunkt und einen Parkrechner — in derselben Tabelle wie die
+Anlagen. Die Pacht-Berechnung zählte sie mit:
+
+```
+Mindestpacht = Mindestentgelt je WEA × Anzahl WEA
+```
+
+Bei einem Park mit zwei echten Anlagen ergab das vier — die **doppelte**
+Mindestpacht. Bei fünf Anlagen das 1,4-fache. Betroffen ist jede
+Vorauszahlung und jede Schlussabrechnung, bei der die Mindestpacht greift
+(also gerade in ertragsschwachen Jahren). Zu Lasten des Betreibers, zugunsten
+der Verpächter.
+
+Gefunden hat es [lease-settlement-wizard.spec.ts](lease-settlement-wizard.spec.ts),
+weil er zwei Anlagen anlegt, 12.000 € je Anlage einstellt und den Vorschuss
+**nachrechnet**: 24.000 ÷ 4 Quartale = 6.000 €. Herausgekommen sind 12.000 €.
+Ein Test, der nur geprüft hätte, dass ein Betrag erscheint, wäre grün
+gewesen.
+
+Es ist die **dritte und vierte** Fundstelle derselben Ursache — nach der
+Löschsperre für Parks und der Zerlegung nach § 29 GewStG.
+`src/lib/regulatory/virtual-devices.test.ts` deckte bis dahin nur die
+API-Routen ab, nicht die Rechenkerne; jetzt beide.
+
 ## Das Aufräumen hat in CI nie funktioniert (behoben 02.08.2026)
 
 Ein Fehler, der bemerkenswert lange unsichtbar blieb, weil kein Test deshalb

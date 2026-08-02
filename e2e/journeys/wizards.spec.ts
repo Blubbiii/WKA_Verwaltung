@@ -111,6 +111,10 @@ const WIZARDS: WizardCase[] = [
     steps: 4,
     walkable: false,
     needs: "verlangt eine hochzuladende Datei",
+    // Derselbe Test wie beim Anlagen-Import: beide sind gleich gebaut und
+    // bieten je eine eigene Beispieldatei an. Stand hier zuerst nicht drin —
+    // die Schuldenliste war damit um einen zu lang.
+    ownTest: "import-wizard.spec.ts",
   },
   {
     name: "Anlagen-Import",
@@ -255,11 +259,10 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 02.08.2026: sechs, nachdem Pacht-, Vertrags- und
-      // Anlagen-Import-Assistent je einen eigenen Test bekommen haben. Die
-      // Schranke wird bei jedem neuen Test mitgezogen — bliebe sie stehen,
-      // waere sie kein Sperrklinken-Wert mehr, sondern eine Zahl, die
-      // immer passt.
-    ).toBeLessThanOrEqual(6);
+      // Stand 02.08.2026: fuenf. Pacht-, Vertrags- und BEIDE
+      // Import-Assistenten haben einen eigenen Test. Die Schranke wird bei
+      // jedem neuen Test mitgezogen — bliebe sie stehen, waere sie kein
+      // Sperrklinken-Wert mehr, sondern eine Zahl, die immer passt.
+    ).toBeLessThanOrEqual(5);
   });
 });
