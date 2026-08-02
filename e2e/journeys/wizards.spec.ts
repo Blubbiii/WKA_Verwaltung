@@ -135,7 +135,8 @@ const WIZARDS: WizardCase[] = [
     path: "/funds/onboarding",
     steps: 0,
     walkable: false,
-    needs: "eigener Ablauf ohne Schrittanzeiger",
+    needs: "fuenf Schritte, Auswahl der Gesellschaft, Kapitalanteil",
+    ownTest: "fund-onboarding-wizard.spec.ts",
   },
   {
     name: "SEPA-Zahllauf",
@@ -150,7 +151,8 @@ const WIZARDS: WizardCase[] = [
     path: "/setup",
     steps: 0,
     walkable: false,
-    needs: "einmaliger Ablauf je Mandant",
+    needs: "einmaliger Ablauf je Mandant — aendert Mandanten-Stammdaten",
+    ownTest: "setup-wizard.spec.ts",
   },
 ];
 
@@ -264,13 +266,11 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 02.08.2026: zwei. Ohne eigenen Test sind nur noch die
-      // Beteiligungs-Einrichtung (eigener Ablauf ohne Schrittanzeiger) und
-      // die Ersteinrichtung (je Mandant einmalig).
+      // Stand 02.08.2026: NULL. Jeder Assistent hat entweder einen
+      // generischen Durchlauf oder einen eigenen Test.
       //
-      // Die Schranke wird bei jedem neuen Test mitgezogen — bliebe sie
-      // stehen, waere sie kein Sperrklinken-Wert mehr, sondern eine Zahl,
-      // die immer passt.
-    ).toBeLessThanOrEqual(2);
+      // Die Schranke bleibt stehen, damit ein NEUER Assistent ohne Test hier
+      // auffaellt — das ist ab jetzt ihr einziger Zweck.
+    ).toBeLessThanOrEqual(0);
   });
 });

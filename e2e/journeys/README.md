@@ -122,7 +122,9 @@ Konto geben, statt die Grenzen anzuheben.
 | SEPA-Zahllauf — vier Schritte bis zum XML, Inhalt geprüft | ✅ |
 | Pacht-Abrechnung — Vorschuss nachgerechnet | ✅ |
 | Energie-Abrechnung — Verteilung nachgerechnet | ✅ |
-| Zwei Assistenten ohne eigenen Test (Beteiligung, Ersteinrichtung) | offen |
+| Beteiligung einrichten — fünf Schritte, Kapitalanteil geprüft | ✅ |
+| Ersteinrichtung — Steuernummer und Bankdaten kommen an | ✅ |
+| **Alle zwölf Assistenten haben Abdeckung** | ✅ |
 
 Die Reihenfolge ist bewusst: erst die Kernobjekte mit echtem
 Lebenszyklus, dann die Buchhaltung — dort wird gerechnet, und dort tut ein
