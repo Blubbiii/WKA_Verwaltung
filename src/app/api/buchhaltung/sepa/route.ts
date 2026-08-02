@@ -77,6 +77,17 @@ export async function POST(request: NextRequest) {
             },
           },
         },
+        // Auch der direkt verknuepfte Empfaenger (CRM-Kontakt).
+        //
+        // Vorher wurde ausschliesslich ueber den GESELLSCHAFTER gelesen. Eine
+        // Rechnung an einen normalen Kontakt — Verpaechter, Dienstleister,
+        // Lieferant — brachte damit nie eine Empfaenger-IBAN mit, und der
+        // Zahllauf brach ab mit "Fuer N Rechnung(en) fehlt eine gueltige
+        // Creditor-IBAN". Die IBAN fehlte nicht: sie stand an der Person und
+        // wurde nur nicht gelesen. Die Meldung schob es auf die Daten.
+        recipientPerson: {
+          select: { firstName: true, lastName: true, companyName: true, bankIban: true, bankBic: true },
+        },
       },
     });
 
@@ -85,7 +96,10 @@ export async function POST(request: NextRequest) {
     }
 
     const items = invoices.map((inv) => {
-      const person = inv.shareholder?.person;
+      // Gesellschafter zuerst — das war das bisherige Verhalten und bleibt
+      // massgeblich, wenn beides gesetzt ist. Der CRM-Kontakt traegt, wo es
+      // keinen Gesellschafter gibt.
+      const person = inv.shareholder?.person ?? inv.recipientPerson;
       const name = person?.companyName || `${person?.firstName || ""} ${person?.lastName || ""}`.trim() || inv.recipientName || "";
       return {
         invoiceId: inv.id,

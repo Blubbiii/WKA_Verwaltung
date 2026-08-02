@@ -41,13 +41,23 @@
 import { test, expect } from "../support/fixtures";
 import { testName } from "../support/run-context";
 import { must, ready } from "../support/strict";
+import { testIban } from "../support/iban";
 
 /** Krumm und ungleich — damit eine Verwechslung auffällt. */
 const BETRAEGE = [1234.56, 2345.67];
 const SUMME = BETRAEGE.reduce((a, b) => a + b, 0);
 
-/** Prüfziffer-gültige Test-IBAN (Deutsche Bundesbank Testbereich). */
-const IBAN = "DE02120300000000202051";
+/**
+ * IBAN des Auftraggebers — je Lauf eine andere.
+ *
+ * Vorher stand hier eine feste. Beim zweiten Lauf gegen dieselbe Datenbank
+ * scheiterte der Test mit HTTP 409: das Bankkonto gab es schon. Ein Test, der
+ * nur beim ersten Mal läuft, ist keiner.
+ */
+const IBAN = testIban();
+
+/** IBAN des Zahlungsempfängers. Ohne sie weist der Zahllauf ab — zu Recht. */
+const EMPFAENGER_IBAN = testIban(Date.now() + 1);
 
 interface Vorbedingung {
   kontoId: string;
@@ -151,12 +161,32 @@ async function kontoUndRechnungen(
   const rechnungen: Vorbedingung["rechnungen"] = [];
 
   for (const betrag of BETRAEGE) {
-    const empfaenger = testName("Zahlungsempfaenger");
+    const empfaenger = testName("Zahlungsempfaenger").replace(/\s+/g, "-");
+
+    // Der Zahllauf zieht die Empfaenger-IBAN aus der verknuepften PERSON,
+    // nicht aus der Rechnung. Ohne sie bricht er ab mit "Fuer N Rechnung(en)
+    // fehlt eine gueltige Creditor-IBAN" — richtig so: ohne Kontonummer laesst
+    // sich niemand bezahlen. Meine erste Fassung setzte nur einen Namen.
+    const person = await api.create(
+      "persons",
+      {
+        personType: "natural",
+        firstName: "E2E",
+        lastName: empfaenger,
+        city: "Cuxhaven",
+        bankIban: EMPFAENGER_IBAN,
+        bankBic: "BYLADEM1001",
+      },
+      "lastName",
+    );
+    expect(person.id, "Zahlungsempfaenger konnte nicht angelegt werden").toBeTruthy();
+
     const res = await page.request.post("/api/invoices", {
       data: {
         invoiceType: "INVOICE",
         invoiceDate: heuteInBerlin,
         recipientName: empfaenger,
+        recipientPersonId: person.id,
         recipientAddress: "Teststrasse 1\n27476 Cuxhaven",
         // § 14 UStG verlangt das Leistungsdatum. Fehlt es, verweigert /send
         // den Uebergang auf "versendet" — zu Recht.

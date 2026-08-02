@@ -53,13 +53,31 @@ niemand mehr auf, weil unklar ist, was noch gebraucht wird.
 
 ## Laufen lassen
 
+Gegen eine entfernte Instanz dauert ein Durchlauf Minuten, und jede Korrektur
+wartet auf ein Deployment. Lokal sind es **dreieinhalb Minuten**, und der
+Rückkanal ist sofort da.
+
 ```bash
-# gegen die lokale Entwicklungsinstanz
-npm run test:e2e -- e2e/journeys
+docker start wpm-dev-db wpm-dev-redis     # Postgres und Redis
+npx prisma db push --url "$DATABASE_URL"  # Schema angleichen, falls nötig
+bash scripts/local-e2e-server.sh          # bauen und starten
+E2E_BASE_URL=http://localhost:3050 npx playwright test e2e/journeys --project=chromium
 
 # gegen eine andere Instanz
 E2E_BASE_URL=http://192.168.178.101:3050 npx playwright test e2e/journeys --project=chromium
 ```
+
+**Nicht `npm run dev` benutzen.** Der Entwicklungsmodus übersetzt jede Route
+beim ersten Aufruf; ein voller Durchlauf brauchte damit **3,8 Stunden** statt
+dreieinhalb Minuten, und die Hälfte der Fehlschläge waren Zeitüberläufe ohne
+Aussage.
+
+`scripts/local-e2e-server.sh` räumt zuerst den Port. Das klingt übervorsichtig
+und ist es nicht: zweimal hintereinander lief der alte Server weiter, der neue
+scheiterte still mit `EADDRINUSE`, und die Tests prüften den ALTEN Stand. Beim
+ersten Mal hätte ich fast einen schnelleren Lauf gemeldet, der keiner war;
+beim zweiten Mal hielt ich eine Korrektur für wirkungslos, die schlicht nicht
+lief. Das Skript prüft deshalb am Ende, ob wirklich der neue Stand antwortet.
 
 ## Zwei Sperren, die die Suite selbst trifft
 
@@ -67,10 +85,16 @@ E2E_BASE_URL=http://192.168.178.101:3050 npx playwright test e2e/journeys --proj
 `playwright test` meldet sich einmal an — mehrere Läufe kurz hintereinander
 sperren sich selbst aus. Deshalb möglichst alles in **einem** Aufruf.
 
-**API: 100 Anfragen je Minute**, gezählt pro Nutzer. Ein vollständiger
-Durchlauf streift diese Grenze: jeder Seitenaufruf löst mehrere Anfragen aus.
-`WpmApi` wartet bei HTTP 429 einmal 20 Sekunden ab und versucht es erneut —
-genau einmal. Bleibt es dabei, ist etwas anderes los als eine kurze Spitze.
+**API: 100 Anfragen je Minute**, gezählt pro Nutzer. Lokal reisst ein voller
+Durchlauf diese Grenze: 92 Tests in dreieinhalb Minuten sind rund 26 Tests je
+Minute mit je mehreren Anfragen. Gegen die langsame Testinstanz fiel das nie
+auf, weil sich die Last dort von selbst verteilte.
+
+`e2e/support/rate-limit.ts` wartet bei HTTP 429 **so lange, wie die API
+sagt** (`Retry-After`) und versucht es genau einmal erneut. Bleibt es dabei,
+ist etwas anderes los als eine kurze Spitze. Die Regel gilt für `WpmApi` **und**
+für `page.request` — letzteres über die Fixture, weil 59 Aufrufe in elf
+Dateien sonst jeder für sich daran denken müssten.
 
 Beides ist **kein Fehler**, sondern gewolltes Verhalten, das ein Client zu
 respektieren hat. Wer die Suite deutlich ausbaut, sollte ihr ein eigenes

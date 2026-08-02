@@ -23,6 +23,7 @@
 import type { APIRequestContext } from "@playwright/test";
 import { expect } from "@playwright/test";
 import { isTestArtifact } from "./run-context";
+import { mitRatengrenze } from "./rate-limit";
 
 export interface CreatedRef {
   /** API-Sammlung, über die sich das Objekt wieder löschen lässt. */
@@ -60,36 +61,6 @@ export interface CreatedRef {
  * einem Validierungsfehler steht die Ursache aber im Rumpf. Ohne sie sucht
  * man den Fehler in der falschen Ecke.
  */
-/**
- * Wartet bei HTTP 429 einmal ab und versucht es erneut.
- *
- * Die API begrenzt auf 100 Anfragen je Minute und Nutzer. Eine Suite mit
- * sechzig Tests, die sich alle mit demselben Konto anmelden, erreicht das —
- * jeder Seitenaufruf löst selbst mehrere Anfragen aus.
- *
- * Das ist KEIN Fehler der Anwendung, den man wegretryen müsste, sondern eine
- * Eigenschaft, die ein Client zu respektieren hat: bei 429 wartet man und
- * versucht es noch einmal. Genau einmal — bleibt es dabei, ist etwas anderes
- * los als eine kurze Spitze, und dann soll der Test scheitern.
- */
-async function withBackoff<T extends { status(): number; headers(): Record<string, string> }>(
-  ausfuehren: () => Promise<T>,
-): Promise<T> {
-  const erste = await ausfuehren();
-  if (erste.status() !== 429) return erste;
-
-  // Wie lange, sagt die API selbst. Vorher standen hier feste 20 Sekunden —
-  // geraten, und zu kurz: das Fenster ist eine Minute, nach 20 Sekunden war
-  // es haeufig noch zu. Der Header `Retry-After` steht genau dafuer da.
-  const angabe = Number(erste.headers()["retry-after"]);
-  const sekunden = Number.isFinite(angabe) && angabe > 0 ? angabe : 60;
-
-  // Nach oben begrenzt: ein Test soll nicht minutenlang warten, weil ein
-  // Server eine unsinnige Angabe schickt.
-  await new Promise((r) => setTimeout(r, Math.min(sekunden + 1, 90) * 1000));
-  return ausfuehren();
-}
-
 async function readOrFail(res: Awaited<ReturnType<APIRequestContext["post"]>>, what: string) {
   const body = await res.text();
   if (!res.ok()) {
@@ -133,7 +104,7 @@ export class WpmApi {
     data: Record<string, unknown>,
     nameField = "name",
   ): Promise<CreatedRef> {
-    const res = await withBackoff(() =>
+    const res = await mitRatengrenze(() =>
       this.request.post(`/api/${collection}`, { data }),
     );
     const json = await readOrFail(res, `POST /api/${collection}`);
@@ -148,7 +119,7 @@ export class WpmApi {
   }
 
   async get<T = unknown>(path: string): Promise<T> {
-    const res = await withBackoff(() => this.request.get(path));
+    const res = await mitRatengrenze(() => this.request.get(path));
     return readOrFail(res, `GET ${path}`);
   }
 
@@ -203,7 +174,7 @@ export class WpmApi {
     }
     // Auch das Loeschen respektiert die Grenze. Eine 429 hier liess einen
     // Datensatz liegen und sah im Bericht aus wie eine Sperre der Anwendung.
-    const res = await withBackoff(() =>
+    const res = await mitRatengrenze(() =>
       this.request.delete(`/api/${ref.collection}/${ref.id}`),
     );
     if (!res.ok()) {

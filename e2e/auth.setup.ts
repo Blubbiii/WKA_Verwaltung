@@ -1,4 +1,5 @@
 import { test as setup, expect } from "@playwright/test";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 /**
@@ -12,8 +13,53 @@ const authFile = path.join(__dirname, ".auth/user.json");
 const TEST_EMAIL = process.env.E2E_EMAIL || "admin@windparkmanager.de";
 const TEST_PASSWORD = process.env.E2E_PASSWORD || "admin123";
 
+/**
+ * Ist die gespeicherte Sitzung noch brauchbar?
+ *
+ * Die Anmeldung ist auf **fünf Versuche je fünfzehn Minuten** begrenzt,
+ * gezählt pro E-Mail-Adresse. Beim Entwickeln sperrt man sich damit nach dem
+ * vierten Testlauf selbst aus — und der fünfte scheitert dann nicht am Test,
+ * sondern an einer Schutzmassnahme, die genau richtig arbeitet.
+ *
+ * Deshalb wird eine noch gültige Sitzung wiederverwendet. Geprüft wird nicht
+ * nur, ob die Datei existiert, sondern ob das Sitzungs-Cookie noch läuft —
+ * eine abgelaufene Datei wäre schlimmer als keine, weil jeder Test danach an
+ * einer Weiterleitung zur Anmeldung scheitern würde.
+ *
+ * `E2E_FORCE_LOGIN=1` erzwingt die Neuanmeldung.
+ */
+function sitzungNochGueltig(datei: string): boolean {
+  if (process.env.E2E_FORCE_LOGIN === "1") return false;
+  if (!existsSync(datei)) return false;
+
+  try {
+    const stand = JSON.parse(readFileSync(datei, "utf-8")) as {
+      cookies?: { name: string; expires?: number }[];
+    };
+    const sitzung = (stand.cookies ?? []).find((c) =>
+      c.name.includes("session-token"),
+    );
+    if (!sitzung) return false;
+
+    // `expires` ist -1 bei Sitzungs-Cookies ohne Ablauf. Eine Minute Puffer,
+    // damit die Sitzung nicht mitten im Lauf ausläuft.
+    if (sitzung.expires === undefined || sitzung.expires < 0) return true;
+    return sitzung.expires * 1000 > Date.now() + 60_000;
+  } catch {
+    return false;
+  }
+}
+
 setup("authenticate", async ({ page }) => {
   setup.setTimeout(60_000);
+
+  if (sitzungNochGueltig(authFile)) {
+    setup.info().annotations.push({
+      type: "anmeldung",
+      description: "bestehende Sitzung wiederverwendet",
+    });
+    return;
+  }
 
   // Navigate to login — use domcontentloaded to avoid waiting for slow assets
   await page.goto("/login", { waitUntil: "domcontentloaded" });

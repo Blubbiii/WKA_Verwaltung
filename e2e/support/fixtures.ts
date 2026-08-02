@@ -17,6 +17,8 @@
  */
 
 import { test as base, expect } from "@playwright/test";
+import type { APIResponse } from "@playwright/test";
+import { mitRatengrenze } from "./rate-limit";
 import { WpmApi } from "./api";
 import { PREFIX } from "./run-context";
 
@@ -39,6 +41,31 @@ export const test = base.extend<{ api: WpmApi }>({
       }
       await route.continue();
     });
+
+    // Auch `page.request` respektiert die Ratengrenze.
+    //
+    // 59 Aufrufe in elf Ablauf-Tests gehen direkt ueber `page.request` — die
+    // hatten den Rueckzieher nicht, den `WpmApi` laengst hat. Vier Tests
+    // scheiterten deshalb mit RATE_LIMITED, sobald die Suite schnell genug
+    // lief, um die 100 Anfragen je Minute zu erreichen. Keiner davon hatte
+    // etwas mit seinem eigentlichen Gegenstand zu tun.
+    //
+    // Hier statt an 59 Stellen: eine Regel, ein Ort, und kein Test muss
+    // daran denken. Die Alternative waere gewesen, jeden Aufruf einzeln
+    // umzuschreiben — und den naechsten wieder zu vergessen.
+    const anfrage = page.request as unknown as Record<string, unknown>;
+    for (const verb of ["get", "post", "put", "patch", "delete", "fetch"]) {
+      const original = anfrage[verb];
+      if (typeof original !== "function") continue;
+      anfrage[verb] = (...args: unknown[]) =>
+        mitRatengrenze(() =>
+          (original as (...a: unknown[]) => Promise<APIResponse>).apply(
+            page.request,
+            args,
+          ),
+        );
+    }
+
     await use(page);
   },
 

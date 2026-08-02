@@ -202,17 +202,18 @@ ${await phaseRes.text()}`,
     name: verpaechter,
   });
 
-  return { parkId: park.id, parkName };
-    // Der Park bleibt absichtlich stehen und wird deshalb nicht mehr
-  // verfolgt: seine Flurstuecke haengen an einem Pachtvertrag, und ein
-  // geloeschter Pachtvertrag wird aufbewahrt (§ 147 AO). Die Flurstuecke
-  // sind damit dauerhaft gesperrt — und ein Park mit Flurstuecken laesst
-  // sich nicht loeschen.
+  // Der Park bleibt absichtlich stehen und wird deshalb nicht mehr verfolgt:
+  // seine Flurstuecke haengen an einem Pachtvertrag, und ein geloeschter
+  // Pachtvertrag wird aufbewahrt (§ 147 AO). Die Flurstuecke sind damit
+  // dauerhaft gesperrt — und ein Park mit Flurstuecken laesst sich nicht
+  // loeschen.
   //
-  // Das ist eine FOLGE der Aufbewahrung, keine Panne. Wuerde der Park
-  // weiter verfolgt, meldete jeder Lauf denselben "Rest" — und ein
-  // Aufraeum-Bericht, in dem immer etwas steht, wird nicht mehr gelesen.
+  // Das ist eine FOLGE der Aufbewahrung, keine Panne. Wuerde der Park weiter
+  // verfolgt, meldete jeder Lauf denselben "Rest" — und ein Aufraeum-Bericht,
+  // in dem immer etwas steht, wird nicht mehr gelesen.
   api.untrack(park.id);
+
+  return { parkId: park.id, parkName };
 }
 
 test.describe("Pacht-Abrechnung", () => {
