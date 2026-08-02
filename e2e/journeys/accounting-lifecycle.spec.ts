@@ -188,6 +188,13 @@ test.describe("Festschreiben und Storno", () => {
       `Festschreiben fehlgeschlagen: HTTP ${post.status()}\n${await post.text()}`,
     ).toBe(true);
 
+    // Ab hier ist die Buchung unloeschbar — das ist der ganze Zweck dieses
+    // Tests (§ 146 AO). Sie aus der Aufraeumliste zu nehmen ist kein
+    // Verstecken, sondern die Wahrheit: der Aufraeumer soll melden, was
+    // ueberraschend liegenblieb, nicht das, was liegenbleiben MUSS. Sonst
+    // steht in jedem Lauf eine Meldung, die niemand mehr liest.
+    api.untrack(entry.id);
+
     const nachher = await api.get<{ data?: { status?: string }; status?: string }>(
       `/api/journal-entries/${entry.id}`,
     );

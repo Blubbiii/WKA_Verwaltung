@@ -477,6 +477,16 @@ test.describe("Vollstaendiger Park", () => {
     const vertragBody = await vertragRes.json();
     const vertrag = vertragBody.data ?? vertragBody;
     api.track({ collection: "contracts", id: vertrag.id, name: vertragTitel });
+    // Der Park bleibt absichtlich stehen und wird deshalb nicht mehr
+    // verfolgt: seine Flurstuecke haengen an einem Pachtvertrag, und ein
+    // geloeschter Pachtvertrag wird aufbewahrt (§ 147 AO). Die Flurstuecke
+    // sind damit dauerhaft gesperrt — und ein Park mit Flurstuecken laesst
+    // sich nicht loeschen.
+    //
+    // Das ist eine FOLGE der Aufbewahrung, keine Panne. Wuerde der Park
+    // weiter verfolgt, meldete jeder Lauf denselben "Rest" — und ein
+    // Aufraeum-Bericht, in dem immer etwas steht, wird nicht mehr gelesen.
+    api.untrack(park.id);
 
     const vertragGelesen = await api.get<Record<string, unknown>>(
       `/api/contracts/${vertrag.id}`,

@@ -63,6 +63,7 @@ const GESAMT_KWH = PRODUKTION.reduce((a, b) => a + b, 0);
 const ERWARTETE_ANTEILE = PRODUKTION.map((kwh) => (kwh / GESAMT_KWH) * 100);
 
 interface Vorbedingung {
+  parkId: string;
   parkName: string;
   anlagen: { id: string; bezeichnung: string; produktion: number }[];
 }
@@ -135,12 +136,11 @@ async function parkMitProduktion(
       betreiber.ok(),
       `Betreiber-Zuordnung fehlgeschlagen: HTTP ${betreiber.status()}\n${await betreiber.text()}`,
     ).toBe(true);
-    const betreiberRumpf = await betreiber.json();
-    api.track({
-      collection: "energy/turbine-operators",
-      id: (betreiberRumpf.data ?? betreiberRumpf).id,
-      name: bezeichnung,
-    });
+    // Bewusst NICHT einzeln verfolgt: die Zuordnung haengt an der Anlage und
+    // verschwindet mit ihr. Der Versuch, sie vorher zu loeschen, scheitert
+    // ("Aktive Betreiber-Zuordnungen koennen nicht geloescht werden") und
+    // meldete drei Laeufe lang einen Rest, den es nie gab. Ein Aufraeum-
+    // Bericht mit falschen Meldungen wird nicht mehr gelesen.
 
     // status CONFIRMED, nicht der Standard DRAFT: Entwuerfe werden bei der
     // Berechnung uebersprungen.
@@ -169,14 +169,36 @@ async function parkMitProduktion(
     anlagen.push({ id: anlage.id, bezeichnung, produktion: PRODUKTION[i] });
   }
 
-  return { parkName, anlagen };
+  return { parkId: park.id, parkName, anlagen };
 }
 
 test.describe("Energie-Abrechnung", () => {
   test("Erloes verteilen — und die Anteile stimmen", async ({ page, api }) => {
     test.setTimeout(300_000);
 
-    const { parkName, anlagen } = await parkMitProduktion(page, api);
+    const { parkId, parkName, anlagen } = await parkMitProduktion(page, api);
+
+    // Erst nachsehen, ob die Daten ueberhaupt da sind — vor dem Blick auf die
+    // Oberflaeche. In der CI blieb "Weiter" einmal 30 Sekunden gesperrt, und
+    // die Meldung liess offen, ob die Daten fehlten oder der Assistent sie
+    // nicht fand. Diese Pruefung beantwortet das, bevor die Frage entsteht.
+    await expect
+      .poll(
+        async () => {
+          const antwort = await api.get<{ turbineCount?: number }>(
+            `/api/energy/productions/for-settlement?parkId=${parkId}` +
+              `&year=${JAHR}&month=${MONAT}&status=CONFIRMED`,
+          );
+          return antwort.turbineCount ?? 0;
+        },
+        {
+          message:
+            `Die API meldet keine bestaetigten Produktionsdaten fuer den Park. ` +
+            `Dann liegt es an der Vorbereitung des Tests und nicht am Assistenten.`,
+          timeout: 30_000,
+        },
+      )
+      .toBe(anlagen.length);
 
     await page.goto("/energy/settlements/wizard");
     await ready(page);
@@ -197,8 +219,10 @@ test.describe("Energie-Abrechnung", () => {
 
     await expect(
       weiter,
-      "Weiter bleibt gesperrt, obwohl Park und Zeitraum gesetzt sind — " +
-        "vermutlich findet der Assistent keine bestaetigten Produktionsdaten",
+      "Weiter bleibt gesperrt, obwohl Park und Zeitraum gesetzt sind UND die " +
+        "API bestaetigte Produktionsdaten meldet (oben geprueft). Der " +
+        "Assistent fragt sie also falsch ab — er muss status=CONFIRMED " +
+        "mitgeben, sonst bekommt er Entwuerfe.",
     ).toBeEnabled({ timeout: 30_000 });
 
     await weiter.click();
@@ -218,7 +242,21 @@ test.describe("Energie-Abrechnung", () => {
       "Weiter bleibt gesperrt, obwohl Produktion und Erloes gesetzt sind",
     ).toBeEnabled({ timeout: 10_000 });
 
-    // --- Schritt 2 → 3: hier wird angelegt und gerechnet -----------------
+    // --- Schritt 2 → 3: nur weiterschalten -------------------------------
+    // "Weiter" ruft handleNext(), und das schaltet ausschliesslich den
+    // Schritt weiter. Ich hatte hier zuerst die Abrechnung erwartet — falsch:
+    // die entsteht erst in Schritt 3 durch "Jetzt berechnen". Der Test lief
+    // deshalb in einen Zeitueberlauf beim Warten auf eine Antwort, die
+    // niemand angefordert hatte.
+    await page.getByRole("button", { name: /^weiter/i }).first().click();
+    await expect
+      .poll(() => currentStep(page), {
+        message: "Der Wechsel auf die Berechnung hat nicht stattgefunden",
+        timeout: 15_000,
+      })
+      .toBe(2);
+
+    // --- Schritt 3: hier wird angelegt und gerechnet ---------------------
     const anlegen = page.waitForResponse(
       (r) =>
         r.url().includes("/api/energy/settlements") &&
@@ -231,7 +269,9 @@ test.describe("Energie-Abrechnung", () => {
       { timeout: 60_000 },
     );
 
-    await page.getByRole("button", { name: /^weiter/i }).first().click();
+    const berechnen = page.getByRole("button", { name: /jetzt berechnen/i }).first();
+    await must(berechnen, "Schaltflaeche „Jetzt berechnen“ in Schritt 3");
+    await berechnen.click();
 
     const angelegt = await anlegen;
     expect(
@@ -314,12 +354,12 @@ test.describe("Energie-Abrechnung", () => {
       ).toBeCloseTo(100, 2);
 
       // --- Der Assistent zeigt das Ergebnis auch an ---------------------
-      await expect
-        .poll(() => currentStep(page), {
-          message: "Der Assistent ist nach der Berechnung nicht weitergegangen",
-          timeout: 30_000,
-        })
-        .toBe(2);
+      // Er bleibt dabei auf Schritt 3; erst dann erscheint dort die
+      // Schaltflaeche "Weiter zu Gutschriften".
+      await must(
+        page.getByRole("button", { name: /weiter zu gutschriften/i }).first(),
+        "Schaltflaeche „Weiter zu Gutschriften“ nach der Berechnung",
+      );
     } finally {
       // Loeschen, nicht stornieren: solange keine Gutschriften daraus
       // entstanden sind, laesst sich die Abrechnung entfernen. Genau deshalb
