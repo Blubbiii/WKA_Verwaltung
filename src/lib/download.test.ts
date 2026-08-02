@@ -37,7 +37,22 @@ const PREVIEW_EXCEPTIONS = [
   "components/settings/LetterheadSettings.tsx",
 ].map((p) => p.split("/").join(sep));
 
+/**
+ * Ergebnis des Baum-Durchlaufs, einmal je Prozess.
+ *
+ * Beide Tests dieser Datei brauchen dieselbe Liste, und der Durchlauf liest
+ * jede Quelldatei des Projekts. Ohne diesen Zwischenspeicher lief er zweimal
+ * und brauchte zusammen mehr als die voreingestellten fuenf Sekunden — im
+ * Gesamtlauf, unter Last der uebrigen Dateien, kippte der zweite Test dadurch
+ * in einen Zeitueberlauf. Allein lief er durch.
+ *
+ * Ein Test, der je nach Nachbarn mal rot und mal gruen ist, ist schlimmer als
+ * ein langsamer: man gewoehnt sich an, ihn nicht ernst zu nehmen.
+ */
+let zwischenspeicher: string[] | null = null;
+
 function filesUsingObjectUrl(): string[] {
+  if (zwischenspeicher) return zwischenspeicher;
   const hits: string[] = [];
   const walk = (dir: string) => {
     for (const entry of readdirSync(dir)) {
@@ -56,6 +71,7 @@ function filesUsingObjectUrl(): string[] {
     }
   };
   walk(SRC);
+  zwischenspeicher = hits;
   return hits;
 }
 
