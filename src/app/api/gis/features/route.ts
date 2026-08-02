@@ -5,6 +5,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 // Lessor display name helper
 interface LessorFields {
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
           latitude: true,
           longitude: true,
           status: true,
-          _count: { select: { turbines: true } },
+          _count: { select: { turbines: { where: NUR_ANLAGEN } } },
         },
       }),
 

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 const fundParkSchema = z.object({
   parkId: z.string().uuid("Ungültige Park-ID"),
@@ -44,7 +45,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_READ);
             name: true,
             shortName: true,
             status: true,
-            _count: { select: { turbines: true } },
+            _count: { select: { turbines: { where: NUR_ANLAGEN } } },
           },
         },
       },
@@ -122,7 +123,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
             name: true,
             shortName: true,
             status: true,
-            _count: { select: { turbines: true } },
+            _count: { select: { turbines: { where: NUR_ANLAGEN } } },
           },
         },
       },

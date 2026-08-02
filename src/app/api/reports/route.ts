@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 // GET /api/reports - Get available report types and metadata
 export async function GET(_request: NextRequest) {
@@ -75,8 +76,10 @@ export async function GET(_request: NextRequest) {
     const [parksCount, turbinesCount, shareholdersCount, contractsCount, invoicesCount] =
       await Promise.all([
         prisma.park.count({ where: { tenantId: check.tenantId! } }),
+        // Nur echte Anlagen: die Uebersicht zeigt "Anlagen: N", und die
+        // virtuelle Infrastruktur ist keine.
         prisma.turbine.count({
-          where: { park: { tenantId: check.tenantId! } },
+          where: { ...NUR_ANLAGEN, park: { tenantId: check.tenantId! } },
         }),
         prisma.shareholder.count({
           where: { fund: { tenantId: check.tenantId! } },

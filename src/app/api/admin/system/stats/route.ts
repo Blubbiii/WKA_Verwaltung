@@ -7,6 +7,7 @@ import type { DashboardStats } from "@/lib/cache/types";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 /**
  * Fetch fresh system statistics from database
@@ -34,7 +35,9 @@ async function fetchSystemStats(): Promise<DashboardStats> {
     prisma.tenant.count(),
     prisma.user.count(),
     prisma.park.count(),
-    prisma.turbine.count(),
+    // Nur echte Anlagen — sonst zaehlt die Statistik je Park zwei virtuelle
+    // Geraete mit und weist mehr Anlagen aus, als es gibt.
+    prisma.turbine.count({ where: NUR_ANLAGEN }),
     prisma.fund.count(),
     prisma.shareholder.count(),
     prisma.plot.count(),

@@ -10,6 +10,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { apiError } from "@/lib/api-errors";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 const fundUpdateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich").optional(),
@@ -95,7 +96,7 @@ export async function GET(
                 name: true,
                 shortName: true,
                 status: true,
-                _count: { select: { turbines: true } },
+                _count: { select: { turbines: { where: NUR_ANLAGEN } } },
               },
             },
           },

@@ -28,6 +28,7 @@ import { generateCsvBuffer } from '@/lib/export/csv';
 import { getColumnsForType, getEntityDisplayName } from '@/lib/export/columns';
 import type { ExportEntityType, ExportFormat } from '@/lib/export/types';
 import { apiLogger as logger } from "@/lib/logger";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 /**
  * Supported export types
@@ -121,7 +122,7 @@ async function fetchData(
           ...(status && { status: status as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' }),
         },
         include: {
-          _count: { select: { turbines: true } },
+          _count: { select: { turbines: { where: NUR_ANLAGEN } } },
         },
         orderBy: { name: 'asc' },
       });

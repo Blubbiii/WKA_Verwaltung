@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { MS_PER_DAY } from "@/lib/constants/time";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 // GET /api/reports/[type] - Generate report data for a specific type
 export async function GET(
@@ -152,7 +153,10 @@ async function getParksOverview(tenantId: string) {
 }
 
 async function getTurbinesOverview(tenantId: string, parkId: string | null) {
-  const where: Prisma.TurbineWhereInput = { park: { tenantId } };
+  // Der Bericht heisst "Anlagen-Uebersicht". Netzverknuepfungspunkt und
+  // Parkrechner gehoeren nicht hinein — sie haben weder Nennleistung noch
+  // Status im Sinne einer Anlage und verzerren jede Summe darunter.
+  const where: Prisma.TurbineWhereInput = { ...NUR_ANLAGEN, park: { tenantId } };
   if (parkId) where.parkId = parkId;
 
   const turbines = await prisma.turbine.findMany({

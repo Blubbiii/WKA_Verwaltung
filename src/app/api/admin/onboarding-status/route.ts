@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
 // =============================================================================
 // GET /api/admin/onboarding-status
@@ -69,7 +70,11 @@ export async function GET() {
       prisma.park.count({ where: { tenantId: check.tenantId } }),
       prisma.fund.count({ where: { tenantId: check.tenantId } }),
       prisma.user.count({ where: { tenantId: check.tenantId } }),
-      prisma.turbine.count({ where: { park: { tenantId: check.tenantId } } }),
+      // Nur echte Anlagen: sonst gilt der Schritt "Anlagen angelegt" als
+      // erledigt, sobald ein Park existiert — die beiden virtuellen Geraete
+      // legt die Anwendung selbst an. Der Nutzer bekaeme einen Haken fuer
+      // etwas, das er nie getan hat.
+      prisma.turbine.count({ where: { ...NUR_ANLAGEN, park: { tenantId: check.tenantId } } }),
       prisma.scadaMeasurement.count({ where: { tenantId: check.tenantId }, take: 1 }),
     ]);
 

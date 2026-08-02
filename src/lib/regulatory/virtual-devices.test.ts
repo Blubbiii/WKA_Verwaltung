@@ -77,17 +77,99 @@ const MUST_FILTER = [
       "Zuordnung — standen aber im Nenner und rechneten jeden Betreiberanteil " +
       "zu klein",
   },
+  // Nach dem vierten Fund einmal systematisch durchgesucht statt auf den
+  // fuenften zu warten. Diese Stellen zeigen dem Nutzer eine Zahl, die
+  // "Anlagen" heisst.
+  {
+    file: "app/api/admin/onboarding-status/route.ts",
+    why:
+      "Der Schritt \"Anlagen angelegt\" galt als erledigt, sobald ein Park " +
+      "existierte — ein Haken fuer etwas, das der Nutzer nie getan hat",
+  },
+  {
+    file: "app/api/admin/system/stats/route.ts",
+    why: "Systemstatistik wies je Park zwei Anlagen zu viel aus",
+  },
+  {
+    file: "app/api/reports/route.ts",
+    why: "Berichts-Uebersicht zeigt \"Anlagen: N\"",
+  },
+  {
+    file: "app/api/reports/[type]/route.ts",
+    why: "Bericht \"Anlagen-Uebersicht\" listete die virtuelle Infrastruktur mit",
+  },
+  {
+    file: "app/api/export/[type]/route.ts",
+    why: "Park-Export mit Anlagenzahl je Park",
+  },
+  {
+    file: "app/api/funds/[id]/parks/route.ts",
+    why: "Anlagenzahl je Park einer Beteiligung",
+  },
+  {
+    file: "app/api/funds/[id]/route.ts",
+    why: "Anlagenzahl in der Beteiligungs-Detailansicht",
+  },
+  {
+    file: "app/api/gis/features/route.ts",
+    why: "Anlagenzahl an der Park-Markierung auf der Karte",
+  },
 ];
+
+/**
+ * Stellen, die BEWUSST alle Geräte liefern.
+ *
+ * Ohne diese Liste räumt früher oder später jemand einen vermeintlich
+ * vergessenen Filter nach — und nimmt der SCADA-Zuordnung ihre Auswahl.
+ * Hier ist „Gerät" gemeint und nicht „Anlage".
+ */
+const MUST_NOT_FILTER = [
+  {
+    file: "app/api/turbines/route.ts",
+    why:
+      "Geraeteliste. Die SCADA-Zuordnung waehlt daraus Parkrechner und " +
+      "Netzverknuepfungspunkte aus — mit Filter stuenden sie nicht zur Wahl",
+  },
+];
+
+/**
+ * Nimmt diese Quelle die virtuellen Geräte aus?
+ *
+ * Zwei zulässige Schreibweisen: die gemeinsame Konstante `NUR_ANLAGEN` aus
+ * `lib/turbines/real-turbines.ts` — die bevorzugte — oder das Literal
+ * `deviceType: "WEA"`, wie es an den älteren Stellen steht.
+ *
+ * Mein erster Entwurf prüfte nur das Literal und meldete daraufhin acht
+ * korrekte Stellen als kaputt: sie benutzen die Konstante. Ein Prüfmuster,
+ * das nur eine Schreibweise kennt, erzwingt genau diese Schreibweise.
+ */
+function nimmtGeraeteAus(source: string): boolean {
+  return /deviceType:\s*"WEA"/.test(source) || /NUR_ANLAGEN/.test(source);
+}
 
 describe("Virtuelle Geraete werden von echten Anlagen unterschieden", () => {
   for (const { file, why } of MUST_FILTER) {
-    it(`${file} filtert auf deviceType`, () => {
+    it(`${file} nimmt die virtuellen Geraete aus`, () => {
       const source = read(file);
       expect(
-        /deviceType:\s*"WEA"/.test(source),
+        nimmtGeraeteAus(source),
         `${file} wertet ueber Anlagen aus, ohne die virtuelle Infrastruktur ` +
-          `auszunehmen.\nGrund: ${why}`,
+          `auszunehmen.\nGrund: ${why}\n\n` +
+          `Zu ergaenzen: "...NUR_ANLAGEN" aus @/lib/turbines/real-turbines in ` +
+          `der where-Bedingung.`,
       ).toBe(true);
+    });
+  }
+
+  for (const { file, why } of MUST_NOT_FILTER) {
+    it(`${file} filtert bewusst NICHT`, () => {
+      const source = read(file);
+      expect(
+        nimmtGeraeteAus(source),
+        `${file} nimmt die virtuellen Geraete aus. Das sieht nach der ` +
+          `Korrektur aus, die an den Stellen oben richtig war, ist hier aber ` +
+          `falsch.\nGrund: ${why}`,
+      ).toBe(false);
     });
   }
 
