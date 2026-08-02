@@ -41,10 +41,32 @@ export const PREFIX = `E2E-${RUN_ID}`;
  * Erkennt Datensätze FRÜHERER Läufe mit.
  *
  * Bricht ein Lauf ab, bleiben seine Spuren liegen. Der nächste räumt sie mit
- * weg, statt sie für immer stehen zu lassen — deshalb ist das Muster
- * absichtlich weiter gefasst als `PREFIX`.
+ * weg, statt sie für immer stehen zu lassen — deshalb ist das Muster weiter
+ * gefasst als `PREFIX`.
+ *
+ * ## Warum es nur noch `E2E-` prüft
+ *
+ * Vorher stand hier `/^E2E-\d{8}-[a-z0-9]{5}/` — acht Ziffern, Bindestrich,
+ * fünf Zeichen. Das passte auf die selbst erzeugte Kennung, aber nicht auf
+ * die aus der Umgebung: die CI setzt `E2E_RUN_ID=ci-<Laufnummer>`, das Präfix
+ * lautet dann `E2E-ci-17234567890`, und `ci` sind keine acht Ziffern.
+ *
+ * Damit lieferte `isTestArtifact()` in der CI für **jeden** Namen `false`,
+ * `remove()` verweigerte die Arbeit — und das Aufräumen hat dort nie etwas
+ * gelöscht. Jeder Lauf liess seinen ganzen Bestand liegen. Aufgefallen ist es
+ * erst, als ein späterer Test über die Reste eines früheren stolperte.
+ *
+ * Der Riegel hat dabei richtig gehandelt: er hat sich geweigert, etwas zu
+ * löschen, das er nicht als eigene Spur erkannte. Falsch war, dass zwei
+ * Konstanten dieselbe Konvention doppelt kodierten und auseinanderliefen.
+ *
+ * Jetzt prüft das Muster genau das, was das Präfix ausmacht: die Zeichenfolge
+ * `E2E-` am Anfang, gefolgt von einer Kennung. Was danach kommt, ist Sache
+ * von `RUN_ID` — und muss hier nicht noch einmal beschrieben werden.
+ * `run-context.test.ts` hält fest, dass beide zusammenpassen, auch für die
+ * Kennung, die die CI setzt.
  */
-export const CLEANUP_PATTERN = /^E2E-\d{8}-[a-z0-9]{5}/;
+export const CLEANUP_PATTERN = /^E2E-\S{3,}/;
 
 /** Eindeutiger Name für ein Objekt dieses Laufs. */
 export function testName(label: string, suffix?: string): string {

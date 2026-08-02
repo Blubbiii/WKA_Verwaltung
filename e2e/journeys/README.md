@@ -128,6 +128,41 @@ Bemerkenswert am ersten: gefunden hat ihn nicht die Sorgfalt, sondern der
 **Zufall** — der Lauf startete kurz nach Mitternacht. Ein Testlauf, der immer
 zur selben Tageszeit läuft, hätte ihn nie gesehen.
 
+## Das Aufräumen hat in CI nie funktioniert (behoben 02.08.2026)
+
+Ein Fehler, der bemerkenswert lange unsichtbar blieb, weil kein Test deshalb
+fehlschlug.
+
+Der Riegel vor jedem Löschen prüfte gegen `/^E2E-\d{8}-[a-z0-9]{5}/` — acht
+Ziffern, Bindestrich, fünf Zeichen. Der Workflow setzt aber
+`E2E_RUN_ID=ci-<Laufnummer>`, das Präfix lautet damit `E2E-ci-17234567890`,
+und `ci` sind keine acht Ziffern.
+
+Folge: `isTestArtifact()` sagte in CI zu **jedem** Namen nein, `remove()`
+verweigerte jedes Löschen, und **jeder CI-Lauf liess seinen kompletten Bestand
+liegen**. Aufgefallen ist es erst, als ein späterer Test über die Reste eines
+früheren stolperte — `firstRow()` in der Parkliste griff einen Rest ab.
+
+Der Riegel hat dabei richtig gehandelt: er hat sich geweigert, etwas zu
+löschen, das er nicht als eigene Spur erkannte. Falsch war, dass zwei
+Konstanten dieselbe Konvention doppelt kodierten und auseinanderliefen — genau
+wie bei der Beispieldatei des Netzbetreiber-Imports.
+
+Drei Konsequenzen:
+
+1. Das Muster beschreibt jetzt nur noch, was das Präfix ausmacht: `E2E-` und
+   eine Kennung. Was die Kennung ist, entscheidet `RUN_ID` allein.
+2. `tests/integration/e2e-run-context.test.ts` **liest die CI-Datei** und
+   prüft, dass die dort gesetzte Kennung wiedererkannt wird. Selbstgewählte
+   Beispiele hätten den Fehler nicht gefunden — ich hätte sie passend zum
+   Muster gewählt.
+3. Liegengebliebenes wird jetzt auf die Konsole geschrieben, nicht nur als
+   Anmerkung. Der `list`-Reporter zeigt Anmerkungen nicht an, und genau dieses
+   Schweigen hat den Fehler getragen.
+
+Eine Sicherung, die abgeschaltet ist und deren Abschaltung wie normaler
+Betrieb aussieht, ist schlimmer als keine.
+
 ## In CI
 
 Seit dem 01.08.2026 läuft dieser Ordner bei jedem Push — Job `e2e` in

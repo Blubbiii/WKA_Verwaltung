@@ -54,14 +54,30 @@ export const test = base.extend<{ api: WpmApi }>({
       });
     }
     if (failed.length > 0) {
+      const bericht = failed
+        .map((f) => `  ${f.collection}/${f.id} (${f.name}) — ${f.grund ?? "ohne Angabe"}`)
+        .join("\n");
+
       // Kein Fehlschlag des Tests — das Aufraeumen ist nicht sein Gegenstand.
       // Aber sichtbar, sonst sammelt sich still Ballast an.
       testInfo.annotations.push({
         type: "aufraeumen-unvollstaendig",
-        description: failed
-          .map((f) => `${f.collection}/${f.id} (${f.name}) — ${f.grund ?? "ohne Angabe"}`)
-          .join(", "),
+        description: bericht,
       });
+
+      // Zusaetzlich auf die Konsole. Anmerkungen zeigt der list-Reporter
+      // nicht an, und genau dieses Schweigen hat einen Fehler getragen: das
+      // Aufraeumen loeschte in der CI monatelang nichts, weil das
+      // Praefix-Muster nicht auf die dort gesetzte Kennung passte. Kein Test
+      // schlug fehl, kein Bericht sagte etwas — bis ein spaeterer Test ueber
+      // die Reste eines frueheren stolperte.
+      //
+      // Eine Sicherung, die abgeschaltet ist und deren Abschaltung wie
+      // normaler Betrieb aussieht, ist schlimmer als keine.
+      console.warn(
+        `\n[aufraeumen] ${failed.length} Datensatz/Datensaetze blieben liegen ` +
+          `(Test: ${testInfo.title}):\n${bericht}\n`,
+      );
     }
   },
 });

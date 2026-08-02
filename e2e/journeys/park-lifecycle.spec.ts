@@ -19,7 +19,7 @@
 
 import { test, expect } from "../support/fixtures";
 import { testName } from "../support/run-context";
-import { must, ready, clickButton, firstRow } from "../support/strict";
+import { must, ready, clickButton } from "../support/strict";
 
 test.describe("Park-Lebenszyklus", () => {
   test("Assistent: Park anlegen, aendern und wieder loeschen", async ({
@@ -201,15 +201,45 @@ test.describe("Park-Lebenszyklus", () => {
     ).toHaveCount(0);
   });
 
-  test("Detailseite eines bestehenden Parks zeigt seine Anlagen", async ({ page }) => {
+  test("Aus der Liste auf die Detailseite, und die Anlage steht da", async ({
+    page,
+    api,
+  }) => {
+    test.setTimeout(120_000);
+
+    // Frueher nahm dieser Test die ERSTE Zeile der Parkliste — „irgendein
+    // bestehender Park". Das las sich naeher an der Wirklichkeit, machte ihn
+    // aber abhaengig davon, was zufaellig oben steht. In der CI stand dort
+    // der Rest eines vorherigen Tests, und der Test scheiterte an etwas, das
+    // ihn nichts angeht.
+    //
+    // Ein Test, der auf fremde Daten baut, prueft nicht das Programm, sondern
+    // den Zustand der Datenbank. Deshalb legt er sich seinen Park jetzt
+    // selbst an und sucht GENAU DIESE Zeile.
+    const parkName = testName("Park Detailseite");
+    const park = await api.create("parks", { name: parkName, status: "ACTIVE" });
+
+    const anlage = testName("WEA Detailseite");
+    const res = await page.request.post("/api/turbines", {
+      data: { parkId: park.id, designation: anlage, status: "ACTIVE" },
+    });
+    expect(res.ok(), `Anlage anlegen fehlgeschlagen: ${await res.text()}`).toBe(true);
+    const rumpf = await res.json();
+    api.track({
+      collection: "turbines",
+      id: (rumpf.data ?? rumpf).id,
+      name: anlage,
+    });
+
     await page.goto("/parks");
     await ready(page);
 
-    const row = await firstRow(page, "Parkliste");
     // Die Zeile selbst traegt die Navigation — ein <a> darin gibt es nicht.
-    // Erste Fassung suchte danach und scheiterte an einer falschen Annahme
-    // ueber die Umsetzung, nicht an einem Fehler der Anwendung.
-    await row.click();
+    // Eine fruehere Fassung suchte danach und scheiterte an einer falschen
+    // Annahme ueber die Umsetzung, nicht an einem Fehler der Anwendung.
+    const zeile = page.locator("table tbody tr", { hasText: parkName }).first();
+    await must(zeile, `Zeile fuer „${parkName}“ in der Parkliste`);
+    await zeile.click();
 
     await expect(page, "Kein Wechsel auf eine Park-Detailseite").toHaveURL(
       /\/parks\/[0-9a-f-]{36}/,
@@ -217,5 +247,12 @@ test.describe("Park-Lebenszyklus", () => {
     );
     await ready(page);
     await must(page.locator("h1").first(), "Ueberschrift der Detailseite");
+
+    // Der Teil, den der Name verspricht und der vorher gar nicht geprueft
+    // wurde: dass die Anlagen des Parks auch dastehen.
+    await expect(
+      page.locator("body"),
+      `Die Anlage „${anlage}“ fehlt auf der Detailseite ihres Parks`,
+    ).toContainText(anlage, { timeout: 20_000 });
   });
 });

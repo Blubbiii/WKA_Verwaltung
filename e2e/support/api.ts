@@ -59,13 +59,21 @@ export interface CreatedRef {
  * versucht es noch einmal. Genau einmal — bleibt es dabei, ist etwas anderes
  * los als eine kurze Spitze, und dann soll der Test scheitern.
  */
-async function withBackoff<T>(
+async function withBackoff<T extends { status(): number; headers(): Record<string, string> }>(
   ausfuehren: () => Promise<T>,
-  status: (r: T) => number,
 ): Promise<T> {
   const erste = await ausfuehren();
-  if (status(erste) !== 429) return erste;
-  await new Promise((r) => setTimeout(r, 20_000));
+  if (erste.status() !== 429) return erste;
+
+  // Wie lange, sagt die API selbst. Vorher standen hier feste 20 Sekunden —
+  // geraten, und zu kurz: das Fenster ist eine Minute, nach 20 Sekunden war
+  // es haeufig noch zu. Der Header `Retry-After` steht genau dafuer da.
+  const angabe = Number(erste.headers()["retry-after"]);
+  const sekunden = Number.isFinite(angabe) && angabe > 0 ? angabe : 60;
+
+  // Nach oben begrenzt: ein Test soll nicht minutenlang warten, weil ein
+  // Server eine unsinnige Angabe schickt.
+  await new Promise((r) => setTimeout(r, Math.min(sekunden + 1, 90) * 1000));
   return ausfuehren();
 }
 
@@ -112,9 +120,8 @@ export class WpmApi {
     data: Record<string, unknown>,
     nameField = "name",
   ): Promise<CreatedRef> {
-    const res = await withBackoff(
-      () => this.request.post(`/api/${collection}`, { data }),
-      (r) => r.status(),
+    const res = await withBackoff(() =>
+      this.request.post(`/api/${collection}`, { data }),
     );
     const json = await readOrFail(res, `POST /api/${collection}`);
     const entity = json.data ?? json;
@@ -128,10 +135,7 @@ export class WpmApi {
   }
 
   async get<T = unknown>(path: string): Promise<T> {
-    const res = await withBackoff(
-      () => this.request.get(path),
-      (r) => r.status(),
-    );
+    const res = await withBackoff(() => this.request.get(path));
     return readOrFail(res, `GET ${path}`);
   }
 
@@ -184,7 +188,11 @@ export class WpmApi {
           `Das ist kein von der Suite erzeugter Datensatz.`,
       );
     }
-    const res = await this.request.delete(`/api/${ref.collection}/${ref.id}`);
+    // Auch das Loeschen respektiert die Grenze. Eine 429 hier liess einen
+    // Datensatz liegen und sah im Bericht aus wie eine Sperre der Anwendung.
+    const res = await withBackoff(() =>
+      this.request.delete(`/api/${ref.collection}/${ref.id}`),
+    );
     if (!res.ok()) {
       const rumpf = await res.text();
       let grund = rumpf;

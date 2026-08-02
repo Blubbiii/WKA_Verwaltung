@@ -482,7 +482,15 @@ test.describe("Vollstaendiger Park", () => {
       `/api/contracts/${vertrag.id}`,
     );
     const vertragDaten = (vertragGelesen.data ?? vertragGelesen) as Record<string, unknown>;
-    expect(vertragDaten.parkId, "Der Vertrag haengt nicht am Park").toBe(park.id);
+
+    // `park` als Objekt, nicht `parkId`. Ich hatte zuerst auf `parkId`
+    // geprueft — die Route liefert stattdessen `park: { id, name, shortName }`.
+    // Der Vertrag hing sehr wohl am Park; ich habe das falsche Feld gelesen.
+    const verknuepfterPark = vertragDaten.park as { id?: string } | null;
+    expect(
+      verknuepfterPark?.id,
+      "Der Vertrag haengt nicht am Park",
+    ).toBe(park.id);
     expect(
       Number(vertragDaten.annualValue),
       "Der Jahreswert des Vertrags kam veraendert zurueck",
