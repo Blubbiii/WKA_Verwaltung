@@ -96,14 +96,18 @@ const WIZARDS: WizardCase[] = [
     path: "/leases/settlement/new",
     steps: 4,
     walkable: false,
-    needs: "verlangt Park und Abrechnungsjahr als Auswahl",
+    needs: "verlangt einen Park MIT Pachtvertraegen",
+    ownTest: "lease-settlement-wizard.spec.ts",
   },
   {
     name: "Energie-Abrechnung",
     path: "/energy/settlements/wizard",
     steps: 5,
     walkable: false,
-    needs: "verlangt Park, Zeitraum und Netzbetreiber-Daten",
+    // Fuenf Stufen tief: Park, Anlagen, Betreibergesellschaft,
+    // Betreiber-Historie zum Stichtag und BESTAETIGTE Produktionsdaten.
+    needs: "verlangt bestaetigte Produktionsdaten mit Betreiber-Zuordnung",
+    ownTest: "energy-settlement-wizard.spec.ts",
   },
   {
     name: "Energie-Import",
@@ -259,10 +263,14 @@ test.describe("Assistenten · noch ohne Durchlauf", () => {
       `Ohne generischen Durchlauf:\n${offen
         .map((w) => `  - ${w.name}: ${w.needs}`)
         .join("\n")}\nJeder braucht einen eigenen Test mit eigener Vorbereitung.`,
-      // Stand 02.08.2026: fuenf. Pacht-, Vertrags- und BEIDE
-      // Import-Assistenten haben einen eigenen Test. Die Schranke wird bei
-      // jedem neuen Test mitgezogen — bliebe sie stehen, waere sie kein
-      // Sperrklinken-Wert mehr, sondern eine Zahl, die immer passt.
-    ).toBeLessThanOrEqual(5);
+      // Stand 02.08.2026: drei. Ohne eigenen Test sind nur noch die
+      // Assistenten, die einen Vorgang ausloesen (SEPA-Zahllauf), einen
+      // eigenen Ablauf ohne Schrittanzeiger haben (Beteiligung einrichten)
+      // oder je Mandant einmalig sind (Ersteinrichtung).
+      //
+      // Die Schranke wird bei jedem neuen Test mitgezogen — bliebe sie
+      // stehen, waere sie kein Sperrklinken-Wert mehr, sondern eine Zahl,
+      // die immer passt.
+    ).toBeLessThanOrEqual(3);
   });
 });

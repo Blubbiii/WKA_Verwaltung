@@ -74,7 +74,16 @@ interface ParkOption {
 
 interface ProductionStatusData {
   totalTurbines: number;
+  /** Anlagen mit BESTAETIGten Produktionsdaten — nur die rechnet die Abrechnung. */
   turbinesWithData: number;
+  /**
+   * Anlagen, deren Daten nur als Entwurf vorliegen.
+   *
+   * Nicht für die Freigabe des Schritts, sondern für die Meldung: „keine
+   * Daten" und „Daten da, aber unbestätigt" sind für den Nutzer zwei sehr
+   * verschiedene Lagen mit zwei verschiedenen nächsten Schritten.
+   */
+  turbinesWithDraftData: number;
   totalProductionKwh: number;
   turbineSummary: {
     turbineId: string;
@@ -285,16 +294,41 @@ export function SettlementWizard() {
         params.set("month", month.toString());
       }
 
-      const prodRes = await fetch(
-        `/api/energy/productions/for-settlement?${params.toString()}`
-      );
+      // status=CONFIRMED ausdruecklich mitgeben.
+      //
+      // Der Endpunkt liefert ohne Angabe ENTWUERFE (default "DRAFT"), die
+      // Berechnung verwertet aber ausschliesslich bestaetigte Daten und
+      // ueberspringt Entwuerfe mit UNCONFIRMED_PRODUCTION. Beide Enden
+      // widersprachen sich damit:
+      //
+      //   nur Entwuerfe    -> Schritt 1 oeffnete, die Berechnung scheiterte
+      //   nur Bestaetigte  -> Schritt 1 blieb gesperrt, obwohl alles bereit war
+      //
+      // Der zweite Fall ist der schlimmere: wer alles richtig gemacht hat,
+      // kam nicht weiter und las "Keine Produktionsdaten, bitte zuerst
+      // importieren" — fuer Daten, die er laengst erfasst und bestaetigt hat.
+      //
+      // Gefunden am 02.08.2026 von e2e/journeys/energy-settlement-wizard.spec.ts.
+      const bestaetigt = new URLSearchParams(params);
+      bestaetigt.set("status", "CONFIRMED");
+      const entwuerfe = new URLSearchParams(params);
+      entwuerfe.set("status", "DRAFT");
+
+      const [prodRes, draftRes] = await Promise.all([
+        fetch(`/api/energy/productions/for-settlement?${bestaetigt.toString()}`),
+        fetch(`/api/energy/productions/for-settlement?${entwuerfe.toString()}`),
+      ]);
       if (!prodRes.ok)
         throw new Error(t("productionLoadError"));
       const prodData = await prodRes.json();
+      // Die Entwuerfe dienen nur der Meldung — scheitert die Abfrage, ist das
+      // kein Grund, den ganzen Schritt abzubrechen.
+      const draftData = draftRes.ok ? await draftRes.json() : { turbineCount: 0 };
 
       setProductionStatus({
         totalTurbines,
         turbinesWithData: prodData.turbineCount || 0,
+        turbinesWithDraftData: draftData.turbineCount || 0,
         totalProductionKwh: prodData.totalProductionKwh || 0,
         turbineSummary: prodData.turbineSummary || [],
       });
@@ -782,17 +816,34 @@ export function SettlementWizard() {
                     </Alert>
                   )}
 
-                {productionStatus.turbinesWithData === 0 && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Keine Produktionsdaten</AlertTitle>
-                    <AlertDescription>
-                      Für {formatPeriodLabel()} liegen keine Produktionsdaten
-                      vor. Bitte importieren Sie zuerst Produktionsdaten, bevor
-                      Sie eine Abrechnung erstellen.
-                    </AlertDescription>
-                  </Alert>
-                )}
+                {productionStatus.turbinesWithData === 0 &&
+                  productionStatus.turbinesWithDraftData > 0 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Produktionsdaten noch nicht bestätigt</AlertTitle>
+                      <AlertDescription>
+                        Für {formatPeriodLabel()} liegen Daten von{" "}
+                        {productionStatus.turbinesWithDraftData} Anlage(n) vor,
+                        aber nur als Entwurf. Die Abrechnung rechnet
+                        ausschliesslich mit bestätigten Daten — bitte die
+                        Produktionsdaten zuerst bestätigen. Ein erneuter Import
+                        hilft hier nicht.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                {productionStatus.turbinesWithData === 0 &&
+                  productionStatus.turbinesWithDraftData === 0 && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Keine Produktionsdaten</AlertTitle>
+                      <AlertDescription>
+                        Für {formatPeriodLabel()} liegen keine Produktionsdaten
+                        vor. Bitte importieren Sie zuerst Produktionsdaten, bevor
+                        Sie eine Abrechnung erstellen.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                 {/* Turbine summary */}
                 {productionStatus.turbineSummary.length > 0 && (
