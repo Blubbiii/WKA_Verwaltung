@@ -120,7 +120,8 @@ Konto geben, statt die Grenzen anzuheben.
 | Anlagen-Import — eigene Beispieldatei hochladen, zuordnen, validieren | ✅ |
 | Energie-Abrechnung — bis zu den Gutschriften, Beträge geprüft | ✅ |
 | Pacht-Abrechnung — bis zu den Gutschriften, Beträge geprüft | ✅ |
-| Anlagen-Import — Einspielen ausführen | offen |
+| Anlagen-Import — Einspielen ausführen, Zahlen zurückgelesen | ✅ |
+| Anlagen-Import — unbekannte Anlage wird beanstandet | ✅ |
 | SEPA-Zahllauf — vier Schritte bis zum XML, Inhalt geprüft | ✅ |
 | Pacht-Abrechnung — Vorschuss nachgerechnet | ✅ |
 | Energie-Abrechnung — Verteilung nachgerechnet | ✅ |

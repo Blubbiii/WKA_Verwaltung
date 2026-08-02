@@ -1148,6 +1148,11 @@ export default function TurbineDataImportPage() {
       remunerationType: "__default_revenue_type__",
       production: columnMapping.production,
       revenue: null,
+      // Betriebsstunden und Verfuegbarkeit wurden erkannt, aber nie
+      // mitgeschickt — die Werte aus der Datei gingen still verloren, obwohl
+      // die Spalten in der Zuordnung standen und der Nutzer sie dort sah.
+      operatingHours: columnMapping.operatingHours,
+      availabilityPct: columnMapping.availability,
     };
   }, [columnMapping]);
 

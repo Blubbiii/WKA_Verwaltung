@@ -19,22 +19,25 @@
  * Oberfläche ihn auffordert, und bekommt einen Fehler. Er hat dann keinen
  * Grund, den Fehler bei sich zu suchen — und keinen Weg, ihn zu umgehen.
  *
- * ## Warum der Import NICHT ausgeführt wird
+ * ## Bis zur Validierung — und warum nicht weiter
  *
- * Das ist keine Bequemlichkeit, sondern die Grenze zwischen Prüfen und
- * Anrichten. Die Beispieldatei enthält zwölf Monate Produktionsdaten für die
- * **echten** Anlagen des Mandanten. Sie einzuspielen hiesse, erfundene
- * Erträge in den Bestand zu schreiben, aus dem die Energieabrechnung und die
- * Ausschüttungen gerechnet werden. Kein Aufräumen macht das zuverlässig
- * rückgängig, und die Zahlen sähen plausibel aus — das ist die schlechteste
- * Art von Fehler.
- *
- * Beide Assistenten trennen das selbst sauber: Schritt 1 → 2 ruft die API mit
+ * Beide Assistenten trennen sauber: Schritt 1 → 2 ruft die API mit
  * `action: "validate"`, erst Schritt 2 → 3 mit `action: "import"`. Dieser
- * Test geht bis Schritt 3 (Validierung) und keinen Schritt weiter.
+ * Test geht bis zur Validierung.
  *
- * Geprüft wird damit alles ausser dem Schreiben: Hochladen, Zerlegen,
- * automatische Spaltenzuordnung, Validierung durch die API.
+ * Der Grund ist nicht mehr „nicht rückholbar" — die Instanz ist die
+ * Testumgebung. Er ist ein anderer: die Beispieldatei wird aus den **echten
+ * Anlagen des Mandanten** erzeugt und enthält zwölf Monate erfundener
+ * Erträge für genau diese. Sie einzuspielen verfälschte den Bestand, aus dem
+ * jede Energieabrechnung und jede Ausschüttung gerechnet wird — und zwar für
+ * Anlagen, die andere Tests benutzen. Die Zahlen sähen dabei plausibel aus.
+ *
+ * Das Einspielen wird deshalb **mit eigenen Anlagen** geprüft, in
+ * `import-execute.spec.ts`. Dort gehören die Daten dem Test, und was er
+ * anrichtet, betrifft nur ihn.
+ *
+ * Geprüft wird hier: Hochladen, Zerlegen, automatische Spaltenzuordnung,
+ * Validierung durch die API.
  */
 
 import { test, expect } from "../support/fixtures";
@@ -135,17 +138,28 @@ for (const fall of IMPORTE) {
         })
         .toBe(2);
 
+      // Diese Pruefung hatte ein Loch, und es hat einen echten Fehler
+      // durchgelassen: sie akzeptierte das Wort „fehler" als Ergebnis. Eine
+      // Fehlerseite erfuellte sie damit genauso wie ein Ergebnis. Beide
+      // Import-Assistenten waren wochenlang vollstaendig unbenutzbar — jeder
+      // Versuch endete in "Validierungsfehler" — und dieser Test war gruen.
+      //
+      // Jetzt wird ausdruecklich auf das Ausbleiben eines Fehlers geprueft und
+      // getrennt davon auf ein verwertbares Ergebnis.
       await expect(
         page.locator("body"),
         "Die Validierung meldet einen Fehler",
-      ).not.toContainText(/Fehler bei der Validierung|Application error/i);
+      ).not.toContainText(
+        /Validierungsfehler|Fehler bei der Validierung|Application error/i,
+        { timeout: 10_000 },
+      );
 
-      // Die Validierung muss ein Ergebnis zeigen. Eine leere Ergebnisliste
-      // sieht aus wie „nichts zu beanstanden“ — und ist doch das Gegenteil:
-      // dann wurde nichts geprueft.
+      // Der Ergebnisblock, nicht irgendein Wort: der Assistent zeigt nach der
+      // Validierung eine Zeilenuebersicht. Fehlt sie, wurde nichts geprueft —
+      // und das saehe aus wie „nichts zu beanstanden".
       await must(
-        page.getByText(/erfolgreich|gültig|gueltig|warnung|fehler/i).first(),
-        "Ergebnis der Validierung",
+        page.getByText(/Validierungsergebnisse/i).first(),
+        "Uebersicht der Validierungsergebnisse",
       );
     });
 

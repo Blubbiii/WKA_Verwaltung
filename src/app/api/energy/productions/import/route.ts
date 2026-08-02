@@ -60,14 +60,28 @@ interface ColumnMapping {
 // Wizard-based request (from CSV import UI)
 const wizardRequestSchema = z.object({
   action: z.enum(["validate", "import"]),
+  // `.nullish()` statt `.nullable()` auf allen Feldern.
+  //
+  // `.nullable()` erlaubt null, aber nicht FEHLEND. Die Assistenten bauen ihre
+  // Zuordnung aus den erkannten Spalten und lassen nicht zugeordnete Felder
+  // schlicht weg — beide schickten operatingHours und availabilityPct nie mit.
+  //
+  // Folge: JEDER Import scheiterte, und zwar schon bei der Validierung, mit
+  // "Validierungsfehler" und den internen Feldnamen im Detail. Beide
+  // Import-Assistenten waren damit vollstaendig unbenutzbar — man kam bis zur
+  // Spaltenzuordnung und dann nicht weiter.
+  //
+  // Betriebsstunden und Verfuegbarkeit sind ohnehin freiwillig; sie stehen
+  // nicht in REQUIRED_TURBINE_FIELDS. Ein Schema, das ein freiwilliges Feld
+  // erzwingt, ist an dieser Stelle schlicht falsch.
   mapping: z.object({
-    turbineId: z.string().nullable(),
-    turbineName: z.string().nullable(),
-    year: z.string().nullable(),
-    month: z.string().nullable(),
-    production: z.string().nullable(),
-    operatingHours: z.string().nullable(),
-    availabilityPct: z.string().nullable(),
+    turbineId: z.string().nullish(),
+    turbineName: z.string().nullish(),
+    year: z.string().nullish(),
+    month: z.string().nullish(),
+    production: z.string().nullish(),
+    operatingHours: z.string().nullish(),
+    availabilityPct: z.string().nullish(),
   }),
   // Rohe CSV/Excel-Zeilen: dynamische Spaltennamen (vom User beim Mapping bestimmt),
   // Werte sind Zell-Primitive nach dem Parser. resolveRows() macht danach die typed
