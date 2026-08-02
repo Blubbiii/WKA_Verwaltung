@@ -17,6 +17,23 @@ const tenantUpdateSchema = z.object({
   houseNumber: z.string().optional(),
   postalCode: z.string().optional(),
   city: z.string().optional(),
+  // Steuer- und Bankdaten des eigenen Mandanten.
+  //
+  // Fehlten hier, obwohl die Ersteinrichtung sie abfragt: der Assistent
+  // sammelte Steuernummer, USt-IdNr., Bank, IBAN und BIC ein, schickte sie
+  // nirgends hin und meldete trotzdem "gespeichert". Der Nutzer sah seine
+  // Eingaben quittiert und beim naechsten Rechnungsversand die Meldung
+  // "Eigene Steuernummer oder USt-IdNr. fehlt" (§ 14 UStG) — ohne einen Weg,
+  // sie nachzutragen. Es gab keine einzige Route, die sie schreibt.
+  //
+  // Der Kommentar im Assistenten nannte als Grund, das erfordere Superadmin.
+  // Das stimmt nicht: diese Route laesst einen Admin ausdruecklich den
+  // EIGENEN Mandanten aendern (siehe Berechtigungspruefung unten).
+  taxId: z.string().max(50).optional(),
+  vatId: z.string().max(50).optional(),
+  bankName: z.string().max(200).optional(),
+  iban: z.string().max(34).optional(),
+  bic: z.string().max(11).optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
   logoUrl: z.string().optional().or(z.literal("")),
   // FIX 8: HEX-Farb-Validierung analog POST-Schema (Format #RRGGBB).
@@ -133,6 +150,21 @@ export async function PATCH(
         }),
         ...(validatedData.city !== undefined && {
           city: validatedData.city || null,
+        }),
+        ...(validatedData.taxId !== undefined && {
+          taxId: validatedData.taxId || null,
+        }),
+        ...(validatedData.vatId !== undefined && {
+          vatId: validatedData.vatId || null,
+        }),
+        ...(validatedData.bankName !== undefined && {
+          bankName: validatedData.bankName || null,
+        }),
+        ...(validatedData.iban !== undefined && {
+          iban: validatedData.iban || null,
+        }),
+        ...(validatedData.bic !== undefined && {
+          bic: validatedData.bic || null,
         }),
         ...(validatedData.status && { status: validatedData.status }),
         ...(validatedData.logoUrl !== undefined && {

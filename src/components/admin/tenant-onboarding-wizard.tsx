@@ -220,6 +220,15 @@ export function TenantOnboardingWizard() {
             houseNumber: company.houseNumber || undefined,
             postalCode: company.postalCode || undefined,
             city: company.city || undefined,
+            // Diese fuenf wurden eingesammelt und nie verschickt. Der
+            // Assistent meldete trotzdem "gespeichert", und der Nutzer stand
+            // beim ersten Rechnungsversand vor "Eigene Steuernummer fehlt"
+            // (§ 14 UStG) — fuer eine Angabe, die er gemacht hatte.
+            taxId: company.taxId || undefined,
+            vatId: company.vatId || undefined,
+            bankName: company.bankName || undefined,
+            iban: company.iban || undefined,
+            bic: company.bic || undefined,
           }),
         }
       );
@@ -228,12 +237,6 @@ export function TenantOnboardingWizard() {
         const data = await res.json();
         throw new Error(data.error || t("companySaveError"));
       }
-
-      // Also update bank data and tax info via tenant-settings if needed
-      // (The tenant PATCH endpoint handles contactEmail, contactPhone, address)
-      // For taxId, vatId, bankName, iban, bic we need the main tenant update
-      // But that requires superadmin. Let's try, and if it fails silently skip.
-      // The onboarding-status API will still track company as done.
 
       setCompanyUpdated(true);
       toast.success(t("companySaved"));
