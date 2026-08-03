@@ -8,6 +8,7 @@ import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
+import { stimmgewicht, zaehleAus, type OptionErgebnis } from "@/lib/votes/tally";
 
 const voteUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -91,63 +92,51 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
       },
     });
 
-    // Calculate results
-    const optionCounts: Record<string, { count: number; capitalWeight: number }> = {};
-    const options = (vote.options as string[]) || ["Ja", "Nein", "Enthaltung"];
-
-    options.forEach((opt) => {
-      optionCounts[opt] = { count: 0, capitalWeight: 0 };
+    // Auszaehlung ueber das gemeinsame Modul.
+    //
+    // Diese Route hatte eine EIGENE Auszaehlung, und sie wich von der des
+    // Gesellschafterportals ab: Enthaltungen zaehlten hier zur
+    // Mehrheitsgrundlage, dort nicht. Dieselbe Abstimmung kam damit zu zwei
+    // Ergebnissen, je nachdem wer hinsah. Ausserdem suchte sie den
+    // Zustimmungsanteil ueber den Text "Ja" — eine Abstimmung mit eigenen
+    // Antwortmoeglichkeiten konnte nie angenommen werden und wurde als
+    // abgelehnt angezeigt.
+    //
+    // Beide Seiten rechnen jetzt in src/lib/votes/tally.ts. Begruendung der
+    // Regel steht dort.
+    const auszaehlung = zaehleAus({
+      stimmen: vote.responses.map((r) => ({
+        selectedOption: r.selectedOption,
+        votingRightsPercentage:
+          r.shareholder.votingRightsPercentage?.toNumber() ?? null,
+        ownershipPercentage:
+          r.shareholder.ownershipPercentage?.toNumber() ?? null,
+      })),
+      stimmberechtigte: eligibleShareholders.map((sh) => ({
+        votingRightsPercentage: sh.votingRightsPercentage?.toNumber() ?? null,
+        ownershipPercentage: sh.ownershipPercentage?.toNumber() ?? null,
+      })),
+      optionen: (vote.options as string[]) || ["Ja", "Nein", "Enthaltung"],
+      quorumProzent: vote.quorumPercentage?.toNumber() ?? null,
+      kapitalmehrheit: vote.requiresCapitalMajority,
     });
 
-    let totalCapitalVoted = 0;
-    const totalCapital = eligibleShareholders.reduce(
-      (sum, sh) => sum + (sh.votingRightsPercentage?.toNumber() || sh.ownershipPercentage?.toNumber() || 0),
-      0
-    );
-
-    vote.responses.forEach((response) => {
-      const option = response.selectedOption;
-      if (optionCounts[option]) {
-        optionCounts[option].count += 1;
-        const shareholderWeight =
-          response.shareholder.votingRightsPercentage?.toNumber() ||
-          response.shareholder.ownershipPercentage?.toNumber() ||
-          0;
-        optionCounts[option].capitalWeight += shareholderWeight;
-        totalCapitalVoted += shareholderWeight;
-      }
-    });
-
-    // Calculate percentages
-    const resultsByHead = Object.entries(optionCounts).map(([option, data]) => ({
-      option,
-      count: data.count,
-      percentage:
-        vote.responses.length > 0
-          ? ((data.count / vote.responses.length) * 100).toFixed(1)
-          : "0",
+    const resultsByHead = auszaehlung.optionen.map((o: OptionErgebnis) => ({
+      option: o.option,
+      count: o.anzahl,
+      percentage: o.anteilKoepfe.toFixed(1),
     }));
 
-    const resultsByCapital = Object.entries(optionCounts).map(([option, data]) => ({
-      option,
-      capitalWeight: data.capitalWeight.toFixed(2),
-      percentage:
-        totalCapitalVoted > 0
-          ? ((data.capitalWeight / totalCapitalVoted) * 100).toFixed(1)
-          : "0",
+    const resultsByCapital = auszaehlung.optionen.map((o: OptionErgebnis) => ({
+      option: o.option,
+      capitalWeight: o.kapital.toFixed(2),
+      percentage: o.anteilKapital.toFixed(1),
     }));
 
-    // Check quorum
-    const quorumMet =
-      !vote.quorumPercentage ||
-      (totalCapitalVoted / totalCapital) * 100 >= vote.quorumPercentage.toNumber();
-
-    // Determine result
-    const yesPercentage = vote.requiresCapitalMajority
-      ? parseFloat(resultsByCapital.find((r) => r.option === "Ja")?.percentage || "0")
-      : parseFloat(resultsByHead.find((r) => r.option === "Ja")?.percentage || "0");
-
-    const isApproved = quorumMet && yesPercentage > 50;
+    const quorumMet = auszaehlung.quorumErreicht;
+    const totalCapital = auszaehlung.kapitalGesamt;
+    const totalCapitalVoted = auszaehlung.kapitalAbgegeben;
+    const isApproved = auszaehlung.angenommen;
 
     return NextResponse.json({
       id: vote.id,
@@ -176,9 +165,15 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
             [r.shareholder.person.firstName, r.shareholder.person.lastName]
               .filter(Boolean)
               .join(" "),
-          votingRights:
-            r.shareholder.votingRightsPercentage?.toNumber() ||
-            r.shareholder.ownershipPercentage?.toNumber(),
+          // Auch die ANZEIGE des Stimmgewichts kommt aus dem gemeinsamen
+          // Modul. Sonst stuende hier eine vierte Fassung derselben Regel —
+          // und die Anzeige koennte von der Auszaehlung abweichen.
+          votingRights: stimmgewicht({
+            votingRightsPercentage:
+              r.shareholder.votingRightsPercentage?.toNumber() ?? null,
+            ownershipPercentage:
+              r.shareholder.ownershipPercentage?.toNumber() ?? null,
+          }),
         },
       })),
       eligibleShareholders: eligibleShareholders.map((sh) => ({
@@ -186,8 +181,10 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
         shareholderNumber: sh.shareholderNumber,
         name: sh.person.companyName ||
           [sh.person.firstName, sh.person.lastName].filter(Boolean).join(" "),
-        votingRights:
-          sh.votingRightsPercentage?.toNumber() || sh.ownershipPercentage?.toNumber(),
+        votingRights: stimmgewicht({
+          votingRightsPercentage: sh.votingRightsPercentage?.toNumber() ?? null,
+          ownershipPercentage: sh.ownershipPercentage?.toNumber() ?? null,
+        }),
         hasVoted: vote.responses.some((r) => r.shareholderId === sh.id),
       })),
       stats: {
@@ -202,6 +199,9 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
           : "0",
         quorumMet,
         isApproved: vote.status === "CLOSED" ? isApproved : null,
+        // Klartext, warum. Deckt auch den Fall ab, dass sich aus den
+        // Antwortmoeglichkeiten gar kein Beschluss ergibt (isApproved null).
+        resultReason: vote.status === "CLOSED" ? auszaehlung.begruendung : null,
       },
       results: {
         byHead: resultsByHead,

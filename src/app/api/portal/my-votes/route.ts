@@ -6,6 +6,14 @@ import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
+import {
+  istEnthaltung,
+  istJa,
+  istNein,
+  stimmgewicht,
+  zaehleAus,
+  type OptionErgebnis,
+} from "@/lib/votes/tally";
 
 const voteSubmitSchema = z.object({
   voteId: z.string().min(1, "Vote-ID ist erforderlich"),
@@ -129,133 +137,94 @@ async function batchFetchVoteResultData(
 /**
  * Calculates vote results from pre-fetched data (no DB queries).
  */
+/**
+ * Auszählung für das Gesellschafterportal.
+ *
+ * Rechnet über `src/lib/votes/tally.ts` — dieselbe Stelle wie die
+ * Verwaltungsansicht. Vorher hatte jede Seite ihre eigene Auszählung, und
+ * die beiden wichen voneinander ab: Enthaltungen zählten hier nicht zur
+ * Mehrheitsgrundlage, dort schon. Derselbe Beschluss kam damit zu zwei
+ * Ergebnissen, je nachdem wer hinsah.
+ *
+ * Diese Funktion bringt das Ergebnis nur noch in die Form, die das Portal
+ * erwartet.
+ */
 function calculateVoteResultsFromData(
   responses: BatchedResponse[],
   fundShareholders: BatchedShareholder[],
   quorumPercentage: Decimal | null,
-  requiresCapitalMajority: boolean
+  requiresCapitalMajority: boolean,
+  optionen: string[],
 ): VoteResults {
-  // Mapping der Optionen (deutsch und englisch)
-  const isYes = (option: string) =>
-    option === "Ja" || option === "YES" || option === "Yes";
-  const isNo = (option: string) =>
-    option === "Nein" || option === "NO" || option === "No";
-  const isAbstain = (option: string) =>
-    option === "Enthaltung" || option === "ABSTAIN" || option === "Abstain";
+  const auszaehlung = zaehleAus({
+    stimmen: responses.map((r) => ({
+      selectedOption: r.selectedOption,
+      votingRightsPercentage: r.votingRightsPercentage?.toNumber() ?? null,
+      ownershipPercentage: r.ownershipPercentage?.toNumber() ?? null,
+    })),
+    stimmberechtigte: fundShareholders.map((sh) => ({
+      votingRightsPercentage: sh.votingRightsPercentage?.toNumber() ?? null,
+      ownershipPercentage: sh.ownershipPercentage?.toNumber() ?? null,
+    })),
+    optionen,
+    quorumProzent: quorumPercentage?.toNumber() ?? null,
+    kapitalmehrheit: requiresCapitalMajority,
+  });
 
-  // Nach Koepfen zaehlen
-  let yesCount = 0;
-  let noCount = 0;
-  let abstainCount = 0;
+  // Das Portal zeigt drei feste Faecher. Eigene Antwortmoeglichkeiten
+  // ("Variante A") gehoeren in keines davon — sie bleiben hier unsichtbar,
+  // erscheinen aber in der Verwaltungsansicht vollstaendig. Sie werden NICHT
+  // in eines der drei Faecher gedraengt: das saehe aus wie eine Zustimmung,
+  // die niemand erklaert hat.
+  const summe = (
+    passt: (o: string) => boolean,
+    feld: "anzahl" | "kapital",
+  ) =>
+    auszaehlung.optionen
+      .filter((o: OptionErgebnis) => passt(o.option))
+      .reduce((s: number, o: OptionErgebnis) => s + o[feld], 0);
 
-  // Nach Kapital zaehlen
-  let yesCapital = 0;
-  let noCapital = 0;
-  let abstainCapital = 0;
+  const yesCount = summe(istJa, "anzahl");
+  const noCount = summe(istNein, "anzahl");
+  const abstainCount = summe(istEnthaltung, "anzahl");
+  const totalCount = auszaehlung.stimmenGesamt;
 
-  for (const response of responses) {
-    const capital =
-      response.votingRightsPercentage?.toNumber() ||
-      response.ownershipPercentage?.toNumber() ||
-      0;
+  const yesCapital = summe(istJa, "kapital");
+  const noCapital = summe(istNein, "kapital");
+  const abstainCapital = summe(istEnthaltung, "kapital");
+  const totalVotedCapital = auszaehlung.kapitalAbgegeben;
 
-    if (isYes(response.selectedOption)) {
-      yesCount++;
-      yesCapital += capital;
-    } else if (isNo(response.selectedOption)) {
-      noCount++;
-      noCapital += capital;
-    } else if (isAbstain(response.selectedOption)) {
-      abstainCount++;
-      abstainCapital += capital;
-    }
-  }
-
-  const totalCount = yesCount + noCount + abstainCount;
-  const totalVotedCapital = yesCapital + noCapital + abstainCapital;
-
-  // Gesamtkapital aller Gesellschafter
-  const totalEligibleCapital = fundShareholders.reduce((sum, sh) => {
-    return (
-      sum +
-      (sh.votingRightsPercentage?.toNumber() ||
-        sh.ownershipPercentage?.toNumber() ||
-        0)
-    );
-  }, 0);
-
-  // Quorum-Berechnung (basierend auf Kapitalanteil der Stimmabgaben)
-  const quorumRequired = quorumPercentage?.toNumber() || null;
-  const quorumAchieved =
-    totalEligibleCapital > 0
-      ? (totalVotedCapital / totalEligibleCapital) * 100
-      : 0;
-  const quorumReached = quorumRequired ? quorumAchieved >= quorumRequired : true;
-
-  // Entscheidung berechnen
-  let accepted = false;
-  let reason = "";
-
-  if (!quorumReached) {
-    accepted = false;
-    reason = "Quorum nicht erreicht";
-  } else if (requiresCapitalMajority) {
-    // Mehrheit nach Kapital (Enthaltungen werden nicht gezaehlt)
-    const votingCapital = yesCapital + noCapital;
-    accepted = votingCapital > 0 && yesCapital > votingCapital / 2;
-    reason = accepted
-      ? "Mehrheit nach Kapitalanteil erreicht"
-      : "Keine Mehrheit nach Kapitalanteil";
-  } else {
-    // Einfache Mehrheit nach Koepfen (Enthaltungen werden nicht gezaehlt)
-    const votingCount = yesCount + noCount;
-    accepted = votingCount > 0 && yesCount > votingCount / 2;
-    reason = accepted
-      ? "Einfache Mehrheit erreicht"
-      : "Keine einfache Mehrheit";
-  }
+  const anteil = (teil: number, ganzes: number) =>
+    ganzes > 0 ? (teil / ganzes) * 100 : 0;
 
   return {
     byHeadcount: {
-      yes: {
-        count: yesCount,
-        percent: totalCount > 0 ? (yesCount / totalCount) * 100 : 0,
-      },
-      no: {
-        count: noCount,
-        percent: totalCount > 0 ? (noCount / totalCount) * 100 : 0,
-      },
-      abstain: {
-        count: abstainCount,
-        percent: totalCount > 0 ? (abstainCount / totalCount) * 100 : 0,
-      },
+      yes: { count: yesCount, percent: anteil(yesCount, totalCount) },
+      no: { count: noCount, percent: anteil(noCount, totalCount) },
+      abstain: { count: abstainCount, percent: anteil(abstainCount, totalCount) },
       total: totalCount,
     },
     byCapital: {
-      yes: {
-        amount: yesCapital,
-        percent: totalVotedCapital > 0 ? (yesCapital / totalVotedCapital) * 100 : 0,
-      },
-      no: {
-        amount: noCapital,
-        percent: totalVotedCapital > 0 ? (noCapital / totalVotedCapital) * 100 : 0,
-      },
+      yes: { amount: yesCapital, percent: anteil(yesCapital, totalVotedCapital) },
+      no: { amount: noCapital, percent: anteil(noCapital, totalVotedCapital) },
       abstain: {
         amount: abstainCapital,
-        percent:
-          totalVotedCapital > 0 ? (abstainCapital / totalVotedCapital) * 100 : 0,
+        percent: anteil(abstainCapital, totalVotedCapital),
       },
       totalVoted: totalVotedCapital,
-      totalEligible: totalEligibleCapital,
+      totalEligible: auszaehlung.kapitalGesamt,
     },
     quorum: {
-      required: quorumRequired,
-      achieved: Math.round(quorumAchieved * 100) / 100,
-      reached: quorumReached,
+      required: quorumPercentage?.toNumber() ?? null,
+      achieved: Math.round(auszaehlung.beteiligungProzent * 100) / 100,
+      reached: auszaehlung.quorumErreicht,
     },
     decision: {
-      accepted,
-      reason,
+      // `null` heisst „nicht bestimmbar" — etwa bei eigenen
+      // Antwortmoeglichkeiten. Fuer das Portal, dessen Feld ein Boolean ist,
+      // wird daraus `false`; die Begruendung sagt, warum.
+      accepted: auszaehlung.angenommen === true,
+      reason: auszaehlung.begruendung,
     },
   };
 }
@@ -366,7 +335,8 @@ export async function GET(request: NextRequest) {
           responsesByVoteId.get(vote.id) ?? [],
           shareholdersByFundId.get(vote.fundId) ?? [],
           vote.quorumPercentage,
-          vote.requiresCapitalMajority
+          vote.requiresCapitalMajority,
+          (vote.options as string[]) ?? ["Ja", "Nein", "Enthaltung"],
         );
       }
 
@@ -387,9 +357,17 @@ export async function GET(request: NextRequest) {
               votedAt: userResponse.votedAt?.toISOString(),
             }
           : null,
-        userSharePercentage:
-          shareholderForFund?.votingRightsPercentage?.toNumber() ||
-          shareholderForFund?.ownershipPercentage?.toNumber(),
+        // Ueber das gemeinsame Modul: `||` liess eine ausdrueckliche 0
+        // auf den Kapitalanteil zurueckfallen — dem Gesellschafter ohne
+        // Stimmrecht wurde sein Kapitalanteil als Stimmgewicht angezeigt.
+        userSharePercentage: shareholderForFund
+          ? stimmgewicht({
+              votingRightsPercentage:
+                shareholderForFund.votingRightsPercentage?.toNumber() ?? null,
+              ownershipPercentage:
+                shareholderForFund.ownershipPercentage?.toNumber() ?? null,
+            })
+          : undefined,
         canVote:
           vote.status === "ACTIVE" &&
           new Date(vote.endDate) > now &&

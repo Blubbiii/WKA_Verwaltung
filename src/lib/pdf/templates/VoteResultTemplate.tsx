@@ -309,7 +309,10 @@ export interface VoteResultPdfData {
     participationRate: string;
     capitalParticipation: string;
     quorumMet: boolean;
+    /** `null` = nicht bestimmbar (siehe `resultReason`), nicht „abgelehnt". */
     isApproved: boolean | null;
+    /** Begründung im Klartext — auch für den Fall `null`. */
+    resultReason?: string | null;
   };
 
   // Results
@@ -509,6 +512,19 @@ export function VoteResultTemplate({
       </View>
 
       {/* Decision Section */}
+      {/*
+        Bei `isApproved === null` laesst sich aus den Antwortmoeglichkeiten
+        kein Beschluss ablesen — etwa bei „Variante A" / „Variante B". Dann
+        steht hier die Begruendung statt eines Urteils. Ein „ABGELEHNT" waere
+        an dieser Stelle eine Falschaussage ueber einen Gesellschafterbeschluss.
+      */}
+      {data.stats.isApproved === null && data.stats.resultReason && (
+        <View style={styles.decisionSection}>
+          <Text style={styles.decisionTitle}>KEIN BESCHLUSS AUSWEISBAR</Text>
+          <Text style={styles.decisionSubtext}>{data.stats.resultReason}</Text>
+        </View>
+      )}
+
       {data.stats.isApproved !== null && (
         <View
           style={[

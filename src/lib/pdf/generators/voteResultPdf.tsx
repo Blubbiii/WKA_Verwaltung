@@ -2,6 +2,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { VoteResultTemplate, type VoteResultPdfData } from "../templates/VoteResultTemplate";
 import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../utils/templateResolver";
 import { prisma } from "@/lib/prisma";
+import { zaehleAus, type OptionErgebnis } from "@/lib/votes/tally";
 
 /**
  * Generiert ein PDF für ein Abstimmungsergebnis
@@ -69,63 +70,56 @@ export async function generateVoteResultPdf(
   });
 
   // Ergebnisse berechnen
+  // Auszaehlung ueber das gemeinsame Modul (src/lib/votes/tally.ts).
+  //
+  // Hier stand eine woertliche Kopie der Verwaltungsansicht — die dritte
+  // Auszaehlung im Codebase, mit denselben drei Fehlern: Enthaltungen in der
+  // Mehrheitsgrundlage, Zustimmung ueber den Text "Ja" gesucht, und `||`
+  // statt `??` beim Stimmgewicht.
+  //
+  // Bei diesem Dokument wiegt das am schwersten: es ist das Protokoll des
+  // Beschlusses. Es konnte "abgelehnt" ausweisen, waehrend den
+  // Gesellschaftern im Portal "angenommen" angezeigt wurde.
   const options_array = (vote.options as string[]) || ["Ja", "Nein", "Enthaltung"];
-  const optionCounts: Record<string, { count: number; capitalWeight: number }> = {};
 
-  options_array.forEach((opt) => {
-    optionCounts[opt] = { count: 0, capitalWeight: 0 };
+  const auszaehlung = zaehleAus({
+    stimmen: vote.responses.map((response) => ({
+      selectedOption: response.selectedOption,
+      votingRightsPercentage:
+        response.shareholder.votingRightsPercentage?.toNumber() ?? null,
+      ownershipPercentage:
+        response.shareholder.ownershipPercentage?.toNumber() ?? null,
+    })),
+    stimmberechtigte: eligibleShareholders.map((sh) => ({
+      votingRightsPercentage: sh.votingRightsPercentage?.toNumber() ?? null,
+      ownershipPercentage: sh.ownershipPercentage?.toNumber() ?? null,
+    })),
+    optionen: options_array,
+    quorumProzent: vote.quorumPercentage?.toNumber() ?? null,
+    kapitalmehrheit: vote.requiresCapitalMajority,
   });
 
-  let totalCapitalVoted = 0;
-  const totalCapital = eligibleShareholders.reduce(
-    (sum, sh) =>
-      sum + (sh.votingRightsPercentage?.toNumber() || sh.ownershipPercentage?.toNumber() || 0),
-    0
-  );
-
-  vote.responses.forEach((response) => {
-    const option = response.selectedOption;
-    if (optionCounts[option]) {
-      optionCounts[option].count += 1;
-      const shareholderWeight =
-        response.shareholder.votingRightsPercentage?.toNumber() ||
-        response.shareholder.ownershipPercentage?.toNumber() ||
-        0;
-      optionCounts[option].capitalWeight += shareholderWeight;
-      totalCapitalVoted += shareholderWeight;
-    }
-  });
-
-  // Prozentuale Ergebnisse berechnen
-  const resultsByHead = Object.entries(optionCounts).map(([option, data]) => ({
-    option,
-    count: data.count,
-    percentage:
-      vote.responses.length > 0
-        ? ((data.count / vote.responses.length) * 100).toFixed(1)
-        : "0",
+  const resultsByHead = auszaehlung.optionen.map((o: OptionErgebnis) => ({
+    option: o.option,
+    count: o.anzahl,
+    percentage: o.anteilKoepfe.toFixed(1),
   }));
 
-  const resultsByCapital = Object.entries(optionCounts).map(([option, data]) => ({
-    option,
-    capitalWeight: data.capitalWeight.toFixed(2),
-    percentage:
-      totalCapitalVoted > 0
-        ? ((data.capitalWeight / totalCapitalVoted) * 100).toFixed(1)
-        : "0",
+  const resultsByCapital = auszaehlung.optionen.map((o: OptionErgebnis) => ({
+    option: o.option,
+    capitalWeight: o.kapital.toFixed(2),
+    percentage: o.anteilKapital.toFixed(1),
   }));
 
-  // Quorum prüfen
-  const quorumMet =
-    !vote.quorumPercentage ||
-    (totalCapitalVoted / totalCapital) * 100 >= vote.quorumPercentage.toNumber();
+  const totalCapital = auszaehlung.kapitalGesamt;
+  const totalCapitalVoted = auszaehlung.kapitalAbgegeben;
+  const quorumMet = auszaehlung.quorumErreicht;
 
-  // Ergebnis bestimmen
-  const yesPercentage = vote.requiresCapitalMajority
-    ? parseFloat(resultsByCapital.find((r) => r.option === "Ja")?.percentage || "0")
-    : parseFloat(resultsByHead.find((r) => r.option === "Ja")?.percentage || "0");
-
-  const isApproved = quorumMet && yesPercentage > 50;
+  // `null` heisst: aus den Antwortmoeglichkeiten ergibt sich kein Beschluss.
+  // Im Protokoll darf das nicht als "abgelehnt" erscheinen — der Grund steht
+  // in `beschlussBegruendung`.
+  const isApproved = auszaehlung.angenommen;
+  const beschlussBegruendung = auszaehlung.begruendung;
 
   // Template und Letterhead aufloesen (nutzt SETTLEMENT_REPORT als DocumentType)
   // Da es keinen VOTE_RESULT Typ gibt, verwenden wir den generischen Ansatz
@@ -162,6 +156,7 @@ export async function generateVoteResultPdf(
         totalCapital > 0 ? ((totalCapitalVoted / totalCapital) * 100).toFixed(1) : "0",
       quorumMet,
       isApproved,
+      resultReason: beschlussBegruendung,
     },
     results: {
       byHead: resultsByHead,
