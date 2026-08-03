@@ -30,12 +30,24 @@ export function DashboardGreeting() {
   const { data: session } = useSession();
   const t = useTranslations("dashboard");
 
-  const firstName = session?.user?.name?.split(" ")[0] ?? "";
   const isPersonal = t("welcome").includes("Hey") || t("welcome").includes("willkommen");
 
+  // Der Anzeigename, nicht sein erstes Wort.
+  //
+  // Vorher wurde am Leerzeichen abgeschnitten. Bei „Super Admin" stand auf dem
+  // Startbildschirm „Guten Tag, Super" — und das las sich wie eine
+  // Verhöhnung. Dasselbe trifft jede Rolle, deren Anzeigename kein Vorname
+  // ist: „Guten Tag, Buchhaltung", „Guten Tag, Technischer".
+  //
+  // Der Vorname ist nur dort richtig, wo er auch einer ist. Steht kein Name
+  // zur Verfügung, wird ohne Anrede gegrüsst — das ist besser als eine
+  // Begrüssung mit einem leeren Namen dahinter.
+  const anzeigename = (session?.user?.name ?? "").trim();
+  const anrede = anzeigename ? `, ${anzeigename}` : "";
+
   const greeting = isPersonal
-    ? `${getPersonalTimeGreeting()}, ${firstName}!`
-    : `${getTimeGreeting()}, ${firstName}`;
+    ? `${getPersonalTimeGreeting()}${anrede}!`
+    : `${getTimeGreeting()}${anrede}`;
 
   return (
     <motion.div

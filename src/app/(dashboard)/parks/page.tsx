@@ -83,8 +83,16 @@ interface Park {
   };
 }
 
+interface ParksTotals {
+  parks: number;
+  activeParks: number;
+  turbines: number;
+  capacityKw: number;
+}
+
 interface ParksResponse {
   data: Park[];
+  totals?: ParksTotals;
   pagination: {
     page: number;
     limit: number;
@@ -234,15 +242,14 @@ export default function ParksPage() {
     archiveMutation.mutate(parkToArchive);
   }
 
-  // Berechne Gesamtstatistiken (defensive: stats may be missing on error)
-  const totalStats = parks.reduce(
-    (acc, park) => ({
-      parks: acc.parks + 1,
-      turbines: acc.turbines + (park.stats?.turbineCount ?? 0),
-      capacity: acc.capacity + (park.stats?.totalCapacityKw ?? 0),
-    }),
-    { parks: 0, turbines: 0, capacity: 0 }
-  );
+  // Die Kennzahlen kommen vom SERVER und gelten fuer den gesamten Filter.
+  //
+  // Vorher wurden sie hier aus `parks` summiert — also aus der geladenen
+  // Seite. Bei zwanzig Zeilen je Seite stand ueber der Liste "Windparks 20",
+  // waehrend es 93 waren: die Kennzahl zeigte die Seitengroesse und sah aus
+  // wie der Bestand. Wer den Zahlen einer Verwaltungssoftware nicht trauen
+  // kann, benutzt sie nicht.
+  const totals = parksData?.totals;
 
   if (error) {
     return (
@@ -271,19 +278,19 @@ export default function ParksPage() {
         stats={[
           {
             label: t("statCardParks"),
-            value: totalStats.parks,
+            value: totals?.parks ?? "—",
             icon: Wind,
-            subtitle: t("statActiveCount", { count: parks.filter((p) => p.status === "ACTIVE").length }),
+            subtitle: t("statActiveCount", { count: totals?.activeParks ?? 0 }),
           },
           {
             label: t("statCardTurbines"),
-            value: totalStats.turbines,
+            value: totals?.turbines ?? "—",
             icon: Zap,
             subtitle: t("statTurbinesSubtitle"),
           },
           {
             label: t("statCardTotalPower"),
-            value: formatCapacity(totalStats.capacity),
+            value: totals ? formatCapacity(totals.capacityKw) : "—",
             icon: Zap,
             subtitle: t("statInstalledCapacity"),
           },

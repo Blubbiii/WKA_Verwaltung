@@ -93,15 +93,30 @@ async function getHandler(request: NextRequest) {
       ...(status && { status: status as "ACTIVE" | "INACTIVE" | "ARCHIVED" }),
     };
 
-    const [parks, total] = await Promise.all([
+    // Gesamtsummen ueber ALLE Parks des Filters, nicht ueber die geladene
+    // Seite.
+    //
+    // Die Kennzahlen ueber der Liste summierten bisher im Client die geladenen
+    // Zeilen. Bei zwanzig Zeilen je Seite stand dort "Windparks 20", waehrend
+    // es 93 waren — die Zahl war exakt die Seitengroesse. Wer die Kennzahl
+    // liest, glaubt seinen Bestand zu sehen; er sieht seine Seitengroesse.
+    const [parks, total, gesamtAnlagen, gesamtLeistung, gesamtAktiv] = await Promise.all([
       prisma.park.findMany({
         where,
         include: {
           turbines: {
-            select: { id: true, ratedPowerKw: true, status: true },
+            select: { id: true, ratedPowerKw: true, status: true, deviceType: true },
           },
           _count: {
-            select: { turbines: true, documents: { where: { deletedAt: null } }, contracts: { where: { deletedAt: null } } },
+            select: {
+              // Nur echte Anlagen zaehlen. Ohne den Filter erschien ein Park
+              // mit zwei WEA und einem virtuellen Geraet als "3 Anlagen" —
+              // dieselbe Verwechslung, die schon die Mindestpacht verdoppelt
+              // hatte (lib/turbines/real-turbines.ts).
+              turbines: { where: { deviceType: "WEA" } },
+              documents: { where: { deletedAt: null } },
+              contracts: { where: { deletedAt: null } },
+            },
           },
         },
         orderBy: { [sortBy]: sortOrder },
@@ -109,11 +124,24 @@ async function getHandler(request: NextRequest) {
         take: limit,
       }),
       prisma.park.count({ where }),
+      // Nur echte Anlagen (WEA). Virtuelle Geraete sind Geraete, keine
+      // Anlagen — siehe lib/turbines/real-turbines.ts.
+      prisma.turbine.count({
+        where: { park: where, deviceType: "WEA" },
+      }),
+      prisma.turbine.aggregate({
+        where: { park: where, deviceType: "WEA", status: "ACTIVE" },
+        _sum: { ratedPowerKw: true },
+      }),
+      prisma.park.count({ where: { ...where, status: "ACTIVE" } }),
     ]);
 
     // Berechne aggregierte Werte
     const parksWithStats = parks.map((park) => {
-      const activeTurbines = park.turbines.filter((t) => t.status === "ACTIVE");
+      // Auch hier nur Anlagen — die Leistungsangabe je Park darf kein
+      // virtuelles Geraet mitrechnen.
+      const anlagen = park.turbines.filter((t) => t.deviceType === "WEA");
+      const activeTurbines = anlagen.filter((t) => t.status === "ACTIVE");
       const totalCapacity = activeTurbines.reduce(
         (sum, t) => sum + (Number(t.ratedPowerKw) || 0),
         0
@@ -139,6 +167,17 @@ async function getHandler(request: NextRequest) {
         limit,
         total,
         totalPages: Math.ceil(total / limit),
+      },
+      /**
+       * Summen ueber den gesamten Filter — die Grundlage der Kennzahlen ueber
+       * der Liste. Sie duerfen NICHT aus `data` gerechnet werden: das ist eine
+       * Seite, kein Bestand.
+       */
+      totals: {
+        parks: total,
+        activeParks: gesamtAktiv,
+        turbines: gesamtAnlagen,
+        capacityKw: Number(gesamtLeistung._sum.ratedPowerKw ?? 0),
       },
     });
   } catch (error) {

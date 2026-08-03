@@ -1357,7 +1357,15 @@
       "csvHeaderGross": "Gross",
       "csvHeaderStatus": "Status",
       "csvFileName": "invoices-export",
-      "zipFileName": "Invoices"
+      "zipFileName": "Invoices",
+      "filterFund": "Fund",
+      "filterAllFunds": "All funds",
+      "statsInvoicesAria": "Go to the list of invoices",
+      "statsCreditNotesAria": "Go to the list of credit notes",
+      "statsOpenAria": "Go to the list of open documents",
+      "filterFrom": "Invoice date from",
+      "filterTo": "Invoice date to",
+      "filterClearDates": "Clear date range"
     },
     "bankImport": {
       "noMatch": "No match",
@@ -9929,7 +9937,13 @@
       "sepaDownloaded": "SEPA XML downloaded",
       "error": "Error",
       "previewUnavailable": "Preview not available in this browser — use \"Open\" instead.",
-      "previewUnsupported": "No preview available for this file type."
+      "previewUnsupported": "No preview available for this file type.",
+      "title": "Mark as paid",
+      "date": "Payment date",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving …",
+      "success": "Marked as paid"
     },
     "payDialog": {
       "title": "Mark as paid",
@@ -9945,7 +9959,9 @@
       "splitsSaved": "Splits saved",
       "outgoingCreated": "{count} outgoing invoice(s) created",
       "fieldsSaved": "Fields saved"
-    }
+    },
+    "formats": "PDF, JPG, PNG or TIFF — up to 5 files",
+    "cancel": "Cancel"
   },
   "journalEntries": {
     "title": "Journal entries",

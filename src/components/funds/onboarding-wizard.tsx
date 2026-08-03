@@ -45,25 +45,28 @@ import {
 // Validation helpers — use a translator passed in
 type Translator = (key: string) => string;
 
+// Die Meldungen liegen unter  — vorher wurden sie eine Ebene
+// zu hoch angefragt, und der Nutzer bekam als Fehlermeldung woertlich
+// "funds.onboardingWizard.firstNameRequired" zu sehen.
 function validatePersonalData(data: PersonalData, t: Translator): Partial<Record<keyof PersonalData, string>> {
   const errors: Partial<Record<keyof PersonalData, string>> = {};
-  if (!data.firstName.trim()) errors.firstName = t("firstNameRequired");
-  if (!data.lastName.trim()) errors.lastName = t("lastNameRequired");
+  if (!data.firstName.trim()) errors.firstName = t("validation.firstNameRequired");
+  if (!data.lastName.trim()) errors.lastName = t("validation.lastNameRequired");
   if (!data.email.trim()) {
-    errors.email = t("emailRequired");
+    errors.email = t("validation.emailRequired");
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = t("emailInvalid");
+    errors.email = t("validation.emailInvalid");
   }
   return errors;
 }
 
 function validateParticipation(data: ParticipationData, t: Translator): Partial<Record<keyof ParticipationData, string>> {
   const errors: Partial<Record<keyof ParticipationData, string>> = {};
-  if (!data.fundId) errors.fundId = t("fundRequired");
+  if (!data.fundId) errors.fundId = t("validation.fundRequired");
   if (!data.capitalContribution || parseFloat(data.capitalContribution) <= 0) {
-    errors.capitalContribution = t("capitalGreaterZero");
+    errors.capitalContribution = t("validation.capitalGreaterZero");
   }
-  if (!data.entryDate) errors.entryDate = t("entryDateRequired");
+  if (!data.entryDate) errors.entryDate = t("validation.entryDateRequired");
   return errors;
 }
 

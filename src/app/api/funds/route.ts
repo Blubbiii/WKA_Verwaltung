@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       ...(status && { status: status as "ACTIVE" | "INACTIVE" | "ARCHIVED" }),
     };
 
-    const [funds, total] = await Promise.all([
+    const [funds, total, gesamtGesellschafter, gesamtKapital] = await Promise.all([
       prisma.fund.findMany({
         where,
         include: {
@@ -121,6 +121,15 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.fund.count({ where }),
+      // Gesamtsummen ueber ALLE Gesellschaften des Filters, nicht ueber die
+      // geladene Seite — siehe api/parks/route.ts, dort stand derselbe Fehler.
+      prisma.shareholder.count({
+        where: { fund: where, status: "ACTIVE" },
+      }),
+      prisma.shareholder.aggregate({
+        where: { fund: where, status: "ACTIVE" },
+        _sum: { capitalContribution: true },
+      }),
     ]);
 
     // Berechne aggregierte Werte
@@ -146,6 +155,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       data: fundsWithStats,
+      /**
+       * Summen ueber den gesamten Filter — Grundlage der Kennzahlen ueber der
+       * Liste. Duerfen NICHT aus `data` gerechnet werden: das ist eine Seite,
+       * kein Bestand.
+       */
+      totals: {
+        funds: total,
+        shareholders: gesamtGesellschafter,
+        capital: Number(gesamtKapital._sum.capitalContribution ?? 0),
+      },
       pagination: {
         page,
         limit,

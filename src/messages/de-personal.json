@@ -1357,7 +1357,15 @@
       "csvHeaderGross": "Brutto",
       "csvHeaderStatus": "Status",
       "csvFileName": "abrechnungen-export",
-      "zipFileName": "Rechnungen"
+      "zipFileName": "Rechnungen",
+      "filterFund": "Gesellschaft",
+      "filterAllFunds": "Alle Gesellschaften",
+      "statsInvoicesAria": "Zur Liste der Rechnungen",
+      "statsCreditNotesAria": "Zur Liste der Gutschriften",
+      "statsOpenAria": "Zur Liste der offenen Belege",
+      "filterFrom": "Rechnungsdatum von",
+      "filterTo": "Rechnungsdatum bis",
+      "filterClearDates": "Zeitraum aufheben"
     },
     "bankImport": {
       "noMatch": "Kein Treffer",
@@ -9929,7 +9937,13 @@
       "sepaDownloaded": "SEPA XML heruntergeladen",
       "error": "Fehler",
       "previewUnavailable": "Vorschau im Browser nicht möglich — bitte über „Öffnen\" ansehen.",
-      "previewUnsupported": "Für diesen Dateityp gibt es keine Vorschau."
+      "previewUnsupported": "Für diesen Dateityp gibt es keine Vorschau.",
+      "title": "Als bezahlt markieren",
+      "date": "Zahlungsdatum",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saving": "Wird gespeichert …",
+      "success": "Als bezahlt markiert"
     },
     "payDialog": {
       "title": "Als bezahlt markieren",
@@ -9945,7 +9959,9 @@
       "splitsSaved": "Splits gespeichert",
       "outgoingCreated": "{count} Ausgangsrechnung(en) erzeugt",
       "fieldsSaved": "Felder gespeichert"
-    }
+    },
+    "formats": "PDF, JPG, PNG oder TIFF — bis zu 5 Dateien",
+    "cancel": "Abbrechen"
   },
   "journalEntries": {
     "title": "Buchungsjournal",

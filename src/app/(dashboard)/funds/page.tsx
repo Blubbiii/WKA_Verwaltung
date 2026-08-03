@@ -88,6 +88,7 @@ interface Fund {
 
 interface FundsResponse {
   data: Fund[];
+  totals?: { funds: number; shareholders: number; capital: number };
   pagination: {
     page: number;
     limit: number;
@@ -252,15 +253,11 @@ export default function FundsPage() {
     refetch();
   }
 
-  // Berechne Gesamtstatistiken
-  const totalStats = funds.reduce(
-    (acc, fund) => ({
-      funds: acc.funds + 1,
-      shareholders: acc.shareholders + fund.stats.activeShareholderCount,
-      capital: acc.capital + fund.stats.totalContributions,
-    }),
-    { funds: 0, shareholders: 0, capital: 0 }
-  );
+  // Die Kennzahlen kommen vom SERVER und gelten fuer den gesamten Filter.
+  // Vorher wurden sie aus der geladenen Seite summiert — derselbe Fehler wie
+  // ueber der Parkliste, wo "Windparks 20" die Seitengroesse war und nicht
+  // der Bestand von 93.
+  const totals = fundsData?.totals;
 
   if (error) {
     return (
@@ -295,9 +292,9 @@ export default function FundsPage() {
       <StatsCards
         columns={3}
         stats={[
-          { label: t("list.statsCompanies"), value: totalStats.funds, icon: Building2, subtitle: t("list.statsCompaniesActive", { count: funds.filter((f) => f.status === "ACTIVE").length }) },
-          { label: t("list.statsShareholders"), value: totalStats.shareholders, icon: Users, subtitle: t("list.statsShareholdersSubtitle") },
-          { label: t("list.statsCapital"), value: formatCurrency(totalStats.capital), icon: Wallet, subtitle: t("list.statsCapitalSubtitle") },
+          { label: t("list.statsCompanies"), value: totals?.funds ?? "—", icon: Building2, subtitle: t("list.statsCompaniesActive", { count: totals?.funds ?? 0 }) },
+          { label: t("list.statsShareholders"), value: totals?.shareholders ?? "—", icon: Users, subtitle: t("list.statsShareholdersSubtitle") },
+          { label: t("list.statsCapital"), value: totals ? formatCurrency(totals.capital) : "—", icon: Wallet, subtitle: t("list.statsCapitalSubtitle") },
         ]}
       />
 
