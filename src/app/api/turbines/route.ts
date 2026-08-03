@@ -58,6 +58,20 @@ export async function GET(request: NextRequest) {
     const parkId = searchParams.get("parkId");
     const search = searchParams.get("search") || "";
     const status = enumParam(searchParams.get("status"), TURBINE_STATUSES);
+    /**
+     * Gerätetyp-Filter — standardmässig AUS.
+     *
+     * Diese Liste liefert bewusst alle Geräte: die SCADA-Zuordnung braucht
+     * auch die virtuellen (siehe lib/regulatory/virtual-devices.test.ts, das
+     * genau diese Route als "darf nicht filtern" führt).
+     *
+     * Wer aber ANLAGEN ZÄHLT, meint echte Anlagen. Die Energie-Übersicht las
+     * hier `pagination.total` und zeigte "237 Aktive Turbinen", während
+     * Dashboard und Parkliste 51 sagten — dieselbe Frage, drei Antworten.
+     * Statt die Route zu ändern (was die SCADA-Zuordnung bräche), bekommt
+     * sie einen Filter, den der Zähler setzt.
+     */
+    const deviceType = searchParams.get("deviceType");
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 50,
       // 1000 statt der Vorgabe 100: die Oberflaeche laedt diese Liste vollstaendig
       // in Auswahlfelder und filtert clientseitig. Bei 100 fehlten Eintraege,
@@ -71,6 +85,7 @@ export async function GET(request: NextRequest) {
         tenantId: check.tenantId!,
       },
       ...(parkId && { parkId }),
+      ...(deviceType && { deviceType }),
       ...(search && {
         OR: [
           { designation: { contains: search, mode: "insensitive" as const } },

@@ -159,8 +159,13 @@ export function KPICard({
         borderLeft: `2px solid ${accentHex}`,
       }}
     >
-      <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
-        <CardTitle className="uppercase tracking-wider text-xs font-semibold text-muted-foreground">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 p-4 pb-2">
+        {/*
+          Die Beschriftung darf umbrechen. Vorher stand sie einzeilig und
+          verdraengte damit die Breite, die der Wert gebraucht haette —
+          "GESAMTPRODUKTION (TURBINEN)" ist nun einmal lang.
+        */}
+        <CardTitle className="uppercase tracking-wider text-xs font-semibold leading-snug text-muted-foreground">
           {title}
         </CardTitle>
         {/* Icon scales up on wider widgets (@md = container ≥ 28rem / ~448px) */}
@@ -173,14 +178,39 @@ export function KPICard({
       </CardHeader>
       <CardContent className="p-4 pt-2">
         {/* Value text scales up on wider widgets */}
-        <div className={cn(
-          "text-2xl @md:text-3xl font-bold tabular-nums truncate leading-tight",
-          isAlert ? "text-destructive" : accentColor || "text-foreground"
-        )}>
+        {/*
+          EINE ZAHL WIRD NIE GEKAPPT.
+          
+          Hier stand `truncate`. Auf der Energie-Uebersicht wurde daraus
+          "107,59 …" und "03.08.2…" — eine Kennzahl, die ihre eigene Zahl
+          abschneidet, ist nicht bloss unschoen: sie ist falsch. 107,59 ist
+          eine andere Zahl als 107.590, und niemand sieht der Karte an,
+          welche gemeint war.
+          
+          Passt der Wert nicht, wird er KLEINER, nicht kuerzer: die
+          Container-Abfragen stufen die Schrift von @xs bis @md. Reicht auch
+          das nicht, darf er umbrechen — zwei Zeilen sind besser als eine
+          halbe Zahl. `title` haelt den vollen Wert fuer den Mauszeiger
+          bereit.
+        */}
+        <div
+          title={typeof value === "string" || typeof value === "number" ? String(value) : undefined}
+          className={cn(
+            "text-xl @xs:text-2xl @md:text-3xl font-bold tabular-nums leading-tight",
+            "break-words hyphens-auto",
+            isAlert ? "text-destructive" : accentColor || "text-foreground"
+          )}
+        >
           {value}
         </div>
+        {/*
+          Zwei Zeilen statt einer halben. "Produktionsdaten 2…" sagt nichts;
+          "Produktionsdaten 2026, alle Anlagen" sagt alles.
+        */}
         {description && (
-          <p className="text-xs @md:text-sm text-muted-foreground mt-1.5 truncate">{description}</p>
+          <p className="text-xs @md:text-sm text-muted-foreground mt-1.5 line-clamp-2">
+            {description}
+          </p>
         )}
         {(trend !== undefined || trendLabel) && (
           <div className={cn("mt-1.5 flex items-center text-xs @md:text-sm", getTrendColor())}>
@@ -214,12 +244,36 @@ interface KPICardGridProps {
   className?: string;
 }
 
+/**
+ * Raster für Kennzahlkarten.
+ *
+ * ## Die Karten bestimmen die Spaltenzahl, nicht umgekehrt
+ *
+ * Vorher stand hier eine feste Zahl (`lg:grid-cols-4`), die jede Seite
+ * überschreiben durfte. Die Energie-Übersicht setzte `xl:grid-cols-6` — auf
+ * 1400 Pixel blieben je Karte rund 200 Pixel, und die Werte wurden
+ * abgeschnitten: aus 107.590 wurde „107,59 …".
+ *
+ * Jetzt entscheidet die Mindestbreite. `auto-fit` legt so viele Spalten an,
+ * wie bei 240 Pixel je Karte hineinpassen — auf einem breiten Bildschirm
+ * fünf, auf einem Laptop vier, auf dem Telefon eine. Niemand muss mehr
+ * Haltepunkte raten, und **eine zu schmale Karte kann gar nicht mehr
+ * entstehen**.
+ *
+ * Das ist der Unterschied zwischen „wir kürzen den Text, wenn es eng wird"
+ * und „es wird nicht eng". Nur das zweite hält.
+ *
+ * `className` bleibt möglich — wer wirklich eine feste Spaltenzahl braucht,
+ * bekommt sie. Aber der Normalfall ist jetzt richtig, nicht die Ausnahme.
+ */
 export function KPICardGrid({ children, className }: KPICardGridProps) {
   return (
-    <div className={cn(
-      "grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-      className
-    )}>
+    <div
+      className={cn("grid gap-4", className)}
+      style={{
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))",
+      }}
+    >
       {children}
     </div>
   );
@@ -247,7 +301,12 @@ export function KPICardSkeleton() {
 
 export function KPICardGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div
+      className="grid gap-4"
+      style={{
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))",
+      }}
+    >
       {Array.from({ length: count }).map((_, i) => (
         <KPICardSkeleton key={i} />
       ))}

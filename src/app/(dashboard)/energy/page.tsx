@@ -130,7 +130,7 @@ async function fetchOverviewData(currentYear: number): Promise<OverviewData> {
   ] = await Promise.all([
     fetch(`/api/energy/productions?year=${currentYear}&limit=5`),
     fetch(`/api/energy/settlements?year=${currentYear}&limit=5`),
-    fetch("/api/turbines?limit=1000&status=ACTIVE"),
+    fetch("/api/turbines?limit=1000&status=ACTIVE&deviceType=WEA"),
     fetch("/api/energy/scada/mappings"),
   ]);
 
@@ -156,7 +156,8 @@ async function fetchOverviewData(currentYear: number): Promise<OverviewData> {
   const recentSettlements: SettlementEntry[] = settlementsData.data ?? [];
   const scadaMappings = scadaMappingsData.data ?? scadaMappingsData ?? [];
 
-  // Count turbines
+  // Nur echte Anlagen. Vorher stand hier die Gesamtzahl aller Geraete (237),
+  // waehrend Dashboard und Parkliste 51 sagten.
   const turbineCount = turbinesData.pagination?.total ?? (turbinesData.data?.length ?? 0);
 
   // Count unique turbines with active SCADA mapping
@@ -264,7 +265,7 @@ export default function EnergyOverviewPage() {
           </CardContent>
         </Card>
       ) : (
-        <KPICardGrid className="lg:grid-cols-3 xl:grid-cols-6">
+        <KPICardGrid>
           <KPICard
             title={t("totalProductionTurbines")}
             value={`${formatMWh(data?.totalProductionKwh ?? 0)} MWh`}
