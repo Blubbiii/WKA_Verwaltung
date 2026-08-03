@@ -93,7 +93,13 @@ export async function GET(request: NextRequest) {
 
     const where = {
       tenantId: check.tenantId,
-      parentId: null, // Only show latest versions
+      // Nur die Wurzeln der Versionsketten. Der Kommentar hier lautete
+      // "Only show latest versions" — genau verkehrt herum: eine Wurzel
+      // traegt Version 1, die AELTESTE Fassung. Die spaeteren haengen als
+      // Kinder daran. Fuer die Liste ist das richtig (ein Dokument, eine
+      // Zeile), aber die ausgelieferten Datei-Angaben mussten deshalb
+      // aufgeloest werden — siehe lib/documents/current-version.ts.
+      parentId: null,
       ...(search && {
         OR: [
           { title: { contains: search, mode: "insensitive" as const } },
@@ -135,6 +141,11 @@ export async function GET(request: NextRequest) {
           },
           reviewedBy: {
             select: { firstName: true, lastName: true },
+          },
+          // Nur die Versionsnummern — daraus wird die aktuelle bestimmt.
+          // Ein schmaler Select je Zeile, kein zusaetzlicher Rundgang.
+          versions: {
+            select: { version: true },
           },
           _count: {
             select: { versions: true },
@@ -179,7 +190,12 @@ export async function GET(request: NextRequest) {
         fileUrl: doc.fileUrl,
         fileSizeBytes: doc.fileSizeBytes ? Number(doc.fileSizeBytes) : null,
         mimeType: doc.mimeType,
-        version: doc.version,
+        // Die Versionsnummer der AKTUELLEN Fassung, nicht die der Wurzel.
+        // Sonst stand in der Liste "v1" neben "3 Versionen".
+        version:
+          doc.versions.length > 0
+            ? Math.max(doc.version, ...doc.versions.map((v) => v.version))
+            : doc.version,
         tags: doc.tags,
         isArchived: doc.isArchived,
         park: doc.park,

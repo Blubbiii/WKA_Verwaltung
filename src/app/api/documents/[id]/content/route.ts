@@ -11,6 +11,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiError } from "@/lib/api-errors";
 import { getAppUrl, getAppUrlOrEmpty } from "@/lib/config/app-url";
+import { aktuelleFassung } from "@/lib/documents/current-version";
 
 const S3_ENDPOINT = process.env.S3_ENDPOINT || "http://localhost:9000";
 
@@ -39,6 +40,7 @@ export async function GET(
         fileName: true,
         mimeType: true,
         tenantId: true,
+        parentId: true,
       },
     });
 
@@ -51,20 +53,28 @@ export async function GET(
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
+    // Die AKTUELLE Fassung anzeigen, nicht die Wurzel — wie beim Download.
+    // Die Vorschau zeigte sonst die erste Fassung, waehrend daneben eine
+    // neuere in der Historie stand.
+    const fassung =
+      document.parentId === null
+        ? (await aktuelleFassung(document.id, document.tenantId)) ?? document
+        : document;
+
     // Prüfe ob fileUrl vorhanden und gültig ist
-    if (!document.fileUrl) {
+    if (!fassung.fileUrl) {
       logger.error(`Document ${id} hat keine fileUrl`);
       return apiError("NOT_FOUND", undefined, { message: "Dokument hat keine Datei verknuepft" });
     }
 
     // Prüfen ob fileUrl ein S3-Key ist oder eine externe URL
-    const isS3Key = !document.fileUrl.startsWith("http://") &&
-      !document.fileUrl.startsWith("https://");
+    const isS3Key = !fassung.fileUrl.startsWith("http://") &&
+      !fassung.fileUrl.startsWith("https://");
 
     if (!isS3Key) {
       // Security: Only redirect to known/trusted hosts
       try {
-        const externalUrl = new URL(document.fileUrl);
+        const externalUrl = new URL(fassung.fileUrl);
         const appUrl = getAppUrlOrEmpty();
         const allowedHosts = [
           new URL(S3_ENDPOINT).hostname,
@@ -77,24 +87,24 @@ export async function GET(
       } catch {
         return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Datei-URL" });
       }
-      return NextResponse.redirect(document.fileUrl);
+      return NextResponse.redirect(fassung.fileUrl);
     }
 
     // Datei von S3 laden
     try {
       const client = getS3Client();
 
-      logger.info(`Lade Datei von S3: Bucket=${S3_BUCKET}, Key=${document.fileUrl}`);
+      logger.info(`Lade Datei von S3: Bucket=${S3_BUCKET}, Key=${fassung.fileUrl}`);
 
       const command = new GetObjectCommand({
         Bucket: S3_BUCKET,
-        Key: document.fileUrl,
+        Key: fassung.fileUrl,
       });
 
       const response = await client.send(command);
 
       if (!response.Body) {
-        logger.error(`S3 returned no body for key: ${document.fileUrl}`);
+        logger.error(`S3 returned no body for key: ${fassung.fileUrl}`);
         return apiError("INTERNAL_ERROR", undefined, { message: "Datei konnte nicht geladen werden" });
       }
 
@@ -104,7 +114,7 @@ export async function GET(
       // Browser das SVG downloaden statt rendern — kein Script-Kontext.
       // Alternative wäre DOMPurify-Sanitizing, aber Downloads reichen für unseren
       // Use-Case (SVG-Uploads sind primär Logos).
-      const isSvg = (document.mimeType ?? "").toLowerCase() === "image/svg+xml";
+      const isSvg = (fassung.mimeType ?? "").toLowerCase() === "image/svg+xml";
       const disposition = isSvg ? "attachment" : "inline";
 
       // P22: Direktes Streaming des S3-Body — kein Buffer.concat mehr.
@@ -114,11 +124,11 @@ export async function GET(
 
       // Response mit korrekten Headers
       const headers = new Headers();
-      headers.set("Content-Type", document.mimeType || "application/octet-stream");
+      headers.set("Content-Type", fassung.mimeType || "application/octet-stream");
       if (typeof response.ContentLength === "number" && response.ContentLength > 0) {
         headers.set("Content-Length", response.ContentLength.toString());
       }
-      headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
+      headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(fassung.fileName ?? "dokument")}"`);
       headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
       headers.set("Access-Control-Allow-Origin", getAppUrl());
       headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -140,7 +150,7 @@ export async function GET(
 
       logger.error({
         documentId: id,
-        s3Key: document.fileUrl,
+        s3Key: fassung.fileUrl,
         bucket: S3_BUCKET,
         endpoint: S3_ENDPOINT,
         errorName,
@@ -152,7 +162,7 @@ export async function GET(
         // P1-3 Fix: Strict-Whitelist VOR path.resolve gegen Path-Traversal.
         // Admin könnte via UPDATE auf Document.fileUrl `..\..\.env` setzen.
         // Verbiete: ".." Segmente, absolute Pfade, Drive-Letter (Windows).
-        const rawFileUrl = document.fileUrl ?? "";
+        const rawFileUrl = fassung.fileUrl ?? "";
         if (
           rawFileUrl.includes("..") ||
           rawFileUrl.startsWith("/") ||
@@ -187,13 +197,13 @@ export async function GET(
             const fileBuffer = await readFile(localPath);
 
             // F+ Compliance: gleiche SVG-XSS-Absicherung wie im S3-Pfad
-            const isSvg = (document.mimeType ?? "").toLowerCase() === "image/svg+xml";
+            const isSvg = (fassung.mimeType ?? "").toLowerCase() === "image/svg+xml";
             const disposition = isSvg ? "attachment" : "inline";
 
             const headers = new Headers();
-            headers.set("Content-Type", document.mimeType || "application/octet-stream");
+            headers.set("Content-Type", fassung.mimeType || "application/octet-stream");
             headers.set("Content-Length", fileBuffer.length.toString());
-            headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(document.fileName)}"`);
+            headers.set("Content-Disposition", `${disposition}; filename="${encodeURIComponent(fassung.fileName ?? "dokument")}"`);
             headers.set("Cache-Control", `private, max-age=${CACHE_TTL.LONG}`);
             headers.set("Access-Control-Allow-Origin", getAppUrl());
             if (isSvg) {

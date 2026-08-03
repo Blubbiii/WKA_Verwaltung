@@ -493,9 +493,18 @@ export default function DocumentDetailPage() {
                         {version.uploadedBy || "-"}
                       </TableCell>
                       <TableCell>
+                        {/*
+                          Ueber die Download-Route, nicht ueber fileUrl.
+                          Dort steht bei S3-Ablage der Speicherschluessel —
+                          als href ergab das einen Verweis auf die eigene
+                          Anwendung, der ins Leere lief. Die Route erzeugt
+                          eine signierte Adresse und protokolliert den
+                          Zugriff, was bei aufbewahrungspflichtigen
+                          Unterlagen ohnehin richtig ist.
+                        */}
                         <Button variant="ghost" size="sm" asChild>
                           <a
-                            href={version.fileUrl}
+                            href={`/api/documents/${version.id}/download?redirect=true`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

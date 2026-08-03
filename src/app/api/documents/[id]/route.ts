@@ -8,6 +8,7 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { markiereAktuelle } from "@/lib/documents/current-version";
 
 const documentUpdateSchema = z.object({
   title: z.string().min(1).optional(),
@@ -88,8 +89,14 @@ export async function GET(
       return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
-    // Build version history
-    const allVersions = [
+    // Versionshistorie aufbauen.
+    //
+    // `isCurrent` stand hier fest auf der Wurzel — und die traegt Version 1,
+    // also die AELTESTE Fassung. Die Liste wird absteigend sortiert, damit
+    // trug die unterste Zeile das Kennzeichen "Aktuell", waehrend die
+    // neueste oben ohne stand. Jetzt entscheidet die hoechste
+    // Versionsnummer, ueber `markiereAktuelle`.
+    const allVersions = markiereAktuelle([
       {
         id: document.id,
         version: document.version,
@@ -102,7 +109,6 @@ export async function GET(
               .filter(Boolean)
               .join(" ")
           : null,
-        isCurrent: true,
       },
       ...document.versions.map((v) => ({
         id: v.id,
@@ -116,18 +122,25 @@ export async function GET(
               .filter(Boolean)
               .join(" ")
           : null,
-        isCurrent: false,
       })),
-    ].sort((a, b) => b.version - a.version);
+    ]).sort((a, b) => b.version - a.version);
+
+    // Die aktuelle Fassung — dieselbe, die auch der Download ausliefert.
+    const aktuell = allVersions.find((v) => v.isCurrent) ?? allVersions[0];
 
     return NextResponse.json({
       id: document.id,
       title: document.title,
       description: document.description,
       category: document.category,
-      fileName: document.fileName,
-      fileUrl: document.fileUrl,
-      fileSizeBytes: document.fileSizeBytes ? Number(document.fileSizeBytes) : null,
+      // Datei-Angaben der AKTUELLEN Fassung, nicht der Wurzel. Sonst zeigte
+      // die Detailseite Name und Groesse der ersten Fassung an, waehrend die
+      // Historie daneben eine neuere auswies.
+      fileName: aktuell?.fileName ?? document.fileName,
+      fileUrl: aktuell?.fileUrl ?? document.fileUrl,
+      fileSizeBytes: aktuell?.fileSizeBytes ?? (document.fileSizeBytes ? Number(document.fileSizeBytes) : null),
+      /** Kennung der aktuellen Fassung — dorthin gehen Download und Vorschau. */
+      currentVersionId: aktuell?.id ?? document.id,
       mimeType: document.mimeType,
       version: document.version,
       tags: document.tags,

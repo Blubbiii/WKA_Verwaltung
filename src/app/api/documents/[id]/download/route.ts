@@ -7,6 +7,7 @@ import { API_LIMITS } from "@/lib/config/api-limits";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { aktuelleFassung } from "@/lib/documents/current-version";
 
 /**
  * GET /api/documents/[id]/download
@@ -51,6 +52,7 @@ export async function GET(
         fileName: true,
         mimeType: true,
         category: true,
+        parentId: true,
       },
     });
 
@@ -58,8 +60,21 @@ export async function GET(
       return apiError("NOT_FOUND", undefined, { message: "Dokument nicht gefunden" });
     }
 
-    // fileUrl enthaelt den S3-Key
-    const s3Key = document.fileUrl;
+    // Die AKTUELLE Fassung ausliefern, nicht die Wurzel.
+    //
+    // Eine neue Fassung ist eine eigene Zeile; die Wurzel behaelt die Datei
+    // der ERSTEN Fassung. Da Liste und Vorschau mit der Wurzel-Kennung
+    // herunterladen, bekam man hier immer die alte Datei — die berichtigte
+    // Fassung lag im Speicher und war ueber die Oberflaeche nicht zu holen.
+    //
+    // Wird ausdruecklich eine bestimmte Fassung angefordert (aus der
+    // Versionshistorie), bleibt es bei genau dieser. Nur die Wurzel loest auf.
+    const fassung =
+      document.parentId === null
+        ? await aktuelleFassung(document.id, check.tenantId!)
+        : document;
+
+    const s3Key = fassung?.fileUrl ?? document.fileUrl;
 
     if (!s3Key) {
       return apiError("NOT_FOUND", undefined, { message: "Keine Datei mit diesem Dokument verknuepft" });
@@ -83,12 +98,12 @@ export async function GET(
         newValues: {
           documentId: document.id,
           documentTitle: document.title,
-          fileName: document.fileName,
+          fileName: fassung?.fileName ?? document.fileName,
           category: document.category,
           downloadedAt: new Date().toISOString(),
           redirect: shouldRedirect,
         },
-        description: `Dokument "${document.title}" (${document.fileName}) heruntergeladen`,
+        description: `Dokument "${document.title}" (${fassung?.fileName ?? document.fileName}) heruntergeladen`,
       });
     });
 
@@ -100,7 +115,7 @@ export async function GET(
     // Ansonsten JSON-Response mit URL und Metadaten
     return NextResponse.json({
       url: signedUrl,
-      fileName: document.fileName,
+      fileName: fassung?.fileName ?? document.fileName,
       mimeType: document.mimeType,
       expiresIn: validExpiresIn,
       expiresAt: new Date(Date.now() + validExpiresIn * 1000).toISOString(),

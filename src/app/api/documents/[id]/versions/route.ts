@@ -188,6 +188,14 @@ export async function GET(
       orderBy: { version: "desc" },
     });
 
+    // Absteigend sortiert — die erste ist die aktuelle. Ueber die Zahl und
+    // nicht ueber die Position, damit eine spaetere Aenderung an der
+    // Sortierung das Kennzeichen nicht still verschiebt.
+    const hoechsteVersion = versions.reduce(
+      (max, v) => (v.version > max ? v.version : max),
+      Number.NEGATIVE_INFINITY,
+    );
+
     return NextResponse.json({
       rootDocumentId,
       currentDocumentId: id,
@@ -202,7 +210,11 @@ export async function GET(
         uploadedBy: v.uploadedBy
           ? [v.uploadedBy.firstName, v.uploadedBy.lastName].filter(Boolean).join(" ")
           : null,
-        isCurrent: v.id === id,
+        // Nicht "die gerade abgefragte Fassung", sondern die mit der
+        // hoechsten Versionsnummer. Vorher galt jede Fassung als aktuell,
+        // sobald man sie selbst aufrief — die dritte abweichende Auslegung
+        // von "aktuell" in diesem Bereich.
+        isCurrent: v.version === hoechsteVersion,
       })),
     });
   } catch (error) {
