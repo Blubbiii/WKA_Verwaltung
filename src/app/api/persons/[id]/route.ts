@@ -223,6 +223,12 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
             // also ohnehin. Die Sperre hat das vorher sauber abgefangen.
             leases: true,
             contracts: true,
+            // Neu (03.08.2026): Eigentum und Bewirtschaftung am Flurstueck.
+            // Beide Fremdschluessel stehen auf RESTRICT — ohne diese Zaehlung
+            // kam die Datenbanksperre als HTTP 500 beim Nutzer an, ohne jeden
+            // Hinweis darauf, was im Weg steht.
+            plotOwnerships: true,
+            plotFarmings: true,
           },
         },
       },
@@ -236,17 +242,32 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     const totalReferences =
       existingPerson._count.shareholders +
       existingPerson._count.leases +
-      existingPerson._count.contracts;
+      existingPerson._count.contracts +
+      existingPerson._count.plotOwnerships +
+      existingPerson._count.plotFarmings;
 
     if (totalReferences > 0) {
+      // Nur nennen, was tatsaechlich im Weg steht. Eine Aufzaehlung mit
+      // "0 Beteiligung(en), 0 Vertrag/Vertraegen, 1 Flurstueck" laesst den
+      // Leser die Null suchen, die zaehlt.
+      const teile: string[] = [];
+      const z = existingPerson._count;
+      if (z.shareholders > 0) teile.push(`${z.shareholders} Beteiligung(en)`);
+      if (z.leases > 0) teile.push(`${z.leases} Pachtvertrag/Pachtverträgen`);
+      if (z.contracts > 0) teile.push(`${z.contracts} Vertrag/Verträgen`);
+      if (z.plotOwnerships > 0)
+        teile.push(`${z.plotOwnerships} Eigentumseintrag/-einträgen an Flurstücken`);
+      if (z.plotFarmings > 0)
+        teile.push(`${z.plotFarmings} Bewirtschaftungseintrag/-einträgen`);
+
       return apiError("RETENTION_BLOCKED", undefined, {
         message:
-          `Die Person ist verknüpft mit ${existingPerson._count.shareholders} ` +
-          `Beteiligung(en), ${existingPerson._count.leases} Pachtvertrag/` +
-          `Pachtverträgen und ${existingPerson._count.contracts} Vertrag/` +
-          `Verträgen — gelöschte eingeschlossen. Gelöschte Verträge werden ` +
-          `aufbewahrt (§ 147 AO) und müssen ihren Vertragspartner weiter ` +
-          `benennen können. Die Person lässt sich deshalb nicht entfernen.`,
+          `Die Person ist verknüpft mit ${teile.join(", ")} — gelöschte ` +
+          `eingeschlossen. Aufbewahrte Unterlagen müssen ihren Beteiligten ` +
+          `weiter benennen können (§ 147 AO); ein Eigentums- oder ` +
+          `Bewirtschaftungseintrag hält fest, wer zu welcher Zeit auf der ` +
+          `Fläche war. Die Person lässt sich deshalb nicht entfernen. ` +
+          `Einträge, die nicht mehr gelten, beendet man über ihr Enddatum.`,
       });
     }
 

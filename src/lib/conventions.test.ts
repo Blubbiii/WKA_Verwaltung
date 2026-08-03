@@ -42,9 +42,25 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * Kommentare entfernen, bevor gesucht wird.
+ *
+ * Ohne das schlägt jede Regel auf ihrer eigenen Erklärung an: eine Datei, die
+ * im Kopfkommentar begründet, warum sie `useQuery` statt useEffect + fetch
+ * benutzt, wurde als Verstoss gezählt. Der Hinweis, der jemanden aufhalten
+ * soll, wurde damit zum Grund, ihn nicht hinzuschreiben.
+ *
+ * Aufgefallen am 03.08.2026 an genau so einer Datei.
+ */
+function ohneKommentare(quelle: string): string {
+  return quelle
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
 const TSX_FILES = walk(SRC).map((path) => ({
   path: path.slice(SRC.length + 1).replace(/\\/g, "/"),
-  source: readFileSync(path, "utf-8"),
+  source: ohneKommentare(readFileSync(path, "utf-8")),
 }));
 
 function count(predicate: (f: { path: string; source: string }) => boolean) {
@@ -57,13 +73,17 @@ function count(predicate: (f: { path: string; source: string }) => boolean) {
 
 describe("Datenabruf im Client (C7)", () => {
   /**
-   * Stand 01.08.2026. Nur senken.
+   * Stand 03.08.2026 (vorher 280). Nur senken.
+   *
+   * Die Zahl ist um eins gesunken, weil seither Kommentare vor der Suche
+   * entfernt werden — eine Datei zaehlte nur wegen ihrer eigenen Erklaerung
+   * mit. Ohne diese Nachfuehrung waere der Waechter still lockerer geworden.
    *
    * CLAUDE.md verlangt seit langem react-query für neue Fetches; die Quote hat
    * sich seither trotzdem verschlechtert (79 % → 91 %). Genau deshalb steht
    * hier eine Zahl und nicht nur ein Satz.
    */
-  const BASELINE = 280;
+  const BASELINE = 279;
 
   it(`nicht mehr als ${BASELINE} Dateien mit useEffect + fetch`, () => {
     const offenders = count(

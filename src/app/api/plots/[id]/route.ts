@@ -8,6 +8,7 @@ import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { findeAbweichungen, gueltigeAm, pruefeQuoten } from "@/lib/plots/parties";
 
 const plotUpdateSchema = z.object({
   parkId: z.uuid().optional().nullable(),
@@ -56,6 +57,28 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
         plotAreas: {
           orderBy: { areaType: "asc" },
         },
+        owners: {
+          include: {
+            person: {
+              select: {
+                id: true, firstName: true, lastName: true,
+                companyName: true, personType: true,
+              },
+            },
+          },
+          orderBy: [{ validFrom: "desc" }, { sharePercent: "desc" }],
+        },
+        farmers: {
+          include: {
+            person: {
+              select: {
+                id: true, firstName: true, lastName: true,
+                companyName: true, personType: true,
+              },
+            },
+          },
+          orderBy: { validFrom: "desc" },
+        },
         leasePlots: {
           include: {
             lease: {
@@ -80,10 +103,98 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
       return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
-    // Transform to include leases array for easier frontend consumption
+    const name = (p: {
+      companyName: string | null;
+      firstName: string | null;
+      lastName: string | null;
+    }) =>
+      p.companyName?.trim() ||
+      [p.firstName, p.lastName].filter(Boolean).join(" ") ||
+      "Ohne Namen";
+
+    // Nur die HEUTE gueltigen Eintraege gehen in den Abgleich. Waehrend eines
+    // Eigentuemerwechsels stehen alter und neuer Eintrag nebeneinander in der
+    // Tabelle; wer beide vergleicht, meldet eine Abweichung, wo keine ist.
+    const heute = new Date();
+    const aktuelleEigentuemer = gueltigeAm(
+      plot.owners.map((o) => ({
+        personId: o.personId,
+        name: name(o.person),
+        sharePercent: o.sharePercent.toNumber(),
+        validFrom: o.validFrom,
+        validTo: o.validTo,
+      })),
+      heute,
+    );
+    const aktuelleBewirtschafter = gueltigeAm(
+      plot.farmers.map((f) => ({
+        personId: f.personId,
+        name: name(f.person),
+        validFrom: f.validFrom,
+        validTo: f.validTo,
+      })),
+      heute,
+    );
+
+    // Verpaechter aus den Vertraegen, die dieses Flurstueck umfassen.
+    const verpaechter = plot.leasePlots
+      .map((lp) => lp.lease?.lessor)
+      .filter((l): l is NonNullable<typeof l> => Boolean(l))
+      .map((l) => ({ personId: l.id, name: name(l) }));
+
+    // Nach personId entdoppeln: derselbe Verpaechter kann ueber mehrere
+    // Vertraege an demselben Flurstueck haengen.
+    const verpaechterEindeutig = [
+      ...new Map(verpaechter.map((v) => [v.personId, v])).values(),
+    ];
+
     const transformedPlot = {
       ...plot,
       leases: plot.leasePlots.map((lp) => lp.lease),
+      owners: plot.owners.map((o) => ({
+        id: o.id,
+        personId: o.personId,
+        person: o.person,
+        name: name(o.person),
+        sharePercent: o.sharePercent.toNumber(),
+        validFrom: o.validFrom?.toISOString() ?? null,
+        validTo: o.validTo?.toISOString() ?? null,
+        notes: o.notes,
+        istAktuell: aktuelleEigentuemer.some((a) => a.personId === o.personId
+          && a.validFrom?.getTime() === o.validFrom?.getTime()),
+      })),
+      farmers: plot.farmers.map((f) => ({
+        id: f.id,
+        personId: f.personId,
+        person: f.person,
+        name: name(f.person),
+        validFrom: f.validFrom?.toISOString() ?? null,
+        validTo: f.validTo?.toISOString() ?? null,
+        notes: f.notes,
+        istAktuell: aktuelleBewirtschafter.some((a) => a.personId === f.personId
+          && a.validFrom?.getTime() === f.validFrom?.getTime()),
+      })),
+      /**
+       * Hinweise, keine Fehler. Eigentum und Verpachtung sind zwei
+       * verschiedene Tatsachen — sie duerfen auseinanderfallen (Niessbraucher,
+       * Verkauf bei laufendem Vertrag). Weichen sie ab, gehoert das einem
+       * Menschen vorgelegt und nicht still aufgeloest.
+       */
+      hinweise: {
+        quoten: pruefeQuoten(
+          plot.owners.map((o) => ({
+            personId: o.personId,
+            sharePercent: o.sharePercent.toNumber(),
+            validFrom: o.validFrom,
+            validTo: o.validTo,
+          })),
+          heute,
+        ),
+        abweichungen: findeAbweichungen(
+          aktuelleEigentuemer.map((e) => ({ personId: e.personId, name: e.name })),
+          verpaechterEindeutig,
+        ),
+      },
     };
 
     return NextResponse.json(transformedPlot);

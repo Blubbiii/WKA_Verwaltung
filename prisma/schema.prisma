@@ -766,6 +766,8 @@ model Person {
   // Bedienaufwand #11: Rechnungen, deren Empfaenger dieser Kontakt ist.
   recipientInvoices              Invoice[]                        @relation("InvoiceRecipient")
   leaseLessorShares              LeaseLessor[]                    @relation("LeaseLessorShare")
+  plotOwnerships                 PlotOwner[]                      @relation("PlotOwnerPerson")
+  plotFarmings                   PlotFarmer[]                     @relation("PlotFarmerPerson")
   meetingProxiesHeld             MeetingAttendance[]              @relation("MeetingProxyHolder")
   subscriptions                  Subscription[]                   @relation("SubscriptionSubscriber")
   amlChecks                      AmlCheck[]                       @relation("AmlCheckedPerson")
@@ -879,6 +881,8 @@ model Plot {
   geometry          Json?
   leasePlots        LeasePlot[]
   plotAreas         PlotArea[]
+  owners            PlotOwner[]
+  farmers           PlotFarmer[]
   park              Park?         @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   municipalityRef   Municipality? @relation(fields: [municipalityId], references: [id], onDelete: SetNull)
@@ -6079,6 +6083,116 @@ model LeaseLessor {
   @@index([leaseId])
   @@index([personId])
   @@map("lease_lessors")
+}
+
+/// Eigentümer eines Flurstücks.
+///
+/// ## Warum das neben `Lease.lessor` steht und nicht statt dessen
+///
+/// Das sind zwei verschiedene Tatsachen, die meistens zusammenfallen:
+///
+///  - **Eigentum** ist eine Eigenschaft des Flurstücks. Sie gilt auch dann,
+///    wenn es (noch) keinen Nutzungsvertrag gibt — etwa in der Akquise.
+///  - **Verpächter** ist eine Eigenschaft des Vertrags: wer unterschrieben
+///    hat und wer bezahlt wird.
+///
+/// Sie können auseinanderfallen, und das ist kein Fehler: ein Nießbraucher
+/// unterschreibt, ohne Eigentümer zu sein; ein Grundstück wird verkauft,
+/// während der Vertrag weiterläuft. Würde das eine aus dem anderen abgeleitet,
+/// liesse sich dieser Zustand gar nicht erfassen.
+///
+/// Deshalb wird hier NICHTS erzwungen. Weichen die eingetragenen Eigentümer
+/// eines Flurstücks von den Verpächtern seines Vertrags ab, ist das ein
+/// Hinweis — entweder ist das Grundbuch veraltet oder der Vertrag steht auf
+/// dem falschen Namen. Beides gehört einem Menschen vorgelegt, nicht still
+/// aufgelöst.
+model PlotOwner {
+  id     String @id @default(uuid())
+  plotId String
+  plot   Plot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
+
+  personId String
+  person   Person @relation("PlotOwnerPerson", fields: [personId], references: [id], onDelete: Restrict)
+
+  /// Miteigentumsquote in Prozent. Wie bei `LeaseLessor`: die Summe der zu
+  /// einem Stichtag gültigen Anteile soll 100 ergeben. Bewusst NICHT in der
+  /// Datenbank erzwungen — ein halb erfasstes Grundbuch muss speicherbar
+  /// bleiben, sonst weicht man auf Notizfelder aus.
+  sharePercent Decimal @db.Decimal(7, 4)
+
+  /// Ab wann der Anteil gilt. `null` = seit jeher bekannt.
+  validFrom DateTime?
+  /// Bis einschliesslich wann. `null` = offen. Ein Eigentümerwechsel entsteht,
+  /// indem der alte Anteil ein `validTo` bekommt und ein neuer am Folgetag
+  /// beginnt — der alte wird NICHT gelöscht, sonst verlöre eine bereits
+  /// abgerechnete Periode ihre Grundlage.
+  validTo DateTime?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// Dieselbe Person kann mehrfach am Flurstück stehen — aber nicht zweimal
+  /// mit demselben Beginn. Das wäre eine Doppelerfassung.
+  @@unique([plotId, personId, validFrom])
+  @@index([plotId])
+  @@index([personId])
+  @@map("plot_owners")
+}
+
+/// Bewirtschafter eines Flurstücks — wer die Fläche tatsächlich bestellt.
+///
+/// ## Warum das eine eigene Rolle ist
+///
+/// Der Eigentümer bewirtschaftet seine Fläche entweder selbst oder hat sie an
+/// einen Landwirt verpachtet. Im zweiten Fall ist der Landwirt derjenige, den
+/// Bauarbeiten, Zuwegung und Flurschäden treffen — und er ist bis jetzt im
+/// System nicht vorgekommen. Wer eine Baumassnahme ankündigen wollte, fand
+/// nur den Eigentümer, der die Fläche vielleicht seit zwanzig Jahren nicht
+/// mehr betreten hat.
+///
+/// Bewirtschaftet der Eigentümer selbst, steht er hier ebenfalls — dann sind
+/// es zwei Einträge auf dieselbe Person, und genau das ist die Aussage.
+/// Ein leerer Bewirtschafter heisst „nicht erfasst", nicht „bewirtschaftet
+/// der Eigentümer".
+///
+/// ## Anteile gibt es hier bewusst nicht
+///
+/// Eine Fläche wird zu einem Zeitpunkt von einem bestellt. Teilflächen sind
+/// über `PlotArea` abgebildet; wer sie braucht, gehört dorthin und nicht in
+/// eine Quote, die man dann doch wieder auf 100 addieren müsste.
+///
+/// ## Zahlungen
+///
+/// Noch keine. Der Bewirtschafter ist eine `Person` — kommt später eine
+/// Flurschadensentschädigung dazu, ist das eine Rechnung an diese Person und
+/// braucht an diesem Modell nichts.
+model PlotFarmer {
+  id     String @id @default(uuid())
+  plotId String
+  plot   Plot   @relation(fields: [plotId], references: [id], onDelete: Cascade)
+
+  personId String
+  person   Person @relation("PlotFarmerPerson", fields: [personId], references: [id], onDelete: Restrict)
+
+  /// Ab wann er bewirtschaftet. `null` = seit jeher bekannt.
+  validFrom DateTime?
+  /// Bis einschliesslich wann. `null` = offen. Ein Wechsel wird wie beim
+  /// Eigentümer durch Abgrenzen und Neuanlegen abgebildet, nicht durch
+  /// Überschreiben — sonst wüsste hinterher niemand mehr, wer zur Zeit eines
+  /// Flurschadens auf der Fläche war.
+  validTo DateTime?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([plotId, personId, validFrom])
+  @@index([plotId])
+  @@index([personId])
+  @@map("plot_farmers")
 }
 
 /// Aufteilung einer Abrechnungsposition auf mehrere Verpächter (A5).

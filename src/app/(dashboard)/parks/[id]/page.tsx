@@ -31,11 +31,11 @@ import {
   Eye,
   Loader2,
   AlertTriangle,
-  GitCompare,
-} from "lucide-react";
+  GitCompare, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { PlotPartiesDialog } from "@/components/plots/plot-parties-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -352,6 +352,7 @@ export default function ParkDetailsPage({
   } | null>(null);
 
   // Plot assignment state
+  const [parteienPlot, setParteienPlot] = useState<{ id: string; label: string } | null>(null);
   const [isAssignPlotsOpen, setIsAssignPlotsOpen] = useState(false);
   const [unassignedPlots, setUnassignedPlots] = useState<{
     id: string;
@@ -1971,6 +1972,26 @@ export default function ParkDetailsPage({
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    {/*
+                                      Eigentuemer und Bewirtschafter haengen am
+                                      FLURSTUECK, nicht am Vertrag. Der
+                                      Verpaechter im Vertrag ist eine dritte
+                                      Angabe — sie faellt meistens mit dem
+                                      Eigentuemer zusammen, muss es aber nicht
+                                      (Niessbrauch, Verkauf bei laufendem
+                                      Vertrag).
+                                    */}
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setParteienPlot({
+                                          id: plot.id,
+                                          label: `${plot.cadastralDistrict} ${plot.fieldNumber || ""}-${plot.plotNumber}`.trim(),
+                                        });
+                                      }}
+                                    >
+                                      <Users className="mr-2 h-4 w-4" />
+                                      Eigentümer &amp; Bewirtschafter
+                                    </DropdownMenuItem>
                                     {plot.leaseId && (
                                       <DropdownMenuItem onClick={() => router.push(`/leases/${plot.leaseId}`)}>
                                         <ScrollText className="mr-2 h-4 w-4" />
@@ -2269,6 +2290,15 @@ export default function ParkDetailsPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PlotPartiesDialog
+        plotId={parteienPlot?.id ?? null}
+        plotLabel={parteienPlot?.label}
+        open={parteienPlot !== null}
+        onOpenChange={(offen) => {
+          if (!offen) setParteienPlot(null);
+        }}
+      />
 
       {/* Assign Plots Dialog */}
       <AlertDialog open={isAssignPlotsOpen} onOpenChange={setIsAssignPlotsOpen}>
