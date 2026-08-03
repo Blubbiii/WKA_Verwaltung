@@ -10,6 +10,7 @@ import { AlertTriangle } from "lucide-react";
 import { DashboardEditor, DashboardView, OnboardingBanner, DashboardHero } from "@/components/dashboard";
 import { ParkHealthPulse } from "@/components/dashboard/ParkHealthPulse";
 import { DashboardGreeting } from "@/components/dashboard/greeting";
+import { AttentionPanel } from "@/components/dashboard/attention-panel";
 import { useDashboardConfig } from "@/hooks/useDashboardConfig";
 
 // =============================================================================
@@ -66,6 +67,14 @@ export default function DashboardPage() {
           </Button>
         )}
       </div>
+
+      {/*
+        Was heute zu tun ist — ueber den Bestandszahlen, nicht zwischen ihnen.
+        Vorher standen "FRISTEN 90 TAGE 0" und "OFFENE RECHNUNGEN 226 offen"
+        gleichwertig nebeneinander, und nichts sagte, welche der beiden Zahlen
+        heute jemanden interessiert.
+      */}
+      {!isEditing && <AttentionPanel />}
 
       {/* Onboarding Banner (shown when tenant has no parks/funds) */}
       {!isEditing && <OnboardingBanner />}
