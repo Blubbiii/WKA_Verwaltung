@@ -9,6 +9,7 @@
  */
 
 import shp from "shpjs";
+import { repariereZeichensatz } from "@/lib/text/mojibake";
 import proj4 from "proj4";
 
 // ---------------------------------------------------------------------------
@@ -43,33 +44,17 @@ export interface ShpParseResult {
  * → "BÃ¶ttcher". This function reverses that: take each char code as a byte,
  * then re-decode as UTF-8.
  */
-function fixMojibake(text: string): string {
-  // Quick check: if no characters in the Latin-1 supplement range, skip
-  if (!/[\x80-\xff]/.test(text)) return text;
-
-  try {
-    // Convert each character's code point back to a raw byte
-    const bytes = new Uint8Array(text.length);
-    for (let i = 0; i < text.length; i++) {
-      const code = text.charCodeAt(i);
-      if (code > 255) return text; // Non-Latin-1 char → not mojibake
-      bytes[i] = code;
-    }
-
-    // Try decoding these bytes as UTF-8 (fatal = throw on invalid sequences)
-    const decoder = new TextDecoder("utf-8", { fatal: true });
-    const decoded = decoder.decode(bytes);
-
-    // If it decoded successfully and differs from the original, it was mojibake
-    if (decoded !== text) {
-      return decoded;
-    }
-  } catch {
-    // UTF-8 decoding failed → not mojibake, return original
-  }
-
-  return text;
-}
+/**
+ * Falsch dekodierten Text richtigstellen.
+ *
+ * Die Umsetzung stand frueher hier — als private Hilfsfunktion. Damit kamen
+ * Flurstuecke aus einer Shapefile-Lieferung sauber herein, Kontakte aus einer
+ * CSV-Datei aber nicht: dort gab es die Reparatur schlicht nicht. In der
+ * Kontaktliste standen deshalb Verbandsnamen mit Ersatzzeichen statt "ss".
+ *
+ * Jetzt liegt sie in `lib/text/mojibake.ts` und wird von beiden Wegen benutzt.
+ */
+const fixMojibake = repariereZeichensatz;
 
 /**
  * Fix encoding for all string property values (and keys) in a feature.

@@ -1,3 +1,4 @@
+import { repariereZeichensatz } from "@/lib/text/mojibake";
 /**
  * CSV lesen — eine Stelle für das ganze Projekt.
  *
@@ -87,7 +88,19 @@ function firstLogicalLine(text: string): string {
  */
 export function parseCsv(input: string, delimiter?: string): CsvParseResult {
   // BOM entfernen — sonst heisst die erste Spalte "﻿Name".
-  const text = input.replace(/^﻿/, "");
+  //
+  // Und den Zeichensatz richtigstellen, BEVOR zerlegt wird.
+  //
+  // In der Kontaktliste standen "BundesstraSSenverwaltung" und "GroSSe Au"
+  // (mit den typischen zwei Ersatzzeichen statt eines ss) — eine UTF-8-Datei,
+  // die als Latin-1 gelesen wurde. Der Shapefile-Zerleger hatte die Reparatur
+  // schon, aber als private Hilfsfunktion bei sich; Flurstuecke kamen deshalb
+  // sauber herein, Kontakte nicht. Dieselbe Regel an einer Stelle angewandt
+  // und an der anderen nicht.
+  //
+  // Hier oben, weil auch die KOPFZEILE betroffen ist: bleibt sie verfaelscht,
+  // findet die automatische Spaltenzuordnung ihre Spalte nicht.
+  const text = repariereZeichensatz(input.replace(/^﻿/, ""));
   if (text.trim() === "") return { headers: [], rows: [], delimiter: delimiter ?? ";" };
 
   const sep = delimiter ?? detectDelimiter(text);
