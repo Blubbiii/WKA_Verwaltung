@@ -293,6 +293,25 @@ export async function aggregateMonthlyProductionBulk(
   // (naive → timestamptz), dann `AT TIME ZONE 'Europe/Berlin'` (→ lokale Wanduhrzeit).
   //
   // tenantId-Filter ist Pflicht (Multi-Tenancy + Index-Nutzung).
+  //
+  // GRUPPIERT WIRD ÜBER DIE SPALTENNUMMERN (`GROUP BY 1, 2, 3`), nicht über
+  // eine Wiederholung des Ausdrucks. Der Grund liegt in Prisma:
+  //
+  // `localTs` enthält `${SETTLEMENT_TIME_ZONE}` — eine Prisma-Interpolation.
+  // Jede Einsetzung erzeugt einen EIGENEN Platzhalter. Stand derselbe Ausdruck
+  // in SELECT und in GROUP BY, sah Postgres dort `… AT TIME ZONE $6` und hier
+  // `… AT TIME ZONE $8` — für den Planer zwei verschiedene Ausdrücke. Er wies
+  // die Abfrage ab:
+  //
+  //   column "scada_measurements.timestamp" must appear in the GROUP BY clause
+  //
+  // Der Fehler traf JEDEN Aufruf. Er wird im Import gefangen und als
+  // „Bulk-Aggregationsfehler" in die Fehlerliste gelegt — der Lauf lief
+  // weiter und meldete PARTIAL. Sichtbar war also nur ein Import, der nicht
+  // ganz sauber durchlief; tatsächlich wurden die Zehn-Minuten-Werte zwar
+  // gespeichert, aber NIE zu einem Monatswert verdichtet. Und dieser
+  // Monatswert (TurbineProduction) ist der Verteilschlüssel der
+  // Erlösverteilung.
   const localTs = Prisma.sql`(("timestamp" AT TIME ZONE 'UTC') AT TIME ZONE ${SETTLEMENT_TIME_ZONE})`;
 
   const rows = await prisma.$queryRaw<
@@ -318,7 +337,7 @@ export async function aggregateMonthlyProductionBulk(
       AND "powerW" >= 0
       AND "timestamp" >= ${earliestStart}
       AND "timestamp" < ${latestEnd}
-    GROUP BY "turbineId", EXTRACT(YEAR FROM ${localTs}), EXTRACT(MONTH FROM ${localTs})
+    GROUP BY 1, 2, 3
   `);
 
   // Ergebnis als Map aufbereiten + nur die angeforderten Monate behalten

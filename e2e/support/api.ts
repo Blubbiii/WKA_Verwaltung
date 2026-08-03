@@ -185,7 +185,13 @@ export class WpmApi {
         grund = json.message ?? json.error ?? rumpf;
         // Ueber den Fehlercode, nicht ueber den Meldungstext. Ein Client, der
         // deutsche Prosa durchsucht, bricht beim naechsten Umformulieren.
-        ref.aufbewahrt = json.code === "RETENTION_BLOCKED";
+        //
+        // Ein beim `track()` bereits gesetztes `aufbewahrt` bleibt stehen.
+        // Manche Datensaetze sind schon beim Anlegen als unloeschbar bekannt —
+        // eine Anlage etwa, die gleich SCADA-Messwerte bekommt. Vorher setzte
+        // diese Zeile die Kennzeichnung zurueck, und der bewusste Rueckstand
+        // erschien im Bericht als fehlgeschlagenes Aufraeumen.
+        ref.aufbewahrt = ref.aufbewahrt || json.code === "RETENTION_BLOCKED";
       } catch {
         // Kein JSON — dann eben der Rohtext.
       }

@@ -300,15 +300,30 @@ export async function selectOption(
   // Ein Versuch ueber die Tastatur (Typeahead + Enter) griff nicht
   // zuverlaessig — Radix sammelt getippte Zeichen mit eigenem Zeitfenster,
   // und ohne Verzoegerung getippte Zeichen kamen nicht als Suchbegriff an.
-  // In die MITTE rollen, nicht nur „in den Sichtbereich".
+  // Ausgewaehlt wird ueber die TASTATUR, nicht per Mausklick.
   //
-  // scrollIntoViewIfNeeded schiebt den Eintrag an den naechstgelegenen Rand.
-  // Genau dort liegen bei langen Listen die Rollpfeile von Radix — sie fangen
-  // den Klick ab, und Playwright versucht es bis zur Zeitgrenze weiter. Der
-  // Fehler sah dann nach einem fehlenden Eintrag aus, obwohl er sichtbar war.
-  // Aufgefallen, als die Liste durch angesammelte Testdaten lang wurde.
-  await option.evaluate((el) => el.scrollIntoView({ block: "center" }));
-  await option.click();
+  // Vorgeschichte: erst `click()`, dann `scrollIntoViewIfNeeded()` davor, dann
+  // `scrollIntoView({block:"center"})`. Alle drei scheiterten, sobald die
+  // Liste laenger wurde — Playwright meldete „element is outside of the
+  // viewport" und versuchte es bis zur Zeitgrenze weiter.
+  //
+  // Der Grund liegt in Radix: das Auswahlfeld positioniert seine Liste am
+  // Ausloeser und blendet bei Ueberlaenge Rollpfeile ein, die staendig
+  // nachrollen. Ein Eintrag wandert dadurch unter dem Zeiger weg, und der
+  // Klick trifft entweder den Rollpfeil oder eine Stelle ausserhalb des
+  // Fensters. Gegen eine Liste, die sich waehrend des Zielens bewegt, hilft
+  // kein besseres Zielen.
+  //
+  // Die Tastatur umgeht die Geometrie vollstaendig: Radix waehlt den
+  // fokussierten Eintrag mit Enter aus, unabhaengig davon, wo er gerade
+  // liegt. Ein frueherer Versuch ueber Typeahead (Zeichen tippen) war
+  // unzuverlaessig, weil Radix Zeichen mit eigenem Zeitfenster sammelt —
+  // Fokus und Enter haben dieses Problem nicht.
+  await option.evaluate((el) => {
+    el.scrollIntoView({ block: "center" });
+    (el as HTMLElement).focus();
+  });
+  await page.keyboard.press("Enter");
 
   // Warten, bis die Liste wirklich zu ist. Sonst faengt ihre Ueberlagerung
   // den naechsten Klick ab, und der scheitert an einem Feld, mit dem gar

@@ -5,10 +5,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
-import { MS_PER_DAY } from "@/lib/constants/time";
 import { computeSegmentedDefaultInterest } from "./interest";
 import { getBaseRateSegments } from "./base-interest-rate";
 import { loadVerzugszinsConfig } from "@/lib/system-settings";
+import { kalendertageSeit } from "@/lib/validation/not-in-future";
 
 export interface DunningCandidate {
   invoiceId: string;
@@ -73,20 +73,20 @@ export function selectNextDunningLevel(
  * Pure function: compute days overdue for an invoice.
  * Returns 0 if dueDate is in the future or invalid.
  *
- * F19 (Zusatz): rechnet auf UTC-MITTERNACHT normalisiert, exakt wie
- * interest.ts:daysSince(). Vorher wurden rohe Millisekunden-Differenzen
- * abgerundet — je nach Uhrzeit von dueDate und `now` wich die Mahnstufen-
- * Entscheidung damit um einen Tag von der Zinsberechnung ab.
+ * F19 (Zusatz): zaehlt exakt wie interest.ts:daysSince(). Vorher wurden rohe
+ * Millisekunden-Differenzen abgerundet — je nach Uhrzeit von dueDate und `now`
+ * wich die Mahnstufen-Entscheidung damit um einen Tag von der Zinsberechnung
+ * ab. Seit 03.08.2026 zaehlen beide KALENDERTAGE in der Zeitzone des Betriebs
+ * statt auf UTC-Mitternacht normalisiert.
  */
 export function computeOverdueDays(dueDate: Date, now: Date = new Date()): number {
-  const due = Date.UTC(
-    dueDate.getUTCFullYear(),
-    dueDate.getUTCMonth(),
-    dueDate.getUTCDate(),
-  );
-  const at = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const diffDays = Math.floor((at - due) / MS_PER_DAY);
-  return Math.max(0, diffDays);
+  // Kalendertage in der Zeitzone des Betriebs, identisch zur Zinsberechnung.
+  //
+  // Diese Zahl entscheidet ueber die Mahnstufe. Wich sie von der Tageszahl der
+  // Zinsrechnung ab, stuende auf derselben Mahnung eine Stufe aus dem einen
+  // und ein Zinsbetrag aus dem anderen Zeitbegriff. Beide zaehlen deshalb
+  // ueber `kalendertageSeit` — Begruendung dort.
+  return kalendertageSeit(dueDate, now);
 }
 
 /**

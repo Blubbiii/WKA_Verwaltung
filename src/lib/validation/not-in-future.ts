@@ -73,6 +73,42 @@ export function isNotInFuture(
   return calendarDay(datum) <= calendarDay(jetzt);
 }
 
+/**
+ * Volle Kalendertage zwischen zwei Zeitpunkten, gezählt in der Zeitzone des
+ * Betriebs. Nie negativ.
+ *
+ * ## Warum nicht einfach UTC-Mitternacht
+ *
+ * Die Verzugsrechnung normalisierte beide Seiten auf UTC-Mitternacht, mit der
+ * Begründung, das halte Zeitzonen und Sommerzeit heraus. Für das Fälligkeits-
+ * datum stimmt das — es ist ohnehin als Mitternacht UTC gespeichert. Für den
+ * **Jetzt**-Zeitpunkt stimmt es nicht: der ist ein echter Zeitstempel, und
+ * sein UTC-Datum weicht zwischen 00:00 und 02:00 deutscher Zeit vom
+ * deutschen Kalendertag ab.
+ *
+ * In diesem Fenster zählte die Anwendung einen Tag zu wenig. Das entscheidet
+ * über die Mahnstufe und geht als Tageszahl in die Verzugszinsen nach § 288
+ * BGB ein. Nächtliche Läufe fallen genau hinein — dort war es nicht die
+ * Ausnahme, sondern der Normalfall.
+ *
+ * Aufgefallen ist es einem Testlauf um 00:52 Uhr, der 13 statt 14 Tage sah.
+ */
+export function kalendertageSeit(
+  von: Date,
+  bis: Date,
+  timeZone: string = APP_TIMEZONE,
+): number {
+  // Über den Kalendertag-String, damit es nur EINE Zeitzonen-Umrechnung gibt.
+  // Aus `YYYY-MM-DD` wieder einen UTC-Zeitpunkt zu bauen ist verlustfrei —
+  // beide Seiten sind dann derselbe, zeitzonenfreie Kalendertag.
+  const alsTag = (d: Date) => {
+    const [j, m, t] = calendarDay(d, timeZone).split("-").map(Number);
+    return Date.UTC(j, m - 1, t);
+  };
+  const tage = Math.floor((alsTag(bis) - alsTag(von)) / 86_400_000);
+  return Math.max(0, tage);
+}
+
 /** Einheitlicher Text für alle Routen, die diese Regel durchsetzen. */
 export function futureDateMessage(feld: string): string {
   return `${feld} darf nicht in der Zukunft liegen`;

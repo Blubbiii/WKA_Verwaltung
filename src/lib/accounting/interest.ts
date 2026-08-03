@@ -28,6 +28,7 @@
  */
 
 import type { VerzugszinsSystemConfig } from "@/lib/system-settings";
+import { kalendertageSeit } from "@/lib/validation/not-in-future";
 
 export interface ComputeInterestInput {
   /** Brutto-Forderungsbetrag in EUR (für Zinsberechnung). */
@@ -81,19 +82,16 @@ export const DEFAULT_VERZUGSZINS_CONFIG: VerzugszinsSystemConfig = {
  * wird mitgezählt → bei asOf=dueDate+1 → 1 Tag.
  */
 function daysSince(dueDate: Date, asOf: Date): number {
-  // Auf UTC-Mitternacht normalisieren, damit Zeitzonen/DST keinen Mist machen.
-  const due = Date.UTC(
-    dueDate.getUTCFullYear(),
-    dueDate.getUTCMonth(),
-    dueDate.getUTCDate(),
-  );
-  const at = Date.UTC(
-    asOf.getUTCFullYear(),
-    asOf.getUTCMonth(),
-    asOf.getUTCDate(),
-  );
-  const diffDays = Math.floor((at - due) / MS_PER_DAY_LOCAL);
-  return Math.max(0, diffDays);
+  // Kalendertage in der Zeitzone des Betriebs — nicht UTC-Mitternacht.
+  //
+  // Vorher wurden beide Seiten auf UTC-Mitternacht normalisiert. Für das
+  // Fälligkeitsdatum ist das richtig, für `asOf` (die aktuelle Zeit) nicht:
+  // zwischen 00:00 und 02:00 deutscher Zeit liegt dessen UTC-Datum noch auf
+  // dem Vortag. In diesem Fenster kam ein Tag zu wenig heraus — und aus
+  // dieser Zahl werden die Verzugszinsen nach § 288 BGB gerechnet.
+  //
+  // Begründung und Fundgeschichte in `kalendertageSeit`.
+  return kalendertageSeit(dueDate, asOf);
 }
 
 /**

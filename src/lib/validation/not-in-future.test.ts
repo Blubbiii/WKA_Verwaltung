@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { calendarDay, isNotInFuture } from "./not-in-future";
+import { calendarDay, isNotInFuture, kalendertageSeit } from "./not-in-future";
 
 describe("isNotInFuture", () => {
   it("laesst den heutigen Tag zu, auch kurz nach lokaler Mitternacht", () => {
@@ -83,5 +83,48 @@ describe("calendarDay", () => {
     const a = calendarDay(new Date("2026-08-09T12:00:00.000Z"), "UTC");
     const b = calendarDay(new Date("2026-08-10T12:00:00.000Z"), "UTC");
     expect(a < b).toBe(true);
+  });
+});
+
+describe("kalendertageSeit", () => {
+  it("zaehlt kurz nach lokaler Mitternacht den angebrochenen Tag mit", () => {
+    // Der Fund. Faellig am 20.07., jetzt der 03.08. um 00:52 deutscher Zeit —
+    // das sind 14 Kalendertage. In UTC ist es aber noch der 02.08. um 22:52,
+    // und die alte Rechnung kam auf 13.
+    //
+    // Diese Zahl entscheidet ueber die Mahnstufe und geht als Tageszahl in
+    // die Verzugszinsen nach § 288 BGB ein. Naechtliche Laeufe fallen genau
+    // in dieses Fenster — dort war der Fehler nicht die Ausnahme, sondern
+    // der Regelfall.
+    const faellig = new Date("2026-07-20T00:00:00.000Z");
+    const nachtsInBerlin = new Date("2026-08-02T22:52:00.000Z"); // = 03.08. 00:52
+
+    expect(kalendertageSeit(faellig, nachtsInBerlin, "Europe/Berlin")).toBe(14);
+    // Zum Vergleich das alte Verhalten — ein Tag zu wenig:
+    expect(kalendertageSeit(faellig, nachtsInBerlin, "UTC")).toBe(13);
+  });
+
+  it("zaehlt tagsueber unveraendert", () => {
+    // Die weit ueberwiegende Zeit darf sich nichts aendern — sonst waere die
+    // Korrektur eine stille Neuberechnung aller bestehenden Faelle.
+    const faellig = new Date("2026-07-20T00:00:00.000Z");
+    const mittags = new Date("2026-08-03T10:00:00.000Z");
+    expect(kalendertageSeit(faellig, mittags, "Europe/Berlin")).toBe(14);
+    expect(kalendertageSeit(faellig, mittags, "UTC")).toBe(14);
+  });
+
+  it("wird nie negativ", () => {
+    const faellig = new Date("2026-08-20T00:00:00.000Z");
+    const vorher = new Date("2026-08-03T10:00:00.000Z");
+    expect(kalendertageSeit(faellig, vorher, "Europe/Berlin")).toBe(0);
+  });
+
+  it("zaehlt ueber die Sommerzeitumstellung richtig", () => {
+    // In der Nacht zum 25.10.2026 endet die Sommerzeit. Ein Tag hat dann 25
+    // Stunden — eine Millisekunden-Division kaeme hier auf 6,96 Tage und
+    // rundete auf 6 ab.
+    const faellig = new Date("2026-10-22T00:00:00.000Z");
+    const danach = new Date("2026-10-29T09:00:00.000Z");
+    expect(kalendertageSeit(faellig, danach, "Europe/Berlin")).toBe(7);
   });
 });

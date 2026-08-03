@@ -2034,12 +2034,37 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
 
           // Datum der erfolgreich verarbeiteten Datei für das Wasserzeichen merken
           // (Dateiname bevorzugt, sonst Timestamp des letzten Records).
+          //
+          // ABER: eine Datei, deren Records mangels Zuordnung verworfen wurden,
+          // ist NICHT verarbeitet. Sie zählte hier trotzdem als Erfolg, und das
+          // schloss eine Lücke, die sich nie wieder öffnete:
+          //
+          //   Neuer Park, SCADA-Dateien laufen ein, das ScadaTurbineMapping ist
+          //   noch nicht angelegt → jede Datei parst sauber, jeder Record wird
+          //   verworfen → Wasserzeichen rückt vor, Status PARTIAL. Der
+          //   inkrementelle Filter zieht Logs mit SUCCESS *und* PARTIAL heran
+          //   und überspringt künftig alles bis zu diesem Datum. Wird das
+          //   Mapping Wochen später nachgetragen, werden diese Tage NIE mehr
+          //   gelesen — eine dauerhafte Lücke in den Monatswerten, die still
+          //   als Verteilschlüssel in die Erlösverteilung eingeht.
+          //
+          // Deshalb zählt sie als Fehlschlag: computeContiguousWatermark setzt
+          // das Wasserzeichen dann vor den frühesten solchen Tag, und der
+          // nächste Lauf holt ihn erneut.
+          //
+          // Nicht betroffen ist der erneute Import eines schon eingelesenen
+          // Tages: dort werden Records als Dublette übersprungen, aber es gibt
+          // keine unzugeordnete PlantNo — der Tag rückt weiter vor.
           const wsdDate =
             extractDateFromFilename(filePath) ??
             records[records.length - 1]?.timestamp ??
             null;
           if (wsdDate) {
-            succeededFileDates.push(wsdDate);
+            if (writeResult.unmappedPlants.size > 0) {
+              failedFileDates.push(wsdDate);
+            } else {
+              succeededFileDates.push(wsdDate);
+            }
           }
         } else {
           // All other file types: use the generic dispatcher
@@ -2062,10 +2087,16 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
             );
           }
 
-          // Datum der erfolgreich verarbeiteten Datei für das Wasserzeichen merken
+          // Datum der verarbeiteten Datei für das Wasserzeichen merken.
+          // Eine Datei ohne zugeordnete Anlage gilt als NICHT verarbeitet —
+          // ausführliche Begründung im WSD-Zweig oben.
           const fileDate = extractDateFromFilename(filePath);
           if (fileDate) {
-            succeededFileDates.push(fileDate);
+            if (writeResult.unmappedPlants.size > 0) {
+              failedFileDates.push(fileDate);
+            } else {
+              succeededFileDates.push(fileDate);
+            }
           }
         }
 
@@ -2173,11 +2204,16 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
 
     // 5. Import abschliessen
     // PARTIAL when files were processed but records were skipped (e.g. missing mappings)
+    // PARTIAL setzt voraus, dass wirklich etwas ankam. Vorher genügte
+    // `totalSkipped > 0` — ein Lauf, bei dem KEIN EINZIGER Record gespeichert
+    // wurde, weil die Zuordnung fehlt, meldete damit „teilweise erfolgreich".
+    // Das ist kein Teilerfolg, sondern ein vollständiger Fehlschlag, und er
+    // las sich wie ein kleiner Schönheitsfehler.
     const finalStatus = cancelled
       ? 'CANCELLED'
       : errors.length === 0
         ? 'SUCCESS'
-        : (totalImported > 0 || totalSkipped > 0)
+        : totalImported > 0
           ? 'PARTIAL'
           : 'FAILED';
 
