@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Sidebar } from "@/components/layout/sidebar";
+import { SidebarPrefsProvider } from "@/components/layout/sidebar-prefs-provider";
 import { MobileSidebar } from "@/components/layout/mobile-sidebar";
 import { Header } from "@/components/layout/header";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
@@ -29,6 +30,13 @@ export default async function DashboardLayout({
         >
           {t("toMainContent")}
         </a>
+        {/*
+          Favoriten umschliessen Seitenleiste UND Inhalt: der Stern steht an
+          beiden Stellen — am Navigationseintrag und neben der
+          Seitenueberschrift — und beide zeigen dieselbe Tatsache. Ohne
+          gemeinsamen Zustand behaupteten sie Verschiedenes.
+        */}
+        <SidebarPrefsProvider>
         <div className="flex h-screen overflow-hidden">
           <OfflineIndicator />
           <AppVersionMonitor />
@@ -58,6 +66,7 @@ export default async function DashboardLayout({
             </main>
           </div>
         </div>
+        </SidebarPrefsProvider>
       </OnboardingProvider>
     </KeyboardProvider>
   );

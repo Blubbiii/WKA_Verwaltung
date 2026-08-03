@@ -218,7 +218,9 @@
     "density": {
       "toCompact": "Kompakte Tabellen — mehr Zeilen je Bildschirm",
       "toNormal": "Normale Tabellen — luftigere Zeilen"
-    }
+    },
+    "hidden": "Ausgeblendet",
+    "visible": "Sichtbar"
   },
   "statusLabels": {
     "common": {
@@ -437,7 +439,19 @@
     "mainNavigation": "Navigation",
     "resetOrder": "Reihenfolge zurücksetzen",
     "dragToReorder": "Ziehen zum Umsortieren",
-    "recent": "Zuletzt besucht"
+    "recent": "Zuletzt besucht",
+    "favorites": {
+      "title": "Favoriten",
+      "add": "Zu Favoriten hinzufügen",
+      "remove": "Aus Favoriten entfernen",
+      "manage": "Favoriten verwalten",
+      "ungrouped": "Ohne Gruppe",
+      "newGroup": "Neue Gruppe",
+      "groupName": "Name der Gruppe",
+      "empty": "Noch keine Favoriten. Der Stern neben einer Seitenüberschrift legt einen an.",
+      "hiddenGroups": "Ausgeblendete Bereiche",
+      "hiddenGroupsHint": "Ausgeblendete Bereiche verschwinden nur aus Ihrer Seitenleiste. Die Seiten bleiben über Suche und Adresse erreichbar."
+    }
   },
   "header": {
     "search": "Was suchst du?",

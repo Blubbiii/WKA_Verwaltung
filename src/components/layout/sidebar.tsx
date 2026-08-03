@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useRecentPages } from "@/hooks/useRecentPages";
+import { FavoriteStar } from "@/components/layout/favorite-star";
+import { zielBeschriftungen } from "@/lib/sidebar/labels";
+import { useSidebarPrefsContext } from "@/components/layout/sidebar-prefs-provider";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -33,6 +36,8 @@ import {
   Code2,
   Settings,
   Link2,
+  Star,
+  Settings2,
   History,
 } from "lucide-react";
 import {
@@ -201,6 +206,17 @@ export function Sidebar() {
    */
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { seiten: zuletztBesucht, merken: merkeSeite } = useRecentPages();
+  const { prefs: favPrefs } = useSidebarPrefsContext();
+
+  // Eine Stelle fuer alle Beschriftungen — siehe lib/sidebar/labels.ts.
+  const beschriftungen = useMemo(() => zielBeschriftungen(t), [t]);
+  const zielBeschriftung = useCallback(
+    (href: string) => beschriftungen.get(href) ?? null,
+    [beschriftungen],
+  );
+
+  const hatFavoriten =
+    favPrefs.lose.length > 0 || favPrefs.gruppen.some((g) => g.hrefs.length > 0);
 
   // Partition and sort groups
   const { pinnedTop, middle, pinnedBottom } = useMemo(
@@ -352,6 +368,16 @@ export function Sidebar() {
 
   /** Check if a nav group should be visible (at least 1 item must be visible) */
   const isGroupVisible = (group: NavGroup): boolean => {
+    // Persoenlich ausgeblendet. Das ist etwas anderes als die
+    // Feature-Schalter: die entscheiden, was der MANDANT nutzt; hier
+    // entscheidet der Benutzer, was er sehen will. Die Buchhalterin blendet
+    // die Energie-Gruppe aus, obwohl das Haus SCADA betreibt.
+    //
+    // Nimmt nur die Anzeige, nicht das Recht: ueber Adresse, Suche und
+    // Befehlspalette bleibt alles erreichbar.
+    if (group.labelKey && favPrefs.versteckteGruppen.includes(group.labelKey)) {
+      return false;
+    }
     if (roleHierarchy >= 100) return true;
     // Group is visible when at least one of its items is visible
     return group.items.some(isItemVisible);
@@ -463,7 +489,7 @@ export function Sidebar() {
           <Link
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
+              "group flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
               isActive
                 ? "bg-primary/10 text-sidebar-accent-foreground border-l-[3px] border-primary"
                 : "text-sidebar-foreground/80 hover:bg-primary/5 hover:text-sidebar-accent-foreground border-l-[3px] border-transparent"
@@ -475,6 +501,15 @@ export function Sidebar() {
             {!collapsed && (
               <>
                 <span className="flex-1">{itemTitle}</span>
+                {/*
+                  Der Stern liegt INNERHALB des Links — er unterdrueckt den
+                  Klick selbst, sonst wuerde jedes Markieren auch navigieren.
+                  Ungesetzt ist er unsichtbar und erscheint erst beim
+                  Ueberfahren: ein Stern an jedem der dreissig Eintraege waere
+                  eine zweite Spalte Symbole neben der ersten, und die Leiste
+                  sollte gerade ruhiger werden.
+                */}
+                <FavoriteStar href={item.href} variante="nav" />
                 {/* Statische Badge (nav-config.badge) — z.B. Onboarding-Hinweise */}
                 {item.badge && (
                   <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
@@ -682,7 +717,80 @@ export function Sidebar() {
           Rechnungen schreiben und dabei Vertraege nachschlagen. Diese drei
           Zeilen machen daraus wieder einen Klick.
         */}
-        {!collapsed && zuletztBesucht.length > 0 && (
+        {/*
+          Favoriten ERSETZEN "Zuletzt besucht", sie ergaenzen es nicht.
+          Zwei Abschnitte am Kopf der Leiste haetten das Aufraeumen wieder
+          zunichte gemacht — und wer Favoriten pflegt, braucht die
+          automatische Liste nicht mehr.
+        */}
+        {!collapsed && hatFavoriten && (
+          <div className="mb-4">
+            <div className="px-4 mb-1.5 flex items-center justify-between">
+              <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("sidebar.favorites.title")}
+              </span>
+              <Link
+                href="/settings/sidebar"
+                title={t("sidebar.favorites.manage")}
+                aria-label={t("sidebar.favorites.manage")}
+                className="mr-2 rounded-sm p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            {favPrefs.gruppen
+              .filter((g) => g.hrefs.length > 0)
+              .map((gruppe) => (
+                <div key={gruppe.id} className="mb-2">
+                  <div className="px-4 pb-1 text-xs text-muted-foreground/80">
+                    {gruppe.name}
+                  </div>
+                  {gruppe.hrefs.map((href) => {
+                    const label = zielBeschriftung(href);
+                    if (!label) return null;
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={cn(
+                          "mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 text-sm",
+                          pathname === href
+                            ? "bg-primary/10 text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        )}
+                      >
+                        <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
+                        <span className="truncate">{label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+
+            {favPrefs.lose.map((href) => {
+              const label = zielBeschriftung(href);
+              if (!label) return null;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 text-sm",
+                    pathname === href
+                      ? "bg-primary/10 text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" aria-hidden />
+                  <span className="truncate">{label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {!collapsed && !hatFavoriten && zuletztBesucht.length > 0 && (
           <div className="mb-4">
             <div className="px-4 mb-1.5">
               <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">

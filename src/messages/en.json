@@ -218,7 +218,9 @@
     "density": {
       "toCompact": "Compact tables — more rows per screen",
       "toNormal": "Normal tables — roomier rows"
-    }
+    },
+    "hidden": "Hidden",
+    "visible": "Visible"
   },
   "statusLabels": {
     "common": {
@@ -437,7 +439,19 @@
     "mainNavigation": "Main navigation",
     "resetOrder": "Reset order",
     "dragToReorder": "Drag to reorder",
-    "recent": "Recently visited"
+    "recent": "Recently visited",
+    "favorites": {
+      "title": "Favourites",
+      "add": "Add to favourites",
+      "remove": "Remove from favourites",
+      "manage": "Manage favourites",
+      "ungrouped": "Ungrouped",
+      "newGroup": "New group",
+      "groupName": "Group name",
+      "empty": "No favourites yet. The star next to a page heading adds one.",
+      "hiddenGroups": "Hidden sections",
+      "hiddenGroupsHint": "Hidden sections only disappear from your sidebar. The pages stay reachable via search and URL."
+    }
   },
   "header": {
     "search": "Search...",
