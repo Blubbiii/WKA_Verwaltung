@@ -33,11 +33,65 @@ Der Bereich steht deshalb auf `~5.79.2` — Patches innerhalb 5.79 kommen weiter
 an, 5.80+ nicht. Wer das aufmacht, muss die Warteschlangen-Typen anpassen und
 die Jobs tatsächlich laufen lassen, nicht nur übersetzen.
 
+## Gesperrt: TypeScript bleibt auf 6.x
+
+**Entscheidung vom 03.08.2026.** TypeScript wird erst auf 7 gehoben, wenn
+**alle** Werkzeuge es unterstützen. Kein Teil-Sprung, kein paralleler Betrieb
+zweier Fassungen.
+
+### Was blockiert
+
+`@typescript-eslint` deklariert `typescript >=4.8.4 <6.1.0` — und zwar in
+jeder veröffentlichten Fassung, einschliesslich der Alpha-Versionen (geprüft
+am 03.08.2026 an 8.66.0 und 8.66.1-alpha.0). Das ist kein vergessener Bereich:
+die typbasierten Regeln benutzen die Compiler-Interna von TypeScript, und
+genau die brechen bei einer Neuimplementierung.
+
+`npm run lint` ist Teil des Pflicht-Gates und in der CI der **erste** Job, an
+dem der Build hängt. Fällt typescript-eslint aus, steht die ganze Kette.
+
+### Warum es sich auch nicht lohnt
+
+`tsc --noEmit` braucht hier **14 Sekunden** bei 2253 Dateien, `npm run lint`
+drei. Das Verkaufsargument von TypeScript 7 ist Geschwindigkeit — der Gewinn
+wäre rund zehn Sekunden je Prüfung. An der Korrektheit ändert sich nichts.
+
+### Wie man den Stand prüft
+
+```bash
+npm view typescript-eslint peerDependencies.typescript
+npm view @typescript-eslint/parser peerDependencies.typescript
+```
+
+Schliesst der Bereich TypeScript 7 nicht ein, bleibt es beim Nein.
+
+### Was beim Freiwerden zusätzlich zu prüfen ist
+
+- `next build` typprüft mit der installierten Fassung — `next.config.ts` hat
+  **kein** `ignoreBuildErrors`. Ein Bruch trifft damit auch das Docker-Image.
+- `prisma` / `@prisma/client` 7.9.1: Peer `>=5.4.0`, also offen — aber
+  ungeprüft.
+- `valibot`: `>=5`, offen.
+- Unkritisch, weil sie keine Typen prüfen: `vitest`, `tsx` (Worker zur
+  Laufzeit).
+
+### Zwei Dinge, die trotzdem gelten
+
+**6.0.3 ist die letzte 6er-Fassung.** Es kommen keine Patches mehr. Taucht
+eine Sicherheitslücke in TypeScript auf, wird der Sprung erzwungen — dann
+zählt, dass hier steht, was im Weg ist.
+
+**`Dockerfile:92` installiert `typescript` ohne Version.** Seit 7.0.2
+npm-`latest` ist, landet es bei jedem Image-Bau in der prisma-cli-Stufe. Die
+Entscheidung ist im Image also derzeit **nicht durchgesetzt**. Dass nichts
+auffällt, spricht dafür, dass diese Stufe TypeScript nur mitschleppt und nicht
+zum Prüfen nutzt — verlassen sollte man sich darauf nicht.
+
 ## Aufgeschoben, mit Begründung
 
 | Paket | Von → Nach | Warum nicht |
 |---|---|---|
-| `typescript` | 6.0.3 → 7.0.2 | Neuer Compiler. Gehört in einen eigenen Durchgang: ESLint-Parser, Next-Build und Vitest lesen alle TypeScript, und ein Bruch zeigt sich dort nicht unbedingt sofort. In einem Sammel-Commit mit 55 anderen Paketen wäre er nicht mehr einzugrenzen. |
+| `typescript` | 6.0.3 → 7.0.2 | **Gesperrt** — siehe Abschnitt oben. `@typescript-eslint` unterstützt TS 7 in keiner veröffentlichten Fassung. |
 | `bullmq` | 5.79 → 6.0.6 | Siehe oben — schon 5.81 bricht. Der Major erst recht. |
 | `ioredis` | 5.10 → 6.0.0 | `bullmq` 5.79 erwartet ioredis 5. Zusammen mit bullmq 6 anzugehen, nicht davor. |
 | `meilisearch` | 0.49 → 0.60 | Wird aktiv genutzt. Elf Minor-Sprünge in einer 0.x-Reihe sind faktisch Majors. Braucht eine laufende Meilisearch-Instanz zum Prüfen. |
