@@ -367,8 +367,17 @@ export function DailyOverview() {
                         ];
                       }}
                       labelFormatter={(v) => {
+                        // recharts 3.10 typisiert das Tooltip-Label als
+                        // ReactNode — dort kann alles stehen, was die X-Achse
+                        // liefert. Nur Zeichenketten und Zahlen ergeben ein
+                        // Datum.
+                        //
+                        // Der zweite Zweig ist kein Zierrat: `new Date("abc")`
+                        // wirft nicht, sondern liefert ein ungueltiges Datum,
+                        // und das stuende als "Invalid Date" im Tooltip.
+                        if (typeof v !== "string" && typeof v !== "number") return "";
                         const d = new Date(v);
-                        return formatDate(d);
+                        return Number.isNaN(d.getTime()) ? String(v) : formatDate(d);
                       }}
                     />
                     <Legend

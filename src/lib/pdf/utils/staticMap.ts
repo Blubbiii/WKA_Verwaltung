@@ -7,6 +7,10 @@
  */
 
 import sharp from "sharp";
+// sharp 0.35 stellt den Namensraum ueber den Vorgabe-Import nicht mehr als
+// Typ bereit (`export =` auf einen Namensraum). Der Typ wird deshalb
+// ausdruecklich geholt — die Laufzeit-API ist unveraendert.
+import type { OverlayOptions } from "sharp";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -243,7 +247,7 @@ export async function generateStaticMapImage(
   }
 
   // Composite all tiles into one large image
-  const composites: sharp.OverlayOptions[] = [];
+  const composites: OverlayOptions[] = [];
 
   for (const tp of tilePromises) {
     try {
@@ -294,7 +298,7 @@ export async function generateStaticMapImage(
   }
 
   // Add turbine markers
-  const markerComposites: sharp.OverlayOptions[] = [];
+  const markerComposites: OverlayOptions[] = [];
   for (const turbine of turbines) {
     const { x, y } = latLng2px(
       turbine.latitude,
