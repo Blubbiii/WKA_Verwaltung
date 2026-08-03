@@ -460,33 +460,42 @@ export default function DocumentsPage() {
         }
       />
 
-      {/* Category Stats */}
-      <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-        <Card
-          className={`cursor-pointer transition-colors ${
-            categoryFilter === "all" ? "ring-2 ring-primary" : ""
-          }`}
+      {/*
+        Kategorien als Filterleiste — aber nur die, die es gibt.
+
+        Vorher standen hier acht Karten in voller Kachelgroesse, SECHS davon
+        mit "0": Protokoll, Bericht, Rechnung, Genehmigung, Korrespondenz,
+        Sonstiges. Das ist viel Aufmerksamkeit fuer nichts, und jede leere
+        Karte ist ein Klickziel, das zu einer leeren Liste fuehrt.
+
+        Jetzt: eine schmale Zeile, und eine Kategorie erscheint erst, wenn sie
+        ein Dokument hat. Die aktive bleibt immer sichtbar — sonst verschwaende
+        sie unter den eigenen Fuessen, sobald man auf eine leere filtert.
+      */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={categoryFilter === "all" ? "default" : "outline"}
+          size="sm"
           onClick={() => { setCategoryFilter("all"); setPage(1); }}
         >
-          <CardContent className="pt-4 pb-4">
-            <div className="text-2xl font-bold">{totalDocs}</div>
-            <p className="text-xs text-muted-foreground">{t("all")}</p>
-          </CardContent>
-        </Card>
-        {Object.keys(categoryColors).map((key) => (
-          <Card
-            key={key}
-            className={`cursor-pointer transition-colors ${
-              categoryFilter === key ? "ring-2 ring-primary" : ""
-            }`}
-            onClick={() => { setCategoryFilter(key); setPage(1); }}
-          >
-            <CardContent className="pt-4 pb-4">
-              <div className="text-2xl font-bold">{categoryCounts[key] || 0}</div>
-              <p className="text-xs text-muted-foreground">{tCat(key)}</p>
-            </CardContent>
-          </Card>
-        ))}
+          {t("all")}
+          <Badge variant="secondary" className="ml-2 px-1.5">{totalDocs}</Badge>
+        </Button>
+        {Object.keys(categoryColors)
+          .filter((key) => (categoryCounts[key] ?? 0) > 0 || categoryFilter === key)
+          .map((key) => (
+            <Button
+              key={key}
+              variant={categoryFilter === key ? "default" : "outline"}
+              size="sm"
+              onClick={() => { setCategoryFilter(key); setPage(1); }}
+            >
+              {tCat(key)}
+              <Badge variant="secondary" className="ml-2 px-1.5">
+                {categoryCounts[key] ?? 0}
+              </Badge>
+            </Button>
+          ))}
       </div>
 
       {/* Search & Table */}

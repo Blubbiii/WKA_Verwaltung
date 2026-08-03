@@ -21,6 +21,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useKeyboardContext } from "@/components/providers/keyboard-provider";
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { DensityToggle } from "@/components/layout/density-toggle";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { HealthIndicator } from "@/components/layout/health-indicator";
@@ -206,6 +207,7 @@ export function Header() {
           {/* Language Switcher — hidden on small mobile */}
           <div className="hidden sm:flex">
             <LanguageSwitcher />
+            <DensityToggle />
           </div>
 
           {/* Keyboard Shortcuts — hidden on mobile */}

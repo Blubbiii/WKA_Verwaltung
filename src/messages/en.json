@@ -148,7 +148,9 @@
     },
     "searchFilter": {
       "searchPlaceholder": "Search...",
-      "filterPlaceholder": "Filter"
+      "filterPlaceholder": "Filter",
+      "remove": "remove",
+      "clearAll": "Clear all filters"
     },
     "editableCell": {
       "saveFailed": "Save failed",
@@ -212,6 +214,10 @@
       "deleteTitle": "Confirm deletion",
       "bulkDeleteTitle": "{count, plural, one {Delete # entry} other {Delete # entries}}",
       "deactivateTitle": "Confirm deactivation"
+    },
+    "density": {
+      "toCompact": "Compact tables — more rows per screen",
+      "toNormal": "Normal tables — roomier rows"
     }
   },
   "statusLabels": {
@@ -430,7 +436,8 @@
     "expand": "Expand sidebar",
     "mainNavigation": "Main navigation",
     "resetOrder": "Reset order",
-    "dragToReorder": "Drag to reorder"
+    "dragToReorder": "Drag to reorder",
+    "recent": "Recently visited"
   },
   "header": {
     "search": "Search...",
@@ -2322,7 +2329,11 @@
       "park": "Wind farm",
       "revenue": "Revenue",
       "status": "Status",
-      "noSettlementData": "No grid operator data available"
+      "noSettlementData": "No grid operator data available",
+      "noProductionDataHint": "Once yield data is imported, the latest values per turbine appear here.",
+      "importProduction": "Import yield data",
+      "noSettlementDataHint": "Grid operator settlements can be imported as CSV. Revenues appear here afterwards.",
+      "importSettlement": "Import grid operator data"
     },
     "analyticsPage": {
       "title": "Energy Analytics",

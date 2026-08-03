@@ -74,7 +74,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     scope={scope}
     className={cn(
-      "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "h-[var(--table-head-h)] px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}
@@ -88,7 +88,12 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+    className={cn(
+      // Senkrechte Polsterung aus der Variable — siehe globals.css. Damit
+      // wirkt der Detailgrad-Schalter auf alle Tabellen gleichzeitig.
+      "px-4 py-[var(--table-cell-py)] align-middle [&:has([role=checkbox])]:pr-0",
+      className,
+    )}
     {...props}
   />
 ))

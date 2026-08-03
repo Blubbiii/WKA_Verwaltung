@@ -264,6 +264,25 @@
   :root {
     /* Body background image — overridden by .ui-glass for gradient backgrounds */
     --background-image: none;
+
+    /*
+     * Zeilenhoehe der Tabellen.
+     *
+     * Als Variable und nicht als Klasse je Tabelle: es gibt rund 169 Listen
+     * im Produkt, und ein Schalter, der sie einzeln anfassen muesste, waere
+     * nie fertig. So genuegt ein Attribut am <html>, und jede Tabelle folgt.
+     *
+     * Der dichte Wert ist nicht beliebig gewaehlt: bei 0,375rem passen in
+     * dieselbe Flaeche zwoelf Zeilen statt sieben, ohne dass die Zeilen
+     * ineinanderlaufen — darunter wird es unlesbar.
+     */
+    --table-cell-py: 1rem;
+    --table-head-h: 3rem;
+  }
+
+  [data-density="compact"] {
+    --table-cell-py: 0.375rem;
+    --table-head-h: 2.25rem;
   }
 
   * {

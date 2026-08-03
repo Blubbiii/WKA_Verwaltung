@@ -9,6 +9,8 @@ import { useTranslations } from "next-intl";
 import {
   Zap,
   TrendingUp,
+  BarChart3,
+  Upload,
   FileText,
   Clock,
   Wind,
@@ -36,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { KPICard, KPICardGrid, KPICardGridSkeleton } from "@/components/dashboard/kpi-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ScadaKpiCards } from "@/components/energy/scada-kpi-cards";
 import {
   settlementStatusLabels,
@@ -404,9 +407,26 @@ export default function EnergyOverviewPage() {
                 </Table>
               </div>
             ) : (
-              <div className="py-8 text-center text-muted-foreground">
-                {t("noProductionData")}
-              </div>
+              /*
+                Leerzustand mit Weg statt blossem Satz. "Keine Daten
+                vorhanden" sagt, dass nichts da ist — nicht, was man tun kann.
+                Die Komponente gibt es laengst; sie wurde hier nur nicht
+                benutzt.
+              */
+              <EmptyState
+                kind="first-time"
+                icon={BarChart3}
+                title={t("noProductionData")}
+                description={t("noProductionDataHint")}
+                action={
+                  <Button asChild>
+                    <Link href="/energy/turbine-import">
+                      <Upload className="mr-2 h-4 w-4" />
+                      {t("importProduction")}
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>
@@ -493,9 +513,20 @@ export default function EnergyOverviewPage() {
                 </Table>
               </div>
             ) : (
-              <div className="py-8 text-center text-muted-foreground">
-                {t("noSettlementData")}
-              </div>
+              <EmptyState
+                kind="first-time"
+                icon={FileText}
+                title={t("noSettlementData")}
+                description={t("noSettlementDataHint")}
+                action={
+                  <Button asChild>
+                    <Link href="/energy/import">
+                      <Upload className="mr-2 h-4 w-4" />
+                      {t("importSettlement")}
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>

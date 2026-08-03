@@ -148,7 +148,9 @@
     },
     "searchFilter": {
       "searchPlaceholder": "Suchen...",
-      "filterPlaceholder": "Filter"
+      "filterPlaceholder": "Filter",
+      "remove": "entfernen",
+      "clearAll": "Alle Filter aufheben"
     },
     "editableCell": {
       "saveFailed": "Speichern fehlgeschlagen",
@@ -212,6 +214,10 @@
       "deleteTitle": "Löschen bestätigen",
       "bulkDeleteTitle": "{count, plural, one {# Eintrag löschen} other {# Einträge löschen}}",
       "deactivateTitle": "Deaktivieren bestätigen"
+    },
+    "density": {
+      "toCompact": "Kompakte Tabellen — mehr Zeilen je Bildschirm",
+      "toNormal": "Normale Tabellen — luftigere Zeilen"
     }
   },
   "statusLabels": {
@@ -430,7 +436,8 @@
     "expand": "Seitenleiste ausklappen",
     "mainNavigation": "Hauptnavigation",
     "resetOrder": "Reihenfolge zurücksetzen",
-    "dragToReorder": "Ziehen zum Umsortieren"
+    "dragToReorder": "Ziehen zum Umsortieren",
+    "recent": "Zuletzt besucht"
   },
   "header": {
     "search": "Suchen...",
@@ -2322,7 +2329,11 @@
       "park": "Park",
       "revenue": "Erlös",
       "status": "Status",
-      "noSettlementData": "Keine Netzbetreiber-Daten vorhanden"
+      "noSettlementData": "Keine Netzbetreiber-Daten vorhanden",
+      "noProductionDataHint": "Sobald Ertragsdaten eingespielt sind, erscheinen hier die letzten Werte je Anlage.",
+      "importProduction": "Ertragsdaten einspielen",
+      "noSettlementDataHint": "Netzbetreiber-Abrechnungen lassen sich als CSV einspielen. Danach stehen die Erlöse hier.",
+      "importSettlement": "Netzbetreiber-Daten einspielen"
     },
     "analyticsPage": {
       "title": "Energie-Analysen",

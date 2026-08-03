@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRecentPages } from "@/hooks/useRecentPages";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ import {
   Code2,
   Settings,
   Link2,
+  History,
 } from "lucide-react";
 import {
   DndContext,
@@ -51,7 +53,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
-import { useState, useCallback, useMemo, useId } from "react";
+import { useState, useCallback, useEffect, useMemo, useId } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
 import { useSidebarLinks } from "@/hooks/useSidebarLinks";
@@ -183,7 +185,22 @@ export function Sidebar() {
   const dndId = useId();
   const [collapsed, setCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  /**
+   * Gruppen, die der Nutzer AUSDRUECKLICH geoeffnet hat.
+   *
+   * Vorher war es umgekehrt: alle Gruppen standen offen, und hier wurden die
+   * zugeklappten vermerkt. Mit sechs Gruppen und ueber dreissig Eintraegen —
+   * die Energie-Gruppe allein hat zehn — reichte die Leiste ueber den
+   * Bildschirmrand hinaus, und der Eintrag, den man suchte, lag unter der
+   * Falz.
+   *
+   * Jetzt ist offen, wo man arbeitet: die Gruppe mit der aktiven Seite und
+   * die, die man selbst aufgeklappt hat. Wer zwischen Bereichen springt,
+   * nutzt ohnehin die Befehlspalette oder die zuletzt besuchten Seiten
+   * darueber.
+   */
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const { seiten: zuletztBesucht, merken: merkeSeite } = useRecentPages();
 
   // Partition and sort groups
   const { pinnedTop, middle, pinnedBottom } = useMemo(
@@ -252,9 +269,41 @@ export function Sidebar() {
     return expandedItems.includes(item.href) || isChildActive(item);
   };
 
+  /**
+   * Besuch festhalten.
+   *
+   * Die Beschriftung wird aus der Navigation aufgeloest, nicht aus dem Pfad.
+   * So steht in der Liste dasselbe wie im Menue ("Eingangsrechnungen", nicht
+   * "/inbox"), und Seiten, die gar nicht in der Navigation stehen, landen erst
+   * nicht darin.
+   *
+   * Bewusst OHNE `getTitle` in den Abhaengigkeiten: die Funktion wird bei
+   * jedem Rendern neu gebildet, der Effekt liefe sonst dauernd. `t` ist
+   * stabil, und mehr braucht es hier nicht.
+   */
+  useEffect(() => {
+    const beschriftung = (e: { title: string; titleKey?: string }) =>
+      e.titleKey ? t(`nav.${e.titleKey}`) : e.title;
+
+    for (const group of navGroups) {
+      for (const item of group.items) {
+        if (pathname === item.href) {
+          merkeSeite(item.href, beschriftung(item));
+          return;
+        }
+        for (const child of item.children ?? []) {
+          if (pathname === child.href) {
+            merkeSeite(child.href, beschriftung(child));
+            return;
+          }
+        }
+      }
+    }
+  }, [pathname, merkeSeite, t]);
+
   // Group collapse/expand
   const toggleGroup = useCallback((label: string) => {
-    setCollapsedGroups((prev) => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(label)) next.delete(label);
       else next.add(label);
@@ -278,10 +327,12 @@ export function Sidebar() {
         return false;
       });
       if (hasActiveItem) return true;
-      // Otherwise respect user's collapse toggle
-      return !collapsedGroups.has(group.label);
+      // Sonst nur, wenn der Nutzer sie selbst geoeffnet hat. Eine einmal
+      // geoeffnete Gruppe bleibt beim Navigieren offen — alles andere waere
+      // ueberraschend.
+      return expandedGroups.has(group.label);
     },
-    [pathname, collapsedGroups]
+    [pathname, expandedGroups]
   );
 
   // -----------------------------------------------------------------------
@@ -621,6 +672,39 @@ export function Sidebar() {
       >
         {/* Pinned top: Dashboard */}
         {pinnedTop.map((group, idx) => renderGroupContent(group, idx))}
+
+        {/*
+          Zuletzt besucht.
+
+          Die Gruppen sind jetzt zugeklappt, bis auf die, in der man arbeitet.
+          Das raeumt auf, kostet aber einen Klick, wenn man zwischen zwei
+          Bereichen hin- und herspringt — und genau das ist der haeufigste Weg:
+          Rechnungen schreiben und dabei Vertraege nachschlagen. Diese drei
+          Zeilen machen daraus wieder einen Klick.
+        */}
+        {!collapsed && zuletztBesucht.length > 0 && (
+          <div className="mb-4">
+            <div className="px-4 mb-1.5">
+              <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {t("sidebar.recent")}
+              </span>
+            </div>
+            {zuletztBesucht.map((seite) => (
+              <Link
+                key={seite.href}
+                href={seite.href}
+                className={cn(
+                  "mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 text-sm",
+                  "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                )}
+              >
+                <History className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">{seite.label}</span>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Reorderable middle groups */}
         {!collapsed ? (

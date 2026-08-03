@@ -179,3 +179,46 @@ describe("Bestätigungen (C2)", () => {
     ).toBe("");
   });
 });
+
+// ---------------------------------------------------------------------------
+// C-neu · Leerzustände
+// ---------------------------------------------------------------------------
+
+describe("Leerzustände", () => {
+  /**
+   * Stand 03.08.2026. Nur senken.
+   *
+   * Es gibt `EmptyState` mit drei Pfaden — „noch nichts angelegt", „Filter
+   * passt auf nichts", „erster Besuch" — und 32 Listen benutzen ihn. Sechzig
+   * weitere Stellen schreiben stattdessen einen Satz hin: „Keine
+   * Netzbetreiber-Daten vorhanden."
+   *
+   * Der Satz sagt, dass nichts da ist. Er sagt nicht, **warum** und **was man
+   * tun kann** — und er unterscheidet nicht, ob der Bestand leer ist oder nur
+   * der Filter nichts trifft. Das sind zwei verschiedene Lagen mit zwei
+   * verschiedenen Antworten.
+   *
+   * Diese Zahl steht bewusst hoch: die sechzig Stellen blind umzustellen
+   * würde manche Bildschirme schlechter machen — ein grosser zentrierter
+   * Leerzustand in einem kleinen Unterbereich einer Verwaltungsmaske ist
+   * falsch. Wer eine Liste anfasst, zieht sie mit um; neue kommen nicht dazu.
+   */
+  const BASELINE = 60;
+
+  it(`nicht mehr als ${BASELINE} Dateien mit blossem Leertext`, () => {
+    const muster =
+      /(Keine [A-ZÄÖÜ][\wäöüß\- ]{2,40} (vorhanden|gefunden)|Noch keine [\wäöüß\- ]{2,40})/;
+    const offenders = count(
+      (f) => !f.source.includes("EmptyState") && muster.test(f.source),
+    );
+    expect(
+      offenders.length,
+      offenders.length > BASELINE
+        ? `Ein neuer Leerzustand schreibt nur einen Satz hin. Dafür gibt es ` +
+            `<EmptyState> mit drei Pfaden: "noch nichts angelegt", "Filter ` +
+            `passt auf nichts" und "erster Besuch". Ein Satz sagt, dass nichts ` +
+            `da ist — nicht, was man tun kann.`
+        : "",
+    ).toBeLessThanOrEqual(BASELINE);
+  });
+});
