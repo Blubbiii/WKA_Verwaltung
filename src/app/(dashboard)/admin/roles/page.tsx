@@ -661,10 +661,20 @@ export default function RolesPage() {
                       ) : (
                         <Badge variant="outline">{t("customBadge")}</Badge>
                       )}
-                      <Badge variant="secondary" className="gap-1 ml-auto">
-                        <Users className="h-3 w-3" aria-hidden />
-                        {selectedRoleFull._count.userAssignments}
-                      </Badge>
+                      {/*
+                        `?.` ist hier kein Schmuck. `role as Role` weiter oben
+                        behauptet nur, dass die Antwort dieser Form entspricht —
+                        geprueft wird es nicht. Fehlte `_count`, riss diese eine
+                        Zahl die komplette Rollenverwaltung ins Fehler-Auffangnetz.
+                        Eine fehlende Nebenangabe darf hoechstens sich selbst
+                        kosten, nicht die ganze Seite.
+                      */}
+                      {selectedRoleFull._count?.userAssignments !== undefined && (
+                        <Badge variant="secondary" className="gap-1 ml-auto">
+                          <Users className="h-3 w-3" aria-hidden />
+                          {selectedRoleFull._count.userAssignments}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>

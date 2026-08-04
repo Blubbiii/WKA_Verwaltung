@@ -52,6 +52,16 @@ export async function GET(
             name: true,
           },
         },
+        // Die Listen-Route liefert `_count` mit, diese hier tat es nicht — und
+        // die Detailansicht las es trotzdem. Ergebnis: beim Anklicken einer
+        // Rolle brach die ganze Seite mit "Ein Fehler ist aufgetreten" ab.
+        // Beide Routen beschreiben dieselbe Rolle; sie muessen dasselbe liefern.
+        _count: {
+          select: {
+            permissions: true,
+            userAssignments: true,
+          },
+        },
       },
     });
 

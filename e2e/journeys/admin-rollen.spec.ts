@@ -229,4 +229,54 @@ test.describe("Admin: Rollen und Rechte", () => {
         "mehr zu sagen, was eine Rolle eigentlich erlaubt",
     ).toEqual([]);
   });
+
+  test("eine Rolle anklicken oeffnet ihre Detailansicht", async ({ page }) => {
+    /*
+      Gemeldet am 04.08.2026: "unter /admin/roles wenn ich da auf der linken
+      seite auf die rolle klicke kommt eine fehlermeldung".
+
+      Zwei Ursachen lagen uebereinander:
+
+      1. Die Detail-Route lieferte kein `_count`, die Seite las es aber
+         ungeprueft — `Cannot read properties of undefined`. Die ganze
+         Rollenverwaltung landete im Fehler-Auffangnetz.
+      2. Ein Hydrierungsfehler aus dem Offline-Hinweis, der React den Baum
+         verwerfen liess (siehe offline-indicator.tsx).
+
+      Die uebrigen Tests dieser Datei arbeiten ueber die Schnittstelle und haben
+      beides nicht bemerkt: die API war in Ordnung, kaputt war das Zusammenspiel
+      von API-Antwort und Seite. Dieser Test klickt deshalb wirklich.
+    */
+    test.setTimeout(180_000);
+
+    const seitenfehler: string[] = [];
+    page.on("pageerror", (e) => seitenfehler.push(e.message.slice(0, 200)));
+
+    await page.goto("/admin/roles");
+    await page.getByText("Administrator", { exact: true }).first().waitFor({ timeout: 30_000 });
+    await page.getByText("Administrator", { exact: true }).first().click();
+
+    // Die Detailansicht muss auftauchen — der Rollenname als Eingabefeld.
+    await expect(
+      page.locator('input[value="Administrator"]').first(),
+      "Nach dem Klick auf eine Rolle erscheint ihre Detailansicht nicht",
+    ).toBeVisible({ timeout: 20_000 });
+
+    // Nur SICHTBAREN Text pruefen. `body.textContent()` enthaelt auch die
+    // RSC-Nutzlast in den <script>-Bloecken — und darin steht der Text des
+    // Fehler-Auffangnetzes immer, auch wenn es gar nicht angezeigt wird. Diese
+    // Pruefung schlug damit erst falsch-positiv an.
+    await expect(
+      page.getByText("Ein Fehler ist aufgetreten"),
+      `Das Anklicken einer Rolle fuehrt in das Fehler-Auffangnetz.
+` +
+        `Seitenfehler: ${seitenfehler.join(" | ") || "(keine)"}`,
+    ).toBeHidden();
+
+    expect(
+      seitenfehler.filter((f) => /Hydration|hydrat/i.test(f)),
+      "Hydrierungsfehler: Server und Browser rendern Verschiedenes. React " +
+        "verwirft dann den Baum — auf manchen Seiten sichtbar als Fehlerseite.",
+    ).toEqual([]);
+  });
 });

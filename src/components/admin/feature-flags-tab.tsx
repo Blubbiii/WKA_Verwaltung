@@ -136,6 +136,26 @@ const ACCOUNTING_SUB_KEYS = [
   "accounting.zm",
 ] as const satisfies readonly (keyof AccountingSubFlags)[];
 
+/**
+ * Vom Flag-Namen zum Beschriftungs-Schluessel.
+ *
+ * Die Flags heissen in der Datenbank `accounting.reports` — der Punkt gehoert
+ * dort hin, er trennt Modul und Funktion. In next-intl trennt derselbe Punkt
+ * aber Verschachtelungsebenen, und Schluessel duerfen ihn deshalb NICHT
+ * enthalten.
+ *
+ * Genau das stand vorher in den Sprachdateien: `featureFlagsUI.accounting`
+ * enthielt sechzehn Schluessel namens `accounting.reports` und so weiter.
+ * next-intl lehnte den ganzen Namensraum mit INVALID_KEY ab — nicht nur diese
+ * sechzehn, sondern jede Beschriftung dieser Ansicht. Der Aufruf
+ * `t("accounting.accounting.reports")` haette sie ohnehin nie gefunden.
+ *
+ * Der Flag-Name bleibt, wie er ist; nur die Beschriftung wird nachgeschlagen.
+ */
+function beschriftungsSchluessel(flagName: string): string {
+  return flagName.replace(/^accounting\./, "");
+}
+
 const _DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
   "accounting.reports": true,
   "accounting.bank": true,
@@ -342,7 +362,7 @@ export function FeatureFlagsTab() {
 
       toast.success(
         t("featureToggled", {
-          label: t(`accounting.${subKey}`),
+          label: t(`accounting.${beschriftungsSchluessel(subKey)}`),
           tenant: tenant.name,
           state: newValue ? t("stateActivated") : t("stateDeactivated"),
         })
@@ -532,7 +552,7 @@ export function FeatureFlagsTab() {
                             className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card"
                           >
                             <span className="text-sm">
-                              {t(`accounting.${subKey}`)}
+                              {t(`accounting.${beschriftungsSchluessel(subKey)}`)}
                             </span>
                             <Switch
                               checked={tenant.accountingSub[subKey]}
@@ -542,7 +562,7 @@ export function FeatureFlagsTab() {
                               disabled={
                                 updating === `${tenant.id}-sub-${subKey}`
                               }
-                              aria-label={`${t(`accounting.${subKey}`)} für ${tenant.name}`}
+                              aria-label={`${t(`accounting.${beschriftungsSchluessel(subKey)}`)} für ${tenant.name}`}
                             />
                           </div>
                         ))}

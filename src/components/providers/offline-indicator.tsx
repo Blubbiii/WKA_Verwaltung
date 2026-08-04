@@ -8,14 +8,43 @@ import { WifiOff } from "lucide-react";
  * Automatically hides when the connection is restored.
  */
 export function OfflineIndicator() {
-  // Initialize from navigator.onLine (safe because this is "use client")
-  const [isOffline, setIsOffline] = useState(
-    typeof navigator !== "undefined" ? !navigator.onLine : false
-  );
+  /*
+    IMMER `false` als Startwert — der Verbindungszustand wird erst nach dem
+    Einhängen ermittelt.
+
+    Hier stand:
+
+        typeof navigator !== "undefined" ? !navigator.onLine : false
+        // "safe because this is 'use client'"
+
+    Der Kommentar war der Fehler. Eine `"use client"`-Komponente wird trotzdem
+    auf dem SERVER gerendert — „use client" heisst „auch im Browser", nicht
+    „nur im Browser".
+
+    Die Abfrage war richtig, als sie geschrieben wurde: früher gab es in Node
+    kein globales `navigator`, also griff der `false`-Zweig. Seit Node 21 GIBT
+    es eines — aber ohne `onLine`. Damit ist `navigator.onLine` `undefined`,
+    `!undefined` ist `true`, und der Server hielt sich für offline.
+
+    Wirkung: auf JEDER Seite schickte der Server das rote Offline-Banner mit,
+    während der Browser an derselben Stelle die Seitenleiste rendert — ein
+    Hydrierungsfehler bei jedem einzelnen Seitenaufruf. React verwirft
+    daraufhin den Baum und baut ihn neu auf; auf manchen Seiten landet das im
+    Fehler-Auffangnetz, und der Nutzer sieht „Ein Fehler ist aufgetreten".
+    Gemeldet wurde es an /admin/roles beim Anklicken einer Rolle.
+
+    Node 21 hat diese Abfrage still umgedreht, ohne dass sich hier eine Zeile
+    geändert hätte. Deshalb wird der Zustand jetzt gar nicht mehr beim Rendern
+    ermittelt: was der Server nicht wissen kann, darf er nicht raten.
+  */
+  const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
+
+    // Jetzt ist der Browser da — jetzt darf gefragt werden.
+    setIsOffline(!window.navigator.onLine);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);

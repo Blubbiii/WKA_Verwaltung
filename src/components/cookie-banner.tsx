@@ -55,8 +55,22 @@ export function CookieBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
-      <div className="mx-auto max-w-4xl rounded-lg border bg-card p-4 shadow-lg">
+    /*
+      `pointer-events-none` auf dem Rahmen, `pointer-events-auto` auf der Karte.
+
+      Der Rahmen geht ueber die volle Breite und den vollen Innenabstand, die
+      Karte ist auf `max-w-4xl` begrenzt. Ohne diese Trennung fing der Rahmen
+      auch dort Klicks ab, wo gar nichts zu sehen ist — links und rechts neben
+      der Karte, ueber die ganze untere Leiste hinweg.
+
+      Getroffen hat das jede Ansicht mit einer festen Fussleiste: in den
+      Assistenten sitzt „Weiter" unten rechts. Der Knopf war sichtbar, nicht
+      ausgegraut, reagierte aber auf keinen Klick. Wer den Hinweis nicht zuerst
+      wegklickt — und er sieht nicht so aus, als versperre er etwas — kommt im
+      Assistenten keinen Schritt weiter und erfaehrt nicht, warum.
+    */
+    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6">
+      <div className="pointer-events-auto mx-auto max-w-4xl rounded-lg border bg-card p-4 shadow-lg">
         <div className="flex items-start gap-4">
           <div className="flex-1 text-sm text-muted-foreground">
             <p>
