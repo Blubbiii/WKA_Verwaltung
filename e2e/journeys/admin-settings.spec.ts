@@ -149,6 +149,25 @@ test.describe("Admin-Bereich erreichbar", () => {
     ["Geplante Berichte", "/admin/scheduled-reports"],
     ["SCADA-Codes", "/admin/scada-codes"],
     ["Stammdaten", "/admin/master-data"],
+    // Nachgetragen am 04.08.2026: siebzehn Admin-Seiten standen in keinem
+    // Test. Der Rauchmelder findet nur Abstuerze — aber ein Absturz auf einer
+    // Seite, die niemand aufruft, faellt sonst erst dem Betrieb auf.
+    ["Auswertungen", "/admin/analytics"],
+    ["Abrechnung", "/admin/billing"],
+    ["Abrechnungsregeln", "/admin/billing-rules"],
+    ["Dokumenten-Verteilung", "/admin/document-routing"],
+    ["Dokumentenverwaltung", "/admin/documents-admin"],
+    ["Fondskategorien", "/admin/fund-categories"],
+    ["Rechnungen (Admin)", "/admin/invoices"],
+    ["Marketing", "/admin/marketing"],
+    ["Monitoring (Admin)", "/admin/monitoring-admin"],
+    ["Erloesarten", "/admin/revenue-types"],
+    ["Seitenleisten-Links", "/admin/sidebar-links"],
+    ["System", "/admin/system"],
+    ["System-Konfiguration", "/admin/system-config"],
+    ["Steuerkategorie-Vorlagen", "/admin/tax-category-templates"],
+    ["Vorlagen", "/admin/templates"],
+    ["Version", "/admin/version"],
   ] as const;
 
   for (const [name, pfad] of SEITEN) {

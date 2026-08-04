@@ -67,8 +67,17 @@ Schliesst der Bereich TypeScript 7 nicht ein, bleibt es beim Nein.
 
 ### Was beim Freiwerden zusätzlich zu prüfen ist
 
-- `next build` typprüft mit der installierten Fassung — `next.config.ts` hat
-  **kein** `ignoreBuildErrors`. Ein Bruch trifft damit auch das Docker-Image.
+- **`next build` bricht mit TypeScript 7 ab** — gemessen am 03.08.2026 mit
+  Next 16.2.12:
+
+  > TypeScript 7.0.2 does not provide the compiler API required by Next.js.
+  > Enable experimental.useTypeScriptCli in your Next.js config to use the
+  > TypeScript CLI, or install TypeScript 6 instead.
+
+  Das ist ein **zweiter harter Blocker** neben typescript-eslint, und er
+  trifft den Produktions-Build im Docker-Image. Der vorgeschlagene Ausweg
+  (`experimental.useTypeScriptCli`) ist ein experimenteller Schalter — nichts,
+  worauf ein Build laufen sollte, der Rechnungen erzeugt.
 - `prisma` / `@prisma/client` 7.9.1: Peer `>=5.4.0`, also offen — aber
   ungeprüft.
 - `valibot`: `>=5`, offen.

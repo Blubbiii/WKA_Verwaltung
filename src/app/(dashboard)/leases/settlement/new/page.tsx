@@ -49,6 +49,7 @@ import { Separator } from "@/components/ui/separator";
 import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { toast } from "sonner";
 import { getSettlementPeriodLabel } from "@/types/billing";
+import { PAGE_SIZE_SELECTABLE } from "@/lib/config/pagination";
 
 // ============================================================================
 // Types
@@ -302,7 +303,9 @@ export default function NewLeaseSettlementPage() {
   useEffect(() => {
     async function fetchParks() {
       try {
-        const res = await fetch("/api/parks?limit=100");
+        // Jeder Park muss waehlbar sein — sonst laesst sich fuer ihn keine
+        // Abrechnung anlegen, und nichts sagt warum. Siehe PAGE_SIZE_SELECTABLE.
+        const res = await fetch(`/api/parks?limit=${PAGE_SIZE_SELECTABLE}`);
         if (res.ok) {
           const data = await res.json();
           setParks(data.parks || data.data || []);

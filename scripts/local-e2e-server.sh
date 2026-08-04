@@ -72,6 +72,21 @@ echo "→ starten"
 #
 # Die Vorgabe im Quelltext bleibt unveraendert. Der Server meldet die
 # Abweichung beim Start.
+# Die Basisadresse MUSS zum Port passen.
+#
+# Ohne gesetztes NEXTAUTH_URL/NEXT_PUBLIC_APP_URL greift in der Entwicklung
+# der Rueckfall http://localhost:3000. Der Testserver laeuft aber auf 3050 —
+# jede Umleitung des Servers zeigte damit auf einen Port, an dem nichts
+# lauscht, und der Browser bekam ERR_CONNECTION_REFUSED.
+#
+# Wirkung: umleitungsbasiertes Verhalten war lokal ueberhaupt nicht pruefbar.
+# Der Zugriffsschutz der Admin-Seiten arbeitet genau so (requirePageAdmin
+# leitet auf /dashboard um) — er liess sich deshalb nicht testen, und die
+# Luecke fiel erst auf, als ein Test es versuchte.
+export NEXTAUTH_URL="http://localhost:$PORT"
+export NEXT_PUBLIC_APP_URL="http://localhost:$PORT"
+export AUTH_URL="http://localhost:$PORT"
+
 API_RATE_LIMIT=2000 nohup npx next start -p "$PORT" > "$LOG" 2>&1 &
 sleep 8
 

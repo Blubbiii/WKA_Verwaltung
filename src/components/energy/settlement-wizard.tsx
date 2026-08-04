@@ -56,6 +56,7 @@ import {
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { formatCurrency, LOCALE_DE } from "@/lib/format";
+import { PAGE_SIZE_SELECTABLE } from "@/lib/config/pagination";
 import {
   monthNames,
   distributionModeLabels,
@@ -253,7 +254,9 @@ export function SettlementWizard() {
   useEffect(() => {
     async function loadParks() {
       try {
-        const res = await fetch("/api/parks?limit=100");
+        // Jeder Park muss waehlbar sein — sonst laesst sich fuer ihn keine
+        // Abrechnung anlegen, und nichts sagt warum. Siehe PAGE_SIZE_SELECTABLE.
+        const res = await fetch(`/api/parks?limit=${PAGE_SIZE_SELECTABLE}`);
         if (!res.ok) throw new Error(t("parksLoadError"));
         const json = await res.json();
         const data = (json.data ?? json) as ParkOption[];

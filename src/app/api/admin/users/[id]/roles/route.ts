@@ -214,13 +214,27 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Rollenzuweisung nicht gefunden" });
     }
 
-    // FIX 3: Schema HAT tenantId auf UserRoleAssignment (nullable). Original bleibt.
-    // TODO: Bei globalen Assignments (tenantId=null) kann die delete-Filter-
-    // Kombination trotz vorhandenem findFirst-Match P2025 werfen, wenn
-    // check.tenantId gesetzt ist. Langfristig: Filter auf id-only umstellen
-    // oder mit OR: [{tenantId: check.tenantId}, {tenantId: null}] matchen.
+    // Loeschen ueber die Kennung allein — NICHT zusaetzlich ueber tenantId.
+    //
+    // Hier stand `where: { id: assignment.id, tenantId: check.tenantId! }`,
+    // mit einem TODO daneben, das den Fehler bereits beschrieb. Er ist echt:
+    // `tenantId` auf UserRoleAssignment ist nullbar, und eine GLOBALE
+    // Zuweisung (resourceType "__global__") hat dort null. Der Filter traf
+    // damit nichts, Prisma warf P2025, und die Route meldete HTTP 500.
+    //
+    // Wirkung: **eine global zugewiesene Rolle liess sich ueberhaupt nicht
+    // entziehen.** Der Administrator klickt auf Entfernen, bekommt "Fehler
+    // beim Entfernen der Rolle" — und der Benutzer behaelt seine Rechte. Bei
+    // Rechten ist das der schlimmste denkbare Ausgang: sie sind das einzige,
+    // was jemanden von etwas abhaelt.
+    //
+    // Ueber die Kennung allein zu loeschen ist sicher, weil die Berechtigung
+    // vorher schon geprueft wurde: der Benutzer muss zum eigenen Mandanten
+    // gehoeren, sonst braucht es Superadmin-Rechte (siehe oben). Und
+    // `assignment` stammt aus einem findFirst, das auf genau diesen Benutzer
+    // eingeschraenkt war.
     await prisma.userRoleAssignment.delete({
-      where: { id: assignment.id, tenantId: check.tenantId! },
+      where: { id: assignment.id },
     });
 
     // Cache invalidieren da sich die Permissions des Users geändert haben
