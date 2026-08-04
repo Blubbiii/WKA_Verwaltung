@@ -70,7 +70,37 @@ GLASMORPHISMUS-THEME (Personio-Style)       UX-WELLEN + REDESIGN R-1 BIS R-11
                                             • Layout-Polish (Dialog/Popover/Dropdown)
                                             • CI/CD-Workflows restored
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Phase 20                                    Phase 21
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+AUDIT-PROGRAMM (10 Audits, 7 Wellen)        STABILISIERUNG + UI-UEBERARBEITUNG
+✅ FERTIG (Juli 2026)                       ✅ FERTIG (August 2026)
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+• Gemeindebeteiligung § 6 EEG (5a-5d)       • Journey-Suite 136 Tests, 0 rot
+• Kirchensteuer + Freibetrag je Person      • Mahnwesen war komplett ausgefallen
+• KapESt-Saetze einstellbar                 • SCADA-Kette: Monatswerte kamen nie an
+• Anteilsuebertragung stichtagsgenau        • Abstimmung galt je nach Ansicht anders
+• Grosskomponenten-Register je Anlage       • Dokumente lieferten die erste Fassung
+• Regulatorik-Stammdaten + Meldefristen     • Eigentuemer + Bewirtschafter am Flurstueck
+• Zeichnungsprozess + GwG-Legitimation      • Kennzahlen: Seite statt Bestand gezaehlt
+• Gesellschafterversammlung als Vorgang     • Favoriten mit eigenen Gruppen
+• Portfolio-Cockpit Park x Jahr             • Filter hinter eine Schaltflaeche
+• Marktpraemie + negative Preise            • 55 Pakete aktualisiert, sharp deklariert
+• Bankanbindung (Kontoabruf)                • Admin/Superadmin: 27 Tests, Zugriffsschutz
+• Worker-Service im Portainer-Stack         • Rolle liess sich nicht entziehen
+• DataTable + Leerzustaende                 • Parks > 100 nicht abrechenbar
+• Konventions-Sperren statt Migrations-PR   • TypeScript 7 gesperrt (Werkzeuge fehlen)
+──────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
+
+**Stand: 04.08.2026.** Die beiden letzten Phasen sind keine Feature-Phasen im Sinne
+der vorherigen: Phase 20 hat abgearbeitet, was zehn Audits an fehlenden Funktionen
+und Rechenfehlern zutage gefoerdert haben; Phase 21 hat geprueft, was vorher nur
+gebaut war — und dabei gefunden, dass mehrere fertig geglaubte Ketten unterbrochen
+waren.
+
+Die Einzelheiten stehen im `CHANGELOG.md`. Die Audit-Berichte aus Juli liegen unter
+`docs/archiv/`.
 
 ---
 

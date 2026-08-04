@@ -4,6 +4,118 @@ All notable changes to WindparkManager.
 
 ## [Unreleased]
 
+### August 2026 — Stabilisierung, UI-Überarbeitung, Admin-Tests
+
+Der Monat hat weniger gebaut als geprüft. Das Ergebnis war unangenehm: mehrere
+Ketten, die als fertig galten, waren unterbrochen — und zwar so, dass es im
+Betrieb nicht auffällt.
+
+**Fünf Ausfälle, die niemand gemeldet hätte**
+
+- **Mahnwesen war vollständig ausgefallen.** Die Kandidatenabfrage filterte mit
+  `{ dunningHold: null }` auf ein nicht-nullbares Feld; Prisma 7 wies daraufhin
+  die *ganze* Abfrage ab. Jeder Aufruf endete in HTTP 500 — Kandidatenliste wie
+  Mahnlauf. TypeScript sah es nicht, weil die generierten Filter-Typen `null`
+  erlauben.
+- **SCADA-Kette unterbrochen.** Die Monatsaggregation brach bei jedem Aufruf mit
+  einem SQL-Fehler ab (derselbe Ausdruck in SELECT und GROUP BY erzeugte über
+  Prisma zwei verschiedene Platzhalter). Der Import fing den Fehler und meldete
+  PARTIAL. Die Zehn-Minuten-Werte wurden gespeichert, aber **nie zu einem
+  Monatswert verdichtet** — und der ist der Verteilschlüssel der Erlösverteilung.
+- **Dieselbe Abstimmung galt je nach Ansicht als angenommen oder abgelehnt.**
+  Die Auszählung existierte dreimal (Portal, Verwaltung, Beschlussprotokoll) und
+  die Fassungen wichen voneinander ab: Enthaltungen zählten mal zur
+  Mehrheitsgrundlage, mal nicht.
+- **Dokumente lieferten immer die erste Fassung.** Herunterladen und Vorschau
+  riefen die Wurzel der Versionskette auf. Wer einen berichtigten Vertrag
+  hochlud, bekam weiter den alten.
+- **Eine global zugewiesene Rolle liess sich nicht entziehen.** Der Administrator
+  bekam „Fehler beim Entfernen der Rolle" — und der Benutzer behielt seine
+  Rechte.
+
+**Weitere Funde**
+
+- Beide Import-Assistenten waren unbenutzbar (`.nullable()` auf optionalen
+  Zuordnungsfeldern)
+- Verzugstage wurden nach UTC gezählt statt nach dem lokalen Kalendertag — im
+  Nachtfenster ein Tag zu wenig, und nächtliche Läufe fallen genau hinein
+- Ein SCADA-Import ohne Anlagenzuordnung schob das Wasserzeichen vor: die Tage
+  wurden nie wieder gelesen, auch nicht nach dem Nachtragen der Zuordnung
+- Kennzahlen über Listen summierten die geladene Seite statt des Bestands —
+  „Windparks 20" war die Seitengrösse, tatsächlich 93
+- Parks jenseits der ersten 100 waren nicht abrechenbar (Auswahlfeld mit fester
+  Obergrenze bei 117 Parks)
+- 23 rohe Übersetzungsschlüssel standen in der Oberfläche
+- Zeichensatz-Reparatur galt nur für Shapefiles, nicht für CSV
+
+### Added
+
+- **Eigentümer und Bewirtschafter am Flurstück** — der Eigentümer hing bisher nur
+  am Pachtvertrag; ein Flurstück in der Akquise hatte keinen. Der Bewirtschafter
+  (Landwirt) kam gar nicht vor, obwohl ihn Bauarbeiten und Flurschäden treffen.
+  Mit Miteigentumsquoten und Zeiträumen.
+- **Favoriten in der Seitenleiste**, mit eigenen Gruppen und persönlich
+  ausblendbaren Bereichen. Die Systemnavigation ordnet nach Sachgebieten, Arbeit
+  läuft quer dazu.
+- **„Das braucht Ihre Aufmerksamkeit"** auf dem Dashboard statt elf
+  Bestandszahlen
+- **Detailgrad-Schalter** für alle Tabellen (kompakt/normal, über eine
+  CSS-Variable, wirkt auf alle 169 Listen)
+- **Admin- und Superadmin-Tests** — Rollen, Mandanten, Steuersätze,
+  Systemeinstellungen und Zugriffsschutz. Vorher lief die gesamte Suite als ein
+  einziger Superadmin; dass jemand irgendwo *ausgesperrt* wird, war nie geprüft.
+
+### Changed
+
+- Filter über Listen liegen hinter einer Schaltfläche, gesetzte Filter bleiben
+  als entfernbare Marken sichtbar
+- Navigationsgruppen sind zugeklappt bis auf die aktive, dazu „Zuletzt besucht"
+- Kennzahlkarten kappen keine Zahlen mehr; das Raster leitet die Spaltenzahl aus
+  der Mindestbreite ab
+- 55 Pakete aktualisiert (Radix-Set, React 19.2.8, TipTap, recharts, Playwright).
+  `sharp` ist jetzt deklariert statt zufällig über Next mitzukommen, und auf
+  0.35.3 wegen vier libvips-CVEs auf unserem Weg.
+- `bullmq` auf `~5.79.2` festgehalten: 5.81 baut die Queue-Typparameter um, 64
+  Typfehler im Job-System
+- **TypeScript bleibt auf 6.x** — `@typescript-eslint` unterstützt TS 7 in keiner
+  veröffentlichten Fassung, und `next build` bricht damit ab. Siehe
+  `docs/ABHAENGIGKEITEN.md`.
+
+### Removed
+
+- Vier tote Dateien (1.186 Zeilen), die niemand mehr importierte
+- `graphify-out/` aus der Versionsverwaltung (18 MB, 70 Dateien) — erzeugtes
+  Artefakt, das nach Tagen ohnehin überholt ist
+
+---
+
+### Added — Juli 2026: Audit-Programm
+
+Zehn Audits (Rechenkorrektheit, Prozessketten, Randfälle, Regressionen, tote
+Funktionalität, Worker/Queues, SCADA-Abrechnungskette, Bedienaufwand, fehlende
+Funktionen, Gesamtbild), abgearbeitet in sieben Wellen. Die Berichte liegen unter
+`docs/archiv/`.
+
+- **Gemeindebeteiligung nach § 6 EEG** — Gemeinden als Stammdatensatz, Anlagen
+  zuordnen, Berechnung, Vereinbarungen erfassen und abrechnen, CSV für den
+  Steuerberater (Wellen 5a–5d)
+- **Kirchensteuer und Freibetrag je Person** statt pauschal
+- **Kapitalertragsteuersätze einstellbar**, Jahreslänge, eine Datumsausgabe
+- **Anteilsübertragung** mit stichtagsgenauer Ausschüttung
+- **Großkomponenten-Register** je Anlage
+- **Regulatorik-Stammdaten** und Meldefristen
+- **Zeichnungsprozess** mit GwG-Legitimation
+- **Gesellschafterversammlung** als eigener Vorgang
+- **Portfolio-Cockpit** Park × Jahr
+- **Marktprämie**, anzulegender Wert, negative Preise
+- **Bankanbindung** mit automatischem Kontoabruf
+- **Worker-Service** im Portainer-Stack
+- **DataTable** und gestaltete Leerzustände
+- **Konventions-Sperren** statt eines Migrations-PR: Zahlen, die nur sinken
+  dürfen, statt hunderter Dateien in einem Zug
+
+---
+
 ### Added — Juni 2026 UX-Wellen + R-1 bis R-11
 
 Phase 19: vollständige Umsetzung des `docs/REDESIGN-KONZEPT-2026-06.md` (R-1 bis R-11),

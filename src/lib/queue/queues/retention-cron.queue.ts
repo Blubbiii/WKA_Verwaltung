@@ -6,7 +6,7 @@
  *
  * WICHTIG: Default Dry-Run. Echte Mutationen NUR bei RETENTION_DRY_RUN=false.
  * AuditLog-Hard-Delete benötigt zusätzlich DB-User `wpm_retention` der die
- * Append-Only-Trigger umgehen kann (siehe docs/audit-log-append-only.md).
+ * Append-Only-Trigger umgehen kann (siehe docs/archiv/audit-log-append-only.md).
  */
 
 import { Queue } from "bullmq";

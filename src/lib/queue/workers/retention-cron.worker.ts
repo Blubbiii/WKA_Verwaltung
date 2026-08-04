@@ -7,7 +7,7 @@
  *    (Soft-Delete-Markierung ist Follow-up, da Schema-Feld fehlt)
  *  - AuditLog älter als 10 Jahre → DELETE (nur wenn !DryRun)
  *    HINWEIS: braucht DB-User `wpm_retention` ODER manuelles Trigger-Disable
- *    (siehe docs/audit-log-append-only.md). Im Dry-Run nur SELECT COUNT(*).
+ *    (siehe docs/archiv/audit-log-append-only.md). Im Dry-Run nur SELECT COUNT(*).
  *
  * Dry-Run-Modus: Default TRUE. Echte Mutationen nur bei RETENTION_DRY_RUN=false.
  */

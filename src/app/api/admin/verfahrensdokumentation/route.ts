@@ -78,7 +78,7 @@ export async function GET(_request: NextRequest) {
       auditTriggerStatus =
         count >= 2
           ? "AKTIV (audit_logs_no_update + audit_logs_no_delete vorhanden)"
-          : `FEHLT (${count}/2 Trigger gefunden) — siehe docs/audit-log-append-only.md`;
+          : `FEHLT (${count}/2 Trigger gefunden) — siehe docs/archiv/audit-log-append-only.md`;
     } catch {
       // ignore — bleibt "Unbekannt"
     }

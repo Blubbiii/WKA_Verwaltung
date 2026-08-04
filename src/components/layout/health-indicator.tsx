@@ -3,7 +3,7 @@
 /**
  * HealthIndicator — kleiner Dot im Header, der den System-Status anzeigt.
  *
- * Idee B aus docs/audit-2026-06-26-full.md.
+ * Idee B aus docs/archiv/audit-2026-06-26-full.md.
  *
  * Datenquelle: useSystemHealth → /api/health (public).
  * - grün  = ok       (alle Systeme normal)

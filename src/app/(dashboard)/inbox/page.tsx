@@ -84,7 +84,7 @@ interface IncomingInvoice {
 
 // STATUS_VARIANT-Map durch zentrales INCOMING_INVOICE_STATUS aus
 // @/lib/status-labels + <StatusBadge> ersetzt — siehe Idee A aus
-// docs/audit-2026-06-26-full.md.
+// docs/archiv/audit-2026-06-26-full.md.
 
 // ============================================================================
 // Upload Dialog

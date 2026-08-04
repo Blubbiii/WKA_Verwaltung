@@ -134,7 +134,7 @@ LOGIN, LOGOUT, IMPERSONATE, PERMISSION_CHANGE, BANK_DATA_CHANGE.
   blockieren UPDATE/DELETE auf SQL-Ebene.
 - Status: {{AUDIT_TRIGGER_STATUS}}
 - Migration: `prisma/migrations/manual/audit_log_hardening.sql`
-- Dokumentation: `docs/audit-log-append-only.md`
+- Dokumentation: `docs/archiv/audit-log-append-only.md`
 
 **Boot-Check:** Beim Server-Start prüft `src/lib/audit-trigger-check.ts`
 das Vorhandensein der Trigger und loggt Warning bei Fehlen.

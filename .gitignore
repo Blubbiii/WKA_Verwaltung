@@ -76,3 +76,14 @@ temp/
 .claude/skills/
 .github/skills/
 .impeccable/
+
+# Knowledge-Graph — erzeugtes Artefakt, 18 MB
+#
+# `graphify-out/` wird aus dem Quelltext erzeugt und war mit 70 Dateien und
+# 16 MB allein in graph.json versioniert. Nach drei Tagen und 48 Commits war
+# es bereits ueberholt: ein erzeugtes Artefakt, das mit jedem Klon
+# mitgeschleppt wird und trotzdem nie stimmt.
+#
+# CLAUDE.md verweist weiterhin darauf — es bleibt lokal liegen und wird bei
+# Bedarf neu erzeugt. Nur eben nicht mehr mitversioniert.
+graphify-out/
