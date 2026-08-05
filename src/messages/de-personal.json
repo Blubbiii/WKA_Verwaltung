@@ -7578,6 +7578,7 @@
       "unsavedChanges": "Ungespeicherte Änderungen",
       "permissionsAfterCreate": "Berechtigungen werden im Detail-Pane nach dem Anlegen vergeben.",
       "nameLabel": "Name *",
+      "nameFieldLabel": "Rollenname",
       "namePlaceholder": "z.B. Park-Manager",
       "colorLabel": "Farbe",
       "descriptionLabel": "Beschreibung",

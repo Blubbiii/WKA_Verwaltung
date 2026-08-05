@@ -230,7 +230,7 @@ test.describe("Admin: Rollen und Rechte", () => {
     ).toEqual([]);
   });
 
-  test("eine Rolle anklicken oeffnet ihre Detailansicht", async ({ page }) => {
+  test("eine Rolle anklicken oeffnet ihre Detailansicht", async ({ page, api }) => {
     /*
       Gemeldet am 04.08.2026: "unter /admin/roles wenn ich da auf der linken
       seite auf die rolle klicke kommt eine fehlermeldung".
@@ -250,17 +250,94 @@ test.describe("Admin: Rollen und Rechte", () => {
     test.setTimeout(180_000);
 
     const seitenfehler: string[] = [];
+    const abweisungen: string[] = [];
     page.on("pageerror", (e) => seitenfehler.push(e.message.slice(0, 200)));
+    page.on("response", (r) => {
+      if (r.status() >= 400 && r.url().includes("/api/admin/roles")) {
+        abweisungen.push(`HTTP ${r.status()} ${r.url().replace(/^https?:\/\/[^/]+/, "")}`);
+      }
+    });
+
+    // Die Rolle NICHT auf einen Namen festnageln. Wie die Rollen in der
+    // jeweiligen Datenbank heissen, ist Sache der Grunddaten — geprueft wird
+    // das Anklicken, nicht der Name.
+    /*
+      /api/admin/roles liefert ein nacktes Array, nicht `{ data: [...] }`.
+      Beide Formen kommen im Haus vor. Wuerde hier blind `.data` gelesen,
+      waere `rollen` leer und der Test uebersprungen — gruen, ohne etwas
+      geprueft zu haben. Ein Test, der sich still selbst abschaltet, ist
+      schlimmer als keiner: er behauptet Deckung, die es nicht gibt.
+    */
+    const liste = await api.get<Rolle[] | { data?: Rolle[] }>("/api/admin/roles");
+    const rollen = Array.isArray(liste) ? liste : (liste.data ?? []);
+    expect(
+      rollen.length,
+      "Die Rollenliste ist leer oder hat eine unerwartete Form — dann sagt " +
+        "dieser Test nichts ueber das Anklicken einer Rolle aus",
+    ).toBeGreaterThan(0);
+    const ziel = rollen[0];
 
     await page.goto("/admin/roles");
-    await page.getByText("Administrator", { exact: true }).first().waitFor({ timeout: 30_000 });
-    await page.getByText("Administrator", { exact: true }).first().click();
+    const eintrag = page.getByText(ziel.name, { exact: true }).first();
+    await eintrag.waitFor({ timeout: 30_000 });
+    await eintrag.click();
 
-    // Die Detailansicht muss auftauchen — der Rollenname als Eingabefeld.
+    /*
+      Anker ist das Namensfeld ueber seine `id`: das gibt es NUR in der
+      Detailansicht, und die `id` haengt weder an der Sprache noch an den
+      Grunddaten.
+
+      Vorher stand hier `input[value="..."]`. Das prueft das ATTRIBUT im
+      Markup — React setzt bei einem kontrollierten Feld aber die Property.
+      Ob das Attribut daneben auch im DOM landet, haengt daran, wie das Feld
+      eingehaengt wurde; lokal war es da, in der CI nicht. Der Test war damit
+      von einem Umstand abhaengig, ueber den er gar nichts aussagen wollte.
+    */
+    const erschienen = await page
+      .locator("#role-name")
+      .waitFor({ state: "visible", timeout: 20_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!erschienen) {
+      /*
+        Nicht bloss "nicht sichtbar" melden. Die Detailansicht kann aus drei
+        Gruenden fehlen, und die drei brauchen verschiedene Reparaturen:
+
+        - Das Ladegeruest steht noch → der Abruf haengt oder ist gescheitert.
+          Die Seite faellt bei einem Fehler in `catch` zurueck und laesst das
+          Geruest stehen; sichtbar wird der Fehler nur als kurze Meldung.
+        - Der Leerzustand steht noch → der Klick ist gar nicht angekommen.
+        - Das Fehler-Auffangnetz → die Seite ist abgestuerzt.
+
+        Ohne diese Unterscheidung sagt ein CI-Fehlschlag nur, dass etwas fehlt.
+      */
+      const geruest = await page.locator(".animate-shimmer-bg").count();
+      const sichtbar = (
+        await page.locator("main").innerText().catch(() => "")
+      )
+        .replace(/\s+/g, " ")
+        .slice(0, 400);
+
+      throw new Error(
+        `Nach dem Klick auf "${ziel.name}" erscheint die Detailansicht nicht.
+` +
+          `Ladegeruest-Elemente: ${geruest}
+` +
+          `Abgewiesene Aufrufe: ${abweisungen.join(" | ") || "(keine)"}
+` +
+          `Seitenfehler: ${seitenfehler.join(" | ") || "(keine)"}
+` +
+          `Sichtbarer Text: ${sichtbar}`,
+      );
+    }
+
+    // Und es ist wirklich die angeklickte Rolle. `toHaveValue` liest die
+    // Property — das ist der Wert, den der Nutzer im Feld stehen sieht.
     await expect(
-      page.locator('input[value="Administrator"]').first(),
-      "Nach dem Klick auf eine Rolle erscheint ihre Detailansicht nicht",
-    ).toBeVisible({ timeout: 20_000 });
+      page.locator("#role-name"),
+      "Die Detailansicht zeigt eine andere Rolle als die angeklickte",
+    ).toHaveValue(ziel.name, { timeout: 10_000 });
 
     // Nur SICHTBAREN Text pruefen. `body.textContent()` enthaelt auch die
     // RSC-Nutzlast in den <script>-Bloecken — und darin steht der Text des

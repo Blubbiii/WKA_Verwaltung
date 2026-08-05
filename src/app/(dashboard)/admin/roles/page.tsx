@@ -647,7 +647,16 @@ export default function RolesPage() {
                   />
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {/*
+                        Das Feld traegt den Rollennamen und hatte keine
+                        Beschriftung — weder sichtbar noch fuer Vorleseprogramme.
+                        Wer die Seite nicht sieht, hoerte hier nur "Textfeld".
+                        Sichtbar wird nichts ergaenzt: die Beschriftung waere
+                        neben dem Namen der Rolle blosse Wiederholung.
+                      */}
                       <Input
+                        id="role-name"
+                        aria-label={t("nameFieldLabel")}
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         disabled={!canEditSelected}

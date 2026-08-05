@@ -7578,6 +7578,7 @@
       "unsavedChanges": "Unsaved changes",
       "permissionsAfterCreate": "Permissions can be assigned in the detail pane after creation.",
       "nameLabel": "Name *",
+      "nameFieldLabel": "Role name",
       "namePlaceholder": "e.g. Park Manager",
       "colorLabel": "Color",
       "descriptionLabel": "Description",
