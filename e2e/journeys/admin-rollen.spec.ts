@@ -262,13 +262,25 @@ test.describe("Admin: Rollen und Rechte", () => {
     // jeweiligen Datenbank heissen, ist Sache der Grunddaten — geprueft wird
     // das Anklicken, nicht der Name.
     /*
-      /api/admin/roles liefert ein nacktes Array, nicht `{ data: [...] }`.
-      Beide Formen kommen im Haus vor. Wuerde hier blind `.data` gelesen,
-      waere `rollen` leer und der Test uebersprungen — gruen, ohne etwas
-      geprueft zu haben. Ein Test, der sich still selbst abschaltet, ist
-      schlimmer als keiner: er behauptet Deckung, die es nicht gibt.
+      `?includeSystem=true` ist Pflicht — und das ist keine Feinheit.
+
+      Fragt ein SUPERADMIN die Rollenliste ohne diesen Schalter ab, setzt die
+      Route `where.isSystem = false`: er bekommt nur die selbst angelegten
+      Rollen, nicht die des Systems. Ein normaler Admin bekommt an derselben
+      Stelle mehr — naemlich System- UND Mandantenrollen. Wer mehr darf, sieht
+      weniger; die Seite ruft deshalb `?includeSystem=true` auf.
+
+      Hier stand die nackte Adresse. Lokal fiel das nicht auf: die Datenbank
+      hatte noch Rollen aus frueheren Testlaeufen. In der CI wird frisch
+      geseedet — dort gibt es keine einzige Nicht-System-Rolle, und die Liste
+      kam leer zurueck.
+
+      Die Antwort ist ausserdem ein nacktes Array, nicht `{ data: [...] }`.
+      Beide Formen kommen im Haus vor.
     */
-    const liste = await api.get<Rolle[] | { data?: Rolle[] }>("/api/admin/roles");
+    const liste = await api.get<Rolle[] | { data?: Rolle[] }>(
+      "/api/admin/roles?includeSystem=true",
+    );
     const rollen = Array.isArray(liste) ? liste : (liste.data ?? []);
     expect(
       rollen.length,
