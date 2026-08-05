@@ -168,7 +168,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "energy:read",   module: "energy", action: "read",   displayName: "Stromabrechnungen anzeigen",    sortOrder: 105 },
   { name: "energy:create", module: "energy", action: "create", displayName: "Stromabrechnungen erstellen",   sortOrder: 106 },
   { name: "energy:update", module: "energy", action: "update", displayName: "Stromabrechnungen bearbeiten",  sortOrder: 107 },
-  { name: "energy:delete", module: "energy", action: "delete", displayName: "Stromabrechnungen loeschen",    sortOrder: 108 },
+  { name: "energy:delete", module: "energy", action: "delete", displayName: "Stromabrechnungen löschen",    sortOrder: 108 },
   { name: "energy:export", module: "energy", action: "export", displayName: "Stromabrechnungen exportieren", sortOrder: 109, unenforcedReason: "no-endpoint" },
 
   // ── Reports ────────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   // ── Portal (Kommanditisten-Portal) ─────────────────────────────────────
   { name: "portal:access",         module: "portal", action: "read",   displayName: "Portal-Zugang",              sortOrder: 150, unenforcedReason: "portal-session" },
   { name: "portal:participations", module: "portal", action: "read",   displayName: "Portal-Beteiligungen",       sortOrder: 151 },
-  { name: "portal:distributions",  module: "portal", action: "read",   displayName: "Portal-Ausschuettungen",     sortOrder: 152 },
+  { name: "portal:distributions",  module: "portal", action: "read",   displayName: "Portal-Ausschüttungen",     sortOrder: 152 },
   { name: "portal:documents",      module: "portal", action: "read",   displayName: "Portal-Dokumente",           sortOrder: 153 },
   { name: "portal:reports",        module: "portal", action: "read",   displayName: "Portal-Berichte",            sortOrder: 154 },
   { name: "portal:energyReports",  module: "portal", action: "read",   displayName: "Portal-Energieberichte",     sortOrder: 155 },
@@ -234,18 +234,18 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "system:marketing",            module: "system", action: "marketing",            displayName: "Marketing verwalten",        sortOrder: 226 },
   { name: "system:revenue-types",        module: "system", action: "revenue-types",        displayName: "Vergütungsarten verwalten",  sortOrder: 227 },
   { name: "system:fund-categories",      module: "system", action: "fund-categories",      displayName: "Gesellschaftstypen verwalten", sortOrder: 228 },
-  { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen aendern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260, unenforcedReason: "superadmin-only" },
+  { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen ändern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260, unenforcedReason: "superadmin-only" },
   { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien fuer alle Mandanten",    sortOrder: 261, unenforcedReason: "superadmin-only" },
 
   // ── Accounting (Buchhaltung) ───────────────────────────────────────────
   { name: "accounting:read",                       module: "accounting", action: "read",                   displayName: "Buchhaltung anzeigen",     sortOrder: 230 },
   { name: "accounting:create",                     module: "accounting", action: "create",                 displayName: "Buchungen erstellen",      sortOrder: 231 },
   { name: "accounting:update",                     module: "accounting", action: "update",                 displayName: "Buchungen bearbeiten",     sortOrder: 232 },
-  { name: "accounting:delete",                     module: "accounting", action: "delete",                 displayName: "Buchungen loeschen",       sortOrder: 233 },
+  { name: "accounting:delete",                     module: "accounting", action: "delete",                 displayName: "Buchungen löschen",       sortOrder: 233 },
   { name: "accounting:period-lock:create",         module: "accounting", action: "period-lock",            displayName: "Periode sperren",          description: "Buchungsperiode schliessen (GoBD)",                                       sortOrder: 234 },
   { name: "accounting:period-lock:delete",         module: "accounting", action: "period-lock",            displayName: "Periode entsperren",       description: "Gesperrte Periode wieder oeffnen (Audit-pflichtig)",                      sortOrder: 235 },
-  { name: "accounting:tax-code:read",              module: "accounting", action: "tax-code-read",          displayName: "Steuerschluessel anzeigen", sortOrder: 236 },
-  { name: "accounting:tax-code:write",             module: "accounting", action: "tax-code-write",         displayName: "Steuerschluessel bearbeiten", sortOrder: 237 },
+  { name: "accounting:tax-code:read",              module: "accounting", action: "tax-code-read",          displayName: "Steuerschlüssel anzeigen", sortOrder: 236 },
+  { name: "accounting:tax-code:write",             module: "accounting", action: "tax-code-write",         displayName: "Steuerschlüssel bearbeiten", sortOrder: 237 },
   { name: "accounting:value-adjustment:create",    module: "accounting", action: "value-adjustment",       displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen",                                       sortOrder: 238 },
   { name: "accounting:post",                       module: "accounting", action: "post",                   displayName: "Buchungen festschreiben",  description: "DRAFT-Buchungen in POSTED-Status setzen (§146 AO Unveraenderbarkeit ab da)", sortOrder: 240, requiresApproval: true },
   { name: "accounting:reverse",                    module: "accounting", action: "reverse",                displayName: "Buchungen stornieren",     description: "Generalumkehr fuer POSTED-Buchungen — eigene Permission gem. HGB-Verantwortungstrennung", sortOrder: 241, requiresApproval: true },
@@ -253,36 +253,36 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "accounting:report:gewst",               module: "accounting", action: "report-gewst",           displayName: "GewSt-Hinzurechnung anzeigen",     sortOrder: 251 },
   { name: "accounting:report:susa",                module: "accounting", action: "report-susa",            displayName: "Summen- und Saldenliste anzeigen", sortOrder: 252 },
   { name: "accounting:report:kontoblatt",          module: "accounting", action: "report-kontoblatt",      displayName: "Kontoblatt anzeigen",              sortOrder: 253 },
-  { name: "accounting:report:euer",                module: "accounting", action: "report-euer",            displayName: "EUER §4(3) EStG anzeigen",         sortOrder: 254 },
+  { name: "accounting:report:euer",                module: "accounting", action: "report-euer",            displayName: "EÜR § 4 Abs. 3 EStG anzeigen",         sortOrder: 254 },
   { name: "accounting:report:anlagenspiegel",      module: "accounting", action: "report-anlagenspiegel",  displayName: "Anlagenspiegel anzeigen",          sortOrder: 255 },
-  { name: "accounting:year-end-close:execute",     module: "accounting", action: "year-end-close",         displayName: "Jahresabschluss ausfuehren",       description: "Saldenvortrag + Bilanz-Snapshot",                                       sortOrder: 256, requiresApproval: true },
+  { name: "accounting:year-end-close:execute",     module: "accounting", action: "year-end-close",         displayName: "Jahresabschluss ausführen",       description: "Saldenvortrag + Bilanz-Snapshot",                                       sortOrder: 256, requiresApproval: true },
   { name: "accounting:gobd-export:create",         module: "accounting", action: "gobd-export",            displayName: "GoBD Z3-Export erstellen",         description: "Datentraegeruberlassung fuer Betriebspruefung",                          sortOrder: 257 },
   { name: "accounting:datev-export:create",        module: "accounting", action: "datev-export",           displayName: "DATEV-Export erstellen",           sortOrder: 258 },
 
   // ── Management Billing (Betriebsführung) ───────────────────────────────
   { name: "management-billing:read",      module: "management-billing", action: "read",      displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", sortOrder: 240 },
-  { name: "management-billing:create",    module: "management-billing", action: "create",    displayName: "BF-Vertraege erstellen",   description: "Neue Betriebsfuehrungsvertraege anlegen",              sortOrder: 241 },
-  { name: "management-billing:update",    module: "management-billing", action: "update",    displayName: "BF-Vertraege bearbeiten",  description: "Betriebsfuehrungsvertraege aendern",                   sortOrder: 242 },
-  { name: "management-billing:delete",    module: "management-billing", action: "delete",    displayName: "BF-Vertraege loeschen",    description: "Betriebsfuehrungsvertraege entfernen",                 sortOrder: 243 },
+  { name: "management-billing:create",    module: "management-billing", action: "create",    displayName: "BF-Verträge erstellen",   description: "Neue Betriebsfuehrungsvertraege anlegen",              sortOrder: 241 },
+  { name: "management-billing:update",    module: "management-billing", action: "update",    displayName: "BF-Verträge bearbeiten",  description: "Betriebsfuehrungsvertraege aendern",                   sortOrder: 242 },
+  { name: "management-billing:delete",    module: "management-billing", action: "delete",    displayName: "BF-Verträge löschen",    description: "Betriebsfuehrungsvertraege entfernen",                 sortOrder: 243 },
   { name: "management-billing:calculate", module: "management-billing", action: "calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen fuer Betriebsfuehrung kalkulieren",      sortOrder: 244 },
   { name: "management-billing:invoice",   module: "management-billing", action: "invoice",   displayName: "BF-Rechnungen generieren", description: "Rechnungen aus BF-Abrechnungen erstellen",             sortOrder: 245 },
 
   // ── Stoerungsvorgaenge (A1, Audit 2026-07) ─────────────────────────────
-  { name: "faults:read",    module: "faults", action: "read",    displayName: "Stoerungsvorgaenge anzeigen",  description: "Stoerungen mit bewertetem Ertragsausfall einsehen",       sortOrder: 246 },
-  { name: "faults:create",  module: "faults", action: "create",  displayName: "Stoerungsvorgang anlegen",     description: "Neuen Stoerungsvorgang erfassen",                          sortOrder: 247 },
-  { name: "faults:update",  module: "faults", action: "update",  displayName: "Stoerungsvorgang bearbeiten",  description: "Ursache, Ausfall und Anspruch pflegen",                     sortOrder: 248 },
-  { name: "faults:delete",  module: "faults", action: "delete",  displayName: "Stoerungsvorgang loeschen",    description: "Stoerungsvorgang entfernen",                               sortOrder: 249 },
+  { name: "faults:read",    module: "faults", action: "read",    displayName: "Störungsvorgänge anzeigen",  description: "Stoerungen mit bewertetem Ertragsausfall einsehen",       sortOrder: 246 },
+  { name: "faults:create",  module: "faults", action: "create",  displayName: "Störungsvorgang anlegen",     description: "Neuen Stoerungsvorgang erfassen",                          sortOrder: 247 },
+  { name: "faults:update",  module: "faults", action: "update",  displayName: "Störungsvorgang bearbeiten",  description: "Ursache, Ausfall und Anspruch pflegen",                     sortOrder: 248 },
+  { name: "faults:delete",  module: "faults", action: "delete",  displayName: "Störungsvorgang löschen",    description: "Stoerungsvorgang entfernen",                               sortOrder: 249 },
   { name: "faults:valuate", module: "faults", action: "valuate", displayName: "Ertragsausfall berechnen",     description: "Ausfall aus Referenzanlagen ermitteln und bewerten",       sortOrder: 250 },
 
   // ── Verfuegbarkeitsgarantien (A2, Audit 2026-07) ───────────────────────
-  { name: "availability:read",     module: "availability", action: "read",     displayName: "Verfuegbarkeitsgarantien anzeigen", description: "Garantien und Jahresabgleiche einsehen",              sortOrder: 251 },
-  { name: "availability:manage",   module: "availability", action: "manage",   displayName: "Verfuegbarkeitsgarantie pflegen",  description: "Garantie, Ausschluesse und Staffel erfassen",         sortOrder: 252 },
+  { name: "availability:read",     module: "availability", action: "read",     displayName: "Verfügbarkeitsgarantien anzeigen", description: "Garantien und Jahresabgleiche einsehen",              sortOrder: 251 },
+  { name: "availability:manage",   module: "availability", action: "manage",   displayName: "Verfügbarkeitsgarantie pflegen",  description: "Garantie, Ausschluesse und Staffel erfassen",         sortOrder: 252 },
   { name: "availability:settle",   module: "availability", action: "settle",   displayName: "Jahresabgleich rechnen",           description: "Ist gegen Soll rechnen und Bonus/Malus ermitteln",    sortOrder: 253 },
-  { name: "availability:confirm",  module: "availability", action: "confirm",  displayName: "Abgleich bestaetigen",             description: "Ergebnis festschreiben und zur Forderung freigeben",  sortOrder: 254 },
+  { name: "availability:confirm",  module: "availability", action: "confirm",  displayName: "Abgleich bestätigen",             description: "Ergebnis festschreiben und zur Forderung freigeben",  sortOrder: 254 },
 
   // ── Abrechnungspruefung (A3, Audit 2026-07) ────────────────────────────
   { name: "energy:settlement:check",  module: "energy", action: "settlement-check",  displayName: "Abrechnung plausibilisieren", description: "Dreiecksabgleich Menge und Preis gegen SCADA und Produktion", sortOrder: 255 },
-  { name: "energy:metering-points",   module: "energy", action: "metering-points",   displayName: "Zaehlpunkte verwalten",       description: "Marktlokation und Messlokation pflegen",                     sortOrder: 256 },
+  { name: "energy:metering-points",   module: "energy", action: "metering-points",   displayName: "Zählpunkte verwalten",       description: "Marktlokation und Messlokation pflegen",                     sortOrder: 256 },
 
   // ── Abregelung / Redispatch (A4, Audit 2026-07) ────────────────────────
   { name: "curtailment:read",    module: "curtailment", action: "read",    displayName: "Abregelungen anzeigen",     description: "Redispatch-Ereignisse und Forderungen einsehen",        sortOrder: 257 },
@@ -296,9 +296,9 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "insurance:manage", module: "insurance", action: "manage", displayName: "Policen pflegen",   description: "Police, Deckungen und Schadenbewertung bearbeiten",   sortOrder: 261 },
 
   // ── Rueckbauverpflichtung (A7, Audit 2026-07) ──────────────────────────
-  { name: "dismantling:read",    module: "dismantling", action: "read",    displayName: "Rueckbau anzeigen",        description: "Rueckbauverpflichtung, Sicherheit und Rueckstellung einsehen", sortOrder: 262 },
-  { name: "dismantling:manage",  module: "dismantling", action: "manage",  displayName: "Rueckbau pflegen",         description: "Gutachten, Buergschaft und Rueckbautermin bearbeiten",         sortOrder: 263 },
-  { name: "dismantling:provision", module: "dismantling", action: "provision", displayName: "Rueckstellung fortschreiben", description: "Jahresrueckstellung nach HGB und EStG ermitteln",        sortOrder: 264 },
+  { name: "dismantling:read",    module: "dismantling", action: "read",    displayName: "Rückbau anzeigen",        description: "Rueckbauverpflichtung, Sicherheit und Rueckstellung einsehen", sortOrder: 262 },
+  { name: "dismantling:manage",  module: "dismantling", action: "manage",  displayName: "Rückbau pflegen",         description: "Gutachten, Buergschaft und Rueckbautermin bearbeiten",         sortOrder: 263 },
+  { name: "dismantling:provision", module: "dismantling", action: "provision", displayName: "Rückstellung fortschreiben", description: "Jahresrueckstellung nach HGB und EStG ermitteln",        sortOrder: 264 },
 
   // ── CRM ────────────────────────────────────────────────────────────────
   { name: "crm:read",   module: "crm", action: "read",   displayName: "CRM anzeigen",             sortOrder: 280 },

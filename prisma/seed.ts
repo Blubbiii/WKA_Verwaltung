@@ -106,7 +106,7 @@ const permissionsData = [
   { name: "energy:read", displayName: "Stromabrechnungen anzeigen", module: "energy", action: "read", sortOrder: 105 },
   { name: "energy:create", displayName: "Stromabrechnungen erstellen", module: "energy", action: "create", sortOrder: 106 },
   { name: "energy:update", displayName: "Stromabrechnungen bearbeiten", module: "energy", action: "update", sortOrder: 107 },
-  { name: "energy:delete", displayName: "Stromabrechnungen loeschen", module: "energy", action: "delete", sortOrder: 108 },
+  { name: "energy:delete", displayName: "Stromabrechnungen löschen", module: "energy", action: "delete", sortOrder: 108 },
   { name: "energy:export", displayName: "Stromabrechnungen exportieren", module: "energy", action: "export", sortOrder: 109 },
 
   // Reports Module
@@ -135,7 +135,7 @@ const permissionsData = [
   // Portal Module (Kommanditisten-Portal)
   { name: "portal:access", displayName: "Portal-Zugang", module: "portal", action: "read", sortOrder: 150 },
   { name: "portal:participations", displayName: "Portal-Beteiligungen", module: "portal", action: "read", sortOrder: 151 },
-  { name: "portal:distributions", displayName: "Portal-Ausschuettungen", module: "portal", action: "read", sortOrder: 152 },
+  { name: "portal:distributions", displayName: "Portal-Ausschüttungen", module: "portal", action: "read", sortOrder: 152 },
   { name: "portal:documents", displayName: "Portal-Dokumente", module: "portal", action: "read", sortOrder: 153 },
   { name: "portal:reports", displayName: "Portal-Berichte", module: "portal", action: "read", sortOrder: 154 },
   { name: "portal:energyReports", displayName: "Portal-Energieberichte", module: "portal", action: "read", sortOrder: 155 },
@@ -172,15 +172,15 @@ const permissionsData = [
   { name: "accounting:read", displayName: "Buchhaltung anzeigen", module: "accounting", action: "read", sortOrder: 230 },
   { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
   { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
-  { name: "accounting:delete", displayName: "Buchungen loeschen", module: "accounting", action: "delete", sortOrder: 233 },
+  { name: "accounting:delete", displayName: "Buchungen löschen", module: "accounting", action: "delete", sortOrder: 233 },
   // K-4: Dedizierte Permissions fuer Festschreiben + Storno (HGB-Verantwortungstrennung)
   { name: "accounting:post", displayName: "Buchungen festschreiben", description: "DRAFT-Buchungen in POSTED-Status setzen (§146 AO Unveraenderbarkeit ab da)", module: "accounting", action: "post", sortOrder: 240 },
   { name: "accounting:reverse", displayName: "Buchungen stornieren", description: "Generalumkehr fuer POSTED-Buchungen — eigene Permission gem. HGB-Verantwortungstrennung", module: "accounting", action: "reverse", sortOrder: 241 },
   // P20: Erweiterte Buchhaltungs-Permissions für HGB-Compliance (P9-P19 + Audit)
   { name: "accounting:period-lock:create", displayName: "Periode sperren", description: "Buchungsperiode schliessen (GoBD)", module: "accounting", action: "period-lock", sortOrder: 234 },
   { name: "accounting:period-lock:delete", displayName: "Periode entsperren", description: "Gesperrte Periode wieder oeffnen (Audit-pflichtig)", module: "accounting", action: "period-lock", sortOrder: 235 },
-  { name: "accounting:tax-code:read", displayName: "Steuerschluessel anzeigen", module: "accounting", action: "tax-code-read", sortOrder: 236 },
-  { name: "accounting:tax-code:write", displayName: "Steuerschluessel bearbeiten", module: "accounting", action: "tax-code-write", sortOrder: 237 },
+  { name: "accounting:tax-code:read", displayName: "Steuerschlüssel anzeigen", module: "accounting", action: "tax-code-read", sortOrder: 236 },
+  { name: "accounting:tax-code:write", displayName: "Steuerschlüssel bearbeiten", module: "accounting", action: "tax-code-write", sortOrder: 237 },
   { name: "accounting:value-adjustment:create", displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen", module: "accounting", action: "value-adjustment", sortOrder: 238 },
   { name: "accounting:report:bilanz", displayName: "Bilanz anzeigen", module: "accounting", action: "report-bilanz", sortOrder: 250 },
   { name: "accounting:report:gewst", displayName: "GewSt-Hinzurechnung anzeigen", module: "accounting", action: "report-gewst", sortOrder: 251 },
@@ -188,19 +188,19 @@ const permissionsData = [
   { name: "accounting:report:kontoblatt", displayName: "Kontoblatt anzeigen", module: "accounting", action: "report-kontoblatt", sortOrder: 253 },
   { name: "accounting:report:euer", displayName: "EUER §4(3) EStG anzeigen", module: "accounting", action: "report-euer", sortOrder: 254 },
   { name: "accounting:report:anlagenspiegel", displayName: "Anlagenspiegel anzeigen", module: "accounting", action: "report-anlagenspiegel", sortOrder: 255 },
-  { name: "accounting:year-end-close:execute", displayName: "Jahresabschluss ausfuehren", description: "Saldenvortrag + Bilanz-Snapshot", module: "accounting", action: "year-end-close", sortOrder: 256 },
+  { name: "accounting:year-end-close:execute", displayName: "Jahresabschluss ausführen", description: "Saldenvortrag + Bilanz-Snapshot", module: "accounting", action: "year-end-close", sortOrder: 256 },
   { name: "accounting:gobd-export:create", displayName: "GoBD Z3-Export erstellen", description: "Datentraegeruberlassung fuer Betriebspruefung", module: "accounting", action: "gobd-export", sortOrder: 257 },
   { name: "accounting:datev-export:create", displayName: "DATEV-Export erstellen", module: "accounting", action: "datev-export", sortOrder: 258 },
 
   // P20: Super-Admin-Bereich (globale System-Werte)
-  { name: "system:settings:write", displayName: "System-Einstellungen aendern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", module: "system", action: "settings-write", sortOrder: 260 },
+  { name: "system:settings:write", displayName: "System-Einstellungen ändern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", module: "system", action: "settings-write", sortOrder: 260 },
   { name: "system:tax-templates:write", displayName: "Steuer-Templates pflegen", description: "Globale Steuer-Kategorien fuer alle Mandanten", module: "system", action: "tax-templates-write", sortOrder: 261 },
 
   // Management Billing Module (Betriebsfuehrung)
   { name: "management-billing:read", displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", module: "management-billing", action: "read", sortOrder: 240 },
-  { name: "management-billing:create", displayName: "BF-Vertraege erstellen", description: "Neue Betriebsfuehrungsvertraege anlegen", module: "management-billing", action: "create", sortOrder: 241 },
-  { name: "management-billing:update", displayName: "BF-Vertraege bearbeiten", description: "Betriebsfuehrungsvertraege aendern", module: "management-billing", action: "update", sortOrder: 242 },
-  { name: "management-billing:delete", displayName: "BF-Vertraege loeschen", description: "Betriebsfuehrungsvertraege entfernen", module: "management-billing", action: "delete", sortOrder: 243 },
+  { name: "management-billing:create", displayName: "BF-Verträge erstellen", description: "Neue Betriebsfuehrungsvertraege anlegen", module: "management-billing", action: "create", sortOrder: 241 },
+  { name: "management-billing:update", displayName: "BF-Verträge bearbeiten", description: "Betriebsfuehrungsvertraege aendern", module: "management-billing", action: "update", sortOrder: 242 },
+  { name: "management-billing:delete", displayName: "BF-Verträge löschen", description: "Betriebsfuehrungsvertraege entfernen", module: "management-billing", action: "delete", sortOrder: 243 },
   { name: "management-billing:calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen fuer Betriebsfuehrung kalkulieren", module: "management-billing", action: "calculate", sortOrder: 244 },
   { name: "management-billing:invoice", displayName: "BF-Rechnungen generieren", description: "Rechnungen aus BF-Abrechnungen erstellen", module: "management-billing", action: "invoice", sortOrder: 245 },
 

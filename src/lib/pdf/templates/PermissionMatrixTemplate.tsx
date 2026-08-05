@@ -181,24 +181,15 @@ const styles = StyleSheet.create({
 });
 
 // Module display names
-const MODULE_LABELS: Record<string, string> = {
-  parks: "Windparks",
-  turbines: "Anlagen",
-  funds: "Beteiligungen",
-  shareholders: "Gesellschafter",
-  plots: "Flurstuecke",
-  leases: "Pachtverträge",
-  contracts: "Verträge",
-  documents: "Dokumente",
-  invoices: "Rechnungen",
-  votes: "Abstimmungen",
-  "service-events": "Service-Events",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  users: "Benutzer",
-  roles: "Rollen",
-  admin: "Administration",
-};
+/*
+  Hier stand eine dritte Kopie der Modul-Beschriftungen — sechzehn Eintraege,
+  waehrend es 32 Module gibt, und „Flurstuecke" ohne Umlaut, waehrend die
+  beiden anderen Kopien „Flurstücke" schrieben. Drei Listen, drei Staende.
+
+  Die Beschriftung kommt jetzt fertig aus der Route (`modulBeschriftung()` aus
+  `lib/auth/module-labels.ts`) und steht in `group.label`. Diese Vorlage
+  entscheidet nichts mehr darueber, sie stellt nur noch dar.
+*/
 
 // Types
 interface RoleData {
@@ -206,6 +197,15 @@ interface RoleData {
   name: string;
   isSystem: boolean;
   color: string | null;
+  /** Rangstufe der Rolle. 100 = Superadmin, 80 = Administrator. */
+  hierarchy: number;
+  /**
+   * Ob die Rolle die Rechtepruefung umgeht (Rangstufe >= 100).
+   *
+   * Ihre Haken folgen dann aus der Rangstufe und nicht aus Zuweisungen — das
+   * muss im Dokument stehen, sonst sieht es aus, als koenne man sie entziehen.
+   */
+  umgehtPruefung: boolean;
   permissionNames: string[];
 }
 
@@ -300,7 +300,7 @@ export function PermissionMatrixTemplate({ data }: PermissionMatrixTemplateProps
               >
                 <Text>{role.name}</Text>
                 <Text style={{ fontSize: 6, color: "#888888", marginTop: 2 }}>
-                  {role.isSystem ? "(System)" : ""}
+                  {role.isSystem ? "(System) " : ""}Rang {role.hierarchy}
                 </Text>
               </View>
             ))}
@@ -313,7 +313,7 @@ export function PermissionMatrixTemplate({ data }: PermissionMatrixTemplateProps
               <View style={styles.moduleRow}>
                 <View style={styles.permissionCell}>
                   <Text style={styles.moduleCellText}>
-                    {MODULE_LABELS[group.module] || group.label}
+                    {group.label}
                   </Text>
                 </View>
                 {data.roles.map((role, roleIndex) => (
@@ -369,16 +369,42 @@ export function PermissionMatrixTemplate({ data }: PermissionMatrixTemplateProps
           ))}
         </View>
 
-        {/* Legend */}
+        {/*
+          Legende und Fussnoten.
+
+          „Keine Berechtigung" allein war zu knapp: ein Strich bedeutet
+          „nicht zugewiesen", nicht „ausdruecklich gesperrt", und bei Rollen
+          der Rangstufe 100 kommt ueberhaupt kein Strich mehr vor. Wer das
+          Blatt ohne den Erzeuger liest — und dafuer wird es gedruckt —, muss
+          das hier finden.
+        */}
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <Text style={styles.checkmark}>&#x2713;</Text>
-            <Text style={styles.legendText}>Berechtigung vorhanden</Text>
+            <Text style={styles.legendText}>darf diese Handlung ausführen</Text>
           </View>
           <View style={styles.legendItem}>
             <Text style={styles.cross}>-</Text>
-            <Text style={styles.legendText}>Keine Berechtigung</Text>
+            <Text style={styles.legendText}>
+              nicht zugewiesen (keine ausdrückliche Sperre)
+            </Text>
           </View>
+        </View>
+
+        <View style={{ marginTop: 6 }}>
+          {data.roles.some((r) => r.umgehtPruefung) && (
+            <Text style={{ fontSize: 6.5, color: "#555555", marginBottom: 2 }}>
+              Rollen der Rangstufe 100 (Superadmin) umgehen die Rechteprüfung
+              vollständig. Ihre Haken folgen aus der Rangstufe, nicht aus
+              einzelnen Zuweisungen, und lassen sich nicht entziehen.
+            </Text>
+          )}
+          <Text style={{ fontSize: 6.5, color: "#555555" }}>
+            Diese Matrix bildet Rechte ab, die je Handlung geprüft werden.
+            Einige Verwaltungsfunktionen sind stattdessen an die Rangstufe
+            gebunden (Administrator ab 80, Superadmin ab 100) und erscheinen
+            hier nicht als eigene Zeile.
+          </Text>
         </View>
 
         {/* Footer */}

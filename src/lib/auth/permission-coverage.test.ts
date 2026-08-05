@@ -60,6 +60,19 @@ function projectSource(): string {
       }
       if (!/\.tsx?$/.test(entry)) continue;
       if (skip.has(entry)) continue;
+      /*
+        Testdateien zaehlen nicht.
+
+        Der Scan wertet jedes Vorkommen eines Rechtenamens in Anfuehrungszeichen
+        als "wird geprueft". Ein Test, der "system:audit" bloss als Beispieldatum
+        erwaehnt, sah damit aus wie eine Route, die es durchsetzt — und das Recht
+        galt als abgedeckt, obwohl keine Route es prueft.
+
+        Genau so ist es passiert: ein neuer Test mit echten Rechtenamen in seinen
+        Beispieldaten machte "system:audit" still zu einem geprueften Recht.
+        Ein Waechter, den man durch Hinschreiben besaenftigen kann, waecht nicht.
+      */
+      if (/\.test\.tsx?$/.test(entry)) continue;
       parts.push(readFileSync(full, "utf-8"));
     }
   };

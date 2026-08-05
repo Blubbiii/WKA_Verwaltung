@@ -9,55 +9,50 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/withPermission";
+import { requireAdmin, requireSuperadmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { generatePermissionMatrixPdf } from "@/lib/pdf/generators/permissionMatrixPdf";
-import { generateExcel } from "@/lib/export/excel";
+import { generateExcelMultiSheet } from "@/lib/export/excel";
 import type { PermissionMatrixPdfData } from "@/lib/pdf/templates/PermissionMatrixTemplate";
 import type { ColumnDef } from "@/lib/export/types";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { ROLE_HIERARCHY } from "@/lib/auth/hierarchy";
+import { effektiveRechte } from "@/lib/auth/effektive-rechte";
+import { modulBeschriftung, sortiereModule } from "@/lib/auth/module-labels";
 
-// Module labels for display
-const moduleLabels: Record<string, string> = {
-  parks: "Windparks",
-  turbines: "Anlagen",
-  funds: "Beteiligungen",
-  shareholders: "Gesellschafter",
-  plots: "Flurstücke",
-  leases: "Pachtverträge",
-  contracts: "Verträge",
-  documents: "Dokumente",
-  invoices: "Rechnungen",
-  votes: "Abstimmungen",
-  "service-events": "Service-Events",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  users: "Benutzer",
-  roles: "Rollen",
-  portal: "Portal",
-  admin: "Administration",
-};
+/*
+  Die Modul-Beschriftungen standen frueher hier — 17 Stueck, waehrend es 32
+  Module gibt. Fuenfzehn Ueberschriften erschienen deshalb als technischer
+  Schluessel („accounting", „faults", „wirtschaftsplan") in einem sonst
+  deutschen Dokument, und weil dieselben fuenfzehn auch in der Reihenfolge
+  fehlten, rutschten sie unsortiert ans Ende — darunter der Buchhaltungsblock,
+  mit zwanzig Zeilen der groesste im ganzen Export.
 
-// Module order for grouping
-const moduleOrder = [
-  "parks",
-  "turbines",
-  "funds",
-  "shareholders",
-  "plots",
-  "leases",
-  "contracts",
-  "documents",
-  "invoices",
-  "votes",
-  "service-events",
-  "reports",
-  "settings",
-  "users",
-  "roles",
-  "portal",
-  "admin",
+  Eine zweite, ebenfalls unvollstaendige Kopie lag in
+  `api/admin/permissions/route.ts`. Beide sind jetzt durch
+  `lib/auth/module-labels.ts` ersetzt, das ein Waechter gegen den
+  Rechte-Katalog haelt.
+*/
+
+/**
+ * Fussnoten zur Matrix.
+ *
+ * Sie stehen im Dokument, nicht nur hier: eine Berechtigungs-Matrix wird aus
+ * dem Haus gegeben und ohne ihren Erzeuger gelesen. Was sie NICHT zeigt, muss
+ * sie selbst sagen.
+ */
+const HINWEISE = [
+  "Ein Haken bedeutet: die Rolle darf diese Handlung ausführen.",
+  "Superadmin-Rollen (Rangstufe 100) umgehen die Rechteprüfung vollständig. " +
+    "Ihre Haken folgen aus der Rangstufe, nicht aus einzelnen Zuweisungen — " +
+    "sie lassen sich nicht entziehen.",
+  "Diese Matrix bildet Rechte ab, die je Handlung geprüft werden. Einige " +
+    "Verwaltungsfunktionen sind stattdessen an die Rangstufe gebunden " +
+    "(Administrator ab 80, Superadmin ab 100) und erscheinen hier nicht als " +
+    "eigene Zeile.",
+  "Eine leere Zelle bedeutet: nicht zugewiesen. Sie ist keine ausdrückliche " +
+    "Sperre.",
 ];
 
 /**
@@ -94,10 +89,26 @@ export async function GET(request: NextRequest) {
       return apiError("NOT_FOUND", undefined, { message: "Mandant nicht gefunden" });
     }
 
+    /*
+      Superadmin-Rollen nur fuer Superadmins.
+
+      Die Rollenseite blendet sie fuer einen normalen Admin bewusst aus
+      (`hierarchy: { lt: 100 }` in `api/admin/roles`). Dieser Export tat es
+      nicht: was die Oberflaeche verbarg, gab der Knopf daneben vollstaendig
+      heraus — die Rechte der maechtigsten Rolle im Haus, als Tabelle.
+
+      Beide Stellen tun jetzt dasselbe. Im Zweifel weniger zeigen: wer die
+      Rolle nicht verwalten darf, braucht auch ihre Aufstellung nicht.
+    */
+    const darfSuperadminSehen = (await requireSuperadmin()).authorized;
+
     // Fetch all roles (system roles + tenant-specific)
     const roles = await prisma.role.findMany({
       where: {
         OR: [{ isSystem: true }, { tenantId }],
+        ...(darfSuperadminSehen
+          ? {}
+          : { hierarchy: { lt: ROLE_HIERARCHY.SUPERADMIN } }),
       },
       include: {
         permissions: {
@@ -134,7 +145,7 @@ export async function GET(request: NextRequest) {
       if (!grouped[perm.module]) {
         grouped[perm.module] = {
           module: perm.module,
-          label: moduleLabels[perm.module] || perm.module,
+          label: modulBeschriftung(perm.module),
           permissions: [],
         };
       }
@@ -148,26 +159,52 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Sort modules by predefined order
-    const groupedPermissions = moduleOrder
-      .filter((m) => grouped[m])
-      .map((m) => grouped[m]);
+    // Sortierung und Beschriftung aus der gemeinsamen Quelle
+    const groupedPermissions = sortiereModule(Object.keys(grouped)).map(
+      (m) => grouped[m],
+    );
 
-    // Add any modules not in the predefined order
-    for (const [module, data] of Object.entries(grouped)) {
-      if (!moduleOrder.includes(module)) {
-        groupedPermissions.push(data);
-      }
-    }
+    /*
+      Der Superadmin-Bypass MUSS in der Matrix stehen.
 
-    // Transform roles data
-    const rolesData = roles.map((role) => ({
-      id: role.id,
-      name: role.name,
-      isSystem: role.isSystem,
-      color: role.color,
-      permissionNames: role.permissions.map((rp) => rp.permission.name),
-    }));
+      `requirePermission` gibt bei Rangstufe >= 100 frei, ohne irgendetwas zu
+      pruefen (withPermission.ts). Die Superadmin-Rolle braucht die Rechte
+      deshalb gar nicht zugewiesen zu bekommen — und in der Datenbank hat sie
+      sie auch nicht.
+
+      Der Export las bisher nur die Zuweisungen. Im Dokument vom 05.08.2026
+      standen dadurch 61 der 188 Zeilen beim Superadmin leer, und weil genau
+      diese 61 sonst auch keine Rolle hat, las sich die ganze Zeile als „das
+      darf niemand". Betroffen waren unter anderem: Buchungen festschreiben,
+      Buchungen stornieren, Periode sperren, Bilanz anzeigen, Jahresabschluss
+      ausfuehren, GoBD Z3-Export, DATEV-Export, Audit-Logs anzeigen.
+
+      Also genau die Zeilen, die ein Pruefer zuerst aufschlaegt — und dort
+      behauptete das Dokument das Gegenteil der Wahrheit.
+
+      Die Fussnote erklaert, woher diese Haken kommen: aus der Rangstufe, nicht
+      aus Zuweisungen. Sonst sieht es aus, als koenne man sie entziehen.
+    */
+    const alleRechte = permissions.map((p) => p.name);
+    const rolesData = roles.map((role) => {
+      const befund = effektiveRechte(
+        {
+          hierarchy: role.hierarchy,
+          zugewieseneRechte: role.permissions.map((rp) => rp.permission.name),
+        },
+        alleRechte,
+      );
+      return {
+        id: role.id,
+        name: role.name,
+        isSystem: role.isSystem,
+        color: role.color,
+        hierarchy: role.hierarchy,
+        umgehtPruefung: befund.umgehtPruefung,
+        zugewiesen: befund.zugewiesen,
+        permissionNames: befund.effektiv,
+      };
+    });
 
     // Build permission lookup per role
     const rolePermissionMap = new Map<string, Set<string>>();
@@ -221,10 +258,17 @@ export async function GET(request: NextRequest) {
           width: 25,
           format: "text",
         },
+        /*
+          Die Rangstufe gehoert in die Ueberschrift.
+
+          Ohne sie stehen beim Superadmin 188 Haken, ohne dass die Spalte
+          erklaert, warum ausgerechnet dort keiner fehlt. Mit ihr sieht man den
+          Grund — und die Fussnote auf dem zweiten Blatt fuehrt ihn aus.
+        */
         ...rolesData.map((role) => ({
           key: `role_${role.id}`,
-          header: role.name + (role.isSystem ? " (System)" : ""),
-          width: 12,
+          header: `${role.name} (${role.isSystem ? "System, " : ""}Rang ${role.hierarchy})`,
+          width: 14,
           format: "text" as const,
         })),
       ];
@@ -235,7 +279,7 @@ export async function GET(request: NextRequest) {
       for (const group of groupedPermissions) {
         // Add module header row
         const moduleRow: Record<string, unknown> = {
-          module: moduleLabels[group.module] || group.label,
+          module: group.label,
           permission: "",
           isModuleHeader: true,
         };
@@ -261,9 +305,82 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const excelBuffer = await generateExcel(data, columns, "Berechtigungs-Matrix", {
-        sheetName: "Matrix",
+      /*
+        Zweites Blatt: woher das Dokument kommt und was es nicht zeigt.
+
+        Die Excel-Fassung trug bisher keinerlei Angaben — kein Datum, keinen
+        Mandanten, keinen Ersteller. Nur der Dateiname enthielt ein Datum, und
+        Dateinamen werden umbenannt, weitergeleitet und abgelegt. Ein
+        undatiertes Blatt mit Haken taugt als Nachweis nichts: es sagt nicht,
+        WANN das der Stand war.
+
+        Die PDF-Fassung hatte all das von Anfang an. Dass ausgerechnet die
+        Excel-Fassung es nicht hatte, faellt niemandem auf, der beide nicht
+        nebeneinander legt.
+
+        Eigenes Blatt statt Kopfzeilen ueber der Tabelle: Zeilen vor der
+        Ueberschrift zerschiessen Sortieren, Filtern und jede Auswertung, die
+        jemand auf die Matrix setzt.
+      */
+      const ersteller = await prisma.user.findUnique({
+        where: { id: check.userId! },
+        select: { firstName: true, lastName: true, email: true },
       });
+      const erstellerName = ersteller
+        ? [ersteller.firstName, ersteller.lastName].filter(Boolean).join(" ") ||
+          ersteller.email
+        : "unbekannt";
+
+      const angabenSpalten: ColumnDef[] = [
+        { key: "feld", header: "Angabe", width: 26, format: "text" },
+        { key: "wert", header: "Wert", width: 90, format: "text" },
+      ];
+
+      const angaben: Record<string, unknown>[] = [
+        { feld: "Dokument", wert: "Berechtigungs-Matrix" },
+        { feld: "Mandant", wert: tenant.name },
+        {
+          feld: "Erstellt am",
+          wert: new Date().toLocaleString("de-DE", {
+            dateStyle: "full",
+            timeStyle: "short",
+            timeZone: "Europe/Berlin",
+          }),
+        },
+        { feld: "Erstellt von", wert: `${erstellerName} (${ersteller?.email ?? "—"})` },
+        { feld: "Rollen", wert: String(rolesData.length) },
+        { feld: "Berechtigungen", wert: String(permissions.length) },
+        { feld: "Module", wert: String(groupedPermissions.length) },
+        ...(darfSuperadminSehen
+          ? []
+          : [
+              {
+                feld: "Hinweis zum Umfang",
+                wert:
+                  "Rollen der Rangstufe 100 (Superadmin) sind nicht enthalten. " +
+                  "Sie sind nur für Superadmins einsehbar.",
+              },
+            ]),
+        { feld: "", wert: "" },
+        ...HINWEISE.map((h, i) => ({ feld: i === 0 ? "Zur Lesart" : "", wert: h })),
+        { feld: "", wert: "" },
+        // Je Rolle: woher ihre Haken kommen.
+        ...rolesData.map((r) => ({
+          feld: `Rolle: ${r.name}`,
+          wert: r.umgehtPruefung
+            ? `Rangstufe ${r.hierarchy} — umgeht die Rechteprüfung, darf alle ` +
+              `${permissions.length} Handlungen. Ausdrücklich zugewiesen sind ` +
+              `${r.zugewiesen}; die übrigen Haken folgen aus der Rangstufe und ` +
+              `lassen sich nicht entziehen.`
+            : `Rangstufe ${r.hierarchy} — ${r.zugewiesen} von ` +
+              `${permissions.length} Berechtigungen zugewiesen.`,
+        })),
+      ];
+
+      const excelBuffer = await generateExcelMultiSheet([
+        { name: "Matrix", data, columns },
+        { name: "Angaben zum Export", data: angaben, columns: angabenSpalten },
+      ]);
 
       // Log export action
       await logExport(check.userId!, tenantId, "xlsx", rolesData.length, permissions.length);

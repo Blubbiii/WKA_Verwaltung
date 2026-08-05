@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { ROLE_HIERARCHY } from "./hierarchy";
 import { auth } from "./index";
 import { getCachedPermissions, setCachedPermissions } from "./permissionCache";
 
@@ -194,17 +195,13 @@ export async function hasAnyPermission(
 // ============================================================================
 
 /**
- * Hierarchy level constants for role-based checks.
- * Use these instead of hardcoded numbers for clarity.
+ * Rangstufen — die Definition liegt in `hierarchy.ts`.
+ *
+ * Sie ist dorthin gewandert, weil diese Datei ueber `auth()` next-auth
+ * mitzieht: wer nur die Zahl 100 braucht, konnte sie in keinem Unit-Test
+ * laden. Der Re-Export haelt alle bestehenden Importe gueltig.
  */
-export const ROLE_HIERARCHY = {
-  SUPERADMIN: 100,
-  ADMIN: 80,
-  MANAGER: 60,
-  MITARBEITER: 50,
-  NUR_LESEN: 40,
-  PORTAL: 20,
-} as const;
+export { ROLE_HIERARCHY } from "./hierarchy";
 
 /**
  * Get the highest hierarchy level from a user's assigned roles.

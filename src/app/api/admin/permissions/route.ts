@@ -5,30 +5,24 @@ import { cache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import {
+  MODUL_BESCHRIFTUNGEN,
+  modulBeschriftung,
+  sortiereModule,
+} from "@/lib/auth/module-labels";
 
-// Module name translations
-const moduleLabels: Record<string, string> = {
-  parks: "Windparks",
-  turbines: "Anlagen",
-  funds: "Beteiligungen",
-  shareholders: "Gesellschafter",
-  plots: "Flurstücke",
-  leases: "Pachtverträge",
-  contracts: "Verträge",
-  documents: "Dokumente",
-  invoices: "Rechnungen",
-  votes: "Abstimmungen",
-  news: "Meldungen",
-  "service-events": "Service-Events",
-  energy: "Energie",
-  reports: "Berichte",
-  settings: "Einstellungen",
-  users: "Benutzer",
-  roles: "Rollen",
-  portal: "Portal",
-  admin: "Administration",
-  system: "System",
-};
+/*
+  Die Modul-Beschriftungen standen hier als eigene Liste — zwanzig Eintraege,
+  waehrend es 32 Module gibt. Eine zweite, noch kuerzere Kopie lag in der
+  Export-Route, eine dritte in der PDF-Vorlage. Drei Listen, drei Staende.
+
+  Sichtbar wurde es in der exportierten Berechtigungs-Matrix: fuenfzehn
+  Ueberschriften standen dort als technischer Schluessel, und weil dieselben
+  fuenfzehn auch in der Reihenfolge fehlten, hingen sie unsortiert hinten dran.
+
+  Jetzt eine Quelle: `lib/auth/module-labels.ts`, gehalten von einem Waechter,
+  der sie gegen den Rechte-Katalog vergleicht.
+*/
 
 // Action name translations
 const actionLabels: Record<string, string> = {
@@ -113,7 +107,7 @@ export async function GET(_request: NextRequest) {
       if (!grouped[perm.module]) {
         grouped[perm.module] = {
           module: perm.module,
-          label: moduleLabels[perm.module] || perm.module,
+          label: modulBeschriftung(perm.module),
           permissions: [],
         };
       }
@@ -127,28 +121,12 @@ export async function GET(_request: NextRequest) {
       });
     }
 
-    // Convert to array and sort by common order
-    const moduleOrder = [
-      "parks", "turbines", "funds", "shareholders", "plots", "leases",
-      "contracts", "documents", "invoices", "votes", "news", "service-events",
-      "energy", "reports", "settings", "users", "roles", "portal", "admin", "system",
-    ];
-
-    const result = moduleOrder
-      .filter(m => grouped[m])
-      .map(m => grouped[m]);
-
-    // Add any modules not in the predefined order
-    for (const [module, data] of Object.entries(grouped)) {
-      if (!moduleOrder.includes(module)) {
-        result.push(data);
-      }
-    }
+    const result = sortiereModule(Object.keys(grouped)).map((m) => grouped[m]);
 
     const responseData = {
       permissions,
       grouped: result,
-      moduleLabels,
+      moduleLabels: MODUL_BESCHRIFTUNGEN,
       actionLabels,
     };
 
