@@ -397,7 +397,8 @@
     "portfolioCockpit": "Portfolio cockpit",
     "municipalities": "Municipalities",
     "paymentsDunning": "Dunning",
-    "paymentsSepa": "SEPA payment run"
+    "paymentsSepa": "SEPA payment run",
+    "invoiceDocExport": "Document export"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",

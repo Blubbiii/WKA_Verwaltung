@@ -1,4 +1,5 @@
 import {
+  FileArchive,
   Bell,
   LayoutDashboard,
   Wind,
@@ -423,6 +424,7 @@ export const navGroups: NavGroup[] = [
           { title: "Versandübersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
           { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
+          { title: "Belegexport", titleKey: "invoiceDocExport", href: "/invoices/beleg-export", icon: FileArchive },
           { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
         ],
       },

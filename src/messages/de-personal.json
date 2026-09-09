@@ -397,7 +397,8 @@
     "portfolioCockpit": "Portfolio-Cockpit",
     "municipalities": "Gemeinden",
     "paymentsDunning": "Mahnwesen",
-    "paymentsSepa": "SEPA-Zahllauf"
+    "paymentsSepa": "SEPA-Zahllauf",
+    "invoiceDocExport": "Belegexport"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
