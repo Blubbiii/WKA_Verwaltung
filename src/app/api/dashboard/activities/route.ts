@@ -41,7 +41,6 @@ function buildEntityHref(entityType: string, entityId: string | null): string | 
     case "Fund":
       return `/funds/${entityId}`;
     case "Settlement":
-      return `/buchhaltung/settlements/${entityId}`;
     case "Contract":
       return `/contracts/${entityId}`;
     case "ServiceEvent":

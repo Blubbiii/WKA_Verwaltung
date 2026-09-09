@@ -32,7 +32,7 @@ import { removeRepeatableJobs } from "../repeatable";
 import type {
   DeadlineCheckResult,
 } from "@/lib/maintenance/tasks";
-import type { BundesbankFetchResult } from "@/lib/awv/bundesbank-fetch";
+import type { BundesbankFetchResult } from "@/lib/mahnwesen/bundesbank-fetch";
 
 export const MAINTENANCE_QUEUE_NAME = "maintenance";
 

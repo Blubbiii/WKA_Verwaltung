@@ -128,7 +128,6 @@ test.describe("Admin-Bereich erreichbar", () => {
     ["Rollen & Rechte", "/admin/roles"],
     ["Zugriffsreport", "/admin/access-report"],
     ["Audit-Log", "/admin/audit-logs"],
-    ["Kontenrahmen", "/admin/kontenrahmen"],
     ["Steuersaetze", "/admin/tax-rates"],
     // Die Pfade stammen aus src/app/(dashboard)/admin — geraten hatte ich
     // zuerst /admin/dunning-levels und /admin/feature-flags, beide gibt es
@@ -165,7 +164,6 @@ test.describe("Admin-Bereich erreichbar", () => {
     ["Seitenleisten-Links", "/admin/sidebar-links"],
     ["System", "/admin/system"],
     ["System-Konfiguration", "/admin/system-config"],
-    ["Steuerkategorie-Vorlagen", "/admin/tax-category-templates"],
     ["Vorlagen", "/admin/templates"],
     ["Version", "/admin/version"],
   ] as const;

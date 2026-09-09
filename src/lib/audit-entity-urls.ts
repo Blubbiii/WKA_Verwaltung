@@ -65,7 +65,7 @@ export function getAuditEntityHref(
     // Für den SEPA-Lauf gibt es nur die Liste — keine Detailseite. Die Liste
     // ist immer noch besser als kein Ziel, deshalb wie bei JournalEntry.
     case "SepaPaymentBatch":
-      return "/buchhaltung/sepa";
+      return null;
 
     // ---- Only a list page exists — besser als ein 404 ----
     case "FundHierarchy":
@@ -75,7 +75,7 @@ export function getAuditEntityHref(
     case "JournalEntry":
       return "/journal-entries";
     case "BankTransaction":
-      return "/buchhaltung/banking";
+      return null;
     case "EnergySettlementItem":
       return "/energy/settlements";
     case "ArchivedDocument":

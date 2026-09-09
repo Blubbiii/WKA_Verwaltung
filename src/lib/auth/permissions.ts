@@ -480,7 +480,6 @@ export const PERMISSIONS = {
   // Accounting (Buchhaltung)
   ACCOUNTING_READ: "accounting:read",
   ACCOUNTING_CREATE: "accounting:create",
-  ACCOUNTING_UPDATE: "accounting:update",
   // Dedizierte Permissions für POSTING + STORNO (HGB-Verantwortungstrennung).
   // POSTED-Buchungen sind unveränderlich (§146 AO). Storno = Generalumkehr,
   // gehört NICHT zu :update — eigene Berechtigung.

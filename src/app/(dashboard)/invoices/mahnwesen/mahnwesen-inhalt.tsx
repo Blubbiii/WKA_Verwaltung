@@ -55,9 +55,9 @@ function fmt(n: number): string {
 /** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
 const SUBTAB_VALUES = ["candidates", "history"] as const;
 
-export default function MahnwesenContent() {
+export default function MahnwesenInhalt() {
   const [activeTab, setActiveTab] = useTabParam("candidates", { allowed: SUBTAB_VALUES, paramName: "subtab" });
-  const t = useTranslations("zahlungen.zahlungenMahnwesen");
+  const t = useTranslations("mahnwesen");
   const [candidates, setCandidates] = useState<DunningCandidate[]>([]);
   const [runs, setRuns] = useState<DunningRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,8 +80,8 @@ export default function MahnwesenContent() {
     setLoading(true);
     try {
       const [candRes, runsRes] = await Promise.all([
-        fetch("/api/buchhaltung/dunning?mode=candidates"),
-        fetch("/api/buchhaltung/dunning"),
+        fetch("/api/invoices/dunning?mode=candidates"),
+        fetch("/api/invoices/dunning"),
       ]);
       if (candRes.ok) {
         const json = await candRes.json();
@@ -111,7 +111,7 @@ export default function MahnwesenContent() {
     if (selected.size === 0) return;
     setExecuting(true);
     try {
-      const res = await fetch("/api/buchhaltung/dunning", {
+      const res = await fetch("/api/invoices/dunning", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceIds: Array.from(selected) }),

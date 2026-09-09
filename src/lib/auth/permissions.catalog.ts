@@ -240,7 +240,6 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   // ── Accounting (Buchhaltung) ───────────────────────────────────────────
   { name: "accounting:read",                       module: "zahlungen", action: "read",                   displayName: "Zahlungen und Mahnwesen anzeigen",     sortOrder: 230 },
   { name: "accounting:create",                     module: "zahlungen", action: "create",                 displayName: "Zahllauf und Mahnung anlegen",      sortOrder: 231 },
-  { name: "accounting:update",                     module: "zahlungen", action: "update",                 displayName: "Zahllauf und Mahnung bearbeiten",     sortOrder: 232 },
 
   // ── Management Billing (Betriebsführung) ───────────────────────────────
   { name: "management-billing:read",      module: "management-billing", action: "read",      displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", sortOrder: 240 },

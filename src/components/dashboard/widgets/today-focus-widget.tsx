@@ -163,7 +163,7 @@ export function TodayFocusWidget({ className }: TodayFocusWidgetProps) {
         icon: AlertCircle,
         label: t("focus.dunningLabel", { count: counts.mahnwesen }),
         description: t("focus.dunningCta"),
-        href: "/buchhaltung/mahnwesen",
+        href: "/invoices/mahnwesen",
         hasCritical: false,
         tone: "destructive",
       });
@@ -175,7 +175,7 @@ export function TodayFocusWidget({ className }: TodayFocusWidgetProps) {
         icon: Inbox,
         label: t("focus.inboxLabel", { count: counts.inbox }),
         description: t("focus.inboxCta"),
-        href: "/buchhaltung/eingangsrechnungen",
+        href: "/inbox",
         hasCritical: false,
         tone: "default",
       });

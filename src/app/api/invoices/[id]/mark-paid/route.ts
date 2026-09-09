@@ -170,6 +170,8 @@ export async function POST(
         tenantId: check.tenantId!,
         invoiceId: id,
         amount: remainingDec.toNumber(),
+        // Der Skontobetrag fliesst nicht als Geld, zaehlt aber zur Begleichung.
+        minderung: skontoDeductionDec.toNumber(),
         paymentDate: paidAt,
         userId: check.userId!,
         notes: skontoPaid

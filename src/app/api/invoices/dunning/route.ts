@@ -11,7 +11,7 @@ const dunningRunSchema = z.object({
   invoiceIds: z.array(z.uuid()).min(1, "Keine Rechnungen ausgewählt"),
 });
 
-// GET /api/buchhaltung/dunning — List dunning runs OR get candidates
+// GET /api/invoices/dunning — List dunning runs OR get candidates
 export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("accounting:read");
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/buchhaltung/dunning — Execute a dunning run
+// POST /api/invoices/dunning — Execute a dunning run
 export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("accounting:create");

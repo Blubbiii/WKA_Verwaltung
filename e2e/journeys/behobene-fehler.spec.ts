@@ -3,7 +3,8 @@
  * gefördert hat. Sie haben nichts miteinander zu tun außer ihrer Art: alle
  * vier sahen im Alltag nach nichts aus.
  *
- * 1. `/buchhaltung` gab es nicht. Die Navigation führt acht Gruppen, sieben
+ * 1. (entfallen — /buchhaltung gibt es nicht mehr, das Modul wurde ausgebaut)
+ * ALT: `/buchhaltung` gab es nicht. Die Navigation führt acht Gruppen, sieben
  *    zeigen auf eine echte Seite — diese eine auf eine Adresse, die mit 404
  *    antwortete. In der Seitenleiste fiel es nicht auf, weil eine Gruppe mit
  *    Unterpunkten als Schaltfläche gerendert wird und nicht als Verweis.
@@ -32,19 +33,6 @@
 import { test, expect } from "../support/fixtures";
 
 test.describe("Behobene Fehler", () => {
-  test("/buchhaltung ist keine Sackgasse", async ({ page }) => {
-    test.setTimeout(120_000);
-    const res = await page.goto("/buchhaltung");
-    expect(
-      res?.status(),
-      "/buchhaltung antwortet wieder mit einem Fehler. Die Navigation weist " +
-        "die Adresse als Ziel aus (nav-config.ts) — sie muss erreichbar sein.",
-    ).toBeLessThan(400);
-    expect(
-      page.url(),
-      "Die Weiterleitung führt nicht mehr in den Buchhaltungsbereich",
-    ).toContain("/buchhaltung/");
-  });
 
   test("die Vollmachten-Seite haelt eine unerwartete Antwort aus", async ({ page }) => {
     test.setTimeout(120_000);

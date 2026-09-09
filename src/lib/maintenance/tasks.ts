@@ -25,7 +25,7 @@
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
-import { fetchAndUpsertBundesbankRates } from "@/lib/awv/bundesbank-fetch";
+import { fetchAndUpsertBundesbankRates } from "@/lib/mahnwesen/bundesbank-fetch";
 
 const logger = jobLogger.child({ component: "maintenance" });
 

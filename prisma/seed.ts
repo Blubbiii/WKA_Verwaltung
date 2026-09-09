@@ -171,7 +171,6 @@ const permissionsData = [
   // Accounting Module (Buchhaltung)
   { name: "accounting:read", displayName: "Buchhaltung anzeigen", module: "accounting", action: "read", sortOrder: 230 },
   { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
-  { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
   // K-4: Dedizierte Permissions fuer Festschreiben + Storno (HGB-Verantwortungstrennung)
   // P20: Erweiterte Buchhaltungs-Permissions für HGB-Compliance (P9-P19 + Audit)
 
@@ -289,7 +288,6 @@ const systemRolesData = [
       // Mailings - full access
       "mailings:read", "mailings:write", "mailings:send",
       // Accounting - full access (inkl. K-4 neue Permissions post + reverse)
-      "accounting:read", "accounting:create", "accounting:update",
       // Settings - read only
       "settings:read",
     ],

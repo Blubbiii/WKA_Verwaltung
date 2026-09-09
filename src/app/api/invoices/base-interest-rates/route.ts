@@ -1,6 +1,6 @@
 /**
- * GET  /api/buchhaltung/base-interest-rates  — Liste (Auto-Seed bei leerer Tabelle)
- * POST /api/buchhaltung/base-interest-rates  — Neuen Satz anlegen (Admin)
+ * GET  /api/invoices/base-interest-rates  — Liste (Auto-Seed bei leerer Tabelle)
+ * POST /api/invoices/base-interest-rates  — Neuen Satz anlegen (Admin)
  *
  * Tabelle ist mandantenunabhängig (§247 BGB Basiszinssatz wird zentral
  * von der Bundesbank festgelegt). Pflege wird vom Admin durchgeführt

@@ -13,7 +13,6 @@ import { Coins, Building2, Percent, Radio, Code2, Link2, Receipt } from "lucide-
 const RevenueTypesContent = dynamic(() => import("./tabs/revenue-types"), { ssr: false });
 const FundCategoriesContent = dynamic(() => import("./tabs/fund-categories"), { ssr: false });
 const TaxRatesContent = dynamic(() => import("./tabs/tax-rates"), { ssr: false });
-const TaxCodesContent = dynamic(() => import("./tabs/tax-codes"), { ssr: false });
 const WebhooksContent = dynamic(() => import("./tabs/webhooks"), { ssr: false });
 const ScadaCodesContent = dynamic(() => import("./tabs/scada-codes"), { ssr: false });
 const SidebarLinksContent = dynamic(() => import("./tabs/sidebar-links"), { ssr: false });
@@ -86,7 +85,6 @@ function MasterDataPageInner() {
           <Suspense fallback={<LoadingSkeleton />}><TaxRatesContent /></Suspense>
         </TabsContent>
         <TabsContent value="steuerschluessel">
-          <Suspense fallback={<LoadingSkeleton />}><TaxCodesContent /></Suspense>
         </TabsContent>
         <TabsContent value="webhooks">
           <Suspense fallback={<LoadingSkeleton />}><WebhooksContent /></Suspense>

@@ -4,7 +4,7 @@
  * P21: Period-Lock-Manager (Buchhaltungs-Periodensperre).
  *
  * GoBD §146 AO — Sperrt Buchungsmonate für nachträgliche Änderungen.
- * Nutzt /api/buchhaltung/period-locks Endpoints (P9).
+ * Nutzt /api/admin/period-locks Endpoints (P9).
  */
 
 import { useEffect, useState } from "react";
@@ -121,7 +121,7 @@ export default function PeriodLockManagerPage() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `/api/buchhaltung/period-locks${includeUnlocked ? "?includeUnlocked=true" : ""}`,
+        `/api/admin/period-locks${includeUnlocked ? "?includeUnlocked=true" : ""}`,
       );
       if (!res.ok) throw new Error("Fehler beim Laden");
       const json = await res.json();
@@ -141,7 +141,7 @@ export default function PeriodLockManagerPage() {
   const handleLock = async () => {
     setIsLocking(true);
     try {
-      const res = await fetch("/api/buchhaltung/period-locks", {
+      const res = await fetch("/api/admin/period-locks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -169,7 +169,7 @@ export default function PeriodLockManagerPage() {
     if (!unlockLockId) return;
     setIsUnlocking(true);
     try {
-      const res = await fetch(`/api/buchhaltung/period-locks/${unlockLockId}`, {
+      const res = await fetch(`/api/admin/period-locks/${unlockLockId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: unlockReason }),

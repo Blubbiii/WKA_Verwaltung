@@ -1,8 +1,8 @@
 /**
  * Periodensperre — Lock-Verwaltung (Phase 9, GoBD §146 AO).
  *
- * GET  /api/buchhaltung/period-locks       — Liste aller Locks des Mandanten
- * POST /api/buchhaltung/period-locks       — Periode sperren (Admin)
+ * GET  /api/admin/period-locks       — Liste aller Locks des Mandanten
+ * POST /api/admin/period-locks       — Periode sperren (Admin)
  *
  * Lock ist idempotent über UNIQUE(tenantId, periodYear, periodMonth) —
  * doppeltes Locken desselben Monats wirft 409 ALREADY_EXISTS.
@@ -30,7 +30,7 @@ const createSchema = z.object({
 });
 
 // ============================================================================
-// GET /api/buchhaltung/period-locks
+// GET /api/admin/period-locks
 // ============================================================================
 
 export async function GET(request: NextRequest) {
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 }
 
 // ============================================================================
-// POST /api/buchhaltung/period-locks
+// POST /api/admin/period-locks
 // Locks an accounting period (only admin).
 // ============================================================================
 

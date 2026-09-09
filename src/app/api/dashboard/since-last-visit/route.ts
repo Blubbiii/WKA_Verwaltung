@@ -47,13 +47,11 @@ function buildEntityHref(entityType: string, entityId: string | null): string | 
     case "Invoice":
       return `/invoices/${entityId}`;
     case "IncomingInvoice":
-      return `/buchhaltung/eingangsrechnungen/${entityId}`;
     case "Plot":
       return `/plots/${entityId}`;
     case "Fund":
       return `/funds/${entityId}`;
     case "Settlement":
-      return `/buchhaltung/settlements/${entityId}`;
     case "Contract":
       return `/contracts/${entityId}`;
     case "ServiceEvent":

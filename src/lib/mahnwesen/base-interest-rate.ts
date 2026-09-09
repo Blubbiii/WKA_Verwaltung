@@ -5,7 +5,7 @@
  * halbjährlich von der Bundesbank veröffentlicht (zum 1.1. und 1.7.).
  *
  * Seed-Liste hier ist eine Bootstrap-Hilfe — Tenants können die Tabelle
- * über die API (POST /api/buchhaltung/base-interest-rates) selbst pflegen.
+ * über die API (POST /api/invoices/base-interest-rates) selbst pflegen.
  */
 
 import { prisma } from "@/lib/prisma";

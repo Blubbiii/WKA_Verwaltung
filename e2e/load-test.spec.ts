@@ -34,9 +34,9 @@ test.describe("Load & Stress Tests", () => {
   test("Schnelle Navigation zwischen 20 Seiten", async ({ page }) => {
     const urls = [
       "/dashboard", "/parks", "/invoices", "/funds", "/contracts",
-      "/leases", "/documents", "/service-events", "/vendors", "/journal-entries",
+      "/leases", "/documents", "/service-events", "/vendors",
       "/dashboard", "/parks", "/invoices", "/funds", "/contracts",
-      "/leases", "/documents", "/service-events", "/vendors", "/journal-entries",
+      "/leases", "/documents", "/service-events", "/vendors",
     ];
 
     const start = Date.now();

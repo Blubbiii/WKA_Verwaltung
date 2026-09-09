@@ -131,7 +131,7 @@ test.describe("Mahnlauf", () => {
     // --- Sieht der Mahnlauf sie ueberhaupt? ------------------------------
     const kandidaten = await api.get<{
       data?: { invoiceId: string; overdueDays: number; suggestedLevel: number }[];
-    }>("/api/buchhaltung/dunning?mode=candidates");
+    }>("/api/invoices/dunning?mode=candidates");
     const liste = kandidaten.data ?? [];
 
     const meine = liste.find((k) => k.invoiceId === rechnung.id);
@@ -150,7 +150,7 @@ test.describe("Mahnlauf", () => {
     ).toBe(ueberfaelligTage);
 
     // --- Den Lauf ausfuehren ---------------------------------------------
-    const lauf = await page.request.post("/api/buchhaltung/dunning", {
+    const lauf = await page.request.post("/api/invoices/dunning", {
       data: { invoiceIds: [rechnung.id] },
     });
     expect(
@@ -171,7 +171,7 @@ test.describe("Mahnlauf", () => {
     const gelesen = await api.get<{
       items?: Record<string, unknown>[];
       data?: { items?: Record<string, unknown>[] };
-    }>(`/api/buchhaltung/dunning/${laufId}`);
+    }>(`/api/invoices/dunning/${laufId}`);
     const posten = (gelesen.items ?? gelesen.data?.items ?? []) as Record<
       string,
       unknown
@@ -287,7 +287,7 @@ test.describe("Mahnlauf", () => {
     // --- Erst die Daten ---------------------------------------------------
     const kandidaten = await api.get<{
       data?: { invoiceId: string; openAmount: number; grossAmount: number }[];
-    }>("/api/buchhaltung/dunning?mode=candidates");
+    }>("/api/invoices/dunning?mode=candidates");
     const meine = (kandidaten.data ?? []).find((k) => k.invoiceId === rechnung.id);
     await requireOrSkip(
       Boolean(meine),
@@ -303,7 +303,7 @@ test.describe("Mahnlauf", () => {
     ).toBeCloseTo(brutto - gezahlt, 2);
 
     // --- Und dann die Anzeige ---------------------------------------------
-    await page.goto("/buchhaltung/zahlungen?tab=mahnwesen");
+    await page.goto("/invoices/mahnwesen");
     await ready(page);
 
     const zeile = page.locator("tr", { hasText: empfaenger }).first();
@@ -361,7 +361,7 @@ test.describe("Mahnlauf", () => {
       `Die Rechnung liess sich nicht versenden (HTTP ${senden.status()})`,
     );
 
-    const kandidaten = await api.get<{ data?: { invoiceId: string }[] }>("/api/buchhaltung/dunning?mode=candidates");
+    const kandidaten = await api.get<{ data?: { invoiceId: string }[] }>("/api/invoices/dunning?mode=candidates");
     const liste = kandidaten.data ?? [];
 
     expect(

@@ -1,4 +1,5 @@
 import {
+  Gavel,
   FileArchive,
   Bell,
   LayoutDashboard,
@@ -423,20 +424,10 @@ export const navGroups: NavGroup[] = [
           { title: "Übersicht", titleKey: "invoicesOverview", href: "/invoices", icon: Receipt },
           { title: "Versandübersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
-          { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
+          { title: "Zahlungserinnerungen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
+          { title: "Mahnwesen", titleKey: "dunning", href: "/invoices/mahnwesen", icon: Gavel },
           { title: "Belegexport", titleKey: "invoiceDocExport", href: "/invoices/beleg-export", icon: FileArchive },
           { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
-        ],
-      },
-      {
-        title: "Zahlungen",
-        titleKey: "payments",
-        href: "/zahlungen",
-        icon: Send,
-        permission: "accounting:read",
-        children: [
-          { title: "Mahnwesen", titleKey: "paymentsDunning", href: "/zahlungen/mahnwesen", icon: Bell },
-          { title: "SEPA-Zahllauf", titleKey: "paymentsSepa", href: "/zahlungen/sepa", icon: Landmark },
         ],
       },
       {

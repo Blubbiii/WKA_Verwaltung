@@ -139,14 +139,6 @@ const WIZARDS: WizardCase[] = [
     ownTest: "fund-onboarding-wizard.spec.ts",
   },
   {
-    name: "SEPA-Zahllauf",
-    path: "/buchhaltung/sepa/new",
-    steps: 0,
-    walkable: false,
-    needs: "erzeugt einen Zahllauf mit Nummer aus dem Nummernkreis",
-    ownTest: "sepa-wizard.spec.ts",
-  },
-  {
     name: "Ersteinrichtung",
     path: "/setup",
     steps: 0,

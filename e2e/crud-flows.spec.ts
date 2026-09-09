@@ -103,7 +103,6 @@ test.describe("CRUD Flows", () => {
   });
 
   test("Buchungssätze: Liste laden", async ({ page }) => {
-    await page.goto("/journal-entries");
     const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
     const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
     const hasText = await page.getByText(/buchung|journal/i).first().isVisible({ timeout: 2000 }).catch(() => false);

@@ -88,6 +88,17 @@ export interface RecordPaymentParams {
   tenantId: string;
   invoiceId: string;
   amount: number;
+  /**
+   * Vereinbarte Entgeltminderung, die NICHT als Geld fliesst — praktisch immer
+   * Skonto.
+   *
+   * Sie zaehlt fuer die Frage „ist die Rechnung beglichen?" wie gezahltes
+   * Geld. Ohne sie blieb eine korrekt mit Skonto bezahlte Rechnung auf
+   * PARTIALLY_PAID stehen, waehrend die Oberflaeche „vollstaendig bezahlt"
+   * meldete — und der Mahnlauf sucht seine Kandidaten genau nach diesem
+   * Status. Der Kunde zahlte richtig und bekam eine Mahnung.
+   */
+  minderung?: number;
   paymentDate: Date;
   paymentMethod?: InvoicePaymentMethod;
   bankTransactionId?: string | null;
@@ -218,15 +229,24 @@ export async function recordPayment(
   // Forderung wurde damit um die Gebühr überkreditiert. `openInvoiceAmount`
   // unten teilt die Buchung, sofern ein Ertragskonto konfiguriert ist.
   const dunningExtras = await sumOpenDunningCharges(tx, params.invoiceId);
-  const upperLimit = grossAmount.plus(toleranceDec).plus(dunningExtras);
+  /*
+    Die Minderung senkt die Obergrenze mit: wer nach Skonto den vollen
+    Bruttobetrag ueberweist, hat zu viel gezahlt — und das soll auffallen.
+  */
+  const minderungDec = new Decimal(params.minderung ?? 0);
+  const upperLimit = grossAmount
+    .plus(toleranceDec)
+    .plus(dunningExtras)
+    .minus(minderungDec);
 
   if (newPaidDec.greaterThan(upperLimit)) {
     throw new OverpaymentError(grossAmount.toNumber(), newPaidDec.toNumber());
   }
 
-  const isFullyPaid = newPaidDec.greaterThanOrEqualTo(
-    grossAmount.minus(toleranceDec),
-  );
+  // Gezahltes Geld PLUS vereinbarte Minderung gegen den Bruttobetrag.
+  const isFullyPaid = newPaidDec
+    .plus(minderungDec)
+    .greaterThanOrEqualTo(grossAmount.minus(toleranceDec));
   const newStatus: "SENT" | "PARTIALLY_PAID" | "PAID" = isFullyPaid
     ? "PAID"
     : "PARTIALLY_PAID";

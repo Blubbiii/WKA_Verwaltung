@@ -1,7 +1,7 @@
 /**
  * Periodensperre — Unlock per Soft-Update (Phase 9).
  *
- * DELETE /api/buchhaltung/period-locks/[id] — Periode entsperren (Admin)
+ * DELETE /api/admin/period-locks/[id] — Periode entsperren (Admin)
  *
  * Wir löschen den Lock-Record NICHT, sondern setzen unlockedAt + unlockedById
  * — Audit-Trail bleibt erhalten. Ein unlocked Record gilt nicht mehr als Sperre

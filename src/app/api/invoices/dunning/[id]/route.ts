@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/buchhaltung/dunning/[id] — Get dunning run with items
+// GET /api/invoices/dunning/[id] — Get dunning run with items
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
