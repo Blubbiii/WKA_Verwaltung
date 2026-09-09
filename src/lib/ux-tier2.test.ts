@@ -37,59 +37,11 @@ function codeOnly(source: string): string {
 
 // ---------------------------------------------------------------------------
 // #7 · Kontenauswahl
-// ---------------------------------------------------------------------------
 
-describe("Buchungssatz: Konto suchen statt tippen (#7)", () => {
-  const page = src("app/(dashboard)/journal-entries/page.tsx");
-
-  it("die Kontenspalte nutzt die Combobox", () => {
-    expect(page).toContain('import { Combobox } from "@/components/ui/combobox"');
-    expect(page).toContain("<Combobox");
-  });
-
-  it("Kontonummer und Kontenname werden in EINEM setLines gesetzt", () => {
-    // Zwei aufeinanderfolgende updateLine-Aufrufe arbeiten auf demselben
-    // Snapshot — der zweite haette den ersten verworfen.
-    expect(page).toContain("const applyAccount = (idx: number, accountNumber: string, accountName: string)");
-    expect(page).toMatch(/applyAccount[\s\S]{0,260}account: accountNumber, accountName/);
-  });
-
-  it("Steuerschlüssel und Kostenstelle sind erfassbar", () => {
-    // Beide Felder existierten in JournalLine, hatten aber kein Eingabefeld.
-    expect(page).toContain("taxKey: string;");
-    expect(page).toContain("costCenter: string;");
-    expect(page).toContain('t("dialog.cols.taxKey")');
-    expect(page).toContain('t("dialog.cols.costCenter")');
-  });
-
-  it("die Combobox filtert serverseitige Treffer nicht ein zweites Mal", () => {
-    // Sonst verschwinden Treffer, die auf einem nicht angezeigten Feld matchen.
-    const combobox = src("components/ui/combobox.tsx");
-    expect(combobox).toContain("shouldFilter={!serverSide}");
-  });
-});
 
 // ---------------------------------------------------------------------------
 // #8 · Buchung duplizieren
-// ---------------------------------------------------------------------------
 
-describe("Buchung duplizieren (#8)", () => {
-  const page = src("app/(dashboard)/journal-entries/page.tsx");
-
-  it("der Dialog kennt eine Vorlage getrennt vom Bearbeiten-Fall", () => {
-    expect(page).toContain("duplicateFrom?: JournalEntry | null");
-    expect(page).toContain("const template = editing ?? duplicateFrom ?? null");
-  });
-
-  it("Neu-Anlegen setzt die Vorlage zurueck", () => {
-    // Sonst zieht der naechste "Neue Buchung"-Klick die zuletzt duplizierte mit.
-    expect(page).toContain("setEditingEntry(null); setDuplicateFrom(null); setDialogOpen(true);");
-  });
-
-  it("Schliessen und Speichern raeumen die Vorlage ebenfalls ab", () => {
-    expect(page).toContain("setDialogOpen(false); setDuplicateFrom(null);");
-  });
-});
 
 // ---------------------------------------------------------------------------
 // #9 · Rechnung duplizieren

@@ -186,12 +186,6 @@ describe("Betragsfelder nehmen deutsche Schreibweise an (#17)", () => {
 });
 
 describe("Es gibt nur noch EINE Zahlenerkennung (#17)", () => {
-  it("der Buchungsdialog nutzt die gemeinsame", () => {
-    const page = src("app/(dashboard)/journal-entries/page.tsx");
-    expect(page).toContain('from "@/lib/parse-amount"');
-    // Der lokale Parser las "1.234,56" als 1.234 — aus 1.234,56 EUR wurde 1,23.
-    expect(codeOnly(page)).not.toContain('parseFloat(s.replace(",", "."))');
-  });
 
   it("der Produktionsimport nutzt die gemeinsame", () => {
     const sheet = src("components/energy/production-import-sheet.tsx");

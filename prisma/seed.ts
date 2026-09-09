@@ -172,25 +172,8 @@ const permissionsData = [
   { name: "accounting:read", displayName: "Buchhaltung anzeigen", module: "accounting", action: "read", sortOrder: 230 },
   { name: "accounting:create", displayName: "Buchungen erstellen", module: "accounting", action: "create", sortOrder: 231 },
   { name: "accounting:update", displayName: "Buchungen bearbeiten", module: "accounting", action: "update", sortOrder: 232 },
-  { name: "accounting:delete", displayName: "Buchungen löschen", module: "accounting", action: "delete", sortOrder: 233 },
   // K-4: Dedizierte Permissions fuer Festschreiben + Storno (HGB-Verantwortungstrennung)
-  { name: "accounting:post", displayName: "Buchungen festschreiben", description: "DRAFT-Buchungen in POSTED-Status setzen (§146 AO Unveraenderbarkeit ab da)", module: "accounting", action: "post", sortOrder: 240 },
-  { name: "accounting:reverse", displayName: "Buchungen stornieren", description: "Generalumkehr fuer POSTED-Buchungen — eigene Permission gem. HGB-Verantwortungstrennung", module: "accounting", action: "reverse", sortOrder: 241 },
   // P20: Erweiterte Buchhaltungs-Permissions für HGB-Compliance (P9-P19 + Audit)
-  { name: "accounting:period-lock:create", displayName: "Periode sperren", description: "Buchungsperiode schliessen (GoBD)", module: "accounting", action: "period-lock", sortOrder: 234 },
-  { name: "accounting:period-lock:delete", displayName: "Periode entsperren", description: "Gesperrte Periode wieder oeffnen (Audit-pflichtig)", module: "accounting", action: "period-lock", sortOrder: 235 },
-  { name: "accounting:tax-code:read", displayName: "Steuerschlüssel anzeigen", module: "accounting", action: "tax-code-read", sortOrder: 236 },
-  { name: "accounting:tax-code:write", displayName: "Steuerschlüssel bearbeiten", module: "accounting", action: "tax-code-write", sortOrder: 237 },
-  { name: "accounting:value-adjustment:create", displayName: "Wertberichtigungen anlegen", description: "EWB/PWB/Forderungsausfall buchen", module: "accounting", action: "value-adjustment", sortOrder: 238 },
-  { name: "accounting:report:bilanz", displayName: "Bilanz anzeigen", module: "accounting", action: "report-bilanz", sortOrder: 250 },
-  { name: "accounting:report:gewst", displayName: "GewSt-Hinzurechnung anzeigen", module: "accounting", action: "report-gewst", sortOrder: 251 },
-  { name: "accounting:report:susa", displayName: "Summen- und Saldenliste anzeigen", module: "accounting", action: "report-susa", sortOrder: 252 },
-  { name: "accounting:report:kontoblatt", displayName: "Kontoblatt anzeigen", module: "accounting", action: "report-kontoblatt", sortOrder: 253 },
-  { name: "accounting:report:euer", displayName: "EUER §4(3) EStG anzeigen", module: "accounting", action: "report-euer", sortOrder: 254 },
-  { name: "accounting:report:anlagenspiegel", displayName: "Anlagenspiegel anzeigen", module: "accounting", action: "report-anlagenspiegel", sortOrder: 255 },
-  { name: "accounting:year-end-close:execute", displayName: "Jahresabschluss ausführen", description: "Saldenvortrag + Bilanz-Snapshot", module: "accounting", action: "year-end-close", sortOrder: 256 },
-  { name: "accounting:gobd-export:create", displayName: "GoBD Z3-Export erstellen", description: "Datentraegeruberlassung fuer Betriebspruefung", module: "accounting", action: "gobd-export", sortOrder: 257 },
-  { name: "accounting:datev-export:create", displayName: "DATEV-Export erstellen", module: "accounting", action: "datev-export", sortOrder: 258 },
 
   // P20: Super-Admin-Bereich (globale System-Werte)
   { name: "system:settings:write", displayName: "System-Einstellungen ändern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", module: "system", action: "settings-write", sortOrder: 260 },
@@ -307,7 +290,6 @@ const systemRolesData = [
       "mailings:read", "mailings:write", "mailings:send",
       // Accounting - full access (inkl. K-4 neue Permissions post + reverse)
       "accounting:read", "accounting:create", "accounting:update",
-      "accounting:post", "accounting:reverse",
       // Settings - read only
       "settings:read",
     ],
@@ -809,12 +791,10 @@ async function seedLedgerAccounts(tenantId: string) {
   let updatedCount = 0;
 
   for (const acc of skr03Accounts) {
-    const existing = await prisma.ledgerAccount.findUnique({
       where: { tenantId_accountNumber: { tenantId, accountNumber: acc.accountNumber } },
     });
 
     if (existing) {
-      await prisma.ledgerAccount.update({
         where: { id: existing.id },
         data: {
           name: acc.name,
@@ -826,7 +806,6 @@ async function seedLedgerAccounts(tenantId: string) {
       });
       updatedCount++;
     } else {
-      await prisma.ledgerAccount.create({
         data: {
           tenantId,
           accountNumber: acc.accountNumber,

@@ -17,7 +17,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { formatCurrency, LOCALE_DE } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import type { ApprovalAction } from "@prisma/client";
 
 export interface ApprovalDiffChange {
@@ -182,80 +182,7 @@ async function diffSettlementFinalize(_approvalId: string, tenantId: string, ent
   };
 }
 
-async function diffJournalReverse(_approvalId: string, tenantId: string, entityId: string): Promise<ApprovalDiff | null> {
-  const entry = await prisma.journalEntry.findFirst({
-    where: { id: entityId, tenantId, deletedAt: null },
-    include: { lines: { orderBy: { lineNumber: "asc" } } },
-  });
-  if (!entry) {
-    return {
-      title: "Buchung stornieren",
-      changes: [],
-      summary: "Referenz nicht mehr verfügbar",
-    };
-  }
 
-  // Bei Storno werden alle Debit/Credit-Werte invertiert
-  const changes: ApprovalDiffChange[] = entry.lines.map((line) => {
-    const debit = toNum(line.debitAmount);
-    const credit = toNum(line.creditAmount);
-    const originalAmount = debit - credit;
-    const reversedAmount = -originalAmount;
-    return {
-      label: `Konto ${line.account}${line.accountName ? ` · ${line.accountName}` : ""}`,
-      before: formatCurrency(originalAmount),
-      after: formatCurrency(reversedAmount),
-      delta: formatDelta(reversedAmount - originalAmount),
-      tone: "destructive",
-    };
-  });
-
-  return {
-    title: `Storno: ${entry.description}`,
-    changes,
-    summary: `Generalumkehr der Buchung vom ${entry.entryDate.toLocaleDateString(LOCALE_DE)}. Original-Buchung bleibt erhalten, eine neue Buchung mit invertierten Vorzeichen wird erzeugt.`,
-  };
-}
-
-async function diffJournalPost(_approvalId: string, tenantId: string, entityId: string): Promise<ApprovalDiff | null> {
-  const entry = await prisma.journalEntry.findFirst({
-    where: { id: entityId, tenantId, deletedAt: null },
-    include: { lines: { orderBy: { lineNumber: "asc" } } },
-  });
-  if (!entry) {
-    return {
-      title: "Buchung festschreiben",
-      changes: [],
-      summary: "Referenz nicht mehr verfügbar",
-    };
-  }
-
-  const changes: ApprovalDiffChange[] = [
-    {
-      label: "Status",
-      before: entry.status,
-      after: "POSTED",
-      tone: "warning",
-    },
-  ];
-
-  for (const line of entry.lines) {
-    const debit = toNum(line.debitAmount);
-    const credit = toNum(line.creditAmount);
-    const amount = debit > 0 ? debit : -credit;
-    changes.push({
-      label: `Konto ${line.account}${line.accountName ? ` · ${line.accountName}` : ""}`,
-      after: formatDelta(amount),
-      tone: "default",
-    });
-  }
-
-  return {
-    title: `Buchung: ${entry.description}`,
-    changes,
-    summary: `Buchungsdatum ${entry.entryDate.toLocaleDateString(LOCALE_DE)} — nach Festschreibung nur noch via Generalumkehr änderbar.`,
-  };
-}
 
 async function diffIncomingInvoiceApprove(_approvalId: string, tenantId: string, entityId: string): Promise<ApprovalDiff | null> {
   const invoice = await prisma.incomingInvoice.findFirst({
@@ -315,8 +242,6 @@ type DiffComputer = (
 const COMPUTERS: Partial<Record<ApprovalAction, DiffComputer>> = {
   SEPA_RUN: diffSepaRun,
   SETTLEMENT_FINALIZE: diffSettlementFinalize,
-  JOURNAL_REVERSE: diffJournalReverse,
-  JOURNAL_POST: diffJournalPost,
   INCOMING_INVOICE_APPROVE: diffIncomingInvoiceApprove,
 };
 

@@ -47,9 +47,6 @@ function clientSource(): string {
 const CLIENT = clientSource();
 
 const ENDPOINTS: Array<{ path: string; label: string }> = [
-  { path: "/api/buchhaltung/ebilanz", label: "E-Bilanz §5b EStG" },
-  { path: "/api/buchhaltung/bundesanzeiger", label: "Bundesanzeiger §325 HGB" },
-  { path: "/api/admin/verfahrensdokumentation", label: "GoBD §145 AO Verfahrensdokumentation" },
   { path: "/api/admin/search/reindex", label: "Suchindex-Neuaufbau (TF-8)" },
   { path: "/api/search", label: "Volltextsuche (TF-8)" },
 ];
@@ -74,15 +71,6 @@ describe("Compliance-Endpunkte mit UI (TF-11)", () => {
     expect(page).toContain('hasPermission("admin:audit")');
   });
 
-  it("die drei Abschluss-Tabs sind im Hub verdrahtet", () => {
-    const hub = readFileSync(
-      join(SRC, "app/(dashboard)/buchhaltung/abschluss/page.tsx"),
-      "utf-8",
-    );
-    for (const tab of ["ebilanz", "bundesanzeiger", "verfahrensdoku"]) {
-      expect(hub, `Tab ${tab} fehlt`).toContain(`value="${tab}"`);
-    }
-  });
 
   it("der Download-Helper gibt die ObjectURL wieder frei", () => {
     // Das kopierte Muster im Code liess revokeObjectURL teils weg — der Blob

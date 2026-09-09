@@ -18,10 +18,9 @@ import {
   InvoiceNotPayableError,
   OverpaymentError,
   recordPayment,
-} from "@/lib/accounting/invoice-payment";
+} from "@/lib/invoices/payment";
 import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { withIdempotency } from "@/lib/idempotency";
-import { invalidateReportsCache } from "@/lib/cache/reports";
 import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 const paymentSchema = z.object({
@@ -133,12 +132,6 @@ export async function POST(
         // Die Zahlungsbuchung ist POSTED → Saldi in Bilanz/GuV/BWA/SuSa haben
         // sich geändert. Nach Commit invalidieren (fire-and-forget).
         if (result.journalEntryId) {
-          invalidateReportsCache(check.tenantId!).catch((err) => {
-            logger.warn(
-              { err, invoiceId: id },
-              "[Reports-Cache] Invalidation failed after payment posting",
-            );
-          });
         }
 
         return NextResponse.json({ data: serializePrisma(result) }, { status: 201 });

@@ -26,7 +26,7 @@ import { loadUstgConfig } from "@/lib/system-settings";
 import {
   assertVorsteuerCapable,
   VorsteuerCapabilityError,
-} from "@/lib/accounting/incoming-invoice-validator";
+} from "@/lib/invoices/incoming-validator";
 import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";
 
 export async function POST(

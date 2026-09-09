@@ -34,52 +34,12 @@ const MODULE_FLAG_KEYS = [
   "gis.enabled",
   "inbox.enabled",
   "wirtschaftsplan.enabled",
-  "accounting.enabled",
   "document-routing.enabled",
   "marketData.enabled",
   "scada-uploader-v2.enabled",
   "uploader-v2-generic.enabled",
 ] as const;
 
-// Accounting sub-module flags
-const ACCOUNTING_SUB_FLAG_KEYS = [
-  "accounting.reports.enabled",
-  "accounting.bank.enabled",
-  "accounting.dunning.enabled",
-  "accounting.sepa.enabled",
-  "accounting.ustva.enabled",
-  "accounting.assets.enabled",
-  "accounting.cashbook.enabled",
-  "accounting.datev.enabled",
-  "accounting.yearend.enabled",
-  "accounting.costcenter.enabled",
-  "accounting.budget.enabled",
-  "accounting.quotes.enabled",
-  "accounting.liquidity.enabled",
-  "accounting.ocr.enabled",
-  "accounting.multibanking.enabled",
-  "accounting.zm.enabled",
-] as const;
-
-// Default values for accounting sub-flags (most default to true)
-const ACCOUNTING_SUB_DEFAULTS: Record<string, boolean> = {
-  "accounting.reports": true,
-  "accounting.bank": true,
-  "accounting.dunning": true,
-  "accounting.sepa": true,
-  "accounting.ustva": true,
-  "accounting.assets": true,
-  "accounting.cashbook": true,
-  "accounting.datev": true,
-  "accounting.yearend": true,
-  "accounting.costcenter": true,
-  "accounting.budget": true,
-  "accounting.quotes": true,
-  "accounting.liquidity": true,
-  "accounting.ocr": false,
-  "accounting.multibanking": false,
-  "accounting.zm": false,
-};
 
 export interface ModuleFlags {
   "management-billing": boolean;
@@ -89,7 +49,6 @@ export interface ModuleFlags {
   "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
-  "accounting": boolean;
   "document-routing": boolean;
   "scada-uploader-v2": boolean;
   "uploader-v2-generic": boolean;
@@ -103,7 +62,6 @@ const DEFAULT_MODULE_FLAGS: ModuleFlags = {
   "gis": false,
   "inbox": false,
   "wirtschaftsplan": false,
-  "accounting": false,
   "document-routing": false,
   "scada-uploader-v2": false,
   "uploader-v2-generic": false,
@@ -127,13 +85,13 @@ export async function GET(_request: NextRequest) {
       orderBy: { name: "asc" },
     });
 
-    // Load all SystemConfig flags in one query (modules + accounting sub-flags)
+    // Load all SystemConfig flags in one query
     let systemConfigs: Array<{ key: string; value: string; tenantId: string | null }> = [];
     if (hasPrismaModel("systemConfig")) {
       const systemConfig = getPrismaModel("systemConfig");
       systemConfigs = await systemConfig.findMany({
         where: {
-          key: { in: [...MODULE_FLAG_KEYS, ...ACCOUNTING_SUB_FLAG_KEYS] },
+          key: { in: [...MODULE_FLAG_KEYS] },
         },
         select: { key: true, value: true, tenantId: true },
       }) as Array<{ key: string; value: string; tenantId: string | null }>;
@@ -167,18 +125,6 @@ export async function GET(_request: NextRequest) {
         modules[moduleName] = resolved === "true";
       }
 
-      // Resolve accounting sub-flags
-      const accountingSub: Record<string, boolean> = {};
-      for (const key of ACCOUNTING_SUB_FLAG_KEYS) {
-        // "accounting.reports.enabled" → "accounting.reports"
-        const subName = key.replace(".enabled", "");
-        const tenantVal = tenantConfigs[key];
-        const globalVal = globalFlags[key];
-        const resolved = tenantVal ?? globalVal;
-        accountingSub[subName] = resolved !== undefined
-          ? resolved === "true"
-          : (ACCOUNTING_SUB_DEFAULTS[subName] ?? true);
-      }
 
       return {
         id: tenant.id,
@@ -190,7 +136,6 @@ export async function GET(_request: NextRequest) {
           ...features,
         },
         modules,
-        accountingSub,
       };
     });
 

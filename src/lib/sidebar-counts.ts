@@ -20,7 +20,6 @@ export const SIDEBAR_COUNT_KEYS = [
   /** Überfällige Rechnungen (SENT/PARTIALLY_PAID + dueDate < today) */
   "mahnwesen",
   /** Unzugeordnete Bank-Transaktionen */
-  "bankUnmatched",
   /** Verträge mit Frist in den nächsten 30 Tagen */
   "expiringContracts",
 ] as const;
@@ -43,7 +42,6 @@ export const EMPTY_SIDEBAR_COUNTS: SidebarCounts = {
   approvals: 0,
   inbox: 0,
   mahnwesen: 0,
-  bankUnmatched: 0,
   expiringContracts: 0,
 };
 
@@ -59,6 +57,5 @@ export const BADGE_TONE_BY_KEY: Record<SidebarCountKey, SidebarBadgeTone> = {
   approvals: "warning",        // Approvals warten auf User-Action
   inbox: "default",            // Neue Belege, kein Druck
   mahnwesen: "destructive",    // Überfällig = ernst
-  bankUnmatched: "default",    // Aufräum-Arbeit
   expiringContracts: "warning",// Fristen
 };

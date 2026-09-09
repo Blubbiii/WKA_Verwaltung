@@ -6,7 +6,6 @@ import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
-import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
 import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { releaseSettlementForInvoice } from "@/lib/scada/settlement-release";
@@ -77,12 +76,11 @@ export async function POST(
       });
     }
 
-    // GoBD §146 AO: Finding 1.4 — geprüft wurde bisher zusätzlich der Monat
-    // von original.invoiceDate. Dorthin bucht aber NICHTS: reverseAutoPosting()
-    // setzt entryDate bewusst auf den aktuellen Monat (auto-posting.ts), und
-    // die Storno-Rechnung bekommt invoiceDate = jetzt. Die Prüfung gegen den
-    // Original-Monat hat damit nur legitime Stornos blockiert und den Anwender
-    // gezwungen, eine geschlossene Periode zu entsperren — genau das, was
+    // Geprüft wird der AKTUELLE Monat, nicht der Monat der Originalrechnung.
+    // Die Storno-Rechnung bekommt invoiceDate = jetzt; sie gehört damit in den
+    // laufenden Übergabemonat. Eine Prüfung gegen den Original-Monat hätte nur
+    // legitime Stornos blockiert und den Anwender gezwungen, einen bereits
+    // übergebenen Monat wieder zu öffnen — genau das, was
     // §146 AO verhindern soll. Geprüft wird jetzt das tatsächliche
     // Buchungsdatum.
     try {
@@ -202,9 +200,10 @@ export async function POST(
     });
 
     // Fire-and-forget auto-posting reversal
-    reverseAutoPosting(id, check.userId!, check.tenantId!).catch((err) => {
-      logger.warn({ err, invoiceId: id }, "[AutoPosting] Failed to reverse auto-posting");
-    });
+    /*
+      Hier wurde die Stornobuchung erzeugt. Entfaellt mit dem
+      Buchhaltungsmodul — die Stornorechnung selbst bleibt der Beleg.
+    */
 
     // Invalidate dashboard caches after invoice cancellation (both original and storno created)
     invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {

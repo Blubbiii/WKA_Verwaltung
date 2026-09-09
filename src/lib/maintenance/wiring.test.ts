@@ -99,11 +99,10 @@ describe("Registrierung", () => {
 // ---------------------------------------------------------------------------
 
 describe("Zeitplaene", () => {
-  it("alle drei Muster sind gueltige Cron-Ausdruecke", () => {
+  it("alle Muster sind gueltige Cron-Ausdruecke", () => {
     const patterns = [
       CRON_SCHEDULES.DEADLINE_CHECK,
       CRON_SCHEDULES.BUNDESBANK_RATES,
-      CRON_SCHEDULES.BANK_CONNECTION_CHECK,
     ];
     for (const pattern of patterns) {
       expect(pattern.trim().split(/\s+/).length).toBe(5);
@@ -117,15 +116,6 @@ describe("Zeitplaene", () => {
       hour(CRON_SCHEDULES.DAILY_DIGEST),
     );
     expect(hour(CRON_SCHEDULES.DEADLINE_CHECK)).toBeLessThan(
-      hour(CRON_SCHEDULES.REMINDER),
-    );
-  });
-
-  it("die Bankpruefung laeuft VOR dem Mahnlauf", () => {
-    // Sonst wird auf Basis veralteter Umsaetze gemahnt, ohne dass jemand weiss,
-    // dass sie veraltet sind.
-    const hour = (pattern: string) => Number(pattern.trim().split(/\s+/)[1]);
-    expect(hour(CRON_SCHEDULES.BANK_CONNECTION_CHECK)).toBeLessThan(
       hour(CRON_SCHEDULES.REMINDER),
     );
   });
@@ -155,7 +145,6 @@ describe("Keine zweite Kopie der Fachlogik", () => {
   const ROUTES = [
     "app/api/cron/check-deadlines/route.ts",
     "app/api/cron/bundesbank-rate-fetch/route.ts",
-    "app/api/cron/bank-fetch/route.ts",
   ];
 
   it("die Routen rufen die gemeinsame Umsetzung auf", () => {
@@ -166,18 +155,6 @@ describe("Keine zweite Kopie der Fachlogik", () => {
     }
   });
 
-  it("keine Route greift noch selbst auf die Datenbank zu", () => {
-    // Solange die Route ihre eigene Abfrage hielt, konnten Endpunkt und Worker
-    // auseinanderlaufen — genau die Falle, die B7 beim Bankimport schon hatte.
-    for (const route of ROUTES) {
-      const source = read(route);
-      const code = source
-        .split("\n")
-        .filter((l) => !l.trim().startsWith("*") && !l.trim().startsWith("//"))
-        .join("\n");
-      expect(code, `${route} fragt noch selbst ab`).not.toContain("prisma.");
-    }
-  });
 
   it("die Endpunkte bleiben fuer den Handbetrieb erhalten und bleiben geschuetzt", () => {
     // Sie abzuschaffen waere bequem gewesen, nimmt aber die Moeglichkeit, einen

@@ -140,7 +140,7 @@ describe("Aktiver Tab steht in der URL (#15)", () => {
     "app/(dashboard)/admin/system-admin/tabs/config.tsx",
     "app/(dashboard)/admin/system-admin/tabs/flags.tsx",
     "app/(dashboard)/admin/system-admin/tabs/health.tsx",
-    "app/(dashboard)/buchhaltung/zahlungen/tabs/mahnwesen.tsx",
+    "app/(dashboard)/zahlungen/tabs/mahnwesen.tsx",
   ];
 
   for (const path of NESTED) {

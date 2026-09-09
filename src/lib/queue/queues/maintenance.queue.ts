@@ -31,7 +31,6 @@ import { CRON_SCHEDULES, CRON_TIMEZONE } from "@/lib/config/cron-schedules";
 import { removeRepeatableJobs } from "../repeatable";
 import type {
   DeadlineCheckResult,
-  BankConnectionCheckResult,
 } from "@/lib/maintenance/tasks";
 import type { BundesbankFetchResult } from "@/lib/awv/bundesbank-fetch";
 
@@ -44,7 +43,6 @@ export const MAINTENANCE_QUEUE_NAME = "maintenance";
 export const MAINTENANCE_JOBS = {
   DEADLINE_CHECK: "check-deadlines",
   BUNDESBANK_RATES: "bundesbank-rates",
-  BANK_CONNECTION_CHECK: "bank-connection-check",
 } as const;
 
 export type MaintenanceJobName =
@@ -55,7 +53,6 @@ export type MaintenanceJobData = Record<string, never>;
 
 export type MaintenanceJobResult =
   | DeadlineCheckResult
-  | BankConnectionCheckResult
   | BundesbankFetchResult;
 
 const defaultJobOptions = getJobOptions("background");
@@ -89,11 +86,6 @@ const SCHEDULES: { name: MaintenanceJobName; pattern: string; label: string }[] 
     name: MAINTENANCE_JOBS.BUNDESBANK_RATES,
     pattern: CRON_SCHEDULES.BUNDESBANK_RATES,
     label: "Bundesbank-Basiszinssatz",
-  },
-  {
-    name: MAINTENANCE_JOBS.BANK_CONNECTION_CHECK,
-    pattern: CRON_SCHEDULES.BANK_CONNECTION_CHECK,
-    label: "Bankverbindungen",
   },
 ];
 

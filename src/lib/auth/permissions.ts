@@ -481,12 +481,9 @@ export const PERMISSIONS = {
   ACCOUNTING_READ: "accounting:read",
   ACCOUNTING_CREATE: "accounting:create",
   ACCOUNTING_UPDATE: "accounting:update",
-  ACCOUNTING_DELETE: "accounting:delete",
   // Dedizierte Permissions für POSTING + STORNO (HGB-Verantwortungstrennung).
   // POSTED-Buchungen sind unveränderlich (§146 AO). Storno = Generalumkehr,
   // gehört NICHT zu :update — eigene Berechtigung.
-  ACCOUNTING_POST: "accounting:post",
-  ACCOUNTING_REVERSE: "accounting:reverse",
 
   // Reports
   REPORTS_READ: "reports:read",
@@ -523,22 +520,8 @@ export const PERMISSIONS = {
   ENERGY_SETTLEMENTS_FINALIZE: "energy:settlements:finalize",
 
   // Accounting (granular — HGB/GoBD)
-  ACCOUNTING_PERIOD_LOCK_CREATE: "accounting:period-lock:create",
-  ACCOUNTING_PERIOD_LOCK_DELETE: "accounting:period-lock:delete",
-  ACCOUNTING_TAX_CODE_READ: "accounting:tax-code:read",
-  ACCOUNTING_TAX_CODE_WRITE: "accounting:tax-code:write",
-  ACCOUNTING_VALUE_ADJUSTMENT_CREATE: "accounting:value-adjustment:create",
-  ACCOUNTING_YEAR_END_CLOSE_EXECUTE: "accounting:year-end-close:execute",
-  ACCOUNTING_GOBD_EXPORT_CREATE: "accounting:gobd-export:create",
-  ACCOUNTING_DATEV_EXPORT_CREATE: "accounting:datev-export:create",
 
   // Accounting Reports
-  ACCOUNTING_REPORT_BILANZ: "accounting:report:bilanz",
-  ACCOUNTING_REPORT_GEWST: "accounting:report:gewst",
-  ACCOUNTING_REPORT_SUSA: "accounting:report:susa",
-  ACCOUNTING_REPORT_KONTOBLATT: "accounting:report:kontoblatt",
-  ACCOUNTING_REPORT_EUER: "accounting:report:euer",
-  ACCOUNTING_REPORT_ANLAGENSPIEGEL: "accounting:report:anlagenspiegel",
 
   // Admin (granular tenant-level)
   ADMIN_EMAIL: "admin:email",

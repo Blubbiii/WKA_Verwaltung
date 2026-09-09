@@ -84,24 +84,20 @@ describe("Zeitraum mit Schnellauswahl (#18)", () => {
     expect(picker).toContain("laufendes Geschäftsjahr");
   });
 
-  const ROLLED_OUT = [
-    "app/(dashboard)/buchhaltung/kontoblatt/page.tsx",
-    "app/(dashboard)/buchhaltung/abschluss/tabs/datev.tsx",
-    "app/(dashboard)/buchhaltung/berichte/tabs/bwa.tsx",
-    "app/(dashboard)/buchhaltung/berichte/tabs/euer.tsx",
-    "app/(dashboard)/buchhaltung/berichte/tabs/guv.tsx",
-    "app/(dashboard)/buchhaltung/berichte/tabs/susa.tsx",
-    "app/(dashboard)/buchhaltung/datev-export/page.tsx",
-    "app/(dashboard)/buchhaltung/gobd-export/page.tsx",
-    "app/(dashboard)/buchhaltung/planung/tabs/kostenstellen.tsx",
-    "app/(dashboard)/buchhaltung/steuern/tabs/ustva.tsx",
-  ];
+  /*
+    Hier stand eine Liste von Buchhaltungsseiten, die den Zeitraum-Picker
+    bereits nutzten. Alle zehn sind mit dem Buchhaltungsmodul entfallen.
+
+    Der Block bleibt leer stehen statt geloescht zu werden: die Regel gilt
+    weiter, sobald wieder eine Seite mit Von/Bis-Feldern dazukommt. Wer eine
+    baut, traegt sie hier ein.
+  */
+  const ROLLED_OUT: string[] = [];
 
   for (const path of ROLLED_OUT) {
     it(`${path.split("/").slice(-2).join("/")} nutzt den Picker`, () => {
       const page = src(path);
       expect(page).toContain("<DateRangePicker");
-      // Die beiden rohen Von/Bis-Felder sind weg.
       expect(page).not.toMatch(/type="date"\s+value=\{from\}/);
       expect(page).not.toMatch(/type="date"\s+value=\{to\}/);
     });

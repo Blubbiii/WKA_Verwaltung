@@ -49,5 +49,4 @@ export const CRON_SCHEDULES = {
    * Vor dem Mahnlauf um 8:00, damit eine seit Tagen stumme Verbindung auffällt,
    * bevor auf Basis veralteter Umsätze gemahnt wird.
    */
-  BANK_CONNECTION_CHECK: envCron("CRON_BANK_CONNECTION_CHECK", "0 6 * * *"),
 };

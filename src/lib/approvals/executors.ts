@@ -15,12 +15,6 @@
 import type { ApprovalAction, ApprovalRequest } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
-import {
-  reverseJournalEntry,
-  PeriodLockedError,
-  assertPeriodOpen,
-} from "@/lib/validation/period-lock";
-import { invalidateReportsCache } from "@/lib/cache/reports";
 
 export interface ExecutorResult {
   success: boolean;
@@ -34,108 +28,7 @@ type Executor = (
   deciderId: string,
 ) => Promise<ExecutorResult>;
 
-/**
- * Führt das Posten einer DRAFT-JournalEntry aus.
- */
-const executeJournalPost: Executor = async (request) => {
-  try {
-    const entry = await prisma.journalEntry.findFirst({
-      where: {
-        id: request.entityId,
-        tenantId: request.tenantId,
-        deletedAt: null,
-      },
-      include: { lines: true },
-    });
-    if (!entry) {
-      return { success: false, error: "Buchung nicht mehr vorhanden" };
-    }
-    if (entry.status !== "DRAFT") {
-      return {
-        success: false,
-        error: `Buchung ist im Status "${entry.status}" — Posting bereits durchgeführt oder nicht mehr möglich`,
-      };
-    }
 
-    // Periode-Sperre erneut prüfen (kann sich zwischenzeitlich geändert haben)
-    try {
-      await assertPeriodOpen(request.tenantId, entry.entryDate);
-    } catch (err) {
-      if (err instanceof PeriodLockedError) {
-        return {
-          success: false,
-          error: `Periode ${err.periodYear}-${err.periodMonth ?? ""} ist mittlerweile gesperrt`,
-        };
-      }
-      throw err;
-    }
-
-    const updated = await prisma.journalEntry.update({
-      where: { id: entry.id },
-      data: { status: "POSTED" },
-    });
-
-    invalidateReportsCache(request.tenantId).catch((err) => {
-      logger.warn({ err }, "[Reports-Cache] Invalidation nach Approval-POST fehlgeschlagen");
-    });
-
-    return {
-      success: true,
-      resultData: { postedEntryId: updated.id, status: updated.status },
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unbekannter Fehler",
-    };
-  }
-};
-
-/**
- * Führt die Generalumkehr (Storno) einer POSTED-JournalEntry aus.
- */
-const executeJournalReverse: Executor = async (request, deciderId) => {
-  try {
-    const params = (request.actionParams as { reason?: string; reversalDate?: string } | null) ?? {};
-    const reason = params.reason ?? request.requestReason ?? "Storno (genehmigt)";
-    const reversalDate = params.reversalDate ? new Date(params.reversalDate) : undefined;
-
-    const result = await prisma.$transaction(async (tx) => {
-      return reverseJournalEntry(tx, {
-        tenantId: request.tenantId,
-        originalEntryId: request.entityId,
-        userId: deciderId,
-        reason,
-        reversalDate,
-      });
-    });
-
-    invalidateReportsCache(request.tenantId).catch((err) => {
-      logger.warn({ err }, "[Reports-Cache] Invalidation nach Approval-REVERSE fehlgeschlagen");
-    });
-
-    return {
-      success: true,
-      resultData: { originalId: result.originalId, reversalId: result.reversalId },
-    };
-  } catch (err) {
-    if (err instanceof PeriodLockedError) {
-      return {
-        success: false,
-        error: `Periode ${err.periodYear}-${err.periodMonth ?? ""} ist gesperrt`,
-      };
-    }
-    if (err instanceof Error) {
-      if (err.name === "AlreadyReversedError") {
-        return { success: false, error: "Buchung wurde bereits storniert" };
-      }
-    }
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unbekannter Fehler",
-    };
-  }
-};
 
 /**
  * Settlement-Finalize: setzt SettlementPeriod auf FINALIZED.
@@ -470,8 +363,6 @@ const executeUserRoleAssign: Executor = async (request, deciderId) => {
  * Action → Executor Map.
  */
 const EXECUTORS: Partial<Record<ApprovalAction, Executor>> = {
-  JOURNAL_POST: executeJournalPost,
-  JOURNAL_REVERSE: executeJournalReverse,
   SETTLEMENT_FINALIZE: executeSettlementFinalize,
   SEPA_RUN: executeSepaRun,
   INCOMING_INVOICE_APPROVE: executeIncomingInvoiceApprove,

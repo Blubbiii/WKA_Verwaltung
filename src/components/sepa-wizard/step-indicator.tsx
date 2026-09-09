@@ -21,7 +21,7 @@ interface StepIndicatorProps {
 }
 
 export function StepIndicator({ currentStep }: StepIndicatorProps) {
-  const t = useTranslations("buchhaltung.sepaWizard");
+  const t = useTranslations("zahlungen.sepaWizard");
 
   const steps = [
     { num: 1 as const, label: t("step1Label") },

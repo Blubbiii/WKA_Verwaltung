@@ -52,7 +52,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { PaymentDialog } from "@/components/invoices/PaymentDialog";
-import { WriteOffDialog } from "@/components/invoices/WriteOffDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -265,7 +264,6 @@ export default function InvoiceDetailPage({
   const [correctionHistory, setCorrectionHistory] = useState<CorrectionHistory | null>(null);
   // P23 Payment + Write-Off Dialoge
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showWriteOffDialog, setShowWriteOffDialog] = useState(false);
   // Dunning-Hold UI-State
   const [holdReason, setHoldReason] = useState("");
   const [holdUntil, setHoldUntil] = useState("");
@@ -624,13 +622,6 @@ export default function InvoiceDetailPage({
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
                     Zahlung erfassen
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowWriteOffDialog(true)}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Wertberichtigung
                   </Button>
                 </>
               )}
@@ -1607,14 +1598,6 @@ export default function InvoiceDetailPage({
             paidAmount={invoice.paidAmount ?? 0}
             open={showPaymentDialog}
             onOpenChange={setShowPaymentDialog}
-            onSuccess={fetchInvoice}
-          />
-          <WriteOffDialog
-            invoiceId={invoice.id}
-            grossAmount={invoice.grossAmount}
-            paidAmount={invoice.paidAmount ?? 0}
-            open={showWriteOffDialog}
-            onOpenChange={setShowWriteOffDialog}
             onSuccess={fetchInvoice}
           />
         </>

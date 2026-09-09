@@ -7,11 +7,8 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
-import { createUStAdjustment } from "@/lib/accounting/ust-adjustment";
-import { getTenantSettings } from "@/lib/tenant-settings";
 import { PeriodLockedError } from "@/lib/validation/period-lock";
-import { recordPayment } from "@/lib/accounting/invoice-payment";
-import { invalidateReportsCache } from "@/lib/cache/reports";
+import { recordPayment } from "@/lib/invoices/payment";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { withIdempotency } from "@/lib/idempotency";
 import { isNotInFuture } from "@/lib/validation/not-in-future";
@@ -150,16 +147,6 @@ export async function POST(
 
     // P11: §17 USt-Korrektur bei Skonto erzeugen.
     // Update + Korrekturbuchung in EINER Transaktion, damit beides atomar wird.
-    // Nur ausführen wenn (a) Skonto angewendet wird, (b) TaxCode gesetzt ist
-    // (sonst kein Auto-Split möglich), (c) Tenant nicht §19 Kleinunternehmer
-    // ist (sonst hat die "USt-Korrektur" nichts zu korrigieren).
-    const settings = await getTenantSettings(check.tenantId!);
-    const shouldAdjustUSt =
-      skontoPaid &&
-      !settings.kleinunternehmer &&
-      invoice.taxCodeId !== null &&
-      invoice.skontoAmount !== null &&
-      Number(invoice.skontoAmount) > 0;
 
     // recordPayment() statt direkt status=PAID setzen.
     // Garantiert konsistente paidAmount + InvoicePayment-Audit-Trail.
@@ -178,10 +165,8 @@ export async function POST(
       });
     }
 
-    let ustAdjustmentId: string | null = null;
-    let paymentJournalEntryId: string | null = null;
     const updated = await prisma.$transaction(async (tx) => {
-      const paymentResult = await recordPayment(tx, {
+      await recordPayment(tx, {
         tenantId: check.tenantId!,
         invoiceId: id,
         amount: remainingDec.toNumber(),
@@ -191,7 +176,6 @@ export async function POST(
           ? `Mark as paid mit Skonto ${invoice.skontoPercent}%`
           : "Mark as paid",
       });
-      paymentJournalEntryId = paymentResult.journalEntryId;
 
       // Bei Skonto-Anwendung Skonto-Flag setzen
       const inv = await tx.invoice.update({
@@ -204,52 +188,17 @@ export async function POST(
         },
       });
 
-      if (shouldAdjustUSt) {
-        // Skonto = Entgeltminderung → grossDelta negativ.
-        const skontoGross = Number(invoice.skontoAmount);
-        try {
-          const adjResult = await createUStAdjustment(tx, {
-            tenantId: check.tenantId!,
-            originalInvoiceId: id,
-            reason: "SKONTO",
-            adjustmentDate: paidAt,
-            grossDelta: -skontoGross,
-            userId: check.userId!,
-            revenueAccount: settings.datevAccountEinspeisung,
-            counterAccount: settings.datevAccountReceivables,
-            notes: `Skonto ${invoice.skontoPercent}% auf RG ${id}`,
-          });
-          ustAdjustmentId = adjResult.adjustmentId;
-        } catch (err) {
-          if (err instanceof PeriodLockedError) {
-            // Periode für Zahlungs-/Korrektur-Datum ist gesperrt.
-            // Wir rollen die ganze Transaktion zurück — User muss erst entsperren.
-            throw err;
-          }
-          throw err;
-        }
-      }
+      /*
+        Hier wurde bei Skonto die Umsatzsteuer nach § 17 UStG berichtigt.
+
+        Entfaellt mit dem Buchhaltungsmodul: die Entgeltminderung bucht der
+        Steuerberater. Der Skontobetrag steht weiterhin an der Rechnung — er
+        geht mit dem Beleg an ihn, und er zieht die Berichtigung.
+      */
 
       return inv;
     });
 
-    if (ustAdjustmentId) {
-      logger.info(
-        { invoiceId: id, ustAdjustmentId, tenantId: check.tenantId },
-        "§17 UStG Skonto-Korrektur gebucht",
-      );
-    }
-
-    // §17-Korrektur UND/ODER Zahlungsbuchung sind POSTED → Reports-Cache
-    // invalidieren (Bilanz/GuV/BWA/SuSa/UStVA-Saldi haben sich geändert).
-    if (ustAdjustmentId || paymentJournalEntryId) {
-      invalidateReportsCache(check.tenantId!).catch((err) => {
-        logger.warn(
-          { err, invoiceId: id },
-          "[Reports-Cache] Invalidation failed after mark-paid posting",
-        );
-      });
-    }
 
     // Invalidate dashboard caches after marking invoice as paid
     invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {

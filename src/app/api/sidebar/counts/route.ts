@@ -47,7 +47,6 @@ async function computeSidebarCounts(
   const canSeeApprovals = permissions.includes("accounting:read");
   const canSeeInbox = permissions.includes("incoming-invoices:read");
   const canSeeInvoices = permissions.includes("invoices:read");
-  const canSeeBank = canSeeApprovals; // accounting:read
   const canSeeContracts = permissions.includes("contracts:read");
 
   // Jeden Count in einem isolierten try/catch — wenn ein DB-Query fehlschlägt
@@ -92,17 +91,7 @@ async function computeSidebarCounts(
         })
       : Promise.resolve(0),
 
-    // 4. bankUnmatched — Bank-Transaktionen ohne Match
-    canSeeBank
-      ? prisma.bankTransaction.count({
-          where: {
-            tenantId,
-            matchStatus: "UNMATCHED",
-          },
-        })
-      : Promise.resolve(0),
-
-    // 5. expiringContracts — aktive Verträge mit Frist in den nächsten 30 Tagen
+    // 4. expiringContracts — aktive Verträge mit Frist in den nächsten 30 Tagen
     canSeeContracts
       ? prisma.contract.count({
           where: {
@@ -131,8 +120,7 @@ async function computeSidebarCounts(
     approvals: asCount(0),
     inbox: asCount(1),
     mahnwesen: asCount(2),
-    bankUnmatched: asCount(3),
-    expiringContracts: asCount(4),
+    expiringContracts: asCount(3),
   };
 }
 

@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
-import { createAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
 import { assertSendable, isSendableAssertionError } from "@/lib/invoices/assert-sendable";
 
@@ -90,9 +89,11 @@ export async function POST(
     }
 
     // Fire-and-forget auto-posting
-    createAutoPosting(id, check.userId!, check.tenantId!).catch((err) => {
-      logger.warn({ err, invoiceId: id }, "[AutoPosting] Failed to create auto-posting");
-    });
+    /*
+      Hier wurde die Rechnung automatisch verbucht. Entfaellt mit dem
+      Buchhaltungsmodul: die Buecher fuehrt der Steuerberater, wir liefern
+      ihm den Beleg ueber den Belegexport.
+    */
 
     // Fire-and-forget webhook dispatch
     dispatchWebhook(check.tenantId!, "invoice.sent", {

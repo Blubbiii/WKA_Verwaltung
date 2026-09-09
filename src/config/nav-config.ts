@@ -138,13 +138,8 @@ export interface NavChild {
   /** Dynamische Badge-Zahl aus /api/sidebar/counts. Wert 0 → kein Badge. */
   badgeKey?: import("@/lib/sidebar-counts").SidebarCountKey;
   /** Feature flag that must be enabled for this child to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
-    | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
-    | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
-    | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm"
-    | "ppa-management" | "solar" | "storage"
-    | "predictive-maintenance" | "investor-reports";
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "document-routing"
+    | "marketData" | "ppa-management" | "scada-uploader-v2" | "uploader-v2-generic";
 }
 
 export interface NavItem {
@@ -425,13 +420,21 @@ export const navGroups: NavGroup[] = [
         permission: "invoices:read",
         children: [
           { title: "Übersicht", titleKey: "invoicesOverview", href: "/invoices", icon: Receipt },
-          { title: "Angebote", titleKey: "accountingQuotes", href: "/buchhaltung/angebote", icon: FileText, featureFlag: "accounting.quotes" },
           { title: "Versandübersicht", titleKey: "invoiceDispatch", href: "/invoices/dispatch", icon: Send },
           { title: "Zahlungs-Abgleich", titleKey: "reconciliation", href: "/invoices/reconciliation", icon: Scale },
-          { title: "Bank-Import", titleKey: "bankImport", href: "/invoices/bank-import", icon: Landmark, badgeKey: "bankUnmatched" as const },
           { title: "Mahnwesen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
-          { title: "Buchungsjournal", titleKey: "journalEntries", href: "/journal-entries", icon: BookOpen },
           { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
+        ],
+      },
+      {
+        title: "Zahlungen",
+        titleKey: "payments",
+        href: "/zahlungen",
+        icon: Send,
+        permission: "accounting:read",
+        children: [
+          { title: "Mahnwesen", titleKey: "paymentsDunning", href: "/zahlungen/mahnwesen", icon: Bell },
+          { title: "SEPA-Zahllauf", titleKey: "paymentsSepa", href: "/zahlungen/sepa", icon: Landmark },
         ],
       },
       {
@@ -463,38 +466,7 @@ export const navGroups: NavGroup[] = [
           { title: "Kostenstellen", titleKey: "wirtschaftsplanCostCenters", href: "/wirtschaftsplan/cost-centers", icon: Building2 },
         ],
       },
-      {
-        title: "Buchhaltung",
-        titleKey: "accounting",
-        href: "/buchhaltung",
-        icon: Calculator,
-        permission: "accounting:read",
-        featureFlag: "accounting",
-        children: [
-          { title: "Kontenrahmen", titleKey: "accountingAccounts", href: "/admin/kontenrahmen", icon: BookOpen },
-          { title: "Berichte", titleKey: "accountingReports", href: "/buchhaltung/berichte", icon: BarChart3, featureFlag: "accounting.reports" },
-          { title: "Planung", titleKey: "accountingPlanning", href: "/buchhaltung/planung", icon: TrendingUp, featureFlag: "accounting.costcenter" },
-          { title: "Banking", titleKey: "accountingBanking", href: "/buchhaltung/banking", icon: Landmark, featureFlag: "accounting.bank" },
-          { title: "Zahlungen", titleKey: "accountingPayments", href: "/buchhaltung/zahlungen", icon: Send, featureFlag: "accounting.dunning" },
-          { title: "Steuern & Meldungen", titleKey: "accountingTax", href: "/buchhaltung/steuern", icon: Percent, featureFlag: "accounting.ustva" },
-          { title: "Kassenbuch", titleKey: "accountingCashbook", href: "/buchhaltung/kassenbuch", icon: Coins, featureFlag: "accounting.cashbook" },
-          { title: "Export & Abschluss", titleKey: "accountingExport", href: "/buchhaltung/abschluss", icon: Archive, featureFlag: "accounting.datev" },
-          // Diese elf Seiten waren fertig gebaut, hatten aber keinen einzigen
-          // eingehenden Link — die Konsolidierung auf Hub-Seiten mit Tabs hat
-          // die Endstationen abgehaengt (Audit 2026-07, Tote Funktionalitaet 5).
-          { title: "Bilanz", titleKey: "accountingBalanceSheet", href: "/buchhaltung/bilanz", icon: Scale, featureFlag: "accounting.reports" },
-          { title: "Anlagenspiegel", titleKey: "accountingAssetSchedule", href: "/buchhaltung/anlagenspiegel", icon: HardDrive, featureFlag: "accounting.assets" },
-          { title: "Kapitalflussrechnung", titleKey: "accountingCashflow", href: "/buchhaltung/cashflow", icon: Droplets, featureFlag: "accounting.reports" },
-          { title: "Gewerbesteuer", titleKey: "accountingTradeTax", href: "/buchhaltung/gewerbesteuer", icon: Percent, featureFlag: "accounting.ustva" },
-          { title: "Soll-Ist Multi-Park", titleKey: "accountingMultiParkPlanActual", href: "/buchhaltung/multi-park-soll-ist", icon: GitCompare, featureFlag: "accounting.costcenter" },
-          { title: "Jahresabschluss durchführen", titleKey: "accountingYearEndClose", href: "/buchhaltung/year-end-close", icon: CheckSquare, featureFlag: "accounting.yearend" },
-          { title: "Periodensperre", titleKey: "accountingPeriodLock", href: "/buchhaltung/periodensperre", icon: Lock, featureFlag: "accounting.yearend" },
-          { title: "Storno-Audit", titleKey: "accountingReversalAudit", href: "/buchhaltung/storno-audit", icon: ScrollText, featureFlag: "accounting.yearend" },
-          { title: "GoBD-Export", titleKey: "accountingGobdExport", href: "/buchhaltung/gobd-export", icon: FolderSync, featureFlag: "accounting.datev" },
-          { title: "DATEV-Export (Datei)", titleKey: "accountingDatevExportFile", href: "/buchhaltung/datev-export", icon: FileSpreadsheet, featureFlag: "accounting.datev" },
-          { title: "Konten-Markierung", titleKey: "accountingAccountFlags", href: "/buchhaltung/konten-markierung", icon: Tag },
-        ],
-      },
+      
       {
         title: "Dokumente",
         titleKey: "documents",
@@ -705,13 +677,6 @@ export const navGroups: NavGroup[] = [
         titleKey: "hgbSystemSettings",
         href: "/admin/hgb-system-settings",
         icon: Scale,
-        permission: "system:settings",
-      },
-      {
-        title: "Steuerkategorie-Vorlagen",
-        titleKey: "taxCategoryTemplates",
-        href: "/admin/tax-category-templates",
-        icon: Percent,
         permission: "system:settings",
       },
     ],

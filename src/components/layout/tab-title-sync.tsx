@@ -24,7 +24,6 @@ export function TabTitleSync(): null {
     counts.approvals +
     counts.inbox +
     counts.mahnwesen +
-    counts.bankUnmatched +
     counts.expiringContracts;
   useDocumentTitle(total);
   return null;

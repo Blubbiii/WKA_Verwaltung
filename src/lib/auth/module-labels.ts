@@ -59,7 +59,7 @@ export const MODUL_BESCHRIFTUNGEN: Record<string, string> = {
 
   // --- Kaufmännisches ---
   invoices: "Rechnungen",
-  accounting: "Buchhaltung",
+  zahlungen: "Zahlungen und Mahnwesen",
   "management-billing": "Betriebsführungs-Abrechnung",
   wirtschaftsplan: "Wirtschaftsplan",
   vendors: "Lieferanten",
