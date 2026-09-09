@@ -85,6 +85,35 @@ describe("Uebersetzungen", () => {
       }
       if (namensraeume.size === 0) continue;
 
+      /*
+        Ein Uebersetzer, der als PARAMETER durchgereicht wird, darf nicht so
+        heissen wie ein in derselben Datei gebundener.
+
+        Dieser Waechter ordnet jeden Aufruf `x("schluessel")` dem Namensraum
+        zu, den `const x = useTranslations("…")` gesetzt hat. Verdeckt eine
+        Hilfsfunktion diesen Namen mit einem eigenen Parameter, ordnet er dem
+        falschen Namensraum zu.
+
+        Das ist nicht theoretisch. In `funds/onboarding-wizard.tsx` gab es
+        `const t = useTranslations("funds.onboardingWizard")` und daneben
+        Hilfsfunktionen mit einem Parameter `t`, dem der engere Uebersetzer
+        `funds.onboardingWizard.validation` uebergeben wurde. Der Waechter las
+        die Aufrufe als `funds.onboardingWizard.firstNameRequired`, fand sie
+        nicht — und schlug an.
+
+        Beruhigt wurde er damals mit einem `validation.`-Praefix am Aufruf.
+        Danach war der Waechter gruen und die LAUFZEIT kaputt: gesucht wurde
+        `funds.onboardingWizard.validation.validation.firstNameRequired`, und
+        dem Nutzer stand dieser Pfad woertlich als Fehlermeldung unter dem
+        Eingabefeld.
+
+        Ein Waechter, der die richtige Loesung bestraft und die falsche
+        belohnt, ist schlimmer als keiner. Deshalb wird die Verdeckung jetzt
+        selbst gemeldet, statt sie stillschweigend falsch aufzuloesen.
+      */
+      const istVerdeckt = (variable: string) =>
+        new RegExp(`function\\s+\\w+\\s*\\([^)]*\\b${variable}\\s*:`, "s").test(quelle);
+
       for (const [variable, namensraum] of namensraeume) {
         // `t("schluessel")` und `t.rich("schluessel", …)`
         const aufrufe = quelle.matchAll(
@@ -95,7 +124,15 @@ describe("Uebersetzungen", () => {
           if (!vorhanden(nachrichten, voll)) {
             const zeile = quelle.slice(0, aufruf.index).split("\n").length;
             funde.push(
-              `${pfad.replace(WURZEL, "").replace(/\\/g, "/")}:${zeile} — ${voll}`,
+              `${pfad.replace(WURZEL, "").replace(/\\/g, "/")}:${zeile} — ${voll}` +
+                (istVerdeckt(variable)
+                  ? `\n      HINWEIS: "${variable}" ist in dieser Datei zugleich ` +
+                    `gebundener Uebersetzer und Funktionsparameter. Traegt der ` +
+                    `Parameter einen ANDEREN Namensraum, ordnet dieser Test ` +
+                    `falsch zu und der Schluessel oben ist frei erfunden. ` +
+                    `Dann den Parameter umbenennen — NICHT den Aufruf um ein ` +
+                    `Praefix ergaenzen.`
+                  : ""),
             );
           }
         }

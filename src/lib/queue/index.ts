@@ -1,4 +1,3 @@
-import { jobLogger as logger } from "@/lib/logger";
 /**
  * Queue Infrastructure - Central Export Module
  *
@@ -30,6 +29,10 @@ import { jobLogger as logger } from "@/lib/logger";
  * });
  * ```
  */
+
+import { jobLogger as logger } from "@/lib/logger";
+import { mitFrist } from "@/lib/util/frist";
+
 
 // ============================================
 // Connection Management
@@ -353,19 +356,59 @@ export const getQueueHealth = async (): Promise<{
   > = {};
   const stalledQueues: string[] = [];
 
+  /**
+   * Obergrenze je Warteschlangen-Abfrage.
+   *
+   * Grosszuegiger als der PING (1 s): `getJobCounts` und `getWorkersCount`
+   * sind echte Abfragen, die unter Last laenger dauern duerfen. Aber eben
+   * nicht unbegrenzt.
+   */
+  const QUEUE_TIMEOUT_MS = 3_000;
+
   const checkQueue = async (name: string, getQueue: () => unknown) => {
+    /*
+      Ist Redis nicht erreichbar, wird gar nicht erst gefragt.
+
+      `redisHealthy` wurde oben ermittelt — und dann nicht verwendet. Die
+      Abfragen liefen trotzdem los, und weil BullMQ `maxRetriesPerRequest:
+      null` verlangt, wartet ein Befehl bei getrennter Verbindung UNBEGRENZT
+      (Einzelheiten in `connection.ts`, `isRedisHealthy`). Er scheitert nicht,
+      er antwortet nie — das `catch` unten faengt deshalb nichts.
+
+      Gemessen bei abgeschaltetem Redis: `/api/admin/system/status` gab nach 60
+      Sekunden noch immer keine Antwort. Ausgerechnet die Seite, die melden
+      soll, dass Redis weg ist, blieb stehen, weil Redis weg war.
+    */
+    if (!redisHealthy) {
+      queueStatus[name] = { connected: false };
+      return;
+    }
+
     try {
       const queue = getQueue() as {
         getJobCounts: () => Promise<Record<string, number>>;
         getWorkersCount: () => Promise<number>;
       };
-      const jobCounts = await queue.getJobCounts();
+      /*
+        Frist auch im gesunden Fall: zwischen dem PING oben und dieser Abfrage
+        kann Redis wegbrechen. Dann haengt es hier genauso — nur seltener und
+        damit schwerer zu finden.
+      */
+      const jobCounts = await mitFrist(queue.getJobCounts(), QUEUE_TIMEOUT_MS);
+      if (jobCounts === null) {
+        queueStatus[name] = { connected: false };
+        return;
+      }
 
       // F23: Bisher galt eine Queue als gesund, sobald getJobCounts()
       // antwortete — das sagt nur, dass Redis erreichbar ist, nicht dass
       // irgendjemand die Jobs abholt. getWorkersCount() fragt die tatsaechlich
       // verbundenen Consumer ab (BullMQ ueber Redis CLIENT LIST).
-      const consumers = await queue.getWorkersCount();
+      const consumers = await mitFrist(queue.getWorkersCount(), QUEUE_TIMEOUT_MS);
+      if (consumers === null) {
+        queueStatus[name] = { connected: false };
+        return;
+      }
 
       queueStatus[name] = { connected: true, jobCounts, consumers };
 

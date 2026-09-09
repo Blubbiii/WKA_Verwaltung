@@ -12,6 +12,7 @@ import sharp from "sharp";
 // ausdruecklich geholt — die Laufzeit-API ist unveraendert.
 import type { OverlayOptions } from "sharp";
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -153,10 +154,14 @@ async function fetchTile(z: number, x: number, y: number): Promise<Buffer> {
     .replace("{x}", x.toString())
     .replace("{y}", y.toString());
 
+  // Frist je Kachel: eine PDF-Karte holt viele nacheinander. Bleibt eine
+  // haengen, steht der Warteschlangen-Arbeiter still — und mit ihm jeder
+  // weitere Auftrag in dieser Warteschlange.
   const res = await fetch(url, {
     headers: {
       "User-Agent": "WindparkManager-PDFReport/1.0",
     },
+    signal: AbortSignal.timeout(HTTP_TIMEOUTS.mapTileFetchMs),
   });
 
   if (!res.ok) {

@@ -11,6 +11,8 @@
  * and pin the connection to that IP (see TODO below).
  */
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
+
 // SSRF protection: reject private/internal IP ranges and metadata hosts.
 export function isPrivateUrl(urlStr: string): boolean {
   try {
@@ -68,11 +70,31 @@ export function assertSafeUrl(urlStr: string): URL {
 /**
  * SSRF-safe wrapper around global fetch.
  * Throws SafeFetchError on invalid/private URLs (caller maps to HTTP 400).
+ *
+ * ## Frist
+ *
+ * Die Fassung ohne Frist prüfte die Adresse und reichte den Aufruf dann
+ * ungebremst durch. Gegen eine Gegenstelle im internen Netz schützte sie —
+ * gegen eine, die einfach nie antwortet, nicht. Das ist bei einem
+ * SSRF-Schutzmantel unglücklich: wer ihn benutzt, ruft per Definition eine
+ * Adresse auf, die jemand anderes bestimmt hat.
+ *
+ * Ein Aufrufer kann `init.signal` weiterhin selbst setzen; beide Signale
+ * gelten dann zusammen, es gewinnt das erste.
+ *
+ * Stand heute ruft diese Funktion niemand auf — genutzt wird nur
+ * `isPrivateUrl`. Sie bleibt trotzdem, und sie bleibt mit Frist: eine
+ * Schutzfunktion, die beim ersten Gebrauch eine Lücke mitbringt, ist
+ * schlimmer als keine.
  */
 export async function safeFetch(
   urlStr: string,
   init?: RequestInit,
 ): Promise<Response> {
   assertSafeUrl(urlStr);
-  return fetch(urlStr, init);
+  const frist = AbortSignal.timeout(HTTP_TIMEOUTS.connectionTestMs);
+  return fetch(urlStr, {
+    ...init,
+    signal: init?.signal ? AbortSignal.any([init.signal, frist]) : frist,
+  });
 }

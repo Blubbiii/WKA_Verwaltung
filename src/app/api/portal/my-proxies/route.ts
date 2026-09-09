@@ -57,9 +57,27 @@ export async function GET() {
     });
 
     if (!shareholder) {
+      /*
+        Dieselben Feldnamen wie im Normalfall — `granted` und `received`.
+
+        Hier standen `grantedProxies` und `receivedProxies`. Eine Route, zwei
+        Formen: der Normalfall weiter unten liefert `{ granted, received }`.
+
+        Die Seite macht `setProxies(data)` und liest danach
+        `proxies.granted.length`. Im Sonderfall war `granted` undefined —
+        "Cannot read properties of undefined (reading 'length')", und die
+        gesamte Vollmachten-Seite landete im Fehler-Auffangnetz.
+
+        Der Statuscode war 200, also griff auch die `!response.ok`-Pruefung
+        nicht. Betroffen war jeder angemeldete Benutzer OHNE verknuepftes
+        Gesellschafterprofil — genau der, der hier einen Leerzustand sehen
+        sollte statt eines Absturzes.
+
+        `message` bleibt: die Seite darf erklaeren, warum nichts dasteht.
+      */
       return NextResponse.json({
-        grantedProxies: [],
-        receivedProxies: [],
+        granted: [],
+        received: [],
         message: "Kein Gesellschafterprofil verknüpft",
       });
     }

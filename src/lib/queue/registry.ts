@@ -15,6 +15,50 @@ import { getReminderQueue, REMINDER_QUEUE_NAME } from './queues/reminder.queue';
 import { getScadaAutoImportQueue, SCADA_AUTO_IMPORT_QUEUE_NAME } from './queues/scada-auto-import.queue';
 import { getPaperlessQueue, PAPERLESS_QUEUE_NAME } from './queues/paperless.queue';
 import { getInboxOcrQueue, INBOX_OCR_QUEUE_NAME } from './queues/inbox-ocr.queue';
+import { isRedisHealthy } from './connection';
+import { mitFrist } from '@/lib/util/frist';
+
+/**
+ * Obergrenze fuer jede Redis-Abfrage aus dieser Datei.
+ *
+ * Grosszuegig genug fuer eine belastete Instanz, eng genug, dass eine HTTP-
+ * Antwort nicht daran haengen bleibt.
+ */
+const REDIS_ABFRAGE_MS = 5_000;
+
+/**
+ * Wirft, wenn Redis nicht erreichbar ist.
+ *
+ * ## Warum das hier steht und nicht nur in der Route
+ *
+ * Die erste Fassung der Absicherung sass VOR dem Aufruf, in
+ * `api/admin/jobs/route.ts`. Das schuetzt genau diese eine Route. Jeder andere
+ * Aufrufer — und jeder kuenftige — laeuft ungeschuetzt in dieselbe Falle:
+ * BullMQ verlangt `maxRetriesPerRequest: null`, und ein Befehl bei getrennter
+ * Verbindung wartet dann unbegrenzt, statt zu scheitern.
+ *
+ * Eine Vorabpruefung ist ausserdem nur eine Momentaufnahme. Zwischen ihr und
+ * der eigentlichen Abfrage kann Redis wegbrechen; deshalb bekommt jede Abfrage
+ * zusaetzlich eine Frist.
+ *
+ * Aufgefallen beim Gegenlesen durch ein zweites Modell.
+ */
+/** Kennzeichen fuer "Frist abgelaufen" — unterscheidbar von einem echten null. */
+const FRIST_ABGELAUFEN = Symbol("frist");
+
+async function mitRedis<T>(was: () => Promise<T>): Promise<T> {
+  if (!(await isRedisHealthy())) {
+    throw new Error("Redis-Verbindung nicht verfuegbar");
+  }
+  const ergebnis = await mitFrist(was(), REDIS_ABFRAGE_MS, FRIST_ABGELAUFEN);
+  if (ergebnis === FRIST_ABGELAUFEN) {
+    throw new Error(
+      `Redis hat innerhalb von ${REDIS_ABFRAGE_MS} ms nicht geantwortet`,
+    );
+  }
+  return ergebnis;
+}
+
 import {
   getApprovalsExpiryQueue,
   APPROVALS_EXPIRY_QUEUE_NAME,
@@ -214,7 +258,7 @@ export interface AggregatedStats {
 /**
  * Get aggregated statistics for all queues
  */
-export const getAggregatedStats = async (): Promise<AggregatedStats> => {
+const getAggregatedStatsIntern = async (): Promise<AggregatedStats> => {
   const queues = await getAllQueueStats();
 
   const totals = queues.reduce(
@@ -325,7 +369,7 @@ export interface PaginatedJobs {
 /**
  * Get paginated jobs from a queue
  */
-export const getJobs = async (options: GetJobsOptions): Promise<PaginatedJobs> => {
+const getJobsIntern = async (options: GetJobsOptions): Promise<PaginatedJobs> => {
   const { queue: queueName, status, page = 1, limit = 25 } = options;
 
   const queue = getQueueByName(queueName);
@@ -461,3 +505,18 @@ export const findJobInQueue = async (
 
   return { job, queueInfo };
 };
+
+/*
+  Nach aussen gehen nur die abgesicherten Fassungen.
+
+  Die Absicherung sass zuerst VOR dem Aufruf, in `api/admin/jobs/route.ts` —
+  und schuetzte damit genau eine Route. Hier gilt sie fuer jeden Aufrufer,
+  auch fuer kuenftige, und sie besteht aus zwei Teilen: der Vorabpruefung
+  (spart den Aufruf ganz, wenn Redis weg ist) und der Frist (faengt den Fall,
+  dass Redis zwischen Pruefung und Abfrage wegbricht).
+*/
+export const getAggregatedStats = (): Promise<AggregatedStats> =>
+  mitRedis(() => getAggregatedStatsIntern());
+
+export const getJobs = (options: GetJobsOptions): Promise<PaginatedJobs> =>
+  mitRedis(() => getJobsIntern(options));

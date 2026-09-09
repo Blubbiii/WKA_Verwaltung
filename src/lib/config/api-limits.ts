@@ -46,4 +46,29 @@ export const HTTP_TIMEOUTS = {
   paperlessUploadMs: envInt("PAPERLESS_UPLOAD_TIMEOUT_MS", 30_000),
   /** Health-Check Probe (2 s) — DB/Redis-Ping */
   healthCheckMs: envInt("HEALTH_CHECK_TIMEOUT_MS", 2_000),
+
+  /*
+    Nachtrag: fünf ausgehende Aufrufe hatten überhaupt keine Frist.
+
+    Aufgefallen bei der Suche nach der Ursache hängender Admin-Seiten. Die
+    Regel dahinter ist allgemein: wer auf ein System wartet, das ihm nicht
+    gehört, muss sagen, wie lange. Sonst hängt im Störungsfall nicht das
+    fremde System, sondern unseres.
+
+    Was betroffen war:
+    - Open-Meteo, aufgerufen JE PARK auf dem Dashboard
+    - SMARD (Börsenstrompreise) im Marktdaten-Abruf
+    - Kartenkacheln in der PDF-Erzeugung — je Kachel, in einer Schleife,
+      in einem Warteschlangen-Arbeiter
+    - der Admin-Knopf „Verbindung testen" selbst
+  */
+
+  /** Wetterdienst (8 s) — Open-Meteo, je Park auf dem Dashboard */
+  weatherFetchMs: envInt("WEATHER_FETCH_TIMEOUT_MS", 8_000),
+  /** Marktdaten (15 s) — SMARD liefert ganze Monatsreihen */
+  marketDataFetchMs: envInt("MARKET_DATA_FETCH_TIMEOUT_MS", 15_000),
+  /** Eine Kartenkachel (5 s) — im PDF werden viele nacheinander geholt */
+  mapTileFetchMs: envInt("MAP_TILE_FETCH_TIMEOUT_MS", 5_000),
+  /** „Verbindung testen" im Admin (10 s) — der Nutzer wartet davor */
+  connectionTestMs: envInt("CONNECTION_TEST_TIMEOUT_MS", 10_000),
 };

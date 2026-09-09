@@ -8,6 +8,7 @@
 import Redis, { RedisOptions } from 'ioredis';
 import { jobLogger as logger } from "@/lib/logger";
 import { getBaseRedisOptions } from '@/lib/config/redis';
+import { mitFrist } from '@/lib/util/frist';
 
 // Connection pool to reuse connections
 let connection: Redis | null = null;
@@ -121,13 +122,97 @@ export const closeConnections = async (): Promise<void> => {
 };
 
 /**
- * Check if Redis is connected and responsive
+ * Obergrenze fuer die Redis-Lebendpruefung.
+ *
+ * Ein gesundes Redis antwortet auf PING in Millisekunden — auch unter Last.
+ * Wer nach dieser Zeit nicht geantwortet hat, ist fuer jeden praktischen Zweck
+ * nicht verfuegbar.
+ */
+const PING_TIMEOUT_MS = 1_000;
+
+/**
+ * Check if Redis is connected and responsive.
+ *
+ * ## Warum hier eine Frist steht
+ *
+ * Die Fassung ohne Frist war:
+ *
+ *     const result = await redis.ping();
+ *     return result === 'PONG';
+ *
+ * Das sieht sicher aus — es steht ja ein `try/catch` darum. Nur wirft hier
+ * nichts.
+ *
+ * BullMQ verlangt `maxRetriesPerRequest: null` (siehe `getRedisOptions`
+ * oben), und der `retryStrategy` gibt bewusst NIE auf. Beides zusammen heisst
+ * in ioredis: ein Befehl, der bei getrennter Verbindung abgesetzt wird, landet
+ * in der Offline-Warteschlange und wartet dort — unbegrenzt. Er scheitert
+ * nicht, er antwortet einfach nie. Das `catch` faengt nichts, weil es nichts
+ * zu fangen gibt.
+ *
+ * Ausgerechnet die Funktion, deren einzige Aufgabe die Frage „lebt Redis?"
+ * ist, konnte damit nur antworten, wenn Redis lebt. War es tot, blieb die
+ * Antwort aus.
+ *
+ * ## Was das anrichtete
+ *
+ * Gemessen bei abgeschaltetem Redis: `/api/admin/jobs`,
+ * `/api/admin/jobs/stats` und `/api/admin/system/status` gaben nach 45
+ * Sekunden noch immer keine Antwort — kein Fehler, keine Meldung, die Seite
+ * dreht sich weiter. Die beiden letzteren pruefen sogar korrekt vorab auf
+ * `isRedisHealthy()` und haben eine fertige 503-Antwort parat; sie kamen nur
+ * nie bis dorthin.
+ *
+ * Jeder haengende Aufruf haelt ausserdem eine Verbindung offen. Ein
+ * Redis-Ausfall wird so von einer Teilstoerung (Hintergrundjobs stehen) zu
+ * einer Belastung des Webservers.
+ *
+ * `/api/health` hatte das Problem bereits erkannt und mit einem eigenen
+ * `withTimeout` an SEINER Aufrufstelle umgangen. Die Falle blieb damit fuer
+ * alle anderen Aufrufer bestehen — deshalb steht die Frist jetzt hier, in der
+ * Funktion selbst.
  */
 export const isRedisHealthy = async (): Promise<boolean> => {
   try {
     const redis = getRedisConnection();
-    const result = await redis.ping();
-    return result === 'PONG';
+
+    /*
+      Erst den Verbindungszustand ansehen, dann erst einen Befehl absetzen.
+
+      Die Frist allein reicht nicht. Sie beendet unser Warten — den Befehl
+      beendet sie nicht. Ein `PING`, der bei getrennter Verbindung abgesetzt
+      wird, liegt danach weiter in der Offline-Warteschlange von ioredis. Bei
+      einer Pruefung im Sekundentakt sammeln sich dort waehrend eines Ausfalls
+      beliebig viele an; kommt Redis zurueck, laufen sie alle auf einmal los.
+      `status` ist eine reine Zustandsabfrage und stellt nichts an.
+
+      Die drei Faelle sind NICHT dasselbe, und genau daran waere eine
+      einfache Abfrage `status !== 'ready' -> false` gescheitert:
+
+      - `ready`      → verbunden, es darf gefragt werden.
+      - `connecting` / `connect` → der Aufbau laeuft noch. Das ist der
+        Normalfall unmittelbar nach dem Serverstart, denn die Verbindung wird
+        erst beim ersten Zugriff angelegt. Hier "nicht verfuegbar" zu melden,
+        wuerde dem ersten Aufrufer nach jedem Neustart eine 503 zeigen,
+        obwohl Redis laeuft. Also kurz auf `ready` warten.
+      - alles andere (`reconnecting`, `close`, `end`) → Redis ist weg. Sofort
+        `false`, ohne einen Befehl abzusetzen.
+    */
+    if (redis.status !== "ready") {
+      if (redis.status !== "connecting" && redis.status !== "connect") {
+        return false;
+      }
+      const bereit = await mitFrist(
+        new Promise<true>((aufloesen) => redis.once("ready", () => aufloesen(true))),
+        PING_TIMEOUT_MS,
+      );
+      if (bereit !== true) return false;
+    }
+
+    // Die Frist bleibt: zwischen Zustandsabfrage und Antwort kann die
+    // Verbindung wegbrechen.
+    const pong = await mitFrist(redis.ping(), PING_TIMEOUT_MS);
+    return pong === "PONG";
   } catch {
     return false;
   }

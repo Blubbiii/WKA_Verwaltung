@@ -20,6 +20,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { EMAIL_REGEX } from "@/lib/validation/patterns";
 import { apiError } from "@/lib/api-errors";
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 // =============================================================================
 // VALIDATION SCHEMAS
 // =============================================================================
@@ -213,7 +214,11 @@ async function testWeatherApi(
     const testLon = 13.405;
     const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${testLat}&lon=${testLon}&appid=${weatherConfig.apiKey}&units=metric`;
 
-    const response = await fetch(apiUrl);
+    // Ausgerechnet "Verbindung testen" hatte keine Frist: war der Dienst
+    // nicht erreichbar, kam gar keine Antwort statt "nicht erreichbar".
+    const response = await fetch(apiUrl, {
+      signal: AbortSignal.timeout(HTTP_TIMEOUTS.connectionTestMs),
+    });
     const data = await response.json();
 
     if (!response.ok) {

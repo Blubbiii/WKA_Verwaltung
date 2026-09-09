@@ -45,28 +45,41 @@ import {
 // Validation helpers — use a translator passed in
 type Translator = (key: string) => string;
 
-// Die Meldungen liegen unter  — vorher wurden sie eine Ebene
-// zu hoch angefragt, und der Nutzer bekam als Fehlermeldung woertlich
-// "funds.onboardingWizard.firstNameRequired" zu sehen.
-function validatePersonalData(data: PersonalData, t: Translator): Partial<Record<keyof PersonalData, string>> {
+/*
+  Der uebergebene Uebersetzer ist bereits auf
+  `funds.onboardingWizard.validation` eingestellt (siehe `tValidation` unten).
+  Hier stehen deshalb NUR die Blattnamen — kein `validation.` davor.
+
+  Genau das war der Fehler: eine fruehere Korrektur hat den Namensraum im Hook
+  eine Ebene tiefer gelegt, das Praefix an den Aufrufen aber stehen lassen.
+  Gesucht wurde danach `funds.onboardingWizard.validation.validation.
+  firstNameRequired` — eine Ebene ZU TIEF statt wie vorher zu hoch. next-intl
+  findet nichts und gibt den Schluessel selbst zurueck: der Nutzer bekam
+  woertlich "funds.onboardingWizard.validation.validation.firstNameRequired"
+  als Fehlermeldung unter dem Eingabefeld zu sehen.
+
+  Auffaellig wird so etwas nur, wenn man den Assistenten absichtlich falsch
+  ausfuellt — im Erfolgsfall laeuft er durch.
+*/
+function validatePersonalData(data: PersonalData, tValidation: Translator): Partial<Record<keyof PersonalData, string>> {
   const errors: Partial<Record<keyof PersonalData, string>> = {};
-  if (!data.firstName.trim()) errors.firstName = t("validation.firstNameRequired");
-  if (!data.lastName.trim()) errors.lastName = t("validation.lastNameRequired");
+  if (!data.firstName.trim()) errors.firstName = tValidation("firstNameRequired");
+  if (!data.lastName.trim()) errors.lastName = tValidation("lastNameRequired");
   if (!data.email.trim()) {
-    errors.email = t("validation.emailRequired");
+    errors.email = tValidation("emailRequired");
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = t("validation.emailInvalid");
+    errors.email = tValidation("emailInvalid");
   }
   return errors;
 }
 
-function validateParticipation(data: ParticipationData, t: Translator): Partial<Record<keyof ParticipationData, string>> {
+function validateParticipation(data: ParticipationData, tValidation: Translator): Partial<Record<keyof ParticipationData, string>> {
   const errors: Partial<Record<keyof ParticipationData, string>> = {};
-  if (!data.fundId) errors.fundId = t("validation.fundRequired");
+  if (!data.fundId) errors.fundId = tValidation("fundRequired");
   if (!data.capitalContribution || parseFloat(data.capitalContribution) <= 0) {
-    errors.capitalContribution = t("validation.capitalGreaterZero");
+    errors.capitalContribution = tValidation("capitalGreaterZero");
   }
-  if (!data.entryDate) errors.entryDate = t("validation.entryDateRequired");
+  if (!data.entryDate) errors.entryDate = tValidation("entryDateRequired");
   return errors;
 }
 

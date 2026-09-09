@@ -5,6 +5,8 @@
  * Provides 7-day hourly wind forecasts for park locations.
  */
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
+
 interface ForecastHour {
   time: string;           // ISO string
   windSpeedMs: number;    // 100m wind speed in m/s
@@ -50,7 +52,30 @@ async function fetchOpenMeteoForecast(
   url.searchParams.set("timezone", "Europe/Berlin");
   url.searchParams.set("forecast_days", "7");
 
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } }); // Cache 1 hour
+  /*
+    Frist gilt nur fuer den ERSTABRUF, nicht fuer die Hintergrund-Erneuerung.
+
+    Next.js entfernt das Abbruchsignal, wenn es einen abgelaufenen
+    Cache-Eintrag im Hintergrund erneuert — nachzulesen in
+    `next/dist/server/lib/patch-fetch.js`:
+
+        // don't pass through signal when revalidating
+        signal: isStale ? undefined : signal
+
+    Das ist dort Absicht: ein Signal aus der urspruenglichen Anfrage soll die
+    Hintergrund-Erneuerung nicht abwuergen. Fuer uns heisst es aber, dass
+    genau dieser Pfad weiterhin unbegrenzt haengen kann. Folge waere kein
+    haengender Nutzeraufruf — der bekommt den alten Wert —, sondern ein
+    Cache-Eintrag, der nicht mehr frisch wird.
+
+    Wer das schliessen will, muss die Zwischenspeicherung selbst in die Hand
+    nehmen statt `next: { revalidate }` zu benutzen. Das ist bewusst NICHT
+    getan; hier steht, was die Frist leistet und was nicht.
+  */
+  const res = await fetch(url.toString(), {
+    next: { revalidate: 3600 }, // Cache 1 hour
+    signal: AbortSignal.timeout(HTTP_TIMEOUTS.weatherFetchMs),
+  });
   if (!res.ok) {
     throw new Error(`Open-Meteo API error: ${res.status} ${res.statusText}`);
   }

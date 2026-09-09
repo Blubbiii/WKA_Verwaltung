@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 import { EXTERNAL_APIS } from "@/lib/config/external-apis";
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 // SMARD (Bundesnetzagentur) API for German Day-Ahead electricity prices
 // Documentation: https://smard.api.bund.dev/
 // Free, no registration required
@@ -21,7 +22,30 @@ interface SmardTimeSeries {
  */
 async function fetchIndex(): Promise<number[]> {
   const url = `${SMARD_BASE_URL}/${PRICE_FILTER}/${REGION}/index_month.json`;
-  const res = await fetch(url, { next: { revalidate: 86400 } }); // cache 24h
+  /*
+    Frist gilt nur fuer den ERSTABRUF, nicht fuer die Hintergrund-Erneuerung.
+
+    Next.js entfernt das Abbruchsignal, wenn es einen abgelaufenen
+    Cache-Eintrag im Hintergrund erneuert — nachzulesen in
+    `next/dist/server/lib/patch-fetch.js`:
+
+        // don't pass through signal when revalidating
+        signal: isStale ? undefined : signal
+
+    Das ist dort Absicht: ein Signal aus der urspruenglichen Anfrage soll die
+    Hintergrund-Erneuerung nicht abwuergen. Fuer uns heisst es aber, dass
+    genau dieser Pfad weiterhin unbegrenzt haengen kann. Folge waere kein
+    haengender Nutzeraufruf — der bekommt den alten Wert —, sondern ein
+    Cache-Eintrag, der nicht mehr frisch wird.
+
+    Wer das schliessen will, muss die Zwischenspeicherung selbst in die Hand
+    nehmen statt `next: { revalidate }` zu benutzen. Das ist bewusst NICHT
+    getan; hier steht, was die Frist leistet und was nicht.
+  */
+  const res = await fetch(url, {
+    next: { revalidate: 86400 }, // cache 24h
+    signal: AbortSignal.timeout(HTTP_TIMEOUTS.marketDataFetchMs),
+  });
   if (!res.ok) throw new Error(`SMARD index fetch failed: ${res.status}`);
   const data = await res.json();
   return data.timestamps || [];
@@ -32,7 +56,10 @@ async function fetchIndex(): Promise<number[]> {
  */
 async function fetchPriceData(timestamp: number): Promise<SmardTimeSeries> {
   const url = `${SMARD_BASE_URL}/${PRICE_FILTER}/${REGION}/${PRICE_FILTER}_${REGION}_month_${timestamp}.json`;
-  const res = await fetch(url, { next: { revalidate: 86400 } });
+  const res = await fetch(url, {
+    next: { revalidate: 86400 },
+    signal: AbortSignal.timeout(HTTP_TIMEOUTS.marketDataFetchMs),
+  });
   if (!res.ok) throw new Error(`SMARD data fetch failed: ${res.status}`);
   return res.json();
 }

@@ -60,10 +60,30 @@ function LoginForm() {
       window.history.replaceState({}, "", url.pathname + url.search);
     }
   }, []);
+  /*
+    Die Ursache benennen, statt jeden Fehlschlag dem Nutzer anzulasten.
+
+    Vorher stand hier fuer JEDEN Fehler `t("invalidCredentials")`. Damit las
+    ein Nutzer „Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und
+    Passwort." auch dann, wenn seine Eingabe nie geprueft wurde — etwa weil
+    die Datenbank nicht erreichbar war — oder wenn er schlicht gesperrt war.
+
+    Besonders unangenehm im zweiten Fall: Wer nach fuenf Versuchen fuer
+    fuenfzehn Minuten gesperrt ist und „Passwort falsch" liest, probiert
+    weiter. Jeder weitere Versuch verlaengert die Sperre. Die Anmeldung warf
+    die richtige Meldung bereits — die Oberflaeche hat sie verworfen.
+
+    `code` kommt aus der `CredentialsSignin`-Unterklasse in `lib/auth/index.ts`
+    und ist bewusst grob: er darf nichts verraten, was einem Angreifer nuetzt.
+  */
+  function meldungZu(code: string | undefined | null): string {
+    if (code === "rate_limited") return t("loginTooManyAttempts");
+    if (code === "service_unavailable") return t("loginUnavailable");
+    return t("invalidCredentials");
+  }
+
   const [loginError, setLoginError] = useState(
-    error === "CredentialsSignin"
-      ? t("invalidCredentials")
-      : ""
+    error ? meldungZu(searchParams.get("code")) : "",
   );
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -83,7 +103,7 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setLoginError(t("invalidCredentials"));
+        setLoginError(meldungZu(result.code));
         setIsLoading(false);
         return;
       }

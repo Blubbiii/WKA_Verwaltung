@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
+import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
 // WMO weather code → condition mapping
 function mapWeatherCode(code: number, windSpeedKmh: number): "sunny" | "cloudy" | "rainy" | "windy" {
   // Wind speed override takes highest priority
@@ -59,7 +60,12 @@ export async function GET() {
           `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code` +
           `&wind_speed_unit=kmh&timezone=auto`;
 
-        const res = await fetch(url, { next: { revalidate: 900 } });
+        // Frist je Park: dieser Abruf laeuft fuer JEDEN Park. Ohne Frist genuegt
+        // ein haengender Aufruf, damit das ganze Wetter-Widget steht.
+        const res = await fetch(url, {
+          next: { revalidate: 900 },
+          signal: AbortSignal.timeout(HTTP_TIMEOUTS.weatherFetchMs),
+        });
         if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
 
         const data: OpenMeteoResponse = await res.json();

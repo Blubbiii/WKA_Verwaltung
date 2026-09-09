@@ -9,6 +9,46 @@ import { authLogger } from "@/lib/logger";
 import { rateLimit, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
 import { getRoleHierarchyForTenant } from "./role-hierarchy";
 
+import { CredentialsSignin } from "next-auth";
+
+/*
+  Unterscheidbare Anmeldefehler.
+
+  ## Der Fehler, der das noetig macht
+
+  Das `catch` in `authorize` gab bei JEDEM Fehler `null` zurueck — auch bei
+  einem Datenbankausfall. NextAuth meldet `null` als `CredentialsSignin`, und
+  die Anmeldemaske zeigte daraufhin:
+
+      „Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und Passwort."
+
+  Gepruefte Zugangsdaten waren das nie — die Datenbank war nicht erreichbar.
+  Waehrend eines Ausfalls bekommt so JEDER Nutzer gesagt, sein Passwort sei
+  falsch. Die Folge ist absehbar: Passwoerter werden zurueckgesetzt, der
+  Support bekommt Meldungen ueber „Zugangsdaten funktionieren nicht", und die
+  eigentliche Stoerung bleibt unbenannt.
+
+  Beobachtet am 09.09.2026, als die Datenbank lokal wegbrach: im Protokoll
+  stand korrekt `Authentication failed ... ECONNREFUSED`, auf dem Bildschirm
+  stand „Ungueltige Anmeldedaten".
+
+  Die Ratenbegrenzung weiter unten machte es schon richtig — sie warf eine
+  eigene Meldung. Nur kam auch die nie an, weil die Anmeldeseite jeden Fehler
+  auf „ungueltige Zugangsdaten" abflachte.
+
+  `CredentialsSignin` traegt einen `code`, der bis in die Antwort von
+  `signIn()` durchgereicht wird. Bewusst grob gehalten: er landet in der URL
+  und darf nichts ueber den Grund verraten, der einem Angreifer nuetzt.
+  „Dienst gerade nicht verfuegbar" verraet nichts ueber ein Konto.
+*/
+class AnmeldungNichtMoeglich extends CredentialsSignin {
+  code = "service_unavailable";
+}
+
+class ZuVieleAnmeldeversuche extends CredentialsSignin {
+  code = "rate_limited";
+}
+
 const loginSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse"),
   password: z.string().min(1, "Passwort erforderlich"),
@@ -174,7 +214,7 @@ export const {
         const loginRateCheck = await rateLimit(`login:${email.toLowerCase()}`, AUTH_RATE_LIMIT);
         if (!loginRateCheck.success) {
           authLogger.warn({ email }, "Login rate limit exceeded");
-          throw new Error("Zu viele Anmeldeversuche. Bitte warten Sie 15 Minuten.");
+          throw new ZuVieleAnmeldeversuche();
         }
 
         try {
@@ -224,8 +264,22 @@ export const {
             tenantLogoUrl: activeTenant.logoUrl,
           };
         } catch (error) {
+          /*
+            Hier kommt NICHT „Passwort falsch" an.
+
+            Falsche Zugangsdaten geben weiter oben `null` zurueck, ohne zu
+            werfen. Wer bis hierher kommt, konnte gar nicht geprueft werden:
+            Datenbank weg, Verschluesselung kaputt, Hash unlesbar. Das dem
+            Nutzer als „ungueltige Anmeldedaten" zu zeigen, ist schlicht
+            unwahr — und schickt ihn zum Passwort-Zuruecksetzen, das aus
+            demselben Grund auch nicht funktioniert.
+
+            Eine bereits unterscheidbare Fehlerart reicht durch: nicht
+            weiterreichen, sondern nur unbekannte Fehler umdeuten.
+          */
+          if (error instanceof CredentialsSignin) throw error;
           authLogger.error({ err: error }, "Authentication failed");
-          return null;
+          throw new AnmeldungNichtMoeglich();
         }
       },
     }),

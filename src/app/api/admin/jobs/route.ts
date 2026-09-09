@@ -26,6 +26,7 @@ import {
   type JobStatus,
   type SerializedJob,
 } from '@/lib/queue/registry';
+import { isRedisHealthy } from '@/lib/queue/connection';
 
 /**
  * Query parameter validation schema
@@ -76,6 +77,26 @@ export async function GET(request: NextRequest) {
       page: searchParams.get('page') || 1,
       limit: searchParams.get('limit') || PAGE_SIZE_ADMIN,
     });
+
+    /*
+      Erst fragen, ob Redis ueberhaupt da ist.
+
+      `getJobs()` weiter unten spricht direkt mit Redis. Ist Redis weg, kam von
+      hier gar keine Antwort mehr — gemessen: nach 45 Sekunden immer noch
+      nichts. Kein Fehler, keine Meldung, die Seite dreht sich weiter.
+      (Ursache und Hintergrund in `lib/queue/connection.ts`,
+      `isRedisHealthy`.)
+
+      Die Schwesterrouten `jobs/stats` und `system/status` fragen bereits vorab
+      und haben eine fertige 503-Antwort. Diese hier nicht — sie ging direkt an
+      die Warteschlange. Jetzt tun alle drei dasselbe.
+    */
+    if (!(await isRedisHealthy())) {
+      return apiError("INTERNAL_ERROR", 503, {
+        message: "Redis-Verbindung nicht verfügbar — Auftragsliste nicht abrufbar",
+        details: { healthy: false, jobs: [], total: 0 },
+      });
+    }
 
     // Get available queues
     const availableQueues = getAllQueues().map((q) => q.name);

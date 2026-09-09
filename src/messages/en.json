@@ -3164,6 +3164,8 @@
     "loginError": "Login failed",
     "loginDescription": "Sign in with your credentials",
     "invalidCredentials": "Invalid credentials. Please check your email and password.",
+    "loginUnavailable": "Sign-in is currently unavailable. The service is temporarily disrupted — please try again in a few minutes.",
+    "loginTooManyAttempts": "Too many sign-in attempts. Please wait 15 minutes.",
     "genericError": "An error occurred. Please try again later.",
     "resetSuccess": "Your password has been successfully reset. You can now sign in.",
     "appName": "WindparkManager",

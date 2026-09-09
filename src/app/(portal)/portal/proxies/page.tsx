@@ -149,7 +149,29 @@ export default function ProxiesPage() {
         throw new Error(t("loadError"));
       }
       const data = await response.json();
-      setProxies(data);
+      /*
+        Die Antwort wird geprueft, nicht geglaubt — und ein Fehlschlag wird
+        SICHTBAR.
+
+        Die Route lieferte im Fall "kein Gesellschafterprofil verknuepft"
+        `{ grantedProxies, receivedProxies }` statt `{ granted, received }` —
+        mit Status 200, also ohne dass die Pruefung oben angeschlagen haette.
+        `proxies.granted.length` lief danach auf undefined und riss die ganze
+        Seite ins Fehler-Auffangnetz.
+
+        Die Route ist repariert. Diese Pruefung bleibt trotzdem — aber sie
+        biegt nichts still zurecht: Eine erste Fassung setzte bei unerwarteter
+        Form einfach zwei leere Listen. Damit haette jeder kuenftige Bruch des
+        Vertrags ausgesehen wie "keine Vollmachten vorhanden", und niemand
+        haette je davon erfahren. Ein stiller Leerzustand ist bei Vollmachten
+        die gefaehrlichste aller Antworten.
+      */
+      const brauchbar =
+        data && Array.isArray(data.granted) && Array.isArray(data.received);
+      if (!brauchbar) {
+        throw new Error(t("loadError"));
+      }
+      setProxies({ granted: data.granted, received: data.received });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("unknownError"));
     } finally {
