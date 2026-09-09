@@ -11,7 +11,7 @@ import {
   OverpaymentError,
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
-import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { isNotInFuture } from "@/lib/validation/not-in-future";
 

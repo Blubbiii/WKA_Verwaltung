@@ -21,7 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { logger } from "@/lib/logger";
 import { loadAfaConfig } from "@/lib/system-settings";
-import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import {
   calculateAfaSchedule,

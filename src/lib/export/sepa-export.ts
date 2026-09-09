@@ -15,7 +15,7 @@ import {
   checkAwvReportable,
   AWV_THRESHOLD_EUR,
   type AwvCheckResult,
-} from "@/lib/accounting/awv-check";
+} from "@/lib/awv/awv-check";
 
 export interface SepaPayment {
   endToEndId: string;

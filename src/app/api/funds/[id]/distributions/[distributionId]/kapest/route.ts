@@ -28,7 +28,7 @@ import {
   computeKapESt,
   buildKapEStLeaflet,
   resolvePersonKapESt,
-} from "@/lib/accounting/kapesta-calculator";
+} from "@/lib/tax/kapesta-calculator";
 import { getSystemSetting } from "@/lib/system-settings";
 
 export async function GET(

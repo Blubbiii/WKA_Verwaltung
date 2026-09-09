@@ -8,7 +8,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { reverseAutoPosting } from "@/lib/accounting/auto-posting";
 import { apiError } from "@/lib/api-errors";
-import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { releaseSettlementForInvoice } from "@/lib/scada/settlement-release";
 
 const cancelSchema = z.object({

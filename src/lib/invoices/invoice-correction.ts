@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getNextInvoiceNumber, getTaxRateByType } from "./numberGenerator";
 import type { Prisma, InvoiceItem } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
-import { round2, combineNet } from "@/lib/accounting/money";
+import { round2, combineNet } from "@/lib/invoices/money";
 
 // ============================================================================
 // TYPES
@@ -59,7 +59,7 @@ export interface CorrectionHistory {
 /**
  * Calculates net, tax, and gross amounts for a single line item.
  *
- * Delegiert an `combineNet` aus `@/lib/accounting/money.ts` (Single Source
+ * Delegiert an `combineNet` aus `@/lib/invoices/money.ts` (Single Source
  * für Tax-Berechnungen). taxRate ist als Prozent (19 = 19%) — Konvertierung
  * zu Fraktion (0.19) passiert hier vor dem Delegate-Call.
  */

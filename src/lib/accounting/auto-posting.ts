@@ -27,7 +27,7 @@ import type { Prisma } from "@prisma/client";
 // mehr nur als Typ.
 import { Decimal } from "@prisma/client-runtime-utils";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
-import { assertPeriodOpen, PeriodLockedError } from "./period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 
 interface AutoPostingResult {

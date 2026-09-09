@@ -19,7 +19,7 @@ import {
   reverseJournalEntry,
   PeriodLockedError,
   assertPeriodOpen,
-} from "@/lib/accounting/period-lock";
+} from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 
 export interface ExecutorResult {

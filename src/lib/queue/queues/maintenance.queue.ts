@@ -33,7 +33,7 @@ import type {
   DeadlineCheckResult,
   BankConnectionCheckResult,
 } from "@/lib/maintenance/tasks";
-import type { BundesbankFetchResult } from "@/lib/accounting/bundesbank-fetch";
+import type { BundesbankFetchResult } from "@/lib/awv/bundesbank-fetch";
 
 export const MAINTENANCE_QUEUE_NAME = "maintenance";
 

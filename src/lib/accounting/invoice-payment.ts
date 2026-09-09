@@ -23,7 +23,7 @@ import {
   assertPeriodOpen,
   PeriodLockedError,
   reverseJournalEntry,
-} from "./period-lock";
+} from "@/lib/validation/period-lock";
 import { createPaymentPosting } from "./auto-posting";
 
 export class OverpaymentError extends Error {

@@ -24,7 +24,7 @@ import { serializePrisma } from "@/lib/serialize";
 import {
   reverseJournalEntry,
   PeriodLockedError,
-} from "@/lib/accounting/period-lock";
+} from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
 import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";

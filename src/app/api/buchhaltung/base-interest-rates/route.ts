@@ -18,7 +18,7 @@ import {
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { seedBundesbankRates } from "@/lib/accounting/base-interest-rate";
+import { seedBundesbankRates } from "@/lib/mahnwesen/base-interest-rate";
 
 const createSchema = z.object({
   validFrom: z.string().min(1),

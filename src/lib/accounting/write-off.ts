@@ -24,7 +24,7 @@ import {
   getTenantSettings,
   resolveValueAdjustmentAccounts,
 } from "@/lib/tenant-settings";
-import { assertPeriodOpen } from "./period-lock";
+import { assertPeriodOpen } from "@/lib/validation/period-lock";
 import { logger } from "@/lib/logger";
 
 export interface WriteOffParams {

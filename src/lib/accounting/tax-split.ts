@@ -25,7 +25,7 @@
 
 import { TaxCategory } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
-import { splitGross, combineNet, round2 } from "./money";
+import { splitGross, combineNet, round2 } from "@/lib/invoices/money";
 
 /** Eingabe-Form: Brutto in Cent-Auflösung (Integer) ODER als Decimal-Number. */
 export interface GrossAmount {

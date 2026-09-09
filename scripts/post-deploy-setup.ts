@@ -30,7 +30,7 @@ import {
   materializeTenantTaxCodes,
   seedTaxCategoryTemplates,
 } from "../src/lib/accounting/tax-codes";
-import { seedBundesbankRates } from "../src/lib/accounting/base-interest-rate";
+import { seedBundesbankRates } from "../src/lib/mahnwesen/base-interest-rate";
 import { seedSystemSettings } from "../src/lib/system-settings";
 import { getTenantSettings } from "../src/lib/tenant-settings";
 import {

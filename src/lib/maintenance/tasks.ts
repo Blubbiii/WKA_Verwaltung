@@ -25,7 +25,7 @@
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
-import { fetchAndUpsertBundesbankRates } from "@/lib/accounting/bundesbank-fetch";
+import { fetchAndUpsertBundesbankRates } from "@/lib/awv/bundesbank-fetch";
 import {
   getProvider,
   ProviderUnavailableError,

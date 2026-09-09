@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 
 const putAssetSchema = z.object({
   name: z.string().min(1).optional(),

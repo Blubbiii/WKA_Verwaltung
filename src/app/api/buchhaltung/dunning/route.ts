@@ -4,7 +4,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
-import { findDunningCandidates, executeDunningRun } from "@/lib/accounting/dunning";
+import { findDunningCandidates, executeDunningRun } from "@/lib/mahnwesen/dunning";
 import { z } from "zod";
 
 const dunningRunSchema = z.object({

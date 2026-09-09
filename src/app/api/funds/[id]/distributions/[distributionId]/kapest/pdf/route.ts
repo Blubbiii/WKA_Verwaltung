@@ -18,7 +18,7 @@ import {
   computeKapESt,
   buildKapEStLeaflet,
   resolvePersonKapESt,
-} from "@/lib/accounting/kapesta-calculator";
+} from "@/lib/tax/kapesta-calculator";
 import { generateKapEStPdf } from "@/lib/pdf/generators/kapestPdf";
 import { getSystemSetting } from "@/lib/system-settings";
 

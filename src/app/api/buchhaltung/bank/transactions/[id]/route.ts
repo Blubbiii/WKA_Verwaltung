@@ -12,7 +12,7 @@ import {
   OverpaymentError,
   InvoiceNotPayableError,
 } from "@/lib/accounting/invoice-payment";
-import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const matchSchema = z.object({

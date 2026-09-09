@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { assertFourEyes, FourEyesViolationError } from "@/lib/auth/four-eyes-check";
 import { findOrCreateApprovalRequest } from "@/lib/approvals/manager";

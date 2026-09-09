@@ -9,7 +9,7 @@ import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
 import { createUStAdjustment } from "@/lib/accounting/ust-adjustment";
 import { getTenantSettings } from "@/lib/tenant-settings";
-import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { recordPayment } from "@/lib/accounting/invoice-payment";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 import { Decimal } from "@prisma/client-runtime-utils";

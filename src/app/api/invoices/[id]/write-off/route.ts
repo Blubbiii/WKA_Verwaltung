@@ -19,7 +19,7 @@ import {
   InvoiceNotWriteOffableError,
   writeOffReceivable,
 } from "@/lib/accounting/write-off";
-import { PeriodLockedError } from "@/lib/accounting/period-lock";
+import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { invalidateReportsCache } from "@/lib/cache/reports";
 
 const schema = z.object({

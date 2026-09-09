@@ -24,7 +24,7 @@
 
 import { Prisma, PostingSource, UStAdjustmentReason } from "@prisma/client";
 import type { TxClient } from "@/lib/invoices/numberGenerator";
-import { assertPeriodOpen } from "./period-lock";
+import { assertPeriodOpen } from "@/lib/validation/period-lock";
 import { splitGrossAmount } from "./tax-split";
 import { resolveTaxCode } from "./tax-codes";
 

@@ -28,7 +28,7 @@ vi.mock("@/lib/tenant-settings", () => ({
   resolvePaymentAccount: () => "1200",
 }));
 
-vi.mock("./period-lock", () => ({
+vi.mock("@/lib/validation/period-lock", () => ({
   assertPeriodOpen: vi.fn().mockResolvedValue(undefined),
   PeriodLockedError: class extends Error {},
 }));

@@ -14,7 +14,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { apiError } from "@/lib/api-errors";
-import { assertPeriodOpen, PeriodLockedError } from "@/lib/accounting/period-lock";
+import { assertPeriodOpen, PeriodLockedError } from "@/lib/validation/period-lock";
 import { isNotInFuture } from "@/lib/validation/not-in-future";
 
 // Schema für Invoice-Items
