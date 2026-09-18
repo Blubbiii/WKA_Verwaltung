@@ -127,6 +127,7 @@ export function DocumentPreviewDialog({
       window.open(presignedUrl, "_blank");
     } else {
       // Fallback: redirect to download endpoint
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API download, not a page
       window.location.href = `/api/documents/${document.id}/download?redirect=true`;
     }
   }
@@ -305,6 +306,7 @@ export function DocumentPreviewDialog({
               <Button
                 variant="default"
                 className="mt-4"
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API download, not a page
                 onClick={() => window.location.href = `/api/documents/${document.id}/download?redirect=true`}
               >
                 <Download className="mr-2 h-4 w-4" />

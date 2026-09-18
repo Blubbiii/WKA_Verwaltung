@@ -89,6 +89,7 @@ export function RouteErrorBoundary({
             </Button>
             <Button
               onClick={() => {
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- error boundary: router may be broken, reload hard
                 window.location.href = "/dashboard";
               }}
               variant="outline"

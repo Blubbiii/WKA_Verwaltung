@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   LandPlot, Ruler, Download, Loader2, Map, Undo2, Redo2, Printer,
@@ -280,9 +281,11 @@ export function GISToolbar({
               <Globe className="h-3.5 w-3.5 mr-2" />
               GeoJSON / Shapefile (Quick-Import)
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.location.href = "/gis/import"}>
-              <Layers className="h-3.5 w-3.5 mr-2" />
-              QGIS-Projekt importieren (Wizard)
+            <DropdownMenuItem asChild>
+              <Link href="/gis/import">
+                <Layers className="h-3.5 w-3.5 mr-2" />
+                QGIS-Projekt importieren (Wizard)
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

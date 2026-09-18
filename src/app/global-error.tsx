@@ -76,6 +76,7 @@ export default function GlobalError({
                 Erneut versuchen
               </button>
               <button
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- error boundary: router may be broken, reload hard
                 onClick={() => window.location.href = "/"}
                 style={{
                   padding: "0.5rem 1rem",

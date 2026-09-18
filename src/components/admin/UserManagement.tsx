@@ -674,6 +674,7 @@ export function UserManagement() {
           lastName: user.lastName ?? "",
         })
       );
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- impersonation swaps the session: full reload required
       window.location.href = "/dashboard";
     } catch (err) {
       toast.error(

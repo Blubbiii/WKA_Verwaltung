@@ -50,6 +50,7 @@ export function CalendarExportButton({
     if (fundId) params.set("fundId", fundId);
     if (parkId) params.set("parkId", parkId);
     // Trigger native browser download; ICS endpoint returns Content-Disposition.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API download, not a page
     window.location.href = `/api/export/calendar?${params.toString()}`;
   };
 

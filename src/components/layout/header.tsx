@@ -121,6 +121,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout: full reload clears client caches
     window.location.href = "/login";
   };
 

@@ -101,23 +101,28 @@ zum Prüfen nutzt — verlassen sollte man sich darauf nicht.
 | Paket | Von → Nach | Warum nicht |
 |---|---|---|
 | `typescript` | 6.0.3 → 7.0.2 | **Gesperrt** — siehe Abschnitt oben. `@typescript-eslint` unterstützt TS 7 in keiner veröffentlichten Fassung. |
-| `bullmq` | 5.79 → 6.0.6 | Siehe oben — schon 5.81 bricht. Der Major erst recht. |
+| `bullmq` | 5.79 → 6.3.7 | Siehe oben — schon 5.81 bricht. Der Major erst recht. |
 | `ioredis` | 5.10 → 6.0.0 | `bullmq` 5.79 erwartet ioredis 5. Zusammen mit bullmq 6 anzugehen, nicht davor. |
-| `meilisearch` | 0.49 → 0.60 | Wird aktiv genutzt. Elf Minor-Sprünge in einer 0.x-Reihe sind faktisch Majors. Braucht eine laufende Meilisearch-Instanz zum Prüfen. |
+| `meilisearch` | 0.49 → 0.62 | Wird aktiv genutzt. Dreizehn Minor-Sprünge in einer 0.x-Reihe sind faktisch Majors. Braucht eine laufende Meilisearch-Instanz zum Prüfen. |
 | `eslint` | 9.39 → 10.8 | Konfigurationsbruch. Wir stehen auf 0 Fehlern und 0 Warnungen — der Sprung bringt kein Problem in Ordnung, kann aber eins schaffen. |
 | `@types/node` | 24.13 → 26.1 | Wir laufen auf Node 24.13. Typen für Node 26 beschreiben APIs, die es hier nicht gibt. |
 | `next-auth` | beta.32 → 4.24 | **Keine Aktualisierung.** npm zeigt v4 als `latest`, weil v5 noch Beta ist. Wir wollen v5. |
 
 ## Sicherheitsbefunde, die bleiben
 
-`npm audit` meldet fünf Befunde. Alle liegen in Bäumen, die uns nicht gehören,
-und `npm audit fix --force` würde `next` bzw. `exceljs` zwangsweise verbiegen.
+Stand 18.09.2026, nach dem Sicherheitsupdate (next 16.3.5, nodemailer 9.1.1,
+sharp 0.35.4, tiptap 3.31.3, vitest 4.1.11, `npm audit fix`). Mit next 16.3.5
+sind die Kopien von postcss und sharp unter `next/node_modules` verschwunden —
+Next bringt postcss 8.5.23 mit und verlangt sharp ^0.35.4.
+
+Übrig sind sechs Meldungen in zwei Bäumen. Für beide schlägt
+`npm audit fix --force` einen **Downgrade** vor (prisma 6.19.3, exceljs
+3.4.0) — nicht anwenden.
 
 | Befund | Wo | Einschätzung |
 |---|---|---|
-| `postcss` ≤ 8.5.22 (hoch) | `next/node_modules/postcss` | Nur zur Bauzeit, verarbeitet unser eigenes CSS. Unsere eigene postcss-Abhängigkeit ist aktuell. |
-| `sharp` < 0.35 (hoch) | `next/node_modules/sharp` | **Unser** Weg läuft über sharp 0.35.3 — siehe unten. Diese Kopie gehört zur Bildoptimierung von Next. |
-| `uuid` < 11.1.1 (mittel) | `exceljs/node_modules/uuid` | Fehlende Puffergrenze in v3/v5/v6, wenn `buf` übergeben wird. exceljs erzeugt Zufalls-UUIDs. |
+| `deepmerge-ts` < 8, `mysql2` ≤ 3.23.0 (hoch) | `prisma` → `@prisma/config` | Keine stabile Fassung ohne Befund, auch 8.x liegt im Bereich. Nur das CLI zur Entwicklungs- und Migrationszeit; mysql2 wird von uns nicht angesprochen (PostgreSQL). Hingenommen. |
+| `uuid` < 11.1.1 (mittel) | `exceljs/node_modules/uuid` | Fehlende Puffergrenze in v3/v5/v6, wenn `buf` übergeben wird. exceljs erzeugt Zufalls-UUIDs. Auch exceljs 4.4.0 hängt an uuid ^8. Einziger Ausweg: `overrides` auf uuid ^11 — offen, braucht einen Test der Excel-Exporte. |
 
 ## `sharp` ist jetzt eine eigene Abhängigkeit
 

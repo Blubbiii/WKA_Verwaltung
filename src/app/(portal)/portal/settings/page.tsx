@@ -149,6 +149,7 @@ export default function SettingsPage() {
       }
       toast.success(t("privacy.deleteSuccess"));
       setTimeout(() => {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- account deleted: full reload drops the dead session
         window.location.href = "/";
       }, 2000);
     } catch (err) {

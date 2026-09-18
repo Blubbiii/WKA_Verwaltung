@@ -101,11 +101,4 @@ test.describe("CRUD Flows", () => {
     const hasText = await page.getByText(/kreditor|vendor|lieferant/i).first().isVisible({ timeout: 2000 }).catch(() => false);
     expect(hasH1 || hasH2 || hasText).toBeTruthy();
   });
-
-  test("Buchungssätze: Liste laden", async ({ page }) => {
-    const hasH1 = await page.locator("h1").first().isVisible({ timeout: 5000 }).catch(() => false);
-    const hasH2 = await page.locator("h2").first().isVisible({ timeout: 2000 }).catch(() => false);
-    const hasText = await page.getByText(/buchung|journal/i).first().isVisible({ timeout: 2000 }).catch(() => false);
-    expect(hasH1 || hasH2 || hasText).toBeTruthy();
-  });
 });

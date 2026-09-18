@@ -161,6 +161,7 @@ export default function GemeindenPage() {
   // Daten: das CSV traegt die Vorbehalte im Kopf mit, und die sollen aus
   // derselben Quelle kommen wie die Zahlen.
   function downloadCsv() {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API download, not a page
     window.location.href = `/api/regulatory/capacity-by-municipality?year=${year}&format=csv`;
   }
 

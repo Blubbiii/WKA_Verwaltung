@@ -102,6 +102,7 @@ export function PortalHeader() {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout: full reload clears client caches
                 onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
                 className="text-red-600"
               >

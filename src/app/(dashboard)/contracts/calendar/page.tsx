@@ -189,6 +189,7 @@ export default function ContractsCalendarPage() {
           <Button
             variant="outline"
             onClick={() => {
+              // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- API download, not a page
               window.location.href = "/api/export/calendar?type=contracts";
             }}
           >

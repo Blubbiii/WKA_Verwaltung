@@ -268,6 +268,7 @@
     }
   },
   "nav": {
+    "payments": "Zahlungen",
     "dashboard": "Deine Übersicht",
     "windparks": "Deine Windparks",
     "parks": "Parks",

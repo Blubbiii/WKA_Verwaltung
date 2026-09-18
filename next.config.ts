@@ -160,6 +160,7 @@ export default isDev
         deleteSourcemapsAfterUpload: true,
       },
 
-      // Automatically tree-shake Sentry logger statements
-      disableLogger: true,
+      // Tree-shake Sentry logger statements. Only effective for webpack builds;
+      // `next build` uses Turbopack by default, where Sentry ignores it.
+      webpack: { treeshake: { removeDebugLogging: true } },
     });
