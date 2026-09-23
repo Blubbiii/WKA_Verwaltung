@@ -24,6 +24,7 @@ vi.mock("@/lib/logger", () => ({
 
 import {
   erzeugeBelegExport,
+  ExportZuGrossError,
   KeineBelegeError,
   ZuVieleBelegeError,
   MAX_BELEGE,
@@ -240,6 +241,30 @@ describe("Belegexport", () => {
     await expect(
       erzeugeBelegExport({ tenantId: "t1", von: VON, bis: BIS }),
     ).rejects.toBeInstanceOf(ZuVieleBelegeError);
+  });
+
+  it("ein zu grosses ZIP nennt die Groesse, nicht eine falsche Anzahl", async () => {
+    /*
+      Bisher hiess es hier „Der Zeitraum enthält 2 Belege, möglich sind 250"
+      — eine Meldung, die sich selbst widerspricht und den eigentlichen Grund
+      verschweigt. Der Nutzer teilt dann den Zeitraum nach Anzahl, obwohl
+      wenige, aber grosse PDFs das Problem sind.
+    */
+    findMany.mockResolvedValue([
+      beleg({ id: "a", invoiceNumber: "RG-A" }),
+      beleg({ id: "b", invoiceNumber: "RG-B" }),
+    ]);
+    pdf.mockResolvedValue(Buffer.alloc(80 * 1024 * 1024));
+
+    const fehler = await erzeugeBelegExport({ tenantId: "t1", von: VON, bis: BIS }).catch(
+      (e: unknown) => e,
+    );
+
+    expect(fehler).toBeInstanceOf(ExportZuGrossError);
+    expect(fehler).not.toBeInstanceOf(ZuVieleBelegeError);
+    const text = (fehler as Error).message;
+    expect(text, "Die Meldung muss den wahren Grund nennen").toMatch(/MB/);
+    expect(text).not.toMatch(/möglich sind 250/);
   });
 
   it("ohne Mandanten wird gar nicht erst gesucht", async () => {

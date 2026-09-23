@@ -19,9 +19,11 @@ import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   erzeugeBelegExport,
+  ExportZuGrossError,
   KeineBelegeError,
   ZuVieleBelegeError,
 } from "@/lib/invoices/beleg-export";
+import { istKalendertag, tageImZeitraum } from "@/lib/invoices/beleg-zeitraum";
 
 /**
  * Obergrenze des Zeitraums.
@@ -33,20 +35,10 @@ import {
  */
 const MAX_TAGE = 100;
 
-/**
- * Ein Kalendertag, der es auch wirklich gibt.
- *
- * Die blosse Schreibweise zu pruefen genuegt nicht: `2026-02-31` passt auf das
- * Muster, und JavaScript rechnet es klaglos in den 3. Maerz um. Der Nutzer
- * bekaeme dann einen anderen Zeitraum als den angeforderten — ohne Hinweis.
- * Deshalb wird zurueckgerechnet und verglichen.
- */
-const kalendertag = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Format muss YYYY-MM-DD sein")
-  .refine((v) => new Date(`${v}T00:00:00.000Z`).toISOString().slice(0, 10) === v, {
-    message: "Diesen Tag gibt es nicht",
-  });
+/** Ein Kalendertag, den es auch wirklich gibt — siehe `istKalendertag`. */
+const kalendertag = z.string().refine(istKalendertag, {
+  message: "Kein gültiger Kalendertag (erwartet: JJJJ-MM-TT)",
+});
 
 const abfrage = z.object({ von: kalendertag, bis: kalendertag });
 
@@ -75,16 +67,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const tage =
-      Math.round(
-        (Date.parse(`${bis}T00:00:00.000Z`) - Date.parse(`${von}T00:00:00.000Z`)) /
-          86_400_000,
-      ) + 1;
+    const tage = tageImZeitraum({ von, bis });
     if (tage > MAX_TAGE) {
       return apiError("VALIDATION_FAILED", undefined, {
         message:
           `Der Zeitraum umfasst ${tage} Tage. Möglich sind ${MAX_TAGE} — ` +
-          `bitte monats- oder quartalsweise exportieren.`,
+          `ein Quartal passt, ein Halbjahr nicht.`,
       });
     }
 
@@ -135,7 +123,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof KeineBelegeError) {
       return apiError("NOT_FOUND", undefined, { message: error.message });
     }
-    if (error instanceof ZuVieleBelegeError) {
+    if (error instanceof ZuVieleBelegeError || error instanceof ExportZuGrossError) {
       return apiError("VALIDATION_FAILED", undefined, { message: error.message });
     }
     return handleApiError(error, "Fehler beim Erstellen des Belegexports");

@@ -33,6 +33,7 @@ import { prisma } from "@/lib/prisma";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { apiLogger } from "@/lib/logger";
 import { calendarDay } from "@/lib/validation/not-in-future";
+import { belegExportDateiname, utcMitternacht, type Zeitraum } from "./beleg-zeitraum";
 
 const logger = apiLogger.child({ component: "beleg-export" });
 
@@ -54,12 +55,8 @@ const TRENNER = ";";
 export const MAX_BELEGE = 250;
 export const MAX_GESAMTGROESSE = 150 * 1024 * 1024;
 
-export interface BelegExportParams {
+export interface BelegExportParams extends Zeitraum {
   tenantId: string;
-  /** Erster Kalendertag, einschliesslich, als `YYYY-MM-DD` in deutscher Zeit. */
-  von: string;
-  /** Letzter Kalendertag, einschliesslich. */
-  bis: string;
 }
 
 export interface BelegExportErgebnis {
@@ -75,7 +72,7 @@ export interface BelegExportErgebnis {
 
 /** Kein Beleg im Zeitraum. Der Aufrufer soll das sagen, nicht ein leeres ZIP liefern. */
 export class KeineBelegeError extends Error {
-  constructor(von: string, bis: string) {
+  constructor({ von, bis }: Zeitraum) {
     super(
       `Im Zeitraum ${von} bis ${bis} gibt es keine versendeten Rechnungen ` +
         `oder Gutschriften.`,
@@ -84,7 +81,7 @@ export class KeineBelegeError extends Error {
   }
 }
 
-/** Der Zeitraum ist zu gross für eine Lieferung. */
+/** Der Zeitraum enthält mehr Belege, als eine Lieferung fassen darf. */
 export class ZuVieleBelegeError extends Error {
   constructor(
     public readonly anzahl: number,
@@ -92,9 +89,28 @@ export class ZuVieleBelegeError extends Error {
   ) {
     super(
       `Der Zeitraum enthält ${anzahl} Belege, möglich sind ${grenze}. ` +
-        `Bitte monats- oder wochenweise exportieren.`,
+        `Bitte einen kürzeren Zeitraum wählen.`,
     );
     this.name = "ZuVieleBelegeError";
+  }
+}
+
+/**
+ * Die Belege sind zusammen zu gross für eine Lieferung.
+ *
+ * Ein eigener Fehler, weil die Abhilfe eine andere ist: Nicht die Anzahl ist
+ * das Problem, sondern wenige grosse PDFs. Mit der Meldung der Anzahl hiess es
+ * vorher „enthält 2 Belege, möglich sind 250" — ein Widerspruch, der den Grund
+ * verschweigt.
+ */
+export class ExportZuGrossError extends Error {
+  constructor(public readonly grenzeBytes: number) {
+    const mb = Math.round(grenzeBytes / (1024 * 1024));
+    super(
+      `Die Belege des Zeitraums sind zusammen grösser als ${mb} MB und passen ` +
+        `nicht in eine Lieferung. Bitte einen kürzeren Zeitraum wählen.`,
+    );
+    this.name = "ExportZuGrossError";
   }
 }
 
@@ -177,6 +193,7 @@ export async function erzeugeBelegExport(
   params: BelegExportParams,
 ): Promise<BelegExportErgebnis> {
   const { tenantId, von, bis } = params;
+  const zeitraum: Zeitraum = { von, bis };
 
   if (!tenantId) {
     // Ohne Mandanten kein Export. Ein fehlender Filter waere hier kein
@@ -202,16 +219,17 @@ export async function erzeugeBelegExport(
     auch die Zukunftsprüfung beim Anlegen benutzt — eine Zeitzonenlogik, nicht
     zwei.
   */
-  const grobVon = new Date(`${von}T00:00:00.000Z`);
+  const grobVon = utcMitternacht(von);
   grobVon.setUTCDate(grobVon.getUTCDate() - 1);
-  const grobBis = new Date(`${bis}T23:59:59.999Z`);
-  grobBis.setUTCDate(grobBis.getUTCDate() + 1);
+  // Bis einschliesslich: der Tag nach `bis`, plus ein Tag Luft.
+  const grobBis = utcMitternacht(bis);
+  grobBis.setUTCDate(grobBis.getUTCDate() + 2);
 
   const roh = await prisma.invoice.findMany({
     where: {
       tenantId,
       deletedAt: null,
-      invoiceDate: { gte: grobVon, lte: grobBis },
+      invoiceDate: { gte: grobVon, lt: grobBis },
       // DRAFT bleibt draussen: noch keine Rechnung, nur ein Entwurf.
       status: { not: "DRAFT" },
     },
@@ -238,7 +256,7 @@ export async function erzeugeBelegExport(
     return t >= von && t <= bis;
   });
 
-  if (belege.length === 0) throw new KeineBelegeError(von, bis);
+  if (belege.length === 0) throw new KeineBelegeError(zeitraum);
   if (belege.length > MAX_BELEGE) {
     throw new ZuVieleBelegeError(belege.length, MAX_BELEGE);
   }
@@ -260,13 +278,13 @@ export async function erzeugeBelegExport(
       const pdf = await generateInvoicePdf(b.id);
       gesamtgroesse += pdf.length;
       if (gesamtgroesse > MAX_GESAMTGROESSE) {
-        throw new ZuVieleBelegeError(belege.length, MAX_BELEGE);
+        throw new ExportZuGrossError(MAX_GESAMTGROESSE);
       }
       ordner?.file(dateiname, pdf);
       abgelegt = true;
       mitPdf++;
     } catch (err) {
-      if (err instanceof ZuVieleBelegeError) throw err;
+      if (err instanceof ExportZuGrossError) throw err;
       /*
         Ein Beleg ohne PDF darf die Lieferung nicht kippen — sonst scheitert
         ein Export von fünfzig Rechnungen an einer einzigen. Er steht aber im
@@ -312,7 +330,7 @@ export async function erzeugeBelegExport(
 
   return {
     zip: zipBuffer,
-    dateiname: `Belege_${von}_bis_${bis}.zip`,
+    dateiname: belegExportDateiname(zeitraum),
     gesamt: belege.length,
     mitPdf,
     fehlgeschlagen,

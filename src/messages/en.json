@@ -338,7 +338,7 @@
     "invoiceDispatch": "Dispatch Overview",
     "reconciliation": "Reconciliation",
     "bankImport": "Bank Import",
-    "reminders": "Dunning",
+    "reminders": "Payment reminders",
     "journalEntries": "Journal Entries",
     "parksOverview": "Overview",
     "parkPL": "Park P&L",
@@ -10562,5 +10562,19 @@
     "toastLoadError": "Error while loading",
     "toastRunSuccess": "Dunning run created: {count} dunnings",
     "toastRunError": "Error executing dunning run"
+  },
+  "belegExport": {
+    "title": "Document export",
+    "description": "Outgoing invoices and credit notes for a period, for your tax advisor",
+    "cardTitle": "Choose period",
+    "cardDescription": "You receive a ZIP file with the documents as PDF and a CSV index. Drafts are excluded, cancellation invoices are included.",
+    "from": "From",
+    "to": "To",
+    "submit": "Export documents",
+    "running": "Creating …",
+    "success": "{count} documents exported",
+    "pdfMissing": "{count, plural, one {# document} other {# documents}} could not be rendered as PDF. They are listed in the index but have no file — please check before passing the export on.",
+    "errorHttp": "Export failed (HTTP {status})",
+    "errorFallback": "Export failed"
   }
 }

@@ -338,7 +338,7 @@
     "invoiceDispatch": "Versandübersicht",
     "reconciliation": "Zahlungs-Abgleich",
     "bankImport": "Bank-Import",
-    "reminders": "Mahnwesen",
+    "reminders": "Zahlungserinnerungen",
     "journalEntries": "Buchungsjournal",
     "parksOverview": "Übersicht",
     "parkPL": "Park P&L",
@@ -10562,5 +10562,19 @@
     "toastLoadError": "Fehler beim Laden",
     "toastRunSuccess": "Mahnlauf erstellt: {count} Mahnungen",
     "toastRunError": "Fehler beim Mahnlauf"
+  },
+  "belegExport": {
+    "title": "Belegexport",
+    "description": "Ausgangsrechnungen und Gutschriften eines Zeitraums für deinen Steuerberater",
+    "cardTitle": "Zeitraum wählen",
+    "cardDescription": "Du erhältst eine ZIP-Datei mit den Belegen als PDF und einem Verzeichnis im CSV-Format. Entwürfe sind nicht enthalten, Stornorechnungen schon.",
+    "from": "Von",
+    "to": "Bis",
+    "submit": "Belege exportieren",
+    "running": "Wird erstellt …",
+    "success": "{count} Belege exportiert",
+    "pdfMissing": "{count, plural, one {# Beleg konnte} other {# Belege konnten}} nicht als PDF erzeugt werden. Sie stehen im Verzeichnis, aber ohne Datei — bitte prüf sie, bevor du die Datei weitergibst.",
+    "errorHttp": "Export fehlgeschlagen (HTTP {status})",
+    "errorFallback": "Export fehlgeschlagen"
   }
 }

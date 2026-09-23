@@ -11,6 +11,8 @@
  */
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useMutation } from "@tanstack/react-query";
 import { Download, FileArchive, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,9 +28,10 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { downloadFromResponse } from "@/lib/download";
+import { belegExportDateiname, type Zeitraum } from "@/lib/invoices/beleg-zeitraum";
 
 /** Erster und letzter Tag des Vormonats — der Regelfall bei der Übergabe. */
-function vormonat(): { von: string; bis: string } {
+function vormonat(): Zeitraum {
   const heute = new Date();
   const ersterDiesenMonat = new Date(heute.getFullYear(), heute.getMonth(), 1);
   const letzterVormonat = new Date(ersterDiesenMonat.getTime() - 86_400_000);
@@ -37,6 +40,8 @@ function vormonat(): { von: string; bis: string } {
     letzterVormonat.getMonth(),
     1,
   );
+  // Ortszeit des Browsers ist hier richtig: „Vormonat" meint den Monat, in
+  // dem der Nutzer lebt.
   const alsText = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
       d.getDate(),
@@ -44,104 +49,92 @@ function vormonat(): { von: string; bis: string } {
   return { von: alsText(ersterVormonat), bis: alsText(letzterVormonat) };
 }
 
+interface ExportErgebnis {
+  gesamt: string;
+  fehlgeschlagen: number;
+}
+
 export default function BelegExportSeite() {
-  const anfang = vormonat();
-  const [von, setVon] = useState(anfang.von);
-  const [bis, setBis] = useState(anfang.bis);
-  const [laeuft, setLaeuft] = useState(false);
-  const [hinweis, setHinweis] = useState<string | null>(null);
+  const t = useTranslations("belegExport");
+  const [zeitraum, setZeitraum] = useState<Zeitraum>(vormonat);
+  const [fehlendePdfs, setFehlendePdfs] = useState(0);
 
-  async function exportieren() {
-    setLaeuft(true);
-    setHinweis(null);
-    try {
+  const exportieren = useMutation({
+    mutationFn: async ({ von, bis }: Zeitraum): Promise<ExportErgebnis> => {
       const res = await fetch(
-        `/api/invoices/beleg-export?von=${von}&bis=${bis}`,
+        `/api/invoices/beleg-export?von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`,
       );
-
       if (!res.ok) {
         const rumpf = await res.json().catch(() => null);
-        throw new Error(
-          rumpf?.error || rumpf?.message || `Export fehlgeschlagen (HTTP ${res.status})`,
-        );
+        throw new Error(rumpf?.error || t("errorHttp", { status: res.status }));
       }
-
-      const gesamt = res.headers.get("X-Belege-Gesamt") ?? "?";
-      const fehlgeschlagen = Number(res.headers.get("X-Belege-Fehlgeschlagen") ?? "0");
-
-      await downloadFromResponse(res, `Belege_${von}_bis_${bis}.zip`);
-      toast.success(`${gesamt} Belege exportiert`);
-
+      const ergebnis = {
+        gesamt: res.headers.get("X-Belege-Gesamt") ?? "?",
+        fehlgeschlagen: Number(res.headers.get("X-Belege-Fehlgeschlagen") ?? "0"),
+      };
+      await downloadFromResponse(res, belegExportDateiname({ von, bis }));
+      return ergebnis;
+    },
+    onMutate: () => setFehlendePdfs(0),
+    onSuccess: ({ gesamt, fehlgeschlagen }) => {
+      toast.success(t("success", { count: gesamt }));
       /*
         Ein fehlgeschlagenes PDF steht im Verzeichnis ohne Dateiverweis. Das
         muss der Nutzer erfahren, BEVOR er die Datei weitergibt — sonst
         merkt es erst der Steuerberater, oder niemand.
       */
-      if (fehlgeschlagen > 0) {
-        setHinweis(
-          `${fehlgeschlagen} Beleg(e) konnten nicht als PDF erzeugt werden. ` +
-            `Sie stehen im Verzeichnis, aber ohne Datei — bitte vor der ` +
-            `Weitergabe prüfen.`,
-        );
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Export fehlgeschlagen");
-    } finally {
-      setLaeuft(false);
-    }
-  }
+      setFehlendePdfs(fehlgeschlagen);
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("errorFallback")),
+  });
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Belegexport"
-        description="Ausgangsrechnungen und Gutschriften eines Zeitraums für den Steuerberater"
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5" aria-hidden />
-            Zeitraum wählen
+            {t("cardTitle")}
           </CardTitle>
-          <CardDescription>
-            Sie erhalten eine ZIP-Datei mit den Belegen als PDF und einem
-            Verzeichnis im CSV-Format. Entwürfe sind nicht enthalten,
-            Stornorechnungen schon.
-          </CardDescription>
+          <CardDescription>{t("cardDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="von">Von</Label>
+              <Label htmlFor="von">{t("from")}</Label>
               <Input
                 id="von"
                 type="date"
-                value={von}
-                onChange={(e) => setVon(e.target.value)}
+                value={zeitraum.von}
+                onChange={(e) => setZeitraum((z) => ({ ...z, von: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bis">Bis</Label>
+              <Label htmlFor="bis">{t("to")}</Label>
               <Input
                 id="bis"
                 type="date"
-                value={bis}
-                onChange={(e) => setBis(e.target.value)}
+                value={zeitraum.bis}
+                onChange={(e) => setZeitraum((z) => ({ ...z, bis: e.target.value }))}
               />
             </div>
           </div>
 
-          {hinweis && (
+          {fehlendePdfs > 0 && (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" aria-hidden />
-              <AlertDescription>{hinweis}</AlertDescription>
+              <AlertDescription>{t("pdfMissing", { count: fehlendePdfs })}</AlertDescription>
             </Alert>
           )}
 
-          <Button onClick={exportieren} disabled={laeuft || !von || !bis}>
+          <Button
+            onClick={() => exportieren.mutate(zeitraum)}
+            disabled={exportieren.isPending || !zeitraum.von || !zeitraum.bis}
+          >
             <Download className="h-4 w-4" aria-hidden />
-            {laeuft ? "Wird erstellt …" : "Belege exportieren"}
+            {exportieren.isPending ? t("running") : t("submit")}
           </Button>
         </CardContent>
       </Card>
