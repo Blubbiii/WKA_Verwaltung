@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -158,6 +158,12 @@ export function TenantOnboardingWizard() {
   // Load onboarding status
   // ==========================================================================
 
+  // Das Formular wird genau EINMAL mit den gespeicherten Werten vorbelegt.
+  // Danach gehoeren die Felder dem Nutzer: Im Entwicklungsmodus laeuft der
+  // Lade-Effekt doppelt, und die spaeter eintreffende zweite Antwort warf
+  // bereits Eingetipptes weg — gespeichert wurde dann der alte Wert.
+  const vorbelegt = useRef(false);
+
   const loadOnboardingStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/onboarding-status");
@@ -168,7 +174,8 @@ export function TenantOnboardingWizard() {
       setOnboardingStatus(data);
 
       // Pre-fill company form with existing tenant data
-      if (data.tenant) {
+      if (data.tenant && !vorbelegt.current) {
+        vorbelegt.current = true;
         setCompany({
           contactEmail: data.tenant.contactEmail || "",
           contactPhone: data.tenant.contactPhone || "",
