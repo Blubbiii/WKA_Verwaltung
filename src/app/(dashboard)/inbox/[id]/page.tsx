@@ -37,6 +37,7 @@ import { OcrFieldEditor } from "@/components/inbox/ocr-field-editor";
 import { SplitEditor } from "@/components/inbox/split-editor";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
+import { heuteKalendertag } from "@/lib/validation/datumsfeld";
 
 // ============================================================================
 // Types
@@ -115,7 +116,7 @@ function PayDialog({
   const t = useTranslations("inbox.payDialog");
   const tDetail = useTranslations("inbox.detail");
   const [paidAmount, setPaidAmount] = useState(grossAmount?.toFixed(2) ?? "");
-  const [paidAt, setPaidAt] = useState(new Date().toISOString().slice(0, 10));
+  const [paidAt, setPaidAt] = useState(heuteKalendertag);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {

@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { VendorAutocomplete } from "./vendor-autocomplete";
+import { alsDatumsfeldWert } from "@/lib/validation/datumsfeld";
 
 interface InvoiceFields {
   invoiceType: "INVOICE" | "CREDIT_NOTE";
@@ -106,7 +107,7 @@ export function OcrFieldEditor({ invoiceId, fields, onSaved, disabled }: OcrFiel
   const toDateInputValue = (iso: string | null) => {
     if (!iso) return "";
     try {
-      return new Date(iso).toISOString().slice(0, 10);
+      return alsDatumsfeldWert(iso);
     } catch {
       return "";
     }

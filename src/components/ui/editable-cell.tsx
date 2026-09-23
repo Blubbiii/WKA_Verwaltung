@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { alsDatumsfeldWert } from "@/lib/validation/datumsfeld";
 
 interface SelectOption {
   value: string;
@@ -106,21 +107,12 @@ export function EditableCell({
   }, [value, optimistic_]);
 
   // Normalize a value into the ISO date string (YYYY-MM-DD) for <input type="date">.
-  const toDateString = useCallback((v: CellValue | Date): string => {
-    if (v === null || v === undefined || v === "") return "";
-    if (v instanceof Date) {
-      return v.toISOString().slice(0, 10);
-    }
-    const s = v.toString();
-    // Already a date-only ISO string?
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    // Try parsing more general strings (e.g. full ISO timestamp).
-    const parsed = new Date(s);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString().slice(0, 10);
-    }
-    return s;
-  }, []);
+  // Deutscher Kalendertag statt UTC-Tag: Ein Zeitstempel vom 1. April, 00:30,
+  // stand sonst als 31. März im Feld — und wurde beim Speichern so zurückgeschrieben.
+  const toDateString = useCallback(
+    (v: CellValue | Date): string => alsDatumsfeldWert(v as string | number | Date | null | undefined),
+    [],
+  );
 
   const effectiveValue: CellValue = optimistic_.has ? optimistic_.v : value;
 

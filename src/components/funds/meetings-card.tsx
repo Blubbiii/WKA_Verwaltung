@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { formatDate } from "@/lib/format";
+import { heuteKalendertag } from "@/lib/validation/datumsfeld";
 
 interface AgendaItem {
   id: string;
@@ -98,7 +99,7 @@ export function MeetingsCard({ fundId }: { fundId: string }) {
       const res = await fetch(`/api/meetings/${meeting.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invitationSentAt: new Date().toISOString().slice(0, 10) }),
+        body: JSON.stringify({ invitationSentAt: heuteKalendertag() }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || t("updateError"));

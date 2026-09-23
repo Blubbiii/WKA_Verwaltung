@@ -21,6 +21,7 @@ import {
   resolveShareholderSharesFrom,
   SHAREHOLDER_SHARES_SELECT,
 } from "@/lib/shareholding/resolve-shares";
+import { heuteKalendertag } from "@/lib/validation/datumsfeld";
 
 export async function GET(
   request: NextRequest,
@@ -42,7 +43,7 @@ export async function GET(
 
     const date = dateParam
       ? new Date(`${dateParam}T00:00:00.000Z`)
-      : new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z");
+      : new Date(heuteKalendertag() + "T00:00:00.000Z");
 
     const fund = await prisma.fund.findFirst({
       where: { id, tenantId: check.tenantId! },

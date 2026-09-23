@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { heuteKalendertag } from "@/lib/validation/datumsfeld";
 
 interface PersonRef {
   id: string;
@@ -91,7 +92,7 @@ function personName(person: PersonRef | null): string {
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return heuteKalendertag();
 }
 
 export function ShareTransfersCard({ fundId }: { fundId: string }) {

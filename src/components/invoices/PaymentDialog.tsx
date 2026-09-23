@@ -30,6 +30,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2 } from "lucide-react";
 import { LOCALE_DE } from "@/lib/format";
+import { heuteKalendertag } from "@/lib/validation/datumsfeld";
 
 export interface PaymentDialogProps {
   invoiceId: string;
@@ -56,7 +57,7 @@ export function PaymentDialog({
   onSuccess,
 }: PaymentDialogProps) {
   const openAmount = Math.max(0, grossAmount - paidAmount);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = heuteKalendertag();
 
   const [amount, setAmount] = useState(openAmount.toString());
   const [paymentDate, setPaymentDate] = useState(today);
