@@ -77,6 +77,36 @@ function readFromUrl<T extends StateRecord>(
   return result;
 }
 
+/**
+ * Naechster Zustand und die dazu passende Adresse — ohne Seiteneffekte.
+ *
+ * Liegt bewusst ausserhalb des Hooks: `setState`-Updater muessen rein sein,
+ * React fuehrt sie unter Umstaenden waehrend des Renderns aus (im StrictMode
+ * doppelt). Vorher stand hier `router.replace()` im Updater, und die
+ * Rechnungsliste warf „Cannot update a component (Router) while rendering a
+ * different component".
+ *
+ * Vorgabewerte und leere Werte verschwinden aus der Adresse; fremde Parameter
+ * der Seite bleiben stehen.
+ */
+export function naechsterTabellenZustand<T extends StateRecord>(
+  vorher: T,
+  patch: Partial<T>,
+  defaults: T,
+  aktuelleSuche: string,
+): { next: T; query: string } {
+  const next = { ...vorher, ...patch };
+  const params = new URLSearchParams(aktuelleSuche);
+  for (const [key, value] of Object.entries(next)) {
+    if (value === undefined || value === null || value === "" || value === defaults[key]) {
+      params.delete(key);
+    } else {
+      params.set(key, String(value));
+    }
+  }
+  return { next, query: params.toString() };
+}
+
 export function usePersistedTableState<T extends StateRecord>(
   tableKey: string,
   defaults: T,
@@ -133,27 +163,26 @@ export function usePersistedTableState<T extends StateRecord>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Der jeweils juengste Zustand, damit mehrere Aenderungen im selben Takt
+  // aufeinander aufbauen, ohne dass die Berechnung in einen Updater muss.
+  const stateRef = useRef(state);
+
   const update = useCallback(
     (patch: Partial<T>) => {
-      setState((prev) => {
-        const next = { ...prev, ...patch };
-        writeToStorage(tableKey, next);
-        // URL sync (kurze Form: nur Werte != Default schreiben)
-        // aus window.location.search lesen (frisch) statt aus stale searchParams-dep.
-        const currentSearch =
-          typeof window !== "undefined" ? window.location.search : searchParamsRef.current.toString();
-        const params = new URLSearchParams(currentSearch);
-        const currentDefaults = defaultsRef.current;
-        for (const [key, value] of Object.entries(next)) {
-          if (value === undefined || value === null || value === "" || value === currentDefaults[key]) {
-            params.delete(key);
-          } else {
-            params.set(key, String(value));
-          }
-        }
-        router.replace(`?${params.toString()}`, { scroll: false });
-        return next;
-      });
+      // Aus window.location.search lesen (frisch) statt aus den searchParams
+      // des letzten Renders.
+      const aktuelleSuche =
+        typeof window !== "undefined" ? window.location.search : searchParamsRef.current.toString();
+      const { next, query } = naechsterTabellenZustand(
+        stateRef.current,
+        patch,
+        defaultsRef.current,
+        aktuelleSuche,
+      );
+      stateRef.current = next;
+      setState(next);
+      writeToStorage(tableKey, next);
+      router.replace(`?${query}`, { scroll: false });
     },
     [tableKey, router],
   );
