@@ -11,6 +11,8 @@ import {
 } from "@/lib/lease-revenue/invoice-generator";
 import { executeCostAllocation } from "@/lib/lease-revenue/allocator";
 import { apiError } from "@/lib/api-errors";
+import { z } from "zod";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/invoices - Generate credit notes (Gutschriften)
@@ -29,16 +31,13 @@ export async function POST(
 
     const { id } = await params;
 
-    // Parse optional body parameters (e.g. initialStatus from wizard)
-    let initialStatus: "DRAFT" | "SENT" = "DRAFT";
-    try {
-      const body = await request.json();
-      if (body.initialStatus === "SENT") {
-        initialStatus = "SENT";
-      }
-    } catch {
-      // No body — default to DRAFT
-    }
+    // Optionaler Rumpf: initialStatus aus dem Assistenten, Vorgabe DRAFT.
+    const rumpf = await leseOptionalenRumpf(
+      request,
+      z.object({ initialStatus: z.enum(["DRAFT", "SENT"]).default("DRAFT") }),
+    );
+    if (!rumpf.ok) return rumpf.antwort;
+    const initialStatus: "DRAFT" | "SENT" = rumpf.daten.initialStatus;
 
     // Load settlement to determine period type and verify ownership + status
     const settlement = await prisma.leaseRevenueSettlement.findFirst({

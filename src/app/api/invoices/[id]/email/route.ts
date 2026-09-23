@@ -6,6 +6,8 @@ import { sendEmailSync } from "@/lib/email/sender";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { z } from "zod";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 // POST /api/invoices/[id]/email - Rechnung per E-Mail versenden
 export async function POST(
@@ -18,13 +20,14 @@ export async function POST(
 
     const { id } = await params;
 
-    // Optionalen Body lesen (kann leer sein)
-    let body: { to?: string } = {};
-    try {
-      body = await request.json();
-    } catch {
-      // Leerer Body ist OK
-    }
+    // Optionaler Rumpf: abweichende Empfaengeradresse. Leer ist in Ordnung,
+    // eine ungueltige Adresse nicht.
+    const rumpf = await leseOptionalenRumpf(
+      request,
+      z.object({ to: z.string().trim().email().optional() }),
+    );
+    if (!rumpf.ok) return rumpf.antwort;
+    const body = rumpf.daten;
 
     // Rechnung laden mit allen Relationen für PDF und E-Mail-Ermittlung
     const invoice = await prisma.invoice.findFirst({

@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/auth/withPermission";
 import { executeRule } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 const executeSchema = z.object({
   overrideParameters: z.record(z.string(), z.unknown()).optional(),
@@ -47,20 +48,12 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Abrechnungsregel nicht gefunden" });
     }
 
-    // Optional: Body mit Override-Parametern
-    let overrideParameters: Record<string, unknown> | undefined;
-    try {
-      const body = await request.json();
-      const result = executeSchema.safeParse(body);
-      if (!result.success) {
-        return apiError("VALIDATION_FAILED", undefined, { message: "Ungültige Eingabe", details: result.error.flatten().fieldErrors });
-      }
-      if (result.data?.overrideParameters) {
-        overrideParameters = result.data.overrideParameters;
-      }
-    } catch {
-      // Kein Body oder ungültiges JSON - ignorieren
-    }
+    // Optional: Body mit Override-Parametern. Kaputtes JSON wird abgelehnt —
+    // vorher lief die Regel dann still OHNE die angeforderten Uebersteuerungen.
+    const rumpf = await leseOptionalenRumpf(request, executeSchema);
+    if (!rumpf.ok) return rumpf.antwort;
+    const overrideParameters: Record<string, unknown> | undefined =
+      rumpf.daten?.overrideParameters ?? undefined;
 
     // Fuehre Regel aus
     const result = await executeRule(id, {

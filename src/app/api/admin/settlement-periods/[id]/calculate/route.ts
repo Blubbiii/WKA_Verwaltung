@@ -11,6 +11,7 @@ import {
 } from "@/lib/settlement";
 import type { SettlementWarning } from "@/lib/settlement/calculator";
 import { apiError } from "@/lib/api-errors";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 const calculateSchema = z.object({
   totalRevenue: z.number().optional(), // Optional: Überschreibt Period.totalRevenue
@@ -61,21 +62,15 @@ export async function POST(
 
     const { id } = await params;
 
-    // Parse optional body
-    let options: { totalRevenue: number | undefined; saveResult: boolean } = {
-      totalRevenue: undefined,
-      saveResult: true,
+    // Optionaler Rumpf. Leer ist in Ordnung; ungueltige Werte NICHT — vorher
+    // wurde die Pruefung verschluckt, und aus einer Probeberechnung mit falsch
+    // getipptem Erloes wurde eine gespeicherte Abrechnung mit dem alten Erloes.
+    const rumpf = await leseOptionalenRumpf(request, calculateSchema);
+    if (!rumpf.ok) return rumpf.antwort;
+    const options: { totalRevenue: number | undefined; saveResult: boolean } = {
+      totalRevenue: rumpf.daten.totalRevenue,
+      saveResult: rumpf.daten.saveResult,
     };
-    try {
-      const body = await request.json();
-      const parsed = calculateSchema.parse(body);
-      options = {
-        totalRevenue: parsed.totalRevenue,
-        saveResult: parsed.saveResult,
-      };
-    } catch {
-      // Leerer Body ist OK
-    }
 
     // Hole Periode mit Park
     const period = await prisma.leaseSettlementPeriod.findUnique({

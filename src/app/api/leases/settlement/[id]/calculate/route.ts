@@ -8,10 +8,27 @@ import { executeSettlementCalculation } from "@/lib/lease-revenue/calculator";
 import type { SettlementCalculationResult } from "@/types/billing";
 import { getIntervalDivisor } from "@/types/billing";
 import { apiError } from "@/lib/api-errors";
+import { z } from "zod";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 // =============================================================================
 // POST /api/leases/settlement/[id]/calculate - Execute settlement calculation
 // =============================================================================
+
+const berechnungsRumpf = z.object({
+  saveResult: z.boolean().optional(),
+  totalRevenue: z.number().nonnegative().nullable().optional(),
+  revenueSources: z
+    .array(
+      z.object({
+        category: z.string(),
+        productionKwh: z.number(),
+        revenueEur: z.number(),
+      }),
+    )
+    .optional(),
+  revenueDisplayMode: z.enum(["MONTHLY", "YEARLY"]).optional(),
+});
 
 export async function POST(
   request: NextRequest,
@@ -23,28 +40,19 @@ export async function POST(
 
     const { id } = await params;
 
-    // Read optional body parameters (e.g. manual revenue from wizard)
-    let manualRevenueEur: number | undefined;
-    let revenueSources: Array<{ category: string; productionKwh: number; revenueEur: number }> | undefined;
-    let revenueDisplayMode: "MONTHLY" | "YEARLY" | undefined;
-    try {
-      const body = await request.json();
-      if (body.totalRevenue != null && Number(body.totalRevenue) > 0) {
-        manualRevenueEur = Number(body.totalRevenue);
-      }
-      if (Array.isArray(body.revenueSources) && body.revenueSources.length > 0) {
-        revenueSources = body.revenueSources.map((s: Record<string, unknown>) => ({
-          category: String(s.category || ""),
-          productionKwh: Number(s.productionKwh || 0),
-          revenueEur: Number(s.revenueEur || 0),
-        })).filter((s: { revenueEur: number }) => s.revenueEur > 0);
-      }
-      if (body.revenueDisplayMode === "MONTHLY" || body.revenueDisplayMode === "YEARLY") {
-        revenueDisplayMode = body.revenueDisplayMode;
-      }
-    } catch {
-      // No body or invalid JSON — that's fine, proceed without manual revenue
-    }
+    // Optionaler Rumpf (manueller Erloes aus dem Assistenten). Vorher las die
+    // Route ihn mit Number() und verschluckte jeden Fehler: ein Erloes "abc"
+    // wurde zu NaN und still ignoriert, kaputtes JSON ebenso — gerechnet wurde
+    // dann ohne den eingegebenen Erloes.
+    const rumpf = await leseOptionalenRumpf(request, berechnungsRumpf);
+    if (!rumpf.ok) return rumpf.antwort;
+    const eingabe = rumpf.daten;
+    const manualRevenueEur =
+      eingabe.totalRevenue != null && eingabe.totalRevenue > 0 ? eingabe.totalRevenue : undefined;
+    const revenueSources = eingabe.revenueSources?.length
+      ? eingabe.revenueSources.filter((s) => s.revenueEur > 0)
+      : undefined;
+    const revenueDisplayMode = eingabe.revenueDisplayMode;
 
     const calcOptions: {
       manualRevenueEur?: number;

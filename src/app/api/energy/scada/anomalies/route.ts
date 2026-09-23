@@ -6,6 +6,8 @@ import { Prisma } from "@prisma/client";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
+import { z } from "zod";
+import { leseOptionalenRumpf } from "@/lib/api/optionaler-rumpf";
 
 // =============================================================================
 // GET /api/energy/scada/anomalies - List anomalies with filters
@@ -162,13 +164,13 @@ export async function POST(request: NextRequest) {
 
     const tenantId = check.tenantId!;
 
-    let parkId: string | undefined;
-    try {
-      const body = await request.json();
-      parkId = body.parkId;
-    } catch {
-      // Body is optional
-    }
+    // Optionaler Rumpf: auf einen Park beschraenken.
+    const rumpf = await leseOptionalenRumpf(
+      request,
+      z.object({ parkId: z.string().min(1).optional() }),
+    );
+    if (!rumpf.ok) return rumpf.antwort;
+    const parkId = rumpf.daten.parkId;
 
     const anomalies = await runAnomalyDetection(tenantId, { parkId });
 
