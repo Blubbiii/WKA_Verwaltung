@@ -181,8 +181,12 @@ export async function listBackups(): Promise<BackupInfo[]> {
           try {
             const metaContent = await fs.readFile(metaPath, "utf-8");
             metadata = JSON.parse(metaContent);
-          } catch {
-            // Metadata file may not exist
+          } catch (err) {
+            // Fehlende Metadaten sind bei alten Sicherungen normal; eine
+            // vorhandene, aber unlesbare Datei nicht.
+            if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+              backupLogger.warn({ err, metaPath }, "Metadaten der Sicherung nicht lesbar");
+            }
           }
 
           backups.push({
@@ -337,8 +341,11 @@ export async function createBackup(
     // Clean up partial file
     try {
       await fs.unlink(filePath);
-    } catch {
-      // Ignore cleanup errors
+    } catch (err) {
+      // Bleibt eine halbe Sicherung liegen, sieht sie aus wie eine ganze.
+      if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+        backupLogger.warn({ err, filePath }, "Unvollstaendige Sicherung liess sich nicht entfernen");
+      }
     }
 
     return {
@@ -393,8 +400,10 @@ export async function deleteBackup(backupId: string): Promise<{ success: boolean
     // Delete metadata file if it exists
     try {
       await fs.unlink(`${filePath}.meta`);
-    } catch {
-      // Metadata file may not exist
+    } catch (err) {
+      if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+        backupLogger.warn({ err, filePath }, "Metadaten der Sicherung liessen sich nicht loeschen");
+      }
     }
 
     // Also delete from S3 if enabled
@@ -461,8 +470,11 @@ async function uploadToS3(localPath: string, s3Key: string): Promise<void> {
           }),
         })
       );
-    } catch {
-      // Metadata file may not exist
+    } catch (err) {
+      // Hier wird GESCHRIEBEN, nicht gelesen — der alte Kommentar ("may not
+      // exist") passte nicht. Ohne Metadaten fehlen der Sicherung Mandant und
+      // Umfang; das muss auffallen.
+      backupLogger.warn({ err, s3Key }, "Metadaten der Sicherung konnten nicht nach S3 geschrieben werden");
     }
 
     backupLogger.info(
@@ -503,8 +515,8 @@ async function deleteFromS3(s3Key: string): Promise<void> {
           Key: `${s3Key}.meta`,
         })
       );
-    } catch {
-      // Ignore
+    } catch (err) {
+      backupLogger.warn({ err, s3Key }, "Metadaten der Sicherung liessen sich in S3 nicht loeschen");
     }
 
     backupLogger.info(
@@ -663,8 +675,10 @@ export async function applyRetention(): Promise<{
           // Delete metadata file
           try {
             await fs.unlink(`${file.filePath}.meta`);
-          } catch {
-            // Ignore
+          } catch (err) {
+            if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+              backupLogger.warn({ err, filePath: file.filePath }, "Metadaten beim Aufraeumen nicht geloescht");
+            }
           }
 
           // Delete from S3

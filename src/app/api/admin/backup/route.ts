@@ -338,12 +338,17 @@ export async function POST(request: NextRequest) {
               if (stat.mtimeMs > cutoff) continue; // fresh — likely in use
               await fs.unlink(filePath);
               legacyDeleted++;
-            } catch {
-              // Skip files that cannot be deleted
+            } catch (err) {
+              // Einzelne Datei ueberspringen, aber sagen warum — sonst waechst
+              // das Verzeichnis unbemerkt weiter.
+              logger.warn({ err, datei: file }, "Alte temporaere Sicherungsdatei nicht geloescht");
             }
           }
-        } catch {
-          // legacy tmp dir may not exist — normal
+        } catch (err) {
+          // Das alte Verzeichnis fehlt in neuen Installationen — das ist normal.
+          if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+            logger.warn({ err }, "Altes temporaeres Sicherungsverzeichnis nicht lesbar");
+          }
         }
 
         const total =

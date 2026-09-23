@@ -76,8 +76,10 @@ async function gcScadaStaging(): Promise<{
     try {
       const remaining = await fs.readdir(tenantDir);
       if (remaining.length === 0) await rmDirSafely(tenantDir);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+        logger.warn({ err, tenantDir }, "tus-GC: leeres Mandantenverzeichnis nicht entfernt");
+      }
     }
   }
 

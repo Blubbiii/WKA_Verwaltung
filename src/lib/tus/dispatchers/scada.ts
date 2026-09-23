@@ -99,8 +99,11 @@ export async function dispatchScadaUpload(
   // tus also writes a `.json` sidecar next to the chunk file — clean it up
   try {
     await fs.unlink(tusFilePath + ".json");
-  } catch {
-    /* sidecar may not exist depending on datastore version — ignore */
+  } catch (err) {
+    // Die Begleitdatei fehlt je nach Datastore-Version — das ist normal.
+    if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) {
+      logger.warn({ err, tusFilePath }, "tus-Begleitdatei nicht entfernt");
+    }
   }
 
   dispatchLogger.info(

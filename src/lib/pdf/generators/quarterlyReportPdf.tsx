@@ -20,6 +20,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
 import type { MonthlyReportSections } from "./monthlyReportPdf";
+import { logger } from "@/lib/logger";
 
 const MONTH_NAMES = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -361,8 +362,10 @@ async function fetchQuarterlyReportData(
   if (park.reportCoverImageKey) {
     try {
       coverImageUrl = await getSignedUrl(park.reportCoverImageKey);
-    } catch {
-      // Graceful degradation
+    } catch (err) {
+      // Bericht ohne Titelbild ist in Ordnung — ein kaputter Speicherzugang
+      // soll trotzdem auffallen.
+      logger.warn({ err, key: park.reportCoverImageKey }, "Titelbild des Berichts nicht ladbar");
     }
   }
 

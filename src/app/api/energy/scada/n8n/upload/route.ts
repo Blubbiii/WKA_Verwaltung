@@ -100,8 +100,10 @@ export async function POST(request: NextRequest) {
           skipped.push(file.name);
           continue;
         }
-      } catch {
-        // File does not exist — proceed
+      } catch (err) {
+        // Nur "Datei fehlt" heisst weitermachen. Fehlende Rechte oder eine
+        // volle Platte wurden vorher genauso verschluckt.
+        if (!((err as NodeJS.ErrnoException)?.code === "ENOENT")) throw err;
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());

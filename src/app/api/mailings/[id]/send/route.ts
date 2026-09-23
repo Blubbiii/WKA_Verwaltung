@@ -256,8 +256,9 @@ export async function POST(_req: NextRequest, context: RouteContext) {
         where: { id, tenantId: check.tenantId!},
         data: { status: "PARTIALLY_FAILED" },
       });
-    } catch {
-      // Ignore
+    } catch (err) {
+      // Sonst bleibt der Serienbrief auf "wird versendet" stehen — fuer immer.
+      logger.error({ err, mailingId: id }, "[Mailing Send] Status PARTIALLY_FAILED nicht gesetzt");
     }
 
     return apiError("INTERNAL_ERROR", 500, { message: "Fehler beim Versand" });

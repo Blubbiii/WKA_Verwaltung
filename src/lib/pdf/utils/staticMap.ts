@@ -13,6 +13,7 @@ import sharp from "sharp";
 import type { OverlayOptions } from "sharp";
 
 import { HTTP_TIMEOUTS } from "@/lib/config/api-limits";
+import { logger } from "@/lib/logger";
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -260,8 +261,9 @@ export async function generateStaticMapImage(
       const left = (tp.tx - startTileX) * TILE_SIZE;
       const top = (tp.ty - startTileY) * TILE_SIZE;
       composites.push({ input: tileData, left, top });
-    } catch {
-      // Skip failed tiles (graceful degradation)
+    } catch (err) {
+      // Eine fehlende Kachel laesst eine Luecke in der Karte — kein Abbruch.
+      logger.debug({ err, x: tp.tx, y: tp.ty }, "Kartenkachel nicht geladen");
     }
   }
 

@@ -1333,8 +1333,10 @@ export async function scanLocation(
           if (!maxDate || dateVal > maxDate) maxDate = dateVal;
         }
       }
-    } catch {
-      // Fehler beim Lesen der ersten Datei - fortfahren
+    } catch (err) {
+      // Weitermachen, aber sagen — sonst zeigt die Vorschau still weniger
+      // Anlagen und einen kuerzeren Zeitraum, als die Dateien enthalten.
+      logger.warn({ err, datei: files[0] }, "SCADA-Vorschau: erste Datei nicht lesbar");
     }
 
     // Letzte Datei: spaetestes Datum ermitteln (wenn mehr als eine Datei)
@@ -1354,8 +1356,8 @@ export async function scanLocation(
             if (!maxDate || dateVal > maxDate) maxDate = dateVal;
           }
         }
-      } catch {
-        // Fehler beim Lesen der letzten Datei - fortfahren
+      } catch (err) {
+        logger.warn({ err, datei: files[files.length - 1] }, "SCADA-Vorschau: letzte Datei nicht lesbar");
       }
     }
 

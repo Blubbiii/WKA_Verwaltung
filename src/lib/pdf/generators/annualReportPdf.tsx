@@ -19,6 +19,7 @@ import { resolveTemplateAndLetterhead, applyLetterheadBackground } from "../util
 import { generateStaticMapImage } from "../utils/staticMap";
 import { prisma } from "@/lib/prisma";
 import { getSignedUrl } from "@/lib/storage";
+import { logger } from "@/lib/logger";
 
 // German month names
 const MONTH_NAMES = [
@@ -619,8 +620,10 @@ async function fetchAnnualReportData(
   if (park.reportCoverImageKey) {
     try {
       coverImageUrl = await getSignedUrl(park.reportCoverImageKey);
-    } catch {
-      // Graceful degradation — report renders without cover image
+    } catch (err) {
+      // Bericht ohne Titelbild ist in Ordnung — ein kaputter Speicherzugang
+      // soll trotzdem auffallen.
+      logger.warn({ err, key: park.reportCoverImageKey }, "Titelbild des Berichts nicht ladbar");
     }
   }
 
@@ -654,8 +657,8 @@ async function fetchAnnualReportData(
         })),
       });
     }
-  } catch {
-    // Graceful degradation — report renders without map
+  } catch (err) {
+    logger.warn({ err }, "Karte des Jahresberichts nicht erzeugt");
   }
 
   // Park address

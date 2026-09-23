@@ -489,8 +489,10 @@ export async function getHistoricalWeather(
           }),
           prisma.weatherData.count({ where: { parkId, recordedAt: { gte: defaultFrom, lte: defaultTo } } }),
         ]);
-      } catch {
-        // Archive fetch failed — continue with empty data
+      } catch (err) {
+        // Weiter mit leeren Daten — aber ein Datenbankausfall darf nicht
+        // aussehen wie "es gibt keine Wetterdaten".
+        logger.error({ err, parkId }, "Wetterarchiv konnte nicht gelesen werden");
       }
     }
   }

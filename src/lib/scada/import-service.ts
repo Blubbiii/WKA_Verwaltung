@@ -2274,8 +2274,9 @@ export async function startImport(params: ImportParams): Promise<ImportResult> {
     if (cleanupDir) {
       try {
         await fs.rm(cleanupDir, { recursive: true, force: true });
-      } catch {
-        // Ignore cleanup errors
+      } catch (err) {
+        // force:true deckt "fehlt schon" ab — was hier ankommt, ist echt.
+        scadaLogger.warn({ err, cleanupDir }, "Temporaeres Uploadverzeichnis nicht entfernt");
       }
     }
   }
