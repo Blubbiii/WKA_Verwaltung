@@ -556,7 +556,7 @@ function applyRoundingCorrection(
  * @param tenantId - Tenant ID
  * @returns Produktionsdaten pro WKA mit Betreiber-Info
  */
-async function loadProductionData(
+export async function loadProductionData(
   parkId: string,
   year: number,
   month: number | null,
@@ -579,82 +579,71 @@ async function loadProductionData(
     },
   });
 
-  const result: TurbineProductionData[] = [];
+  const turbineIds = turbines.map((t) => t.id);
 
-  for (const turbine of turbines) {
-    // Lade Produktionsdaten
-    let productionKwh = 0;
-
-    if (month) {
-      // Monatliche Produktion
-      const production = await prisma.turbineProduction.findFirst({
-        where: {
-          turbineId: turbine.id,
-          year,
-          month,
-          tenantId,
-          status: { in: ["CONFIRMED", "INVOICED"] }, // Nur bestätigt/abgerechnet
-        },
-        select: {
-          productionKwh: true,
-        },
-      });
-
-      if (production) {
-        productionKwh = Number(production.productionKwh);
-      }
-    } else {
-      // Jahressumme
-      const productions = await prisma.turbineProduction.findMany({
-        where: {
-          turbineId: turbine.id,
-          year,
-          tenantId,
-          status: { in: ["CONFIRMED", "INVOICED"] },
-        },
-        select: {
-          productionKwh: true,
-        },
-      });
-
-      productionKwh = productions.reduce(
-        (sum, p) => sum + Number(p.productionKwh),
-        0
-      );
-    }
-
-    // Lade aktuellen Betreiber
-    const operator = await prisma.turbineOperator.findFirst({
+  /*
+    Zwei Sammelabfragen statt zwei Abfragen je Anlage. Vorher lief je Anlage
+    eine Produktions- und eine Betreiberabfrage — bei 20 Anlagen 40 Rundreisen.
+    Die Produktion ist je Anlage, Jahr, Monat und Mandant eindeutig
+    (@@unique), die Summe entspricht also im Monatsfall dem einzelnen Wert.
+  */
+  const [produktionen, betreiber] = await Promise.all([
+    prisma.turbineProduction.findMany({
       where: {
-        turbineId: turbine.id,
+        turbineId: { in: turbineIds },
+        year,
+        ...(month ? { month } : {}),
+        tenantId,
+        status: { in: ["CONFIRMED", "INVOICED"] }, // Nur bestätigt/abgerechnet
+      },
+      select: { turbineId: true, productionKwh: true },
+    }),
+    prisma.turbineOperator.findMany({
+      where: {
+        turbineId: { in: turbineIds },
         validFrom: { lte: referenceDate },
         OR: [{ validTo: null }, { validTo: { gt: referenceDate } }],
         status: "ACTIVE",
       },
+      // Ueberlappen sich Zeitraeume, gilt der juengste. findFirst ohne
+      // Sortierung nahm vorher irgendeinen.
+      orderBy: { validFrom: "desc" },
       select: {
+        turbineId: true,
         operatorFundId: true,
-        operatorFund: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        operatorFund: { select: { id: true, name: true } },
       },
-    });
+    }),
+  ]);
 
+  const produktionJeAnlage = new Map<string, number>();
+  for (const p of produktionen) {
+    produktionJeAnlage.set(
+      p.turbineId,
+      (produktionJeAnlage.get(p.turbineId) ?? 0) + Number(p.productionKwh),
+    );
+  }
+  const betreiberJeAnlage = new Map<string, (typeof betreiber)[number]>();
+  for (const op of betreiber) {
+    // Erster Treffer je Anlage = juengster gueltiger Betreiber (orderBy desc).
+    if (!betreiberJeAnlage.has(op.turbineId)) betreiberJeAnlage.set(op.turbineId, op);
+  }
+
+  const result: TurbineProductionData[] = [];
+  for (const turbine of turbines) {
+    const operator = betreiberJeAnlage.get(turbine.id);
     if (!operator) {
       logger.warn(
         `Kein aktiver Betreiber für Turbine ${turbine.designation} (${turbine.id}) am ${referenceDate.toISOString()}`
       );
       continue; // Überspringe Turbinen ohne Betreiber
     }
-
     result.push({
       turbineId: turbine.id,
       turbineDesignation: turbine.designation,
       operatorFundId: operator.operatorFundId,
       operatorFundName: operator.operatorFund.name,
-      productionKwh,
+      productionKwh: produktionJeAnlage.get(turbine.id) ?? 0,
     });
   }
 
