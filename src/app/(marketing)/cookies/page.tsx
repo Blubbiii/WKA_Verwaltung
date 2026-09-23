@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { oeffentlicheEinstellungen } from "@/lib/marketing/oeffentlicher-mandant";
 import type { LegalPages } from "@/lib/marketing/types";
 import type { Metadata } from "next";
 import { SafeHtml } from "@/components/ui/safe-html";
@@ -11,11 +11,8 @@ export const metadata: Metadata = {
 
 export default async function CookiesPage() {
   // Load legal page content from tenant settings
-  const tenant = await prisma.tenant.findFirst({
-    where: { status: "ACTIVE" },
-    select: { settings: true },
-  });
-  const settings = (tenant?.settings as Record<string, unknown>) || {};
+  // Rechtstexte des Betreibers — nie die eines beliebigen Mandanten (§ 5 DDG).
+  const settings = (await oeffentlicheEinstellungen()) ?? {};
   const legalPages = settings.legalPages as LegalPages | undefined;
   const cookiesContent = legalPages?.cookies || DEFAULT_LEGAL_PAGES.cookies;
 

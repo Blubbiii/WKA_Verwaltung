@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { uploadFile } from "@/lib/storage";
 import { apiLogger as logger } from "@/lib/logger";
 import { rateLimit, getClientIp, getRateLimitResponse } from "@/lib/rate-limit";
+import { eindeutigerAktiverMandant } from "@/lib/tenant/eindeutiger-mandant";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -97,18 +98,27 @@ export async function POST(request: NextRequest) {
       where: { address: toPrefix, isActive: true },
     });
 
-    // Determine tenant — from route or fallback to first active tenant
+    // Mandant bestimmen: aus der Zuordnungsregel. Ohne Regel nur dann, wenn es
+    // genau einen aktiven Mandanten gibt. Vorher ging die Mail an den
+    // erstbesten — bei mehreren Mandanten landete so eine Rechnung fuer
+    // Firma B im Posteingang von Firma A.
     let tenantId: string;
     if (route) {
       tenantId = route.tenantId;
     } else {
-      const defaultTenant = await prisma.tenant.findFirst({
-        where: { status: "ACTIVE" },
-      });
-      if (!defaultTenant) {
-        return apiError("INTERNAL_ERROR", 500, { message: "No active tenant" });
+      const einziger = await eindeutigerAktiverMandant();
+      if (!einziger) {
+        logger.warn(
+          { to: data.to, from: data.from },
+          "Eingehende E-Mail ohne Zuordnungsregel bei mehreren Mandanten abgelehnt",
+        );
+        return apiError("VALIDATION_FAILED", 422, {
+          message:
+            `Keine Zuordnung für die Empfängeradresse "${data.to}". ` +
+            `Bitte unter Administration → E-Mail-Routen eine Regel anlegen.`,
+        });
       }
-      tenantId = defaultTenant.id;
+      tenantId = einziger.id;
     }
 
     // ── Create InboundEmail record ──────────────────────────────────────

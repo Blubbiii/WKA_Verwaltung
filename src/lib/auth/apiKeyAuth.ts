@@ -14,6 +14,8 @@ import { apiError } from "@/lib/api-errors";
  * When X-Tenant-Id is provided it is validated against the database to prevent
  * tenant spoofing by an authorized-but-malicious caller.
  */
+let mehrdeutigGemeldet = false;
+
 export async function requireApiKey(
   request: NextRequest,
 ): Promise<
@@ -86,6 +88,25 @@ export async function requireApiKey(
     select: { id: true },
     orderBy: { createdAt: "asc" },
   });
+
+  /*
+    Bei mehreren Mandanten ist dieser Rueckfall eine Vermutung: Ohne
+    X-Tenant-Id landen die Daten beim aeltesten Mandanten. Das Verhalten bleibt
+    bewusst unveraendert — eine Integration wie der SCADA-Import ueber n8n
+    koennte sich darauf verlassen, und eine Ablehnung legte sie still. Aber es
+    wird gesagt, einmal je Prozess, damit der Kopf nachgetragen werden kann.
+  */
+  if (tenant && !mehrdeutigGemeldet) {
+    const aktive = await prisma.tenant.count({ where: { status: "ACTIVE" } });
+    if (aktive > 1) {
+      mehrdeutigGemeldet = true;
+      logger.warn(
+        { tenantId: tenant.id, aktiveMandanten: aktive },
+        "requireApiKey: kein X-Tenant-Id bei mehreren Mandanten — Daten gehen an den aeltesten. " +
+          "Bitte X-Tenant-Id in der aufrufenden Integration setzen.",
+      );
+    }
+  }
 
   if (!tenant) {
     return {

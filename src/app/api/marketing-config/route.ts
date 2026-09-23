@@ -1,30 +1,26 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { oeffentlicheEinstellungen } from "@/lib/marketing/oeffentlicher-mandant";
 import { apiLogger as logger } from "@/lib/logger";
 import { DEFAULT_MARKETING_CONFIG, DEFAULT_LEGAL_PAGES } from "@/lib/marketing/defaults";
 
 // =============================================================================
 // GET /api/marketing-config (PUBLIC - no authentication required)
 // Returns the marketing configuration and legal pages for the public website.
-// Uses the first active tenant since no auth context is available.
+// Welcher Mandant die Inhalte liefert, regelt oeffentlicheEinstellungen().
 // =============================================================================
 
 export async function GET() {
   try {
-    const tenant = await prisma.tenant.findFirst({
-      where: { status: "ACTIVE" },
-      select: { settings: true },
-    });
+    const allSettings = await oeffentlicheEinstellungen();
 
-    if (!tenant) {
+    if (!allSettings) {
       return NextResponse.json({
         marketing: DEFAULT_MARKETING_CONFIG,
         legalPages: DEFAULT_LEGAL_PAGES,
       });
     }
 
-    const allSettings = (tenant.settings as Record<string, unknown>) || {};
     const stored = (allSettings.marketing as Record<string, unknown>) || {};
     const storedLegalPages = (allSettings.legalPages as Record<string, unknown>) || {};
 

@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { MarketingLanding } from "@/components/marketing/marketing-landing";
 import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
-import { prisma } from "@/lib/prisma";
+import { oeffentlicheEinstellungen } from "@/lib/marketing/oeffentlicher-mandant";
 import type { MarketingConfig } from "@/lib/marketing/types";
 
 export default async function Home() {
@@ -14,12 +14,9 @@ export default async function Home() {
     redirect("/dashboard");
   }
 
-  // Load marketing config from tenant settings (dynamic content)
-  const tenant = await prisma.tenant.findFirst({
-    where: { status: "ACTIVE" },
-    select: { settings: true },
-  });
-  const settings = (tenant?.settings as Record<string, unknown>) || {};
+  // Inhalte des Betreibers, nicht des erstbesten Mandanten — siehe
+  // oeffentlicher-mandant.ts.
+  const settings = (await oeffentlicheEinstellungen()) ?? {};
   const marketingConfig = settings.marketing as MarketingConfig | undefined;
 
   // Show marketing page with header/footer for unauthenticated users
