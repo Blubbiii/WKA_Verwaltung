@@ -2193,19 +2193,19 @@
       },
       "curtailment": {
         "title": "Abregelungen (Curtailment)",
-        "subtitle": "Ertragsausfall durch Wind-, technische, forced und externe Abregelung (§13a EnWG Redispatch)",
+        "subtitle": "Ausfallarbeit durch technisch bedingte, erzwungene und extern angeordnete Abregelung (§13a EnWG Redispatch)",
         "kpiLostEnergy": "Verlorene Energie (kWh)",
         "kpiLostRevenue": "Ertragsausfall (€)",
         "kpiRedispatch": "Redispatch-relevant (€)",
         "redispatchInfoTooltip": "§13a EnWG: Extern angeordnete Abregelungen (Redispatch) können als Ausgleichsforderung beim Netzbetreiber geltend gemacht werden.",
-        "categoryWind": "Wind",
-        "categoryTechnical": "Technisch",
-        "categoryForced": "Forced",
+        "categoryTechnical": "Technisch bedingt",
+        "categoryForced": "Erzwungen",
         "categoryExternal": "Extern",
         "categoryExternalDetail": "§13a EnWG einforderbar",
         "pctOfProduction": "Anteil an theoretischer Produktion",
         "timeAxisLabel": "Monat",
-        "noData": "Keine Abregelungen im ausgewählten Zeitraum"
+        "noData": "Keine Abregelungen im ausgewählten Zeitraum",
+        "rateMissingHint": "Für diese Monate ist kein Vergütungssatz hinterlegt, ihr Ertragsausfall fehlt daher in den Euro-Beträgen: {months}"
       }
     },
     "reports": "Berichte",

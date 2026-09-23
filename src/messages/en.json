@@ -2193,19 +2193,19 @@
       },
       "curtailment": {
         "title": "Curtailment",
-        "subtitle": "Lost revenue from wind, technical, forced and external curtailment (§13a EnWG redispatch)",
+        "subtitle": "Lost energy from technical, forced and externally ordered curtailment (§13a EnWG redispatch)",
         "kpiLostEnergy": "Lost energy (kWh)",
         "kpiLostRevenue": "Lost revenue (€)",
         "kpiRedispatch": "Redispatch-relevant (€)",
         "redispatchInfoTooltip": "§13a EnWG: Externally ordered curtailment (redispatch) can be claimed as compensation from the grid operator.",
-        "categoryWind": "Wind",
         "categoryTechnical": "Technical",
         "categoryForced": "Forced",
         "categoryExternal": "External",
         "categoryExternalDetail": "§13a EnWG claimable",
         "pctOfProduction": "Share of theoretical production",
         "timeAxisLabel": "Month",
-        "noData": "No curtailment in the selected period"
+        "noData": "No curtailment in the selected period",
+        "rateMissingHint": "No tariff is on file for these months, so their lost revenue is missing from the euro figures: {months}"
       }
     },
     "reports": "Reports",

@@ -104,6 +104,7 @@ export async function computeCurtailmentEvent(input: {
       lostWorkMethod: "CONTROLLER_SIGNAL",
       lostWorkBasis: {
         intervalCount: work.intervalCount,
+        byCause: work.byCause,
         turbineCount: turbines.length,
         windowStart: event.startAt.toISOString(),
         windowEnd: event.endAt.toISOString(),
@@ -150,6 +151,7 @@ export async function computeCurtailmentEvent(input: {
     lostWorkMethod: "CONTROLLER_SIGNAL",
     lostWorkBasis: {
       intervalCount: work.intervalCount,
+      byCause: work.byCause,
       turbineCount: turbines.length,
       windowStart: event.startAt.toISOString(),
       windowEnd: event.endAt.toISOString(),
@@ -182,15 +184,29 @@ async function loadCurtailmentSamples(
       turbineId: { in: turbineIds },
       timestamp: { gte: from, lte: to },
     },
-    select: { timestamp: true, powerExternalKw: true, powerForcedKw: true },
+    select: {
+      timestamp: true,
+      powerW: true,
+      powerWindKw: true,
+      powerTechnicalKw: true,
+      powerForcedKw: true,
+      powerExternalKw: true,
+    },
     orderBy: { timestamp: "asc" },
   });
 
-  return rows.map((row) => ({
-    timestamp: row.timestamp,
-    powerExternalKw: toNumber(row.powerExternalKw),
-    powerForcedKw: toNumber(row.powerForcedKw),
-  }));
+  return rows.map((row) => {
+    // powerW liegt in Watt in der Datenbank, die Grenzwerte in Kilowatt.
+    const watt = toNumber(row.powerW);
+    return {
+      timestamp: row.timestamp,
+      powerKw: watt === null ? null : watt / 1000,
+      powerWindKw: toNumber(row.powerWindKw),
+      powerTechnicalKw: toNumber(row.powerTechnicalKw),
+      powerForcedKw: toNumber(row.powerForcedKw),
+      powerExternalKw: toNumber(row.powerExternalKw),
+    };
+  });
 }
 
 /**

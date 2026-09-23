@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { ABREGELUNG_TOLERANZ_KW } from "@/lib/curtailment/compensation";
 import { Prisma } from "@prisma/client";
 import {
   loadTurbines,
@@ -2301,38 +2302,38 @@ export async function fetchReactivePowerQuality(
 }
 
 // =============================================================================
-// Curtailment Module Fetcher (§13a EnWG Redispatch)
+/// Curtailment Module Fetcher (§13a EnWG Redispatch)
 // =============================================================================
 
 interface CurtailmentMonthlyRow {
   month_start: Date;
-  avg_wind_kw: Prisma.Decimal | null;
-  avg_technical_kw: Prisma.Decimal | null;
-  avg_forced_kw: Prisma.Decimal | null;
-  avg_external_kw: Prisma.Decimal | null;
-  sum_wind_kw: Prisma.Decimal | null;
-  sum_technical_kw: Prisma.Decimal | null;
-  sum_forced_kw: Prisma.Decimal | null;
-  sum_external_kw: Prisma.Decimal | null;
-  avg_power_kw: Prisma.Decimal | null; // AVG(powerW) / 1000
+  produktion_kw: number | null;
+  technical_kw: number | null;
+  forced_kw: number | null;
+  external_kw: number | null;
   data_points: bigint;
 }
 
 /**
- * Curtailment analysis per §13a EnWG (Redispatch).
+ * Ausfallarbeit durch Abregelung, je Monat und Ursache.
  *
- * Aggregates the four SCADA curtailment fields (mrwSmpPwin / mrwSmpPte /
- * mrwSmpPfm / mrwSmpPext) into monthly buckets. Curtailment fields are
- * stored raw as kW (schema comment: "kW, raw wie im DBF"), so we convert
- * kW → kWh using the 10-minute measurement interval: SUM(kW) * 10 / 60.
+ * Die vier SCADA-Felder (mrwSmpPwin/Pte/Pfm/Pext) sind **Leistungsgrenzen**,
+ * nicht die ausgefallene Leistung. Bis September 2026 summierte diese Funktion
+ * sie auf und wies das Ergebnis als Verlust aus — an echten Daten waren das
+ * 430 % der Produktion, und die Kennzahl „beim Netzbetreiber einforderbar"
+ * entsprach ungefähr der gesamten Einspeisung.
  *
- * pctOfProduction is share of theoretical production, where theoretical =
- * actualAvgPowerKw + AVG(all curtailment) → both averaged, then converted
- * to kWh per hour.
+ * Gerechnet wird jetzt wie in {@link computeLostWorkFromSignal}, damit Analyse
+ * und Forderungsaufstellung dieselbe Zahl ergeben: Bindend ist die niedrigste
+ * der drei Grenzen; liegt sie mehr als {@link ABREGELUNG_TOLERANZ_KW} unter
+ * der aus dem Wind möglichen Leistung, ist die Differenz die Ausfallarbeit.
+ * Bindet der Wind selbst, liegt keine Abregelung vor.
  *
- * EEG-Vergütung: no dedicated field exists in TenantSettings yet, so we
- * fall back to 0.08 €/kWh. TODO: add `eegFeedInTariffEurPerKwh` to
- * TenantSettings and use it here.
+ * Bewertet wird mit dem Monatssatz aus `EnergyMonthlyRate` — derselben Quelle,
+ * aus der die Forderung je Ereignis rechnet. Fehlt der Satz für einen Monat,
+ * bleibt dessen Ertragsausfall unbewertet und der Monat wird in
+ * `monthsWithoutRate` gemeldet. Ein erfundener Durchschnittssatz wäre eine
+ * Zahl, die niemand nachrechnen kann.
  */
 export async function fetchCurtailment(
   tenantId: string,
@@ -2345,6 +2346,7 @@ export async function fetchCurtailment(
     totalLostEur: 0,
     externalRedispatchKwh: 0,
     externalRedispatchEur: 0,
+    monthsWithoutRate: [] as string[],
     year,
   };
   if (turbines.length === 0) {
@@ -2354,124 +2356,174 @@ export async function fetchCurtailment(
   const turbineIds = turbines.map((t) => t.id);
   const { from, to } = buildDateRange(year);
 
-  // TODO: source from TenantSettings.eegFeedInTariffEurPerKwh once added.
-  // 0.08 €/kWh is a conservative EEG-average fallback for onshore wind.
-  const eegTariffEurPerKwh = 0.08;
+  /*
+    `LEAST` übergeht NULL-Werte. Eine fehlende Grenze darf aber nicht als
+    „Grenze 0" gelesen werden, deshalb wird sie ausdrücklich auf Unendlich
+    gehoben — dann bindet sie nie.
 
-  // Monthly aggregation. Only rows where at least one curtailment field > 0.
-  // 10-min interval → kWh = SUM(kW) * 10 / 60.
+    Die Rangfolge bei Gleichstand (technisch vor erzwungen vor extern) ist
+    dieselbe wie in compensation.ts: Bei Gleichstand ist nicht belegt, dass der
+    Netzbetreiber die Abregelung veranlasst hat.
+  */
   const rows = await prisma.$queryRaw<CurtailmentMonthlyRow[]>`
+    WITH werte AS (
+      SELECT
+        date_trunc('month', "timestamp")                 AS monat,
+        GREATEST("powerW"::float8 / 1000.0, 0)           AS ist_kw,
+        "powerWindKw"::float8                            AS wind_kw,
+        "powerTechnicalKw"::float8                       AS pte,
+        "powerForcedKw"::float8                          AS pfm,
+        "powerExternalKw"::float8                        AS pext,
+        LEAST(
+          COALESCE("powerTechnicalKw"::float8, 'Infinity'::float8),
+          COALESCE("powerForcedKw"::float8,    'Infinity'::float8),
+          COALESCE("powerExternalKw"::float8,  'Infinity'::float8)
+        )                                                AS grenze_kw
+      FROM scada_measurements
+      WHERE "tenantId" = ${tenantId}
+        AND "sourceFile" = 'WSD'
+        AND ${buildTurbineIdFilter(turbineIds)}
+        AND "timestamp" >= ${from}
+        AND "timestamp" < ${to}
+        AND "powerW" IS NOT NULL
+        AND "powerWindKw" IS NOT NULL
+    ),
+    bewertet AS (
+      SELECT
+        monat,
+        ist_kw,
+        CASE
+          WHEN grenze_kw < wind_kw - ${ABREGELUNG_TOLERANZ_KW}
+            THEN GREATEST(0, wind_kw - GREATEST(ist_kw, grenze_kw))
+          ELSE 0
+        END AS verlust_kw,
+        CASE
+          WHEN grenze_kw >= wind_kw - ${ABREGELUNG_TOLERANZ_KW} THEN NULL
+          WHEN pte IS NOT NULL AND pte <= grenze_kw THEN 'technical'
+          WHEN pfm IS NOT NULL AND pfm <= grenze_kw THEN 'forced'
+          ELSE 'external'
+        END AS ursache
+      FROM werte
+    )
     SELECT
-      date_trunc('month', "timestamp") AS month_start,
-      AVG(COALESCE("powerWindKw", 0))      AS avg_wind_kw,
-      AVG(COALESCE("powerTechnicalKw", 0)) AS avg_technical_kw,
-      AVG(COALESCE("powerForcedKw", 0))    AS avg_forced_kw,
-      AVG(COALESCE("powerExternalKw", 0))  AS avg_external_kw,
-      SUM(COALESCE("powerWindKw", 0))      AS sum_wind_kw,
-      SUM(COALESCE("powerTechnicalKw", 0)) AS sum_technical_kw,
-      SUM(COALESCE("powerForcedKw", 0))    AS sum_forced_kw,
-      SUM(COALESCE("powerExternalKw", 0))  AS sum_external_kw,
-      AVG("powerW") / 1000.0               AS avg_power_kw,
-      COUNT(*)                             AS data_points
-    FROM scada_measurements
-    WHERE "tenantId" = ${tenantId}
-      AND "sourceFile" = 'WSD'
-      AND ${buildTurbineIdFilter(turbineIds)}
-      AND "timestamp" >= ${from}
-      AND "timestamp" < ${to}
-      AND (
-        COALESCE("powerWindKw", 0) > 0
-        OR COALESCE("powerTechnicalKw", 0) > 0
-        OR COALESCE("powerForcedKw", 0) > 0
-        OR COALESCE("powerExternalKw", 0) > 0
-      )
-    GROUP BY date_trunc('month', "timestamp")
-    ORDER BY month_start
+      monat                                                        AS month_start,
+      SUM(ist_kw)                                                  AS produktion_kw,
+      COALESCE(SUM(verlust_kw) FILTER (WHERE ursache = 'technical'), 0) AS technical_kw,
+      COALESCE(SUM(verlust_kw) FILTER (WHERE ursache = 'forced'), 0)    AS forced_kw,
+      COALESCE(SUM(verlust_kw) FILTER (WHERE ursache = 'external'), 0)  AS external_kw,
+      COUNT(*)                                                     AS data_points
+    FROM bewertet
+    GROUP BY monat
+    ORDER BY monat
   `;
 
-  // Track category totals for byCategory + summary
+  const raten = await ladeMonatssaetze(tenantId, year);
+
   const catTotals: Record<CurtailmentCategory, number> = {
-    wind: 0,
     technical: 0,
     forced: 0,
     external: 0,
   };
   let totalTheoreticalKwh = 0;
+  let bewerteteKwh = 0;
 
   const timeSeries: CurtailmentPoint[] = rows.map((r) => {
     const d = new Date(r.month_start);
-    const bucket = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const monat = d.getUTCMonth() + 1;
+    const bucket = `${d.getUTCFullYear()}-${String(monat).padStart(2, "0")}`;
 
-    // 10-min interval → kWh factor = 10/60 = 1/6
-    const kWhFactor = 10 / 60;
-    const windKwh = safeNumber(r.sum_wind_kw) * kWhFactor;
-    const technicalKwh = safeNumber(r.sum_technical_kw) * kWhFactor;
-    const forcedKwh = safeNumber(r.sum_forced_kw) * kWhFactor;
-    const externalKwh = safeNumber(r.sum_external_kw) * kWhFactor;
-    const lostEnergyKwh = windKwh + technicalKwh + forcedKwh + externalKwh;
-    const lostRevenueEur = lostEnergyKwh * eegTariffEurPerKwh;
+    // kW-Summen über Zehnminutenwerte → kWh
+    const jeKwh = (kw: number | null) => safeNumber(kw) / SCADA_INTERVALS_PER_HOUR;
+    const technicalKwh = jeKwh(r.technical_kw);
+    const forcedKwh = jeKwh(r.forced_kw);
+    const externalKwh = jeKwh(r.external_kw);
+    const produktionKwh = jeKwh(r.produktion_kw);
+    const lostEnergyKwh = technicalKwh + forcedKwh + externalKwh;
 
-    catTotals.wind += windKwh;
     catTotals.technical += technicalKwh;
     catTotals.forced += forcedKwh;
     catTotals.external += externalKwh;
+    totalTheoreticalKwh += produktionKwh + lostEnergyKwh;
 
-    // Theoretical production this month: actual avg power + avg curtailment
-    // (both as avg kW) × number of records × 10min/60 = kWh
-    const dataPoints = Number(r.data_points);
-    const avgActualKw = safeNumber(r.avg_power_kw);
-    const avgCurtailKw =
-      safeNumber(r.avg_wind_kw) +
-      safeNumber(r.avg_technical_kw) +
-      safeNumber(r.avg_forced_kw) +
-      safeNumber(r.avg_external_kw);
-    totalTheoreticalKwh += (avgActualKw + avgCurtailKw) * dataPoints * kWhFactor;
+    const satz = raten.get(monat) ?? null;
+    if (satz === null) {
+      if (lostEnergyKwh > 0) summary.monthsWithoutRate.push(bucket);
+    } else {
+      bewerteteKwh += lostEnergyKwh;
+      summary.totalLostEur += lostEnergyKwh * satz;
+      summary.externalRedispatchEur += externalKwh * satz;
+    }
 
     return {
       bucket,
-      windKw: round(safeNumber(r.avg_wind_kw), 2),
-      technicalKw: round(safeNumber(r.avg_technical_kw), 2),
-      forcedKw: round(safeNumber(r.avg_forced_kw), 2),
-      externalKw: round(safeNumber(r.avg_external_kw), 2),
+      technicalKwh: round(technicalKwh, 1),
+      forcedKwh: round(forcedKwh, 1),
+      externalKwh: round(externalKwh, 1),
       lostEnergyKwh: round(lostEnergyKwh, 1),
-      lostRevenueEur: round(lostRevenueEur, 2),
+      lostRevenueEur: satz === null ? null : round(lostEnergyKwh * satz, 2),
+      ratePerKwh: satz,
     };
   });
 
-  // Aggregate summary
-  summary.totalLostKwh = round(
-    catTotals.wind + catTotals.technical + catTotals.forced + catTotals.external,
-    1,
-  );
-  summary.totalLostEur = round(summary.totalLostKwh * eegTariffEurPerKwh, 2);
+  summary.totalLostKwh = round(catTotals.technical + catTotals.forced + catTotals.external, 1);
+  summary.totalLostEur = round(summary.totalLostEur, 2);
   summary.externalRedispatchKwh = round(catTotals.external, 1);
-  summary.externalRedispatchEur = round(
-    catTotals.external * eegTariffEurPerKwh,
-    2,
-  );
+  summary.externalRedispatchEur = round(summary.externalRedispatchEur, 2);
+  void bewerteteKwh;
 
-  // byCategory table
   const catDef: Array<{ category: CurtailmentCategory; label: string }> = [
-    { category: "wind", label: "Wind" },
-    { category: "technical", label: "Technisch" },
-    { category: "forced", label: "Forced" },
+    { category: "technical", label: "Technisch bedingt" },
+    { category: "forced", label: "Erzwungen" },
     { category: "external", label: "Extern (§13a EnWG)" },
   ];
 
   const byCategory: CurtailmentByCategory[] = catDef.map((c) => {
     const kwh = catTotals[c.category];
-    const pct =
-      totalTheoreticalKwh > 0
-        ? round((kwh / totalTheoreticalKwh) * 100, 2)
-        : 0;
+    const pct = totalTheoreticalKwh > 0 ? round((kwh / totalTheoreticalKwh) * 100, 2) : 0;
     return {
       category: c.category,
       label: c.label,
       totalLostKwh: round(kwh, 1),
-      totalLostEur: round(kwh * eegTariffEurPerKwh, 2),
+      totalLostEur: round(
+        timeSeries.reduce((summe, p) => {
+          if (p.ratePerKwh === null) return summe;
+          const anteil =
+            c.category === "technical"
+              ? p.technicalKwh
+              : c.category === "forced"
+                ? p.forcedKwh
+                : p.externalKwh;
+          return summe + anteil * p.ratePerKwh;
+        }, 0),
+        2,
+      ),
       pctOfProduction: pct,
     };
   });
 
   return { timeSeries, byCategory, summary };
+}
+
+/**
+ * Vergütungssätze des Jahres, je Monat.
+ *
+ * Dieselbe Quelle wie in `curtailment/event-service.ts` — stünden hier andere
+ * Sätze, ergäben Auswertung und Forderung verschiedene Beträge, ohne dass es
+ * auffiele.
+ */
+async function ladeMonatssaetze(tenantId: string, year: number): Promise<Map<number, number>> {
+  const rows = await prisma.energyMonthlyRate.findMany({
+    where: { tenantId, year },
+    orderBy: { createdAt: "desc" },
+    select: { month: true, ratePerKwh: true },
+  });
+
+  const map = new Map<number, number>();
+  for (const row of rows) {
+    // orderBy desc: Der zuerst gesehene Satz je Monat ist der jüngste.
+    if (map.has(row.month)) continue;
+    const wert = row.ratePerKwh === null ? null : Number(row.ratePerKwh);
+    if (wert !== null && Number.isFinite(wert)) map.set(row.month, wert);
+  }
+  return map;
 }

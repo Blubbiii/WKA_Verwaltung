@@ -137,78 +137,240 @@ describe("§ 13a EnWG — bewusst nicht nachgerechnet", () => {
 });
 
 describe("Ausfallarbeit aus dem Abregelungssignal", () => {
-  function samples(externalKw: (number | null)[], forcedKw: number[] = []): CurtailmentSample[] {
-    return externalKw.map((value, i) => ({
-      timestamp: new Date(2026, 0, 1, 0, i * 10),
-      powerExternalKw: value,
-      powerForcedKw: forcedKw[i] ?? null,
-    }));
+  /*
+    Die Werte stammen aus echten Zehnminutenzeilen der Enercon-Dateien
+    (Loc_3196 und Loc_5842, 2023). Entscheidend ist die Bedeutung der Felder:
+    mrwSmpPwin/Pte/Pfm/Pext sind NICHT die ausgefallene Leistung, sondern die
+    unter dem jeweiligen Gesichtspunkt noch zulaessige. Im ungestoerten
+    Betrieb stehen alle vier ungefaehr auf der tatsaechlichen Leistung — in
+    210.272 gemessenen Intervallen lag P in 93,5 % der Faelle auf dem Minimum
+    der vier Werte, der Median der Abweichung betrug 0,0 kW.
+  */
+  function probe(over: Partial<CurtailmentSample> = {}): CurtailmentSample {
+    return {
+      timestamp: new Date(2026, 0, 1, 0, 0),
+      powerKw: 670,
+      powerWindKw: 667,
+      powerTechnicalKw: 667,
+      powerForcedKw: 667,
+      powerExternalKw: 667,
+      ...over,
+    };
   }
 
-  it("integriert die abgeregelte Leistung ueber die Intervalle", () => {
-    // 6 Intervalle a 10 min = 1 h, 1.500 kW abgeregelt → 1.500 kWh.
-    const result = computeLostWorkFromSignal(samples([1500, 1500, 1500, 1500, 1500, 1500]), {
-      intervalMinutes: 10,
-    });
-    expect(result.lostWorkKwh).toBe(1500);
+  function reihe(vorlage: Partial<CurtailmentSample>, anzahl = 6): CurtailmentSample[] {
+    return Array.from({ length: anzahl }, (_, i) =>
+      probe({ ...vorlage, timestamp: new Date(2026, 0, 1, 0, i * 10) }),
+    );
+  }
+
+  it("ungestoerter Teillastbetrieb ist keine Abregelung", () => {
+    /*
+      Der Kern des Fehlers: Wer die vier Felder aufsummiert, erhaelt hier
+      4 x 667 kW als "Verlust" — mehr als die Anlage ueberhaupt erzeugt.
+      Ueber ein ganzes Jahr gerechnet waren das 430 % der Produktion.
+    */
+    const result = computeLostWorkFromSignal(reihe({}), { intervalMinutes: 10 });
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.lostWorkKwh).toBe(0);
+    expect(result.byCause).toEqual({ technical: 0, forced: 0, external: 0 });
   });
 
-  it("ohne Signal kommt null mit Begruendung", () => {
-    const result = computeLostWorkFromSignal(samples([null, null]), { intervalMinutes: 10 });
+  it("externe Begrenzung im Volllastbereich ergibt die Differenz zur Windleistung", () => {
+    // Echte Zeile vom 12.01.2023: 15,1 m/s, der Wind traegt 2.060 kW, die
+    // externe Vorgabe deckelt auf 1.855 kW, eingespeist werden 1.874 kW.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 1874,
+        powerWindKw: 2060,
+        powerTechnicalKw: 2060,
+        powerForcedKw: 2060,
+        powerExternalKw: 1855,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    // (2060 - 1874) kW x 1 h = 186 kWh
+    expect(result.lostWorkKwh).toBe(186);
+    expect(result.byCause.external).toBe(186);
+    expect(result.byCause.technical).toBe(0);
+  });
+
+  it("eine technische Abschaltung ist kein Redispatch", () => {
+    /*
+      Echte Zeile: 12,5 m/s, der Wind traegt 2.054 kW, die Anlage steht.
+      Bindend ist Pte = 0. Wer das dem Netzbetreiber in Rechnung stellt,
+      erhebt eine Forderung ohne Grundlage.
+    */
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 0,
+        powerWindKw: 2054,
+        powerTechnicalKw: 0,
+        powerForcedKw: 2054,
+        powerExternalKw: 3,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.byCause.technical).toBe(2054);
+    expect(result.byCause.external).toBe(0);
+  });
+
+  it("eine erzwungene Abschaltung wird als solche gefuehrt", () => {
+    // Echte Zeile: 5,3 m/s, der Wind traegt 516 kW, Pfm = 0.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 0,
+        powerWindKw: 516,
+        powerTechnicalKw: 516,
+        powerForcedKw: 0,
+        powerExternalKw: 516,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.byCause.forced).toBe(516);
+    expect(result.byCause.external).toBe(0);
+  });
+
+  it("bei Gleichstand gewinnt die Ursache, die KEINEN Anspruch begruendet", () => {
+    // Stehen zwei Grenzen gleich tief, ist nicht belegt, dass der
+    // Netzbetreiber sie veranlasst hat. Die Forderung waere eine Behauptung.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 0,
+        powerWindKw: 1200,
+        powerTechnicalKw: 1200,
+        powerForcedKw: 0,
+        powerExternalKw: 0,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.byCause.forced).toBe(1200);
+    expect(result.byCause.external).toBe(0);
+  });
+
+  it("Flaute ist kein Verlust", () => {
+    // 2,0 m/s: alle vier Werte stehen auf 3 kW, die Anlage traegt sich gerade.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 3,
+        powerWindKw: 3,
+        powerTechnicalKw: 3,
+        powerForcedKw: 3,
+        powerExternalKw: 3,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.lostWorkKwh).toBe(0);
+  });
+
+  it("was unterhalb der Grenze fehlt, wird der Abregelung nicht angelastet", () => {
+    /*
+      Die Anlage darf 1.000 kW, der Wind traegt 2.000 kW, eingespeist werden
+      nur 500 kW. Die Abregelung kostet 1.000 kW; die fehlenden 500 kW haben
+      einen anderen Grund und gehoeren nicht in die Forderung.
+    */
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 500,
+        powerWindKw: 2000,
+        powerTechnicalKw: 2000,
+        powerForcedKw: 2000,
+        powerExternalKw: 1000,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.lostWorkKwh).toBe(1000);
+  });
+
+  it("ein Zappeln der Grenze um wenige Kilowatt ist keine Abregelung", () => {
+    // Im Normalbetrieb schwanken die Grenzen um einige kW um die Leistung.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: 1200,
+        powerWindKw: 1210,
+        powerTechnicalKw: 1210,
+        powerForcedKw: 1210,
+        powerExternalKw: 1195,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.lostWorkKwh).toBe(0);
+  });
+
+  it("ohne Windleistung laesst sich nichts berechnen", () => {
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerWindKw: null,
+        powerKw: null,
+        powerTechnicalKw: null,
+        powerForcedKw: null,
+        powerExternalKw: null,
+      }),
+      { intervalMinutes: 10 },
+    );
     expect(result.lostWorkKwh).toBeNull();
     if (result.lostWorkKwh !== null) throw new Error("unerwartet");
     expect(result.reason).toContain("Kein Abregelungssignal");
   });
 
-  it("negative Werte werden auf 0 gehoben", () => {
-    // Sie wuerden die Ausfallarbeit mindern und die Forderung zu klein machen.
-    const result = computeLostWorkFromSignal(samples([1500, -500, 1500, 1500, 1500, 1500]), {
+  it("nur die verwertbaren Intervalle werden gezaehlt", () => {
+    const brauchbar = reihe(
+      {
+        powerKw: 0,
+        powerWindKw: 1000,
+        powerTechnicalKw: 1000,
+        powerForcedKw: 1000,
+        powerExternalKw: 0,
+      },
+      2,
+    );
+    const unbrauchbar = reihe({ powerWindKw: null }, 1);
+    const result = computeLostWorkFromSignal([...brauchbar, ...unbrauchbar], {
       intervalMinutes: 10,
     });
-    expect(result.lostWorkKwh).toBe(1250);
-  });
-
-  it("manuelle Abregelung zaehlt standardmaessig NICHT mit", () => {
-    // Eine selbst veranlasste Abregelung begruendet keinen Anspruch gegen den
-    // Netzbetreiber.
-    const result = computeLostWorkFromSignal(
-      samples([600, 600, 600, 600, 600, 600], [300, 300, 300, 300, 300, 300]),
-      { intervalMinutes: 10 },
-    );
-    expect(result.lostWorkKwh).toBe(600);
-  });
-
-  it("auf Wunsch zaehlt sie mit — samt Hinweis", () => {
-    const result = computeLostWorkFromSignal(
-      samples([600, 600, 600, 600, 600, 600], [300, 300, 300, 300, 300, 300]),
-      { intervalMinutes: 10, includeForced: true },
-    );
-    expect(result.lostWorkKwh).toBe(900);
-    if (result.lostWorkKwh === null) throw new Error("unerwartet");
-    expect(result.warnings.some((w) => w.includes("Netzbetreiber veranlasst"))).toBe(true);
-  });
-
-  it("die Zahl der gemessenen Intervalle wird ausgewiesen", () => {
-    const result = computeLostWorkFromSignal(samples([1500, null, 1500]), { intervalMinutes: 10 });
     if (result.lostWorkKwh === null) throw new Error("unerwartet");
     expect(result.intervalCount).toBe(2);
+  });
+
+  it("negative Leistung wird wie Stillstand behandelt", () => {
+    // Eigenverbrauch im Stillstand darf die Ausfallarbeit nicht vergroessern.
+    const result = computeLostWorkFromSignal(
+      reihe({
+        powerKw: -20,
+        powerWindKw: 1000,
+        powerTechnicalKw: 1000,
+        powerForcedKw: 1000,
+        powerExternalKw: 0,
+      }),
+      { intervalMinutes: 10 },
+    );
+    if (result.lostWorkKwh === null) throw new Error("unerwartet");
+    expect(result.lostWorkKwh).toBe(1000);
   });
 });
 
 describe("Die ganze Kette", () => {
   it("Signal zu Ausfallarbeit zu Forderung", () => {
-    // 3 Stunden Redispatch mit 2.000 kW Abregelung = 6.000 kWh.
-    const eighteenIntervals = Array.from({ length: 18 }, () => 2000);
-    const work = computeLostWorkFromSignal(
-      eighteenIntervals.map((kw, i) => ({
-        timestamp: new Date(2026, 5, 1, 0, i * 10),
-        powerExternalKw: kw,
-        powerForcedKw: null,
-      })),
-      { intervalMinutes: 10 },
-    );
+    // 3 Stunden externe Abregelung: Der Wind traegt 2.000 kW, erlaubt sind 0.
+    const achtzehn = Array.from({ length: 18 }, (_, i) => ({
+      timestamp: new Date(2026, 5, 1, 0, i * 10),
+      powerKw: 0,
+      powerWindKw: 2000,
+      powerTechnicalKw: 2000,
+      powerForcedKw: 2000,
+      powerExternalKw: 0,
+    }));
+    const work = computeLostWorkFromSignal(achtzehn, { intervalMinutes: 10 });
     if (work.lostWorkKwh === null) throw new Error("unerwartet");
     expect(work.lostWorkKwh).toBe(6000);
+    expect(work.byCause.external).toBe(6000);
 
     const compensation = computeCompensation({
       legalBasis: "EEG_15",

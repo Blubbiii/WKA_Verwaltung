@@ -172,20 +172,57 @@ export function computeCompensation(input: CompensationInput): CompensationResul
 }
 
 // ---------------------------------------------------------------------------
-// Ausfallarbeit aus dem Abregelungssignal
+/// Ausfallarbeit aus dem Abregelungssignal
 // ---------------------------------------------------------------------------
 
-/** Ein Zehnminutenwert der Abregelungskomponenten. */
+/**
+ * Ein Zehnminutenwert der Leistungsgrenzen.
+ *
+ * Wichtig und lange falsch verstanden: `mrwSmpPwin/Pte/Pfm/Pext` sind NICHT
+ * die ausgefallene Leistung, sondern die unter dem jeweiligen Gesichtspunkt
+ * noch **zulaessige**. Im ungestoerten Betrieb stehen alle vier ungefaehr auf
+ * der tatsaechlichen Leistung. Nachgemessen an 210.272 Zehnminutenwerten
+ * (Loc_3196, 2023): P liegt in 93,5 % der Intervalle auf dem Minimum der vier
+ * Werte, der Median der Abweichung betraegt 0,0 kW.
+ */
 export interface CurtailmentSample {
   timestamp: Date;
-  /** mrwSmpPext — extern veranlasste Abregelung (Redispatch), in kW. */
-  powerExternalKw: number | null;
-  /** mrwSmpPfm — erzwungene bzw. manuelle Abregelung, in kW. */
+  /** mrwSmpP — tatsaechlich eingespeiste Leistung, in kW. */
+  powerKw: number | null;
+  /** mrwSmpPwin — aus dem Wind moegliche Leistung, in kW. Der Bezugswert. */
+  powerWindKw: number | null;
+  /** mrwSmpPte — zulaessige Leistung nach technischer Begrenzung, in kW. */
+  powerTechnicalKw: number | null;
+  /** mrwSmpPfm — zulaessige Leistung nach erzwungener Begrenzung, in kW. */
   powerForcedKw: number | null;
+  /** mrwSmpPext — zulaessige Leistung nach externer Vorgabe, in kW. */
+  powerExternalKw: number | null;
 }
+
+/** Welche Grenze die Leistung gedrueckt hat. */
+export type CurtailmentCause = "technical" | "forced" | "external";
+
+/**
+ * Nur eine externe Vorgabe begruendet einen Anspruch gegen den Netzbetreiber.
+ * Die Reihenfolge ist zugleich die Rangfolge bei Gleichstand: Stehen zwei
+ * Grenzen gleich tief, gewinnt die vordere — also die, die KEINEN Anspruch
+ * begruendet. Eine Forderung auf einen Gleichstand zu stuetzen waere eine
+ * Behauptung.
+ */
+const URSACHEN: readonly CurtailmentCause[] = ["technical", "forced", "external"];
+
+/**
+ * Wie weit eine Grenze unter der Windleistung liegen muss, damit sie als
+ * Abregelung zaehlt. Die Werte zappeln im Normalbetrieb um einige Kilowatt um
+ * die Leistung; ohne Totband entstuende aus diesem Rauschen eine Forderung.
+ * 20 kW sind rund 1 % einer 2-MW-Anlage.
+ */
+export const ABREGELUNG_TOLERANZ_KW = 20;
 
 export interface LostWorkResult {
   lostWorkKwh: number;
+  /** Ausfallarbeit je Ursache, in kWh. Nur `external` ist anspruchsbegruendend. */
+  byCause: Record<CurtailmentCause, number>;
   method: LostWorkMethod;
   intervalCount: number;
   warnings: string[];
@@ -194,27 +231,67 @@ export interface LostWorkResult {
 /**
  * Ausfallarbeit aus dem Abregelungssignal der Anlagensteuerung.
  *
- * Die Steuerung meldet die Leistung, die wegen einer externen Vorgabe NICHT
- * eingespeist wurde. Über die Intervalldauer integriert ergibt das die
- * Ausfallarbeit — ohne Referenzanlage und ohne Schätzung.
+ * Je Intervall gilt: Bindend ist die niedrigste der drei Grenzen. Liegt sie
+ * mehr als {@link ABREGELUNG_TOLERANZ_KW} unter der Windleistung, ist die
+ * Differenz zur Windleistung die Ausfallarbeit — begrenzt auf das, was die
+ * Grenze tatsaechlich gekostet hat. Faellt die Leistung noch tiefer als die
+ * Grenze, hat das einen anderen Grund und gehoert nicht in die Forderung.
  *
- * `powerForcedKw` wird auf Wunsch mitgezählt: ob eine manuell veranlasste
- * Abregelung zum Anspruch gehört, hängt davon ab, wer sie veranlasst hat. Die
- * Vorgabe ist, sie NICHT mitzuzählen — eine selbst veranlasste Abregelung
- * begründet keinen Anspruch gegen den Netzbetreiber.
+ * Bindet der Wind selbst, liegt keine Abregelung vor: Flaute ist kein
+ * Ausfall.
+ *
+ * Was diese Funktion NICHT leistet: Sie ersetzt keine Abrechnung nach
+ * § 13a EnWG. Der Netzbetreiber rechnet nach dem vereinbarten Verfahren
+ * (Pauschal- oder Spitzabrechnung); diese Zahl ist die Vergleichsgroesse,
+ * mit der man seine Gutschrift nachprueft.
  */
 export function computeLostWorkFromSignal(
   samples: readonly CurtailmentSample[],
-  options: { intervalMinutes: number; includeForced?: boolean },
+  options: { intervalMinutes: number; causes?: readonly CurtailmentCause[] },
 ): LostWorkResult | { lostWorkKwh: null; reason: string } {
-  const { intervalMinutes, includeForced = false } = options;
+  const { intervalMinutes, causes = ["external"] } = options;
 
   if (intervalMinutes <= 0) {
     return { lostWorkKwh: null, reason: "Ungültige Intervalllänge" };
   }
 
-  const measured = samples.filter((s) => s.powerExternalKw !== null);
-  if (measured.length === 0) {
+  const hours = intervalMinutes / 60;
+  const byCause: Record<CurtailmentCause, number> = { technical: 0, forced: 0, external: 0 };
+  const warnings: string[] = [];
+  let intervalCount = 0;
+
+  for (const sample of samples) {
+    const wind = sample.powerWindKw;
+    if (wind === null || sample.powerKw === null) continue;
+
+    const grenzen: Array<[CurtailmentCause, number]> = [];
+    if (sample.powerTechnicalKw !== null) grenzen.push(["technical", sample.powerTechnicalKw]);
+    if (sample.powerForcedKw !== null) grenzen.push(["forced", sample.powerForcedKw]);
+    if (sample.powerExternalKw !== null) grenzen.push(["external", sample.powerExternalKw]);
+    if (grenzen.length === 0) continue;
+
+    intervalCount += 1;
+
+    let bindend: [CurtailmentCause, number] = grenzen[0];
+    for (const kandidat of grenzen) {
+      const besser =
+        kandidat[1] < bindend[1] ||
+        (kandidat[1] === bindend[1] &&
+          URSACHEN.indexOf(kandidat[0]) < URSACHEN.indexOf(bindend[0]));
+      if (besser) bindend = kandidat;
+    }
+
+    const [ursache, grenze] = bindend;
+    if (grenze >= wind - ABREGELUNG_TOLERANZ_KW) continue;
+
+    // Negative Leistung ist Eigenverbrauch im Stillstand — sie darf die
+    // Ausfallarbeit nicht vergroessern.
+    const eingespeist = Math.max(0, sample.powerKw);
+    const verlustKw = Math.max(0, wind - Math.max(eingespeist, grenze));
+    byCause[ursache] += verlustKw * hours;
+  }
+
+  if (intervalCount === 0) {
     return {
       lostWorkKwh: null,
       reason:
@@ -222,30 +299,24 @@ export function computeLostWorkFromSignal(
     };
   }
 
-  const warnings: string[] = [];
-  const hours = intervalMinutes / 60;
-  let kwh = 0;
-
-  for (const sample of samples) {
-    // Negative Werte sind ein Datenfehler; sie würden die Ausfallarbeit
-    // mindern und die Forderung zu klein machen.
-    const external = Math.max(0, sample.powerExternalKw ?? 0);
-    const forced = includeForced ? Math.max(0, sample.powerForcedKw ?? 0) : 0;
-    kwh += (external + forced) * hours;
+  for (const ursache of URSACHEN) {
+    byCause[ursache] = round3(byCause[ursache]);
   }
 
-  if (includeForced) {
+  const lostWorkKwh = round3(causes.reduce((summe, ursache) => summe + byCause[ursache], 0));
+
+  if (causes.includes("forced")) {
     warnings.push(
-      "Manuell veranlasste Abregelung ist mitgezählt — sie begründet nur dann einen Anspruch, wenn sie vom Netzbetreiber veranlasst wurde.",
+      "Erzwungene Abregelung ist mitgezählt — sie begründet nur dann einen Anspruch, wenn sie vom Netzbetreiber veranlasst wurde.",
+    );
+  }
+  if (causes.includes("technical")) {
+    warnings.push(
+      "Technisch bedingte Abregelung ist mitgezählt — gegenüber dem Netzbetreiber ist sie nicht durchsetzbar.",
     );
   }
 
-  return {
-    lostWorkKwh: round3(kwh),
-    method: "CONTROLLER_SIGNAL",
-    intervalCount: measured.length,
-    warnings,
-  };
+  return { lostWorkKwh, byCause, method: "CONTROLLER_SIGNAL", intervalCount, warnings };
 }
 
 function round2(value: number): number {

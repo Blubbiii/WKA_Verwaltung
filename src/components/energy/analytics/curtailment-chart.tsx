@@ -38,14 +38,12 @@ interface CurtailmentChartProps {
 // Category color semantics
 //  - external = critical / einforderbar → destructive/red
 //  - technical = warning → amber
-//  - wind      = informational → info blue
 //  - forced    = muted / grey
 // =============================================================================
 
 const CATEGORY_COLORS: Record<CurtailmentCategory, string> = {
   external: "#ef4444",   // red-500 — §13a EnWG
   technical: "#f59e0b",  // amber-500
-  wind: "#3b82f6",       // blue-500
   forced: "#6b7280",     // gray-500
 };
 
@@ -225,10 +223,9 @@ export function CurtailmentChart({
     if (!data) return [];
     return data.timeSeries.map((p) => ({
       bucket: p.bucket,
-      wind: p.windKw,
-      technical: p.technicalKw,
-      forced: p.forcedKw,
-      external: p.externalKw,
+      technical: p.technicalKwh,
+      forced: p.forcedKwh,
+      external: p.externalKwh,
     }));
   }, [data]);
 
@@ -250,7 +247,6 @@ export function CurtailmentChart({
 
   // Category labels (localized names for legend/bars)
   const catLabels: Record<CurtailmentCategory, string> = {
-    wind: t("categoryWind"),
     technical: t("categoryTechnical"),
     forced: t("categoryForced"),
     external: t("categoryExternal"),
@@ -266,6 +262,16 @@ export function CurtailmentChart({
         </h2>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
+
+      {(data?.summary.monthsWithoutRate.length ?? 0) > 0 && (
+        <Alert>
+          <AlertDescription>
+            {t("rateMissingHint", {
+              months: data!.summary.monthsWithoutRate.join(", "),
+            })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -322,17 +328,10 @@ export function CurtailmentChart({
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(v: number) => `${numFmt.format(v)} kW`}
+                  tickFormatter={(v: number) => `${numFmt.format(v)} kWh`}
                 />
                 <Tooltip content={<StackedTooltip />} />
                 <Legend />
-                <Bar
-                  dataKey="wind"
-                  name={catLabels.wind}
-                  stackId="curtail"
-                  fill={CATEGORY_COLORS.wind}
-                  isAnimationActive={false}
-                />
                 <Bar
                   dataKey="technical"
                   name={catLabels.technical}

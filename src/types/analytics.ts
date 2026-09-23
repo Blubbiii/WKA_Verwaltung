@@ -307,27 +307,33 @@ export interface MeteoResponse {
 // --- Curtailment (§13a EnWG Redispatch) ---
 
 /**
- * One time-series bucket (typically one month) of curtailment aggregates.
- * All *Kw values are AVERAGE curtailment power in the bucket window
- * (10-minute SCADA measurements averaged).
- * lostEnergyKwh is the SUM of the four categories converted to kWh
- * (raw kW × 10 min / 60).
+ * Ein Zeitabschnitt (in der Regel ein Monat) der Abregelungsauswertung.
+ *
+ * Die Werte sind **Ausfallarbeit in kWh**, aufgeteilt nach der Ursache, die
+ * die Leistung gedrückt hat. Bis September 2026 standen hier durchschnittliche
+ * Leistungen aus den vier SCADA-Feldern — die sind aber Leistungsgrenzen und
+ * keine Verluste, siehe `fetchCurtailment`.
+ *
+ * Eine Wind-Kategorie gibt es nicht mehr: Wenn der Wind die Leistung begrenzt,
+ * ist das keine Abregelung, sondern das Wetter.
  */
 export interface CurtailmentPoint {
-  bucket: string;         // "2026-01" (monthly) oder "2026-01-15" (daily)
-  windKw: number;         // mrwSmpPwin — durchschnittliche Wind-Abregelung
-  technicalKw: number;    // mrwSmpPte — technisch abgeregelt
-  forcedKw: number;       // mrwSmpPfm — forced / manuell abgeregelt
-  externalKw: number;     // mrwSmpPext — extern (§13a EnWG Redispatch!)
-  lostEnergyKwh: number;  // = Summe aller Curtailment-Kategorien in kWh
-  lostRevenueEur: number; // = lostEnergyKwh × EEG-Vergütung
+  bucket: string;         // "2026-01" (monatlich) oder "2026-01-15" (täglich)
+  technicalKwh: number;   // technisch bedingt (mrwSmpPte bindet)
+  forcedKwh: number;      // erzwungen / manuell (mrwSmpPfm bindet)
+  externalKwh: number;    // extern angeordnet (mrwSmpPext bindet) — §13a EnWG
+  lostEnergyKwh: number;  // Summe der drei Ursachen
+  /** `null`, wenn für den Monat kein Vergütungssatz hinterlegt ist. */
+  lostRevenueEur: number | null;
+  /** Angesetzter Monatssatz aus `EnergyMonthlyRate`, `null` wenn keiner da ist. */
+  ratePerKwh: number | null;
 }
 
-export type CurtailmentCategory = "wind" | "technical" | "forced" | "external";
+export type CurtailmentCategory = "technical" | "forced" | "external";
 
 export interface CurtailmentByCategory {
   category: CurtailmentCategory;
-  label: string;              // "Wind", "Technisch", "Forced", "Extern (§13a EnWG)"
+  label: string;              // "Technisch bedingt", "Erzwungen", "Extern (§13a EnWG)"
   totalLostKwh: number;
   totalLostEur: number;
   pctOfProduction: number;    // Anteil an theoretischer Produktion (0-100)
@@ -341,6 +347,12 @@ export interface CurtailmentResponse {
     totalLostEur: number;
     externalRedispatchKwh: number; // "was können wir bei Netzbetreiber einfordern"
     externalRedispatchEur: number;
+    /**
+     * Monate mit Ausfallarbeit, aber ohne hinterlegten Vergütungssatz. Deren
+     * Ertragsausfall fehlt in den Euro-Summen — die Oberfläche muss das sagen,
+     * sonst hält man eine Teilsumme für die ganze.
+     */
+    monthsWithoutRate: string[];
     year: number;
   };
 }
