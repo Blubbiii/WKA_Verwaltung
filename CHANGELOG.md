@@ -32,6 +32,28 @@ Differenz zur Windleistung, wenn eine Grenze tatsächlich bindet — 2.571 MWh
 (11,5 %), dreifach gegengerechnet (Python, SQL, TypeScript). Bewertet wird mit
 dem Monatssatz statt mit fest verdrahteten 0,08 €/kWh.
 
+**Weitere Funde aus Review und Prüfung**
+
+- **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten
+  aktiven Mandanten. Neu: `PUBLIC_SITE_TENANT_SLUG` (siehe `.env.example`).
+- **Eingehende Rechnungen beim falschen Mandanten.** E-Mails ohne
+  Zuordnungsregel gingen an den erstbesten; jetzt nur bei genau einem
+  Mandanten, sonst Ablehnung mit Hinweis auf die E-Mail-Routen.
+- **Probeberechnung wurde gespeichert.** Ungültige Werte im optionalen Rumpf
+  der Abrechnungsperiode wurden verschluckt; gerechnet wurde mit dem alten
+  Erlös, gespeichert trotz „nicht speichern". Sechs Routen prüfen jetzt.
+- **Datum um Mitternacht.** Acht Formulare setzten „heute" nach UTC — bis
+  01:00/02:00 deutscher Zeit also gestern.
+- Periodensperre war gerettet, aber im Menü nicht erreichbar; „Mahnwesen"
+  stand zweimal im Menü; die Abregelungs-Feature-Flags konnten den
+  Admin-Bereich zum Absturz bringen; vier tote Links, zwei tote API-Aufrufe
+  (SEPA-Knopf im Posteingang, Anlagenliste der Schadensmeldung).
+- Tabellenlisten riefen den Router während des Renderns auf (React-Warnung
+  in zehn Listen); die Ersteinrichtung verlor unter Last Eingaben.
+- Exporte und Karte halten jetzt ihre Obergrenzen ein; die Energieabrechnung
+  stellt zwei statt 2 × n Abfragen; leere `catch`-Blöcke auf dem Server
+  35 → 8, jeder verbleibende begründet.
+
 ### August 2026 — Stabilisierung, UI-Überarbeitung, Admin-Tests
 
 Der Monat hat weniger gebaut als geprüft. Das Ergebnis war unangenehm: mehrere
