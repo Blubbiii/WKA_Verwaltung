@@ -287,6 +287,12 @@ export function GISClient() {
       .then((d: unknown) => {
         if (isValidGISData(d)) {
           dispatch({ type: "SET_DATA", payload: d });
+          // Die Route kuerzt uebervolle Ebenen an einer Obergrenze. Das muss
+          // man sehen — sonst fehlen Flurstuecke, ohne dass es jemand merkt.
+          const { gekuerzt, grenze } = d as { gekuerzt?: string[]; grenze?: number };
+          if (gekuerzt && gekuerzt.length > 0) {
+            toast.warning(tToast("truncated", { max: grenze ?? 0 }));
+          }
         } else {
           const errMsg = (d as { error?: string })?.error ?? tToast("invalidGeoJson");
           dispatch({ type: "SET_ERROR", payload: errMsg });

@@ -6,6 +6,15 @@ import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
+import { API_LIMITS } from "@/lib/config/api-limits";
+
+/**
+ * Obergrenze je Kartenebene. Flurstücke kommen mit Geometrie und
+ * Pachthistorie — ohne Grenze wächst die Antwort mit dem Bestand, bis Server
+ * oder Browser aufgeben. Geladen wird eines mehr, damit sich „gekürzt"
+ * erkennen lässt; die Karte meldet es dann.
+ */
+const GRENZE_JE_EBENE = API_LIMITS.gisMaxFeaturesPerLayer;
 
 // Lessor display name helper
 interface LessorFields {
@@ -44,9 +53,10 @@ export async function GET(request: NextRequest) {
     const parkFilter = parkId ? { parkId } : {};
 
     // Fetch all GIS data in parallel
-    const [parks, turbines, plots, annotations] = await Promise.all([
+    const [parksRoh, turbinesRoh, plotsRoh, annotationsRoh] = await Promise.all([
       // Parks
       prisma.park.findMany({
+        take: GRENZE_JE_EBENE + 1,
         where: { ...tenantFilter, ...(parkId ? { id: parkId } : {}) },
         select: {
           id: true,
@@ -61,6 +71,7 @@ export async function GET(request: NextRequest) {
 
       // Turbines with coordinates (no tenantId on Turbine — filter via park relation)
       prisma.turbine.findMany({
+        take: GRENZE_JE_EBENE + 1,
         where: {
           park: tenantFilter,
           ...parkFilter,
@@ -80,6 +91,7 @@ export async function GET(request: NextRequest) {
 
       // Plots with geometry and lease info
       prisma.plot.findMany({
+        take: GRENZE_JE_EBENE + 1,
         where: {
           ...tenantFilter,
           ...parkFilter,
@@ -116,6 +128,7 @@ export async function GET(request: NextRequest) {
 
       // Annotations with geometry
       prisma.mapAnnotation.findMany({
+        take: GRENZE_JE_EBENE + 1,
         where: {
           ...tenantFilter,
           ...parkFilter,
@@ -132,6 +145,23 @@ export async function GET(request: NextRequest) {
         },
       }),
     ]);
+
+    const gekuerzt: string[] = [];
+    function begrenze<T>(name: string, liste: T[]): T[] {
+      if (liste.length <= GRENZE_JE_EBENE) return liste;
+      gekuerzt.push(name);
+      return liste.slice(0, GRENZE_JE_EBENE);
+    }
+    const parks = begrenze("parks", parksRoh);
+    const turbines = begrenze("turbines", turbinesRoh);
+    const plots = begrenze("plots", plotsRoh);
+    const annotations = begrenze("annotations", annotationsRoh);
+    if (gekuerzt.length > 0) {
+      logger.warn(
+        { tenantId: check.tenantId, parkId, gekuerzt, grenze: GRENZE_JE_EBENE },
+        "GIS-Ebenen gekuerzt",
+      );
+    }
 
     // Transform plots: extract active + all lease info
     const transformedPlots = plots.map((plot) => {
@@ -180,6 +210,9 @@ export async function GET(request: NextRequest) {
       turbines,
       plots: transformedPlots,
       annotations,
+      // Ebenen, die an der Obergrenze abgeschnitten wurden — die Karte meldet sie.
+      gekuerzt,
+      grenze: GRENZE_JE_EBENE,
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching GIS features");

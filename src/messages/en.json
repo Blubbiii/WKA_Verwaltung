@@ -9037,7 +9037,8 @@
       "fileReadError": "Could not read file",
       "generatingReport": "Generating area report...",
       "networkError": "Network error loading GIS data",
-      "coordsCopied": "Coordinates copied: {coords}"
+      "coordsCopied": "Coordinates copied: {coords}",
+      "truncated": "The map is incomplete: at least one layer has more than {max} objects and was truncated. Please filter by park."
     },
     "layerPanel": {
       "showLayers": "Show layers",

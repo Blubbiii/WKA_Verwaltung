@@ -29,6 +29,14 @@ import { getColumnsForType, getEntityDisplayName } from '@/lib/export/columns';
 import type { ExportEntityType, ExportFormat } from '@/lib/export/types';
 import { apiLogger as logger } from "@/lib/logger";
 import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
+import { API_LIMITS } from "@/lib/config/api-limits";
+
+/**
+ * Obergrenze je Export. Die Datei entsteht vollständig im Arbeitsspeicher;
+ * ohne Grenze kippt ein großer Mandant den Serverprozess — für alle.
+ * Geladen wird eine Zeile mehr, damit sich „zu viele" erkennen lässt.
+ */
+const EXPORT_GRENZE = API_LIMITS.maxExportEntries;
 
 /**
  * Supported export types
@@ -103,6 +111,7 @@ async function fetchData(
   switch (type) {
     case 'shareholders':
       return prisma.shareholder.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           fund: { tenantId },
           ...(fundId && { fundId }),
@@ -117,6 +126,7 @@ async function fetchData(
 
     case 'parks':
       return prisma.park.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(status && { status: status as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' }),
@@ -129,6 +139,7 @@ async function fetchData(
 
     case 'turbines':
       return prisma.turbine.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           park: { tenantId },
           ...(parkId && { parkId }),
@@ -142,6 +153,7 @@ async function fetchData(
 
     case 'invoices':
       return prisma.invoice.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(fundId && { fundId }),
@@ -160,6 +172,7 @@ async function fetchData(
 
     case 'contracts':
       return prisma.contract.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(fundId && { fundId }),
@@ -176,6 +189,7 @@ async function fetchData(
 
     case 'persons':
       return prisma.person.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(status && { status: status as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' }),
@@ -185,6 +199,7 @@ async function fetchData(
 
     case 'funds':
       return prisma.fund.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(status && { status: status as 'ACTIVE' | 'INACTIVE' | 'ARCHIVED' }),
@@ -199,6 +214,7 @@ async function fetchData(
 
     case 'leases':
       return prisma.lease.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(status && { status: status as 'DRAFT' | 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'TERMINATED' }),
@@ -214,6 +230,7 @@ async function fetchData(
 
     case 'plots':
       return prisma.plot.findMany({
+        take: EXPORT_GRENZE + 1,
         where: {
           tenantId,
           ...(parkId && { parkId }),
@@ -292,6 +309,14 @@ export async function GET(
       startDate,
       endDate,
     });
+
+    if (data.length > EXPORT_GRENZE) {
+      return apiError("VALIDATION_FAILED", 422, {
+        message:
+          `Der Export umfasst mehr als ${EXPORT_GRENZE.toLocaleString("de-DE")} Einträge. ` +
+          `Bitte mit Filtern (Fonds, Park, Status, Zeitraum) eingrenzen.`,
+      });
+    }
 
     // Check if any data was found
     if (data.length === 0) {

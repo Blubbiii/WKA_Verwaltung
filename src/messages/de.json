@@ -9037,7 +9037,8 @@
       "fileReadError": "Datei konnte nicht gelesen werden",
       "generatingReport": "Flächenreport wird generiert...",
       "networkError": "Netzwerkfehler beim Laden der GIS-Daten",
-      "coordsCopied": "Koordinaten kopiert: {coords}"
+      "coordsCopied": "Koordinaten kopiert: {coords}",
+      "truncated": "Die Karte zeigt nicht alles: Mindestens eine Ebene hat mehr als {max} Objekte und wurde gekürzt. Bitte nach Park filtern."
     },
     "layerPanel": {
       "showLayers": "Ebenen einblenden",
