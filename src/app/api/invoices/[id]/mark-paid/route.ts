@@ -85,7 +85,6 @@ export async function POST(
         skontoAmount: true,
         grossAmount: true,
         paidAmount: true,
-        taxCodeId: true,
       },
     });
 

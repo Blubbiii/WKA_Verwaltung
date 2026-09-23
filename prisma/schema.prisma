@@ -96,7 +96,6 @@ model Tenant {
   webhooks                  Webhook[]
   mailingTemplates          MailingTemplate[]
   mailings                  Mailing[]
-  journalEntries            JournalEntry[]
   pendingBankUpdates        PendingBankUpdate[]
   crmActivities             CrmActivity[]
   vendors                   Vendor[]
@@ -105,12 +104,7 @@ model Tenant {
   contactLinks              ContactLink[]
   costCenters               CostCenter[]
   annualBudgets             AnnualBudget[]
-  ledgerAccounts            LedgerAccount[]
-  bankTransactions          BankTransaction[]
   dunningRuns               DunningRun[]
-  sepaPaymentBatches        SepaPaymentBatch[]
-  fixedAssets               FixedAsset[]
-  cashBookEntries           CashBookEntry[]
   documentRoutingRules      DocumentRoutingRule[]
   operationalChecklists     OperationalChecklist[]
   operationalTasks          OperationalTask[]
@@ -121,24 +115,13 @@ model Tenant {
   powerPurchaseAgreements   PowerPurchaseAgreement[]
   emailRoutes               EmailRoute[]
   inboundEmails             InboundEmail[]
-  quotes                    Quote[]
-  quoteNumberSequences      QuoteNumberSequence[]
-  bankAccounts              BankAccount[]
   userTenantMemberships     UserTenantMembership[]
   sidebarLinks              SidebarLink[]
   personTags                PersonTag[]
   failedJobs                FailedJob[]
   consentLogs               ConsentLog[]
   accountingPeriodLocks     AccountingPeriodLock[]
-  taxCodes                  TaxCode[]
-  ustAdjustments            UStAdjustment[]
-  openingBalances           OpeningBalance[]
-  balanceSheetSnapshots     BalanceSheetSnapshot[]
   invoicePayments           InvoicePayment[]
-  valueAdjustments          ValueAdjustment[]
-  gobdExports               GobdExport[]
-  journalAttachments        JournalAttachment[]
-  cashBookDailyCloses       CashBookDailyClose[]
   approvalRequests          ApprovalRequest[]
   savedFilters              UserSavedFilter[]
   entityPresence            EntityPresence[]
@@ -158,7 +141,6 @@ model Tenant {
   subscriptions             Subscription[]
   amlChecks                 AmlCheck[]
   marketPremiumCalculations MarketPremiumCalculation[]
-  bankConnections           BankConnection[]
 
   @@map("tenants")
 }
@@ -267,34 +249,22 @@ model User {
   tenant                                                                  Tenant                      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdVotes                                                            Vote[]                      @relation("VoteCreatedBy")
   createdWebhooks                                                         Webhook[]                   @relation("WebhookCreatedBy")
-  journalEntriesCreated                                                   JournalEntry[]              @relation("JournalEntryCreatedBy")
   crmActivitiesCreated                                                    CrmActivity[]               @relation("CrmActivityCreator")
   crmActivitiesAssigned                                                   CrmActivity[]               @relation("CrmActivityAssignee")
   dunningRunsCreated                                                      DunningRun[]                @relation("DunningRunCreatedBy")
-  sepaPaymentBatchesCreated                                               SepaPaymentBatch[]          @relation("SepaPaymentBatchCreatedBy")
-  cashBookEntriesCreated                                                  CashBookEntry[]             @relation("CashBookEntryCreatedBy")
   incomingInvoicesCreated                                                 IncomingInvoice[]           @relation("IncomingInvoiceCreator")
   incomingInvoicesApproved                                                IncomingInvoice[]           @relation("IncomingInvoiceApprover")
-  openingBalancesCreated                                                  OpeningBalance[]            @relation("OpeningBalanceCreator")
-  balanceSheetSnapshotsCreated                                            BalanceSheetSnapshot[]      @relation("BalanceSheetSnapshotCreator")
   invoicePaymentsCreated                                                  InvoicePayment[]            @relation("InvoicePaymentCreator")
-  valueAdjustmentsCreated                                                 ValueAdjustment[]           @relation("ValueAdjustmentCreator")
-  gobdExportsCreated                                                      GobdExport[]                @relation("GobdExportCreator")
   systemSettingsUpdated                                                   SystemSetting[]             @relation("SystemSettingUpdater")
-  journalAttachmentsUploaded                                              JournalAttachment[]         @relation("JournalAttachmentUploader")
-  cashBookEntriesLocked                                                   CashBookEntry[]             @relation("CashBookEntryLocker")
-  cashBookDailyCloses                                                     CashBookDailyClose[]        @relation("CashBookDailyClosedBy")
   mapAnnotations                                                          MapAnnotation[]
   operationalTasksCreated                                                 OperationalTask[]           @relation("OperationalTaskCreator")
   operationalTasksAssigned                                                OperationalTask[]           @relation("OperationalTaskAssignee")
   inspectionReportsCreated                                                InspectionReport[]          @relation("InspectionReportCreator")
   defectsCreated                                                          Defect[]                    @relation("DefectCreator")
   insuranceClaimsCreated                                                  InsuranceClaim[]            @relation("InsuranceClaimCreator")
-  createdQuotes                                                           Quote[]                    @relation("QuoteCreatedBy")
   userTenantMemberships                                                   UserTenantMembership[]
   periodsLocked                                                           AccountingPeriodLock[]     @relation("PeriodLocker")
   periodsUnlocked                                                         AccountingPeriodLock[]     @relation("PeriodUnlocker")
-  ustAdjustmentsCreated                                                   UStAdjustment[]            @relation("UStAdjustmentCreator")
   approvalRequestsRequested                                               ApprovalRequest[]          @relation("ApprovalRequester")
   approvalRequestsDecided                                                 ApprovalRequest[]          @relation("ApprovalDecider")
   fundAccess                                                              FundAccess[]
@@ -314,7 +284,6 @@ model User {
   subscriptionsCreated                                                    Subscription[]             @relation("SubscriptionCreatedBy")
   subscriptionsAccepted                                                   Subscription[]             @relation("SubscriptionAcceptedBy")
   amlChecksIdentified                                                     AmlCheck[]                 @relation("AmlCheckIdentifiedBy")
-  bankConnectionsCreated                                                  BankConnection[]           @relation("BankConnectionCreatedBy")
 
   @@index([tenantId])
   @@index([email])
@@ -429,7 +398,6 @@ model Park {
   defects                                Defect[]
   insuranceClaims                        InsuranceClaim[]
   powerPurchaseAgreements                PowerPurchaseAgreement[]
-  quotes                                 Quote[]
   meteringPoints                         MeteringPoint[]
   curtailmentEvents                      CurtailmentEvent[]
   insuredObjects                         InsuredObject[]
@@ -653,10 +621,7 @@ model Fund {
   incomingInvoicesAsRecipient                           IncomingInvoice[]
   incomingInvoiceSplits                                 IncomingInvoiceSplit[]
   costCenters                                           CostCenter[]
-  bankTransactions                                      BankTransaction[]     @relation("BankTransactionFund")
   documentRoutingRules                                  DocumentRoutingRule[]
-  quotes                                                Quote[]
-  bankAccounts                                          BankAccount[]
   // Sprint 3 ABAC: pro-User Whitelist (M:N). Leer = ALLE User dürfen, kein Filter.
   userAccess                                            FundAccess[]
 
@@ -1218,14 +1183,10 @@ model Invoice {
   isTriangulationDeal                                                                         Boolean                         @default(false)
   // P10: Tax-Code-Verweis (löst TaxType schrittweise ab).
   // Nullable während Migration — Backfill durch Phase 11.
-  taxCodeId                                                                                   String?
-  taxCode                                                                                     TaxCode?                       @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
   // P11: §17 USt-Korrekturen die diese Rechnung referenzieren (z.B. Skonto, Gutschrift).
-  ustAdjustments                                                                              UStAdjustment[]                @relation("UStAdjustmentInvoice")
   // P16: Zahlungseingänge (Teilzahlungen + Vollzahlungen).
   payments                                                                                    InvoicePayment[]
   // P16: EWB/PWB/Forderungsausfall-Wertberichtigungen.
-  valueAdjustments                                                                            ValueAdjustment[]
   distributionItems                                                                           DistributionItem?
   energySettlementItems                                                                       EnergySettlementItem[]
   items                                                                                       InvoiceItem[]
@@ -1249,11 +1210,8 @@ model Invoice {
   exemptAllocationItem             ParkCostAllocationItem?     @relation("ExemptInvoice")
   vatAllocationItem                ParkCostAllocationItem?     @relation("VatInvoice")
   fromIncomingInvoiceSplit         IncomingInvoiceSplit?
-  bankTransactions                 BankTransaction[]       @relation("BankTxMatchedInvoice")
   dunningItems                     DunningItem[]           @relation("DunningItemInvoice")
-  sepaPaymentItems                 SepaPaymentItem[]       @relation("SepaPaymentItemInvoice")
   recipientPerson                  Person?                 @relation("InvoiceRecipient", fields: [recipientPersonId], references: [id], onDelete: SetNull)
-  sourceQuote                      Quote?
   availabilitySettlements          AvailabilitySettlement[]
 
   @@unique([tenantId, invoiceNumber])
@@ -2122,7 +2080,6 @@ model Letterhead {
   backgroundPdfName String?
   fundId            String?
   invoices          Invoice[]
-  quotes            Quote[]
   fund             Fund?     @relation(fields: [fundId], references: [id], onDelete: SetNull)
   park             Park?     @relation(fields: [parkId], references: [id], onDelete: SetNull)
   tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -3453,49 +3410,6 @@ model PositionTaxMapping {
 // P11/P12 es ablöst (Backwards-Compat).
 // =============================================================================
 
-enum TaxCategory {
-  STANDARD_19              // §12 Abs. 1 UStG — Regelsteuersatz
-  REDUCED_7                // §12 Abs. 2 UStG — ermäßigter Satz
-  EXEMPT                   // §4 UStG — generell steuerfrei
-  REVERSE_CHARGE_13B       // §13b UStG — Steuerschuldnerschaft Leistungsempfänger
-  IGE_INTRA_EU             // innergemeinschaftlicher Erwerb (§1a UStG)
-  IGL_INTRA_EU             // innergemeinschaftliche Lieferung (§4 Nr. 1b + §6a UStG)
-  EXPORT                   // Drittlandsausfuhr (§4 Nr. 1a + §6 UStG)
-  KLEINUNTERNEHMER_19      // §19 UStG — kein USt-Ausweis
-  NOT_TAXABLE              // außerhalb USt-Bereich (z.B. Schadensersatz, Innenumsätze)
-}
-
-/// GLOBAL — wird vom Super-Admin gepflegt. Tenants sehen es read-only.
-/// Beim Tenant-Onboarding werden hieraus die TaxCodes materialisiert.
-model TaxCategoryTemplate {
-  id                String      @id @default(uuid())
-  /// Stabiler Identifier für Code-Lookups (z.B. "STANDARD_19").
-  /// Entspricht dem TaxCategory-Enum-Namen.
-  key               String      @unique @db.VarChar(50)
-  category          TaxCategory @unique
-  /// Anzeigename ("USt 19% Regelsteuersatz §12 Abs. 1 UStG").
-  name              String      @db.VarChar(150)
-  description       String?     @db.VarChar(500)
-  /// Gesetzlicher Default-Satz (0.000 - 1.000). 19% = 0.19.
-  defaultRate       Decimal     @db.Decimal(5, 4)
-  /// UStVA-Kennzahl (z.B. "81", "46", "84"). Null bei NOT_TAXABLE / EXPORT.
-  defaultVatReportBox String?   @db.VarChar(10)
-  /// true für §13b + IGE (Leistungsempfänger schuldet USt).
-  reverseCharge     Boolean     @default(false)
-  /// Reihenfolge in UI-Listen.
-  sortOrder         Int         @default(0)
-  /// Aktiv = ist für Tenants nutzbar. Deaktivierte Templates werden bei
-  /// neuem Tenant nicht mehr materialisiert, bestehende TaxCodes bleiben.
-  active            Boolean     @default(true)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  taxCodes          TaxCode[]
-
-  @@index([active, sortOrder])
-  @@map("tax_category_templates")
-}
-
 // =============================================================================
 // P11: USt-Korrektur §17 UStG (Skonto, Gutschrift, Forderungsausfall,
 //      Teilzahlung). Wird in §17-Mechanik gebraucht: nach Buchung der
@@ -3503,82 +3417,6 @@ model TaxCategoryTemplate {
 //      gegengebucht werden. Audit-Trail über UStAdjustment-Zeile + Verweis
 //      auf den erzeugten JournalEntry.
 // =============================================================================
-
-enum UStAdjustmentReason {
-  SKONTO           // §17 Abs. 1 Nr. 1 UStG — Entgeltminderung durch Skonto
-  CREDIT_NOTE      // §17 Abs. 1 — Rechnungsstorno / Korrekturrechnung
-  WRITE_OFF        // §17 Abs. 2 Nr. 1 — Forderungsausfall (Uneinbringlichkeit)
-  PARTIAL_PAYMENT  // §17 Abs. 2 Nr. 1 — Teil-Uneinbringlichkeit
-  REVERSE_CHARGE   // §13b — Steuerschuldumkehr (Sonderfall, kein klassisches §17)
-}
-
-model UStAdjustment {
-  id                        String              @id @default(uuid())
-  tenantId                  String
-  tenant                    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  /// Referenz auf die korrigierte Ausgangsrechnung (für Skonto/Gutschrift/Ausfall).
-  originalInvoiceId         String?
-  originalInvoice           Invoice?            @relation("UStAdjustmentInvoice", fields: [originalInvoiceId], references: [id], onDelete: SetNull)
-  /// Referenz auf die korrigierte Eingangsrechnung (z.B. eingehende Gutschrift).
-  originalIncomingInvoiceId String?
-  originalIncomingInvoice   IncomingInvoice?    @relation("UStAdjustmentIncoming", fields: [originalIncomingInvoiceId], references: [id], onDelete: SetNull)
-  reason                    UStAdjustmentReason
-  adjustmentDate            DateTime
-  /// Delta zum Netto-Erlös (negativ bei Minderung, positiv bei Erhöhung).
-  netAmountDelta            Decimal             @db.Decimal(15, 2)
-  /// Delta zur USt-Schuld (Vorzeichen wie netAmountDelta).
-  taxAmountDelta            Decimal             @db.Decimal(15, 2)
-  /// Verweis auf den erzeugten JournalEntry (1:1 — jede Korrektur = eine
-  /// neue Buchung, kein Inplace-Update der Original-Buchung).
-  journalEntryId            String              @unique
-  journalEntry              JournalEntry        @relation(fields: [journalEntryId], references: [id], onDelete: Restrict)
-  notes                     String?             @db.VarChar(500)
-  createdById               String
-  createdBy                 User                @relation("UStAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt                 DateTime            @default(now())
-
-  @@index([tenantId, adjustmentDate])
-  @@index([originalInvoiceId])
-  @@index([originalIncomingInvoiceId])
-  @@map("ust_adjustments")
-}
-
-model TaxCode {
-  id            String              @id @default(uuid())
-  tenantId      String
-  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  /// Verweis auf das gesetzliche Template (Source of Truth für Kategorie,
-  /// Default-Satz, UStVA-Box, reverseCharge). Required — wir lassen
-  /// keine "freischwebenden" Codes zu.
-  templateId    String
-  template      TaxCategoryTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  /// DATEV-Steuerschlüssel des Tenants (z.B. "9" SKR04). Pro Tenant + Code UNIQUE.
-  code          String              @db.VarChar(10)
-  /// Tenant-spezifischer Name-Override (null = Template.name verwenden).
-  nameOverride  String?             @db.VarChar(150)
-  /// Tenant-spezifischer Satz-Override (selten, z.B. historische Sätze).
-  /// Null = Template.defaultRate verwenden.
-  rateOverride  Decimal?            @db.Decimal(5, 4)
-  /// Tenant-spezifische UStVA-Kennzahl (null = Template.defaultVatReportBox).
-  vatReportBoxOverride String?      @db.VarChar(10)
-  /// SKR03/04 USt-Konto des Tenants (z.B. "1776" 19% USt SKR04).
-  taxAccountId  String?
-  taxAccount    LedgerAccount?      @relation("TaxCodeAccount", fields: [taxAccountId], references: [id], onDelete: SetNull)
-  active        Boolean             @default(true)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-
-  invoices         Invoice[]
-  incomingInvoices IncomingInvoice[]
-  journalLines     JournalEntryLine[]
-
-  /// Pro Tenant + Template genau EIN Code (Idempotenz beim Materialize).
-  @@unique([tenantId, templateId])
-  /// Pro Tenant Code UNIQUE (DATEV-Schlüssel-Kollision).
-  @@unique([tenantId, code])
-  @@index([tenantId, active])
-  @@map("tax_codes")
-}
 
 // ─── Webhooks ────────────────────────────────────────────
 
@@ -3628,17 +3466,6 @@ model WebhookDelivery {
 // Journal Entries (M50) — Manual Soll/Haben bookings with SKR03 accounts
 // =============================================================================
 
-enum JournalEntryStatus {
-  DRAFT
-  POSTED
-}
-
-enum PostingSource {
-  MANUAL
-  AUTO
-  IMPORT
-}
-
 // P9: Periodensperre §146 AO (GoBD). Geschlossene Monate dürfen
 // keine Buchungen mehr aufnehmen (weder neue Entries noch POST von DRAFTs).
 // Unlock ist möglich, hinterlässt aber Audit-Trail (siehe unlockedAt/unlockedById).
@@ -3659,113 +3486,6 @@ model AccountingPeriodLock {
   @@unique([tenantId, periodYear, periodMonth])
   @@index([tenantId, periodYear, periodMonth])
   @@map("accounting_period_locks")
-}
-
-/// P24.2: GoBD §147 AO Belegablage — Beleg-Dateien mit Hash an Buchung anhängen.
-/// Ein JournalEntry kann mehrere Belege haben (Sammelbuchung) und ein Beleg
-/// kann mehreren Buchungen zugeordnet sein (Beleg-Reuse).
-model JournalAttachment {
-  id              String       @id @default(uuid())
-  tenantId        String
-  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  journalEntryId  String
-  journalEntry    JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  /// Original-Dateiname beim Upload.
-  fileName        String       @db.VarChar(255)
-  /// Storage-Pfad (S3-Key oder lokaler Pfad).
-  fileUrl         String       @db.VarChar(500)
-  /// MIME-Type.
-  mimeType        String       @db.VarChar(100)
-  /// SHA-256 Hex-Digest des Original-Inhalts. Wird beim Upload berechnet
-  /// und niemals geändert — Veränderung des Inhalts erfordert neuen Beleg.
-  fileHash        String       @db.VarChar(64)
-  fileSizeBytes   BigInt
-  /// Optionaler Anzeige-Text (z.B. "Rechnung Müller GmbH 06/2026").
-  description     String?      @db.VarChar(500)
-  uploadedById    String
-  uploadedBy      User         @relation("JournalAttachmentUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
-  uploadedAt      DateTime     @default(now())
-
-  @@index([tenantId, journalEntryId])
-  @@index([fileHash])
-  @@map("journal_attachments")
-}
-
-model JournalEntry {
-  id            String             @id @default(uuid())
-  tenantId      String
-  // AUDIT: tenantId is required — onDelete: Cascade kept because tenant deletion is rare
-  // and should remove all financial data. For regulatory retention, archive before deletion.
-  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entryDate     DateTime
-  description   String             @db.VarChar(200)
-  reference     String?            @db.VarChar(100)
-  status        JournalEntryStatus @default(DRAFT)
-  source        PostingSource      @default(MANUAL)
-  referenceType String?            @db.VarChar(50)
-  referenceId   String?
-  createdById   String
-  createdBy     User               @relation("JournalEntryCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  deletedAt     DateTime?
-  lines         JournalEntryLine[]
-
-  // P9: Storno-Verkettung (Generalumkehr für POSTED Journals).
-  // reversesJournalEntryId: dieser Entry ist die Storno-Buchung von ...
-  // reversedBy: dieser Entry wurde durch ... storniert (Rückrelation, kein eigenes FK-Feld nötig)
-  reversesJournalEntryId String?       @unique
-  reverses               JournalEntry? @relation("JournalReversal", fields: [reversesJournalEntryId], references: [id])
-  reversedBy             JournalEntry? @relation("JournalReversal")
-  reversalReason         String?       @db.VarChar(500)
-
-  // P11: §17 USt-Korrektur die DIESEN Eintrag als Korrekturbuchung verwendet (1:1).
-  ustAdjustment          UStAdjustment?
-  // P24.2: GoBD §147 Beleg-Anhänge (n Beleg-PDFs pro Buchung).
-  attachments            JournalAttachment[]
-  // P16: Forderungsmanagement Rückrelationen.
-  invoicePayments        InvoicePayment[] @relation("InvoicePaymentJournal")
-  valueAdjustments       ValueAdjustment[] @relation("ValueAdjustmentJournal")
-  dismantlingProvisions  DismantlingProvision[]
-
-  @@index([tenantId])
-  @@index([tenantId, entryDate])
-  @@index([tenantId, status])
-  @@index([referenceType, referenceId])
-  @@map("journal_entries")
-}
-
-model JournalEntryLine {
-  id             String       @id @default(uuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  lineNumber     Int
-  account        String       @db.VarChar(20)
-  accountName    String?      @db.VarChar(100)
-  description    String?      @db.VarChar(200)
-  debitAmount    Decimal?     @db.Decimal(15, 2)
-  creditAmount   Decimal?     @db.Decimal(15, 2)
-  taxKey         String?      @db.VarChar(10)
-  costCenter     String?      @db.VarChar(50)
-
-  // P10: optionaler Tax-Code-Verweis. Wird in P11/P12 für UStVA-Aggregation
-  // genutzt (statt String-Match auf Kontonummer).
-  taxCodeId      String?
-  taxCode        TaxCode?     @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
-  /// UStVA-Kennzahl direkt auf der Buchungszeile (überschreibt taxCode.vatReportBox
-  /// falls beides gesetzt). Erlaubt Sonderfälle (z.B. Korrekturbuchungen mit
-  /// abweichender Box).
-  ustvaKennzahl  String?      @db.VarChar(10)
-
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
-
-  @@index([journalEntryId])
-  // P-2 Sprint 2: Index für Account-basierte Reports (Kontoblatt, Bilanz, GuV, SuSa).
-  // Vorher: Seq-Scan über alle Lines. Nachher: Index-Lookup pro Konto.
-  @@index([account])
-  @@index([account, journalEntryId])
-  @@map("journal_entry_lines")
 }
 
 // =============================================================================
@@ -3939,10 +3659,7 @@ model IncomingInvoice {
   deletedAt          DateTime?
 
   // P10: Tax-Code-Verweis (für §13b Reverse-Charge, IGE etc.)
-  taxCodeId          String?
-  taxCode            TaxCode?              @relation(fields: [taxCodeId], references: [id], onDelete: SetNull)
   // P11: §17 USt-Korrekturen die diese Eingangsrechnung referenzieren.
-  ustAdjustments     UStAdjustment[]       @relation("UStAdjustmentIncoming")
   // P13: §14 UStG Pflichtangaben des Lieferanten (Pflicht für Vorsteuerabzug §15).
   supplierTaxId      String?               @db.VarChar(50)
   // P13: 4-Augen-Freigabe — approvedById MUSS ≠ createdById sein. Schwelle aus
@@ -4052,132 +3769,9 @@ model MapAnnotation {
 // Bank Accounts (Multibanking)
 // =============================================================================
 
-model BankAccount {
-  id             String   @id @default(uuid())
-  tenantId       String
-  fundId         String?
-  name           String   @db.VarChar(200)
-  iban           String   @db.VarChar(34)
-  bic            String?  @db.VarChar(11)
-  bankName       String?  @db.VarChar(200)
-  currency       String   @default("EUR") @db.VarChar(3)
-  currentBalance Decimal? @db.Decimal(15, 2)
-  balanceDate    DateTime?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fund           Fund?    @relation(fields: [fundId], references: [id], onDelete: SetNull)
-  transactions   BankTransaction[]
-
-  @@unique([tenantId, iban])
-  @@index([tenantId])
-  @@map("bank_accounts")
-}
-
 // =============================================================================
 // Quotes (Angebote)
 // =============================================================================
-
-enum QuoteStatus {
-  DRAFT
-  SENT
-  ACCEPTED
-  INVOICED
-  EXPIRED
-  CANCELLED
-}
-
-model Quote {
-  id                 String      @id @default(uuid())
-  quoteNumber        String
-  quoteDate          DateTime
-  validUntil         DateTime
-  status             QuoteStatus @default(DRAFT)
-  recipientType      String?
-  recipientName      String?
-  recipientAddress   String?
-  netAmount          Decimal     @db.Decimal(15, 2)
-  taxRate            Decimal     @default(19.00) @db.Decimal(5, 2)
-  taxAmount          Decimal?    @db.Decimal(15, 2)
-  grossAmount        Decimal     @db.Decimal(15, 2)
-  currency           String      @default("EUR")
-  notes              String?
-  internalReference  String?
-  serviceStartDate   DateTime?
-  serviceEndDate     DateTime?
-  pdfUrl             String?
-  sentAt             DateTime?
-  acceptedAt         DateTime?
-  cancelledAt        DateTime?
-  expiredAt          DateTime?
-  convertedAt        DateTime?
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  deletedAt          DateTime?
-
-  tenantId           String
-  fundId             String?
-  parkId             String?
-  createdById        String?
-  convertedInvoiceId String?     @unique
-  letterheadId       String?
-
-  tenant             Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fund               Fund?       @relation(fields: [fundId], references: [id], onDelete: SetNull)
-  park               Park?       @relation(fields: [parkId], references: [id], onDelete: SetNull)
-  createdBy          User?       @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  convertedInvoice   Invoice?    @relation(fields: [convertedInvoiceId], references: [id], onDelete: SetNull)
-  letterhead         Letterhead? @relation(fields: [letterheadId], references: [id], onDelete: SetNull)
-  items              QuoteItem[]
-
-  @@unique([tenantId, quoteNumber])
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@index([status])
-  @@index([deletedAt])
-  @@index([fundId])
-  @@index([parkId])
-  @@map("quotes")
-}
-
-model QuoteItem {
-  id          String  @id @default(uuid())
-  position    Int
-  description String
-  quantity    Decimal @default(1) @db.Decimal(12, 4)
-  unit        String?
-  unitPrice   Decimal @db.Decimal(15, 2)
-  netAmount   Decimal @db.Decimal(15, 2)
-  taxType     TaxType @default(STANDARD)
-  taxRate     Decimal @db.Decimal(5, 2)
-  taxAmount   Decimal @db.Decimal(15, 2)
-  grossAmount Decimal @db.Decimal(15, 2)
-  createdAt   DateTime @default(now())
-
-  quoteId     String
-  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-
-  @@index([quoteId])
-  @@map("quote_items")
-}
-
-model QuoteNumberSequence {
-  id          String   @id @default(uuid())
-  format      String   @default("AN-{YEAR}-{NUMBER}")
-  currentYear Int      @default(2026)
-  nextNumber  Int      @default(1)
-  digitCount  Int      @default(4)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tenantId    String   @unique
-
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId])
-  @@map("quote_number_sequences")
-}
 
 // =============================================================================
 // =============================================================================
@@ -4338,192 +3932,23 @@ model BudgetLine {
 // ACCOUNTING MODULE — Kontenrahmen (SKR03)
 // =============================================================================
 
-enum AccountCategory {
-  ASSET
-  LIABILITY
-  EQUITY
-  REVENUE
-  EXPENSE
-}
-
 // P15: HGB §266 Bilanz-Gliederung (granularer als AccountCategory).
 // Wird in der Bilanz-Aggregation pro Konto verwendet — das alte
 // AccountCategory war zu grob (kein Anlagevermögen vs. Umlaufvermögen).
-enum BalanceSheetSection {
-  ASSET_FIXED         // A. Anlagevermögen
-  ASSET_CURRENT       // B. Umlaufvermögen
-  ASSET_DEFERRED      // C. Aktive Rechnungsabgrenzung
-  EQUITY              // A. Eigenkapital
-  PROVISION           // B. Rückstellungen
-  LIABILITY_LONG      // C. Verbindlichkeiten (> 1 Jahr)
-  LIABILITY_SHORT     // C. Verbindlichkeiten (< 1 Jahr)
-  LIABILITY_DEFERRED  // D. Passive Rechnungsabgrenzung
-}
-
-enum TaxBehavior {
-  TAXABLE_19
-  TAXABLE_7
-  EXEMPT
-  INPUT_TAX
-  OUTPUT_TAX
-  NONE
-}
-
-model LedgerAccount {
-  id            String          @id @default(uuid())
-  tenantId      String
-  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  accountNumber String          @db.VarChar(10)
-  name          String          @db.VarChar(200)
-  category      AccountCategory
-  taxBehavior   TaxBehavior     @default(NONE)
-  isActive      Boolean         @default(true)
-  isSystem      Boolean         @default(false)
-  parentNumber  String?         @db.VarChar(10)
-  notes         String?
-  /// P10: Default-Steuerschlüssel für dieses Konto (DATEV-Schlüssel).
-  /// Wird vom Auto-Posting (P11) als Vorbelegung verwendet.
-  taxKey        String?         @db.VarChar(10)
-  /// P15: HGB §266 Bilanz-Zuordnung. Wenn null, fällt der Bilanz-Generator
-  /// auf SKR04-Range-Heuristik zurück (für Alt-Daten).
-  balanceSheetSection BalanceSheetSection?
-  /// P15: Single-Source-of-Truth für GuV/BWA-Klassifikation (z.B.
-  /// "REVENUE_OPERATING", "EXPENSE_INTEREST"). Ersetzt schrittweise die
-  /// Range-Hardcodes (account.startsWith("8")) in den Reports.
-  category2     String?         @db.VarChar(50)
-  /// P17: Gewerbesteuer-Hinzurechnung §8 GewStG-Schlüssel.
-  /// Z.B. "MIETE_IMMOBILIEN" (1/2 Hinzurechnung), "MIETE_BEWEGLICH" (1/5).
-  gewStAddBackKey String?       @db.VarChar(50)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  /// Rückrelation: TaxCodes können dieses Konto als USt-Konto referenzieren
-  /// (z.B. TaxCode "USt 19%" → LedgerAccount "1776").
-  taxCodesUsing TaxCode[]       @relation("TaxCodeAccount")
-
-  /// P15: Saldenvortrag-Verweis (Eröffnungsbilanz pro Wirtschaftsjahr).
-  openingBalances OpeningBalance[]
-
-  @@unique([tenantId, accountNumber])
-  @@index([tenantId])
-  @@index([tenantId, category])
-  @@index([tenantId, balanceSheetSection])
-  @@map("ledger_accounts")
-}
 
 // P15: Saldenvortrag / Eröffnungsbilanz.
 // Pro Wirtschaftsjahr + Konto + Tenant genau eine Zeile mit dem Buch-
 // wert zum Jahreswechsel. Wird vom year-end-close-Job erzeugt und in
 // der Bilanz-Aggregation als Startwert verwendet.
-model OpeningBalance {
-  id              String        @id @default(uuid())
-  tenantId        String
-  tenant          Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fiscalYear      Int
-  ledgerAccountId String
-  ledgerAccount   LedgerAccount @relation(fields: [ledgerAccountId], references: [id], onDelete: Restrict)
-  debitAmount     Decimal       @default(0) @db.Decimal(15, 2)
-  creditAmount    Decimal       @default(0) @db.Decimal(15, 2)
-  createdById     String
-  createdBy       User          @relation("OpeningBalanceCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt       DateTime      @default(now())
-
-  @@unique([tenantId, fiscalYear, ledgerAccountId])
-  @@index([tenantId, fiscalYear])
-  @@map("opening_balances")
-}
 
 // P15: Bilanz-Snapshot. Bei jedem Jahresabschluss wird die Bilanz als
 // JSON-Snapshot persistiert (Audit + Reproduzierbarkeit). Bei späteren
 // Aufrufen sieht der User die zum Abschluss-Zeitpunkt gespeicherte
 // Bilanz statt der laufend aktualisierten.
-model BalanceSheetSnapshot {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fiscalYear   Int
-  asOf         DateTime
-  generatedAt  DateTime @default(now())
-  /// {aktiva: [...], passiva: [...], summary: {summeAktiva, summePassiva, differenz}}
-  snapshot     Json
-  /// null = Tenant-weit (Einzel-Bilanz); gesetzt = Fund-spezifisch oder Konsolidiert.
-  fundId       String?
-  createdById  String
-  createdBy    User     @relation("BalanceSheetSnapshotCreator", fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, fiscalYear])
-  @@index([tenantId, fundId])
-  @@map("balance_sheet_snapshots")
-}
 
 // =============================================================================
 // Bank Transactions — Persistent storage for imported bank statements
 // =============================================================================
-
-enum BankTxStatus {
-  UNMATCHED
-  SUGGESTED
-  MATCHED
-  IGNORED
-}
-
-/// Source of the match between a bank transaction and an invoice.
-/// AUTO = matched by auto-matcher (heuristic). MANUAL = matched by user.
-enum BankMatchSource {
-  AUTO
-  MANUAL
-}
-
-model BankTransaction {
-  id                String        @id @default(uuid())
-  tenantId          String
-  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fundId            String?
-  fund              Fund?         @relation("BankTransactionFund", fields: [fundId], references: [id], onDelete: SetNull)
-  bankAccountIban   String        @db.VarChar(34)
-  bookingDate       DateTime
-  amount            Decimal       @db.Decimal(15, 2)
-  currency          String        @default("EUR") @db.VarChar(3)
-  counterpartName   String?       @db.VarChar(200)
-  counterpartIban   String?       @db.VarChar(34)
-  reference         String?       @db.Text
-  bankReference     String?       @db.VarChar(100)
-  matchStatus       BankTxStatus  @default(UNMATCHED)
-  matchedInvoiceId  String?
-  matchedInvoice    Invoice?      @relation("BankTxMatchedInvoice", fields: [matchedInvoiceId], references: [id])
-  matchConfidence   Float?
-  /// GoBD-Audit: woher kommt die Zuordnung (AUTO-Matcher oder User)?
-  matchSource       BankMatchSource?
-  /// Welcher User hat die Zuordnung manuell bestätigt/angepasst?
-  matchedById       String?
-  /// Wann wurde die Zuordnung gesetzt?
-  matchedAt         DateTime?
-  importBatchId     String?       @db.VarChar(50)
-  importFileName    String?       @db.VarChar(200)
-  importedAt        DateTime      @default(now())
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  bankAccountId     String?
-  bankAccount       BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  // P16: Zahlungseingänge die dieser Bank-Transaktion zugeordnet sind.
-  invoicePayments   InvoicePayment[]
-  // P18: Match-Diagnostik — Skonto-Anteil und Cent-Differenz zur Rechnung.
-  // Wenn matchedSkontoAmount > 0: die Differenz amount−grossAmount wurde
-  // als gültiger Skonto akzeptiert (innerhalb Skonto-Frist).
-  // matchVariance = |amount − grossAmount| (kann auch ohne Skonto > 0 sein
-  // bei Toleranz-Match z.B. Rundungs-Differenz < 0,02 €).
-  matchedSkontoAmount Decimal?    @db.Decimal(15, 2)
-  matchVariance       Decimal?    @db.Decimal(15, 2)
-
-  @@index([tenantId])
-  @@index([tenantId, bookingDate])
-  @@index([tenantId, matchStatus])
-  @@index([importBatchId])
-  @@index([bankAccountId])
-  @@index([fundId])
-  @@index([matchedInvoiceId])
-  @@map("bank_transactions")
-}
 
 // =============================================================================
 // Dunning (Mahnwesen)
@@ -4573,10 +3998,6 @@ model InvoicePayment {
   paymentDate       DateTime
   amount            Decimal               @db.Decimal(15, 2)
   paymentMethod     InvoicePaymentMethod  @default(BANK)
-  bankTransactionId String?
-  bankTransaction   BankTransaction?      @relation(fields: [bankTransactionId], references: [id], onDelete: SetNull)
-  journalEntryId    String?
-  journalEntry      JournalEntry?         @relation("InvoicePaymentJournal", fields: [journalEntryId], references: [id], onDelete: SetNull)
   notes             String?               @db.VarChar(500)
   createdById       String
   createdBy         User                  @relation("InvoicePaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
@@ -4585,37 +4006,6 @@ model InvoicePayment {
   @@index([tenantId, invoiceId])
   @@index([tenantId, paymentDate])
   @@map("invoice_payments")
-}
-
-enum ValueAdjustmentType {
-  EWB              // Einzelwertberichtigung §253 HGB (zweifelhafte Forderung)
-  PWB              // Pauschalwertberichtigung §253 HGB
-  DIRECT_WRITEOFF  // Direkter Forderungsausfall §17 UStG
-}
-
-model ValueAdjustment {
-  id              String              @id @default(uuid())
-  tenantId        String
-  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoiceId       String?
-  invoice         Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  type            ValueAdjustmentType
-  amountEur       Decimal             @db.Decimal(15, 2)
-  reason          String              @db.VarChar(500)
-  /// Wird bei DIRECT_WRITEOFF gesetzt — verweist auf den JournalEntry der
-  /// die Ausbuchung + §17 USt-Korrektur enthält.
-  postedJournalId String?             @unique
-  postedJournal   JournalEntry?       @relation("ValueAdjustmentJournal", fields: [postedJournalId], references: [id], onDelete: Restrict)
-  /// §17 USt-Korrektur (nur bei DIRECT_WRITEOFF mit USt-Bezug).
-  ustAdjustmentId String?             @unique
-  effectiveDate   DateTime
-  createdById     String
-  createdBy       User                @relation("ValueAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt       DateTime            @default(now())
-
-  @@index([tenantId, effectiveDate])
-  @@index([invoiceId])
-  @@map("value_adjustments")
 }
 
 // Audit-A: Globales SystemSetting für gesetzlich vorgegebene Werte.
@@ -4648,30 +4038,6 @@ model SystemSetting {
 // Audit der erzeugten Export-ZIPs. Wird bei Betriebsprüfung vorgelegt —
 // daher fileHash + size persistiert. ZIP selbst wird nicht in der DB
 // gespeichert (potentiell mehrere GB), nur Download-Link über fileUrl.
-model GobdExport {
-  id             String   @id @default(uuid())
-  tenantId       String
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  periodFrom     DateTime
-  periodTo       DateTime
-  generatedAt    DateTime @default(now())
-  /// SHA-256 des erzeugten ZIPs (Hex).
-  fileHash       String   @db.VarChar(64)
-  fileSizeBytes  BigInt
-  /// Wieviele Datensätze pro Tabelle exportiert wurden (für Audit-Log + UI).
-  recordCounts   Json
-  /// Optional: Pfad/URL zum gespeicherten ZIP (S3 / Filesystem). Null wenn
-  /// nur im Memory ausgeliefert wurde.
-  fileUrl        String?
-  downloadCount  Int      @default(0)
-  lastDownloadAt DateTime?
-  createdById    String
-  createdBy      User     @relation("GobdExportCreator", fields: [createdById], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, periodFrom])
-  @@index([tenantId, generatedAt])
-  @@map("gobd_exports")
-}
 
 // §247 BGB Basiszinssatz (Bundesbank). Mandantenunabhängig — wir pflegen
 // die Zeitreihe einmal global. Die effektive Verzugszinsformel ist
@@ -4720,197 +4086,19 @@ model DunningItem {
 // SEPA Payment Batches
 // =============================================================================
 
-enum SepaStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  EXPORTED
-  CANCELLED
-}
-
-model SepaPaymentBatch {
-  id                String     @id @default(uuid())
-  tenantId          String
-  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  batchNumber       String     @db.VarChar(50)
-  executionDate     DateTime
-  debtorName        String     @db.VarChar(200)
-  debtorIban        String     @db.VarChar(34)
-  debtorBic         String?    @db.VarChar(11)
-  status            SepaStatus @default(DRAFT)
-  totalAmount       Decimal    @db.Decimal(15, 2)
-  paymentCount      Int        @default(0)
-  xmlContent        String?    @db.Text
-  createdById       String
-  createdBy         User       @relation("SepaPaymentBatchCreatedBy", fields: [createdById], references: [id])
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  items             SepaPaymentItem[]
-
-  @@unique([tenantId, batchNumber])
-  @@index([tenantId])
-  @@map("sepa_payment_batches")
-}
-
-model SepaPaymentItem {
-  id              String           @id @default(uuid())
-  batchId         String
-  batch           SepaPaymentBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  invoiceId       String?
-  invoice         Invoice?         @relation("SepaPaymentItemInvoice", fields: [invoiceId], references: [id], onDelete: SetNull)
-  creditorName    String           @db.VarChar(200)
-  creditorIban    String           @db.VarChar(34)
-  creditorBic     String?          @db.VarChar(11)
-  amount          Decimal          @db.Decimal(15, 2)
-  remittanceInfo  String           @db.VarChar(140)
-  endToEndId      String           @db.VarChar(35)
-  createdAt       DateTime         @default(now())
-
-  @@index([batchId])
-  @@map("sepa_payment_items")
-}
-
 // =============================================================================
 // Fixed Assets (Anlagenbuchhaltung)
 // =============================================================================
-
-enum DepreciationMethod {
-  LINEAR
-  DECLINING_BALANCE
-}
 
 // P14: §7 EStG AfA-Methoden + §6 EStG GWG-Behandlung.
 // Ersetzt schrittweise das alte DepreciationMethod-Enum (das nur LINEAR/
 // DECLINING_BALANCE kennt). DECLINING_BALANCE ist seit Anschaffungen ab
 // 01.01.2023 unzulässig (§7 Abs. 2 EStG i.V.m. Übergangsregeln) — wird
 // vom Engine bei neuen Assets geblockt.
-enum AfaMethod {
-  LINEAR             // §7 Abs. 1 EStG (Standardfall)
-  GWG_SOFORT         // §6 Abs. 2 EStG — Sofortabzug bis 800 € Netto
-  GWG_POOL           // §6 Abs. 2a EStG — Sammelposten 250-1.000 € über 5 Jahre
-  DECLINING_BALANCE  // §7 Abs. 2 EStG — degressiv (nur für Altanlagen vor 2023)
-}
-
-enum AssetStatus {
-  ACTIVE
-  DISPOSED
-  FULLY_DEPRECIATED
-}
-
-model FixedAsset {
-  id                  String              @id @default(uuid())
-  tenantId            String
-  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  assetNumber         String              @db.VarChar(20)
-  name                String              @db.VarChar(200)
-  description         String?
-  category            String              @db.VarChar(50)
-  acquisitionDate     DateTime
-  acquisitionCost     Decimal             @db.Decimal(15, 2)
-  usefulLifeMonths    Int
-  /// @deprecated P14: Nutze afaMethod stattdessen. Bleibt für Backwards-
-  /// Compat erhalten — bestehende Assets ohne afaMethod werden hieraus
-  /// gemappt (LINEAR → LINEAR, DECLINING_BALANCE → DECLINING_BALANCE).
-  depreciationMethod  DepreciationMethod  @default(LINEAR)
-  /// P14: §7/§6 EStG-konforme Methoden inkl. GWG. Nullable während Migration —
-  /// wenn null, fällt der Engine auf depreciationMethod zurück.
-  afaMethod           AfaMethod?
-  /// P14: GWG-Sammelposten-Jahrgang (§6 Abs. 2a EStG). Nur relevant wenn
-  /// afaMethod=GWG_POOL. Jahr des Anschaffungsjahrgangs zur Pool-Identifikation.
-  gwgPoolYear         Int?
-  residualValue       Decimal             @default(0) @db.Decimal(15, 2)
-  accountNumber       String?             @db.VarChar(10) // SKR03 asset account
-  depAccountNumber    String?             @db.VarChar(10) // SKR03 depreciation expense account
-  status              AssetStatus         @default(ACTIVE)
-  disposalDate        DateTime?
-  disposalProceeds    Decimal?            @db.Decimal(15, 2)
-  notes               String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  depreciations       FixedAssetDepreciation[]
-
-  @@unique([tenantId, assetNumber])
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@map("fixed_assets")
-}
-
-model FixedAssetDepreciation {
-  id            String     @id @default(uuid())
-  assetId       String
-  asset         FixedAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  periodStart   DateTime
-  periodEnd     DateTime
-  amount        Decimal    @db.Decimal(15, 2)
-  /// Buchwert VOR dieser AfA-Buchung. P14: Nachträglich nullable hinzugefügt
-  /// — alte Schedule-Rows haben null, neue werden gefüllt. Erlaubt die
-  /// Anlagespiegel-Erstellung (vergleicht book-value-Verlauf).
-  bookValueBefore Decimal? @db.Decimal(15, 2)
-  bookValue     Decimal    @db.Decimal(15, 2) // remaining book value after this depreciation
-  journalEntryId String?
-  createdAt     DateTime   @default(now())
-
-  @@index([assetId])
-  @@index([assetId, periodStart])
-  @@map("fixed_asset_depreciations")
-}
 
 // =============================================================================
 // Cash Book (Kassenbuch)
 // =============================================================================
-
-model CashBookEntry {
-  id            String   @id @default(uuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entryDate     DateTime
-  entryNumber   Int
-  description   String   @db.VarChar(200)
-  amount        Decimal  @db.Decimal(15, 2) // positive = income, negative = expense
-  runningBalance Decimal @db.Decimal(15, 2)
-  account       String?  @db.VarChar(10) // SKR03 counter-account
-  receiptNumber String?  @db.VarChar(50)
-  createdById   String
-  createdBy     User     @relation("CashBookEntryCreatedBy", fields: [createdById], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // P26.2 §146 AO Festschreibung — nach Lock keine Änderung mehr möglich.
-  // Locked-Block wird vom CashBookLock-Eintrag referenziert (Tag-genau).
-  lockedAt      DateTime?
-  lockedById    String?
-  lockedBy      User?    @relation("CashBookEntryLocker", fields: [lockedById], references: [id], onDelete: Restrict)
-
-  @@unique([tenantId, entryNumber])
-  @@index([tenantId, entryDate])
-  @@map("cash_book_entries")
-}
-
-/// P26.2 Kassensturz §146 AO — Tagesabschluss mit Soll/Ist-Vergleich.
-/// Hält den tatsächlich gezählten Kassenbestand am Tagesende fest und
-/// vergleicht ihn mit dem rechnerischen Saldo. Differenz muss begründet
-/// werden (z.B. fehlender Beleg).
-model CashBookDailyClose {
-  id              String   @id @default(uuid())
-  tenantId        String
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  closeDate       DateTime @db.Date
-  /// Rechnerischer Saldo = letzter runningBalance des Tages.
-  computedBalance Decimal  @db.Decimal(15, 2)
-  /// Tatsächlich gezählter Bargeldbestand.
-  countedBalance  Decimal  @db.Decimal(15, 2)
-  /// Differenz = countedBalance − computedBalance.
-  difference      Decimal  @db.Decimal(15, 2)
-  /// Pflichtfeld bei Differenz ≠ 0.
-  notes           String?  @db.VarChar(500)
-  closedById      String
-  closedBy        User     @relation("CashBookDailyClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
-  closedAt        DateTime @default(now())
-
-  @@unique([tenantId, closeDate])
-  @@index([tenantId, closeDate])
-  @@map("cash_book_daily_closes")
-}
 
 // =============================================================================
 // Document Routing Rules (OneDrive / DATEV folder mapping)
@@ -6508,8 +5696,6 @@ model DismantlingProvision {
   basis Json?
 
   /// Die Jahresbuchung, sofern gebucht.
-  journalEntryId String?
-  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id], onDelete: SetNull)
 
   computedAt DateTime @default(now())
   notes      String?  @db.Text
@@ -7415,124 +6601,6 @@ model MarketPremiumCalculation {
 // ─────────────────────────────────────────────────────────────────────────────
 // B7 (Audit 2026-07): Bankanbindung — automatischer Kontoabruf
 // ─────────────────────────────────────────────────────────────────────────────
-
-/// Wie ein Kontoauszug zum System kommt.
-enum BankConnectionProvider {
-  /// Die Bank oder ein Dienstleister legt den Auszug ab bzw. schickt ihn an
-  /// einen Endpunkt. Das ist der Weg, der ohne Protokollimplementierung
-  /// funktioniert — und für Banken mit geplantem SFTP- oder E-Mail-Export der
-  /// vollständige automatische Abruf.
-  FILE_DROP
-  /// EBICS. Braucht Schlüsselmaterial (A006/E002/X002), INI/HIA-Briefe und die
-  /// Freischaltung durch die Bank. Ohne diese Voraussetzungen läuft kein
-  /// Abruf — der Adapter meldet das, statt still nichts zu tun.
-  EBICS
-  /// FinTS/HBCI. Braucht eine Produktregistrierung bei der Deutschen
-  /// Kreditwirtschaft. Gleiche Lage wie bei EBICS.
-  FINTS
-}
-
-enum BankConnectionStatus {
-  ACTIVE
-  PAUSED
-  /// Mehrfach hintereinander fehlgeschlagen. Getrennt von PAUSED, damit ein
-  /// stiller Ausfall nicht wie eine bewusste Pause aussieht.
-  ERROR
-  /// Angelegt, aber noch nicht einsatzbereit (fehlende Freischaltung).
-  SETUP_PENDING
-}
-
-enum BankFetchStatus {
-  RUNNING
-  SUCCESS
-  FAILED
-  /// Nichts zu tun — derselbe Auszug lag bereits vor.
-  SKIPPED
-}
-
-/// Verbindung zu einem Bankkonto für den automatischen Abruf.
-model BankConnection {
-  id       String @id @default(uuid())
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  name String @db.VarChar(200)
-  /// Konto, dem die Umsätze zugeordnet werden.
-  bankAccountIban String @db.VarChar(34)
-
-  provider BankConnectionProvider @default(FILE_DROP)
-  status   BankConnectionStatus   @default(SETUP_PENDING)
-
-  /// Zugangsdaten, auf Anwendungsebene verschlüsselt (dieselbe Mechanik wie
-  /// bei den SMTP-Zugängen). Für EBICS das Schlüsselmaterial, für FinTS
-  /// Bankleitzahl, Benutzerkennung und PIN.
-  credentials String? @db.Text
-
-  /// Nur bei FILE_DROP: Hash des Push-Tokens. Der Token selbst wird NICHT
-  /// gespeichert — er wird einmal beim Anlegen angezeigt. Ein gespeicherter
-  /// Token wäre ein Zugang zum Kontoauszug in der Datenbank.
-  pushTokenHash String? @db.VarChar(128)
-
-  /// Erwarteter Abrufrhythmus, als Cron-Ausdruck für den externen Scheduler.
-  schedule String? @db.VarChar(50)
-
-  lastRunAt     DateTime?
-  lastSuccessAt DateTime?
-  /// Fehler in Folge. Ab einer Schwelle geht der Status auf ERROR — ein
-  /// Abruf, der seit Wochen scheitert, ist sonst unsichtbar.
-  consecutiveFailures Int     @default(0)
-  lastError           String? @db.Text
-
-  notes String? @db.Text
-
-  runs BankFetchRun[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String?
-  createdBy   User?    @relation("BankConnectionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-
-  /// Eine Verbindung je Konto und Verfahren.
-  @@unique([tenantId, bankAccountIban, provider])
-  @@index([tenantId])
-  @@index([tenantId, status])
-  @@map("bank_connections")
-}
-
-/// Ein Abrufvorgang.
-///
-/// Bewusst mit Historie: ein automatischer Abruf, der niemandem auffällt, ist
-/// schlimmer als gar keiner — er erweckt den Eindruck, die Umsätze seien
-/// aktuell.
-model BankFetchRun {
-  id           String         @id @default(uuid())
-  connectionId String
-  connection   BankConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
-
-  status     BankFetchStatus @default(RUNNING)
-  startedAt  DateTime        @default(now())
-  finishedAt DateTime?
-
-  /// Prüfsumme des eingelesenen Auszugs. Derselbe Auszug wird nicht zweimal
-  /// verarbeitet — beim Wiederholen nach einem Fehler ist das der Regelfall.
-  statementChecksum String? @db.VarChar(64)
-  fileName          String? @db.VarChar(200)
-
-  transactionsFound      Int @default(0)
-  transactionsImported   Int @default(0)
-  transactionsDuplicate  Int @default(0)
-  transactionsMatched    Int @default(0)
-
-  /// Der Import-Stapel, damit sich die Buchungen dem Lauf zuordnen lassen.
-  importBatchId String? @db.VarChar(50)
-
-  errorMessage String? @db.Text
-
-  @@index([connectionId, startedAt])
-  /// Trägt die Dublettenprüfung des Auszugs.
-  @@index([connectionId, statementChecksum])
-  @@map("bank_fetch_runs")
-}
 
 // =============================================================================
 // A5 (Audit 2026-08): Gemeinde als Stammdatensatz

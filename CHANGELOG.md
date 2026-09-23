@@ -4,6 +4,34 @@ All notable changes to WindparkManager.
 
 ## [Unreleased]
 
+### September 2026 — Buchhaltung ausgebaut, Abregelung richtig gerechnet
+
+> **Vor dem nächsten Deployment lesen.** Der Container gleicht das Schema beim
+> Start mit `prisma db push --accept-data-loss` ab. Mit diesem Stand löscht er
+> dabei **24 Tabellen** der entfernten Buchhaltung, des SEPA-Zahllaufs und des
+> Bank-Imports (Buchungen, Kontenrahmen, Bankkonten und -umsätze, SEPA-Läufe,
+> Angebote, Kassenbuch, Anlagen, Steuerschlüssel u. a.) sowie die Spalten
+> `invoice_payments.bankTransactionId/journalEntryId`,
+> `invoices.taxCodeId`, `incoming_invoices.taxCodeId` und
+> `dismantling_provisions.journalEntryId`. **Vorher eine Sicherung ziehen.**
+>
+> `db push` löscht außerdem **jede** Tabelle, die nicht im Schema steht — auch
+> von Hand angelegte. Das galt schon immer, fiel beim Prüfen aber auf.
+>
+> Die Enum-Werte `SEPA_RUN`, `JOURNAL_POST` und `JOURNAL_REVERSE` bleiben
+> absichtlich stehen: Trägt eine alte Freigabe-Anfrage einen davon, scheitert
+> `db push` beim Entfernen — und der Container startet nicht.
+
+**Abregelung: 430 % der Produktion als Verlust**
+
+Die SCADA-Felder `mrwSmpPwin/Pte/Pfm/Pext` sind Leistungsgrenzen, keine
+ausgefallene Leistung. Die Auswertung summierte sie auf und wies an echten
+Daten 96.280 MWh „Verlust" bei 22.391 MWh Produktion aus; „beim Netzbetreiber
+einforderbar" entsprach etwa der ganzen Einspeisung. Jetzt zählt nur die
+Differenz zur Windleistung, wenn eine Grenze tatsächlich bindet — 2.571 MWh
+(11,5 %), dreifach gegengerechnet (Python, SQL, TypeScript). Bewertet wird mit
+dem Monatssatz statt mit fest verdrahteten 0,08 €/kWh.
+
 ### August 2026 — Stabilisierung, UI-Überarbeitung, Admin-Tests
 
 Der Monat hat weniger gebaut als geprüft. Das Ergebnis war unangenehm: mehrere

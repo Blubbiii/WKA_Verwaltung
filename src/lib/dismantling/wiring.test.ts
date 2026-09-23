@@ -61,8 +61,10 @@ describe("Datenmodell", () => {
     expect(provisionBody).toContain("@@unique([obligationId, year])");
   });
 
-  it("die Jahresbuchung ist verknuepfbar", () => {
-    expect(provisionBody).toContain("journalEntryId String?");
+  it("verweist auf keine Buchung mehr", () => {
+    // Die Buchhaltung ist entfallen; die Rueckstellung bucht der
+    // Steuerberater. Ein Verweis auf JournalEntry liefe ins Leere.
+    expect(provisionBody).not.toContain("journalEntryId");
   });
 });
 
