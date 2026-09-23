@@ -20,7 +20,7 @@ import { apiLogger as logger } from "@/lib/logger";
 // Der Prisma-Client wird über $extends erweitert (siehe src/lib/prisma.ts).
 // Dadurch ist `Prisma.TransactionClient` nicht direkt kompatibel mit dem
 // `tx`-Parameter aus extended `prisma.$transaction(async (tx) => ...)`. Wir
-// nutzen denselben Pragma-Pattern wie `lib/accounting/dunning.ts`.
+// nutzen denselben Pragma-Pattern wie `lib/mahnwesen/dunning.ts`.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PrismaTransactionClient = any;
 

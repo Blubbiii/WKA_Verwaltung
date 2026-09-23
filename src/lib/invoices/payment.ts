@@ -101,12 +101,6 @@ export interface RecordPaymentParams {
   minderung?: number;
   paymentDate: Date;
   paymentMethod?: InvoicePaymentMethod;
-  bankTransactionId?: string | null;
-  /**
-   * Vorab erzeugte Buchung. Wenn gesetzt, wird sie nur verlinkt und KEINE
-   * automatische Zahlungsbuchung erzeugt (Caller hat selbst gebucht).
-   */
-  journalEntryId?: string | null;
   notes?: string;
   userId: string;
 }
@@ -116,14 +110,6 @@ export interface RecordPaymentResult {
   newPaidAmount: number;
   newStatus: "SENT" | "PARTIALLY_PAID" | "PAID";
   isFullyPaid: boolean;
-  /**
-   * Immer `null` bei neuen Zahlungen.
-   *
-   * Das Feld gab es, solange die Buchhaltung im Haus lag: hier stand die ID
-   * der Zahlungsbuchung. Die Spalte bleibt, weil Altzahlungen sie gefuellt
-   * haben — vergeben wird sie nicht mehr.
-   */
-  journalEntryId: string | null;
 }
 
 /**
@@ -258,8 +244,6 @@ export async function recordPayment(
       paymentDate: params.paymentDate,
       amount: amountDec,
       paymentMethod: params.paymentMethod ?? "BANK",
-      bankTransactionId: params.bankTransactionId ?? null,
-      journalEntryId: params.journalEntryId ?? null,
       notes: params.notes ?? null,
       createdById: params.userId,
     },
@@ -275,24 +259,12 @@ export async function recordPayment(
     },
   });
 
-  /*
-    Hier stand die Verbuchung der Zahlung auf Forderungs- und Geldkonto.
-
-    Sie ist mit dem Buchhaltungsmodul entfallen: die Buecher fuehrt der
-    Steuerberater in DATEV, wir liefern ihm die Belege. Was bleibt, ist die
-    OP-Sicht — welche Rechnung ist zu welchem Teil bezahlt. Genau die braucht
-    das Mahnwesen, und genau die stand auch vorher schon hier; die Buchung war
-    das Zusaetzliche.
-
-    `journalEntryId` bleibt als Feld erhalten, weil die Spalte in der Datenbank
-    steht und alte Zahlungen sie gefuellt haben. Neue Zahlungen setzen sie
-    nicht mehr.
-  */
+  // Keine Verbuchung: Die Buecher fuehrt der Steuerberater. Hier zaehlt nur,
+  // welche Rechnung zu welchem Teil bezahlt ist — das braucht das Mahnwesen.
   return {
     paymentId: payment.id,
     newPaidAmount: newPaidDec.toNumber(),
     newStatus,
     isFullyPaid,
-    journalEntryId: params.journalEntryId ?? null,
   };
 }

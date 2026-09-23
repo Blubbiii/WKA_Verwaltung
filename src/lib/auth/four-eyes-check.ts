@@ -21,11 +21,8 @@
 
 import { getTenantSettings, type TenantSettings } from "@/lib/tenant-settings";
 
-export type FourEyesAction =
-  | "POSTING"
-  | "REVERSE"
-  | "SETTLEMENT_FINALIZE"
-  | "SEPA_RUN";
+// Buchen, Stornieren und der SEPA-Lauf sind mit der Buchhaltung entfallen.
+export type FourEyesAction = "SETTLEMENT_FINALIZE";
 
 export class FourEyesViolationError extends Error {
   constructor(
@@ -47,14 +44,8 @@ function getThreshold(
   settings: TenantSettings,
 ): number | null {
   switch (action) {
-    case "POSTING":
-      return settings.postingApprovalThresholdEur;
-    case "REVERSE":
-      return settings.reverseApprovalThresholdEur;
     case "SETTLEMENT_FINALIZE":
       return settings.settlementApprovalThresholdEur;
-    case "SEPA_RUN":
-      return settings.sepaApprovalThresholdEur;
   }
 }
 

@@ -35,7 +35,6 @@ import {
   Wind,
   Users,
   Building2,
-  BookOpen,
 } from "lucide-react";
 import { navGroups, type NavItem, type NavChild } from "@/config/nav-config";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -93,10 +92,7 @@ interface QuickAction {
   i18nKey:
     | "newInvoice"
     | "uploadInboxInvoice"
-    | "openGuv"
-    | "openBwa"
     | "parkComparison"
-    | "startBankImport"
     | "newContract"
     | "checkApprovals"
     | "runReminders"
@@ -177,8 +173,7 @@ type QuickSearchType =
   | "invoice"
   | "contact"
   | "contract"
-  | "fund"
-  | "journal";
+  | "fund";
 
 interface QuickSearchResult {
   type: QuickSearchType;
@@ -194,7 +189,6 @@ const RESULT_ICONS: Record<QuickSearchType, React.ElementType> = {
   contact: Users,
   contract: FileText,
   fund: Building2,
-  journal: BookOpen,
 };
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 // Searches Parks, Invoices, Contacts, Contracts, Funds via Prisma ILIKE
 
 interface SearchResult {
-  type: "park" | "invoice" | "contact" | "contract" | "fund" | "journal";
+  type: "park" | "invoice" | "contact" | "contract" | "fund";
   id: string;
   title: string;
   subtitle: string;

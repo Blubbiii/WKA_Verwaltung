@@ -62,8 +62,9 @@ export function getAuditEntityHref(
     // "will SEPA_RUN freigeben · 47.281,42 €" und musste blind zustimmen.
     case "LeaseSettlementPeriod":
       return `/admin/settlement-periods/${entityId}`;
-    // Für den SEPA-Lauf gibt es nur die Liste — keine Detailseite. Die Liste
-    // ist immer noch besser als kein Ziel, deshalb wie bei JournalEntry.
+    // SEPA-Zahllauf und Buchungen sind mit der Buchhaltung entfallen. Alte
+    // Protokolleinträge und Freigaben verweisen noch darauf — ein Ziel gibt es
+    // nicht mehr, und kein Link ist besser als ein Link ins Leere.
     case "SepaPaymentBatch":
       return null;
 
@@ -73,7 +74,7 @@ export function getAuditEntityHref(
     case "Document":
       return "/documents";
     case "JournalEntry":
-      return "/journal-entries";
+      return null;
     case "BankTransaction":
       return null;
     case "EnergySettlementItem":

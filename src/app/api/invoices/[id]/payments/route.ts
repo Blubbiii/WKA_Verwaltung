@@ -1,7 +1,7 @@
 /**
  * POST /api/invoices/[id]/payments — Teilzahlung erfassen (P16, D1).
  *
- * Body: { amount, paymentDate?, paymentMethod?, bankTransactionId?, notes? }
+ * Body: { amount, paymentDate?, paymentMethod?, notes? }
  *
  * Erzeugt eine InvoicePayment-Row in Transaktion mit Invoice-Update
  * (paidAmount + status PARTIALLY_PAID/PAID).
@@ -33,7 +33,6 @@ const paymentSchema = z.object({
       message: "Zahlungsdatum darf nicht in der Zukunft liegen",
     }),
   paymentMethod: z.enum(["BANK", "CASH", "SEPA", "OTHER"]).optional(),
-  bankTransactionId: z.string().uuid().nullable().optional(),
   notes: z.string().max(500).optional(),
   // F16-Compliance: Optional Idempotency-Key im Body (Alternative zu Header).
   idempotencyKey: z.string().min(1).max(200).optional(),
@@ -81,7 +80,6 @@ export async function POST(
               amount: parsed.data.amount,
               paymentDate,
               paymentMethod: parsed.data.paymentMethod,
-              bankTransactionId: parsed.data.bankTransactionId,
               notes: parsed.data.notes,
               userId: check.userId!,
             });
@@ -124,15 +122,9 @@ export async function POST(
             paymentId: result.paymentId,
             amount: parsed.data.amount,
             newStatus: result.newStatus,
-            journalEntryId: result.journalEntryId,
           },
           "Invoice payment recorded",
         );
-
-        // Die Zahlungsbuchung ist POSTED → Saldi in Bilanz/GuV/BWA/SuSa haben
-        // sich geändert. Nach Commit invalidieren (fire-and-forget).
-        if (result.journalEntryId) {
-        }
 
         return NextResponse.json({ data: serializePrisma(result) }, { status: 201 });
       },

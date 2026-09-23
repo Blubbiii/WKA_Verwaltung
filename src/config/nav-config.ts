@@ -157,11 +157,7 @@ export interface NavItem {
   /** Permission required to show this item (omit = always visible within its group) */
   permission?: string;
   /** Feature flag that must be enabled for this item to be visible */
-  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "accounting" | "document-routing"
-    | "accounting.reports" | "accounting.bank" | "accounting.dunning" | "accounting.sepa" | "accounting.ustva"
-    | "accounting.assets" | "accounting.cashbook" | "accounting.datev" | "accounting.yearend"
-    | "accounting.costcenter" | "accounting.budget" | "accounting.quotes" | "accounting.liquidity"
-    | "accounting.ocr" | "accounting.multibanking" | "accounting.zm"
+  featureFlag?: "management-billing" | "paperless" | "communication" | "crm" | "gis" | "inbox" | "wirtschaftsplan" | "document-routing"
     | "ppa-management" | "solar" | "storage"
     | "predictive-maintenance" | "investor-reports";
 }
@@ -427,6 +423,10 @@ export const navGroups: NavGroup[] = [
           { title: "Zahlungserinnerungen", titleKey: "reminders", href: "/invoices/reminders", icon: Bell, badgeKey: "mahnwesen" as const },
           { title: "Mahnwesen", titleKey: "dunning", href: "/invoices/mahnwesen", icon: Gavel },
           { title: "Belegexport", titleKey: "invoiceDocExport", href: "/invoices/beleg-export", icon: FileArchive },
+          // Nach der Uebergabe an den Steuerberater: den Monat sperren, damit keine
+          // Rechnung mit diesem Datum mehr dazukommt. Die Seite liegt unter /admin,
+          // gehoert fachlich aber hierher — neben den Export, dem sie folgt.
+          { title: "Periodensperre", titleKey: "periodLock", href: "/admin/periodensperre", icon: Lock },
           { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
         ],
       },
@@ -643,13 +643,6 @@ export const navGroups: NavGroup[] = [
         href: "/admin/marketing",
         icon: Megaphone,
         permission: "system:marketing",
-      },
-      {
-        title: "Kontenrahmen",
-        titleKey: "chartOfAccounts",
-        href: "/admin/kontenrahmen",
-        icon: ClipboardList,
-        permission: "system:settings",
       },
       {
         title: "Versionsverwaltung",

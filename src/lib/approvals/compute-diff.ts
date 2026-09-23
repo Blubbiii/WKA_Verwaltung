@@ -42,12 +42,6 @@ export interface ApprovalDiff {
   summary?: string;
 }
 
-/** Formatiert einen Delta-Wert mit Vorzeichen (z.B. "−38.113,59 €" / "+4,00 €"). */
-function formatDelta(delta: number): string {
-  const sign = delta < 0 ? "−" : "+";
-  return `${sign}${formatCurrency(Math.abs(delta))}`;
-}
-
 /** Defensive Number-Conversion für Prisma Decimal | number | string. */
 function toNum(value: unknown): number {
   if (value === null || value === undefined) return 0;
@@ -63,74 +57,6 @@ function toNum(value: unknown): number {
 // =============================================================================
 // Action-spezifische Diff-Computer
 // =============================================================================
-
-async function diffSepaRun(approvalId: string, tenantId: string, entityId: string): Promise<ApprovalDiff | null> {
-  const batch = await prisma.sepaPaymentBatch.findFirst({
-    where: { id: entityId, tenantId },
-    include: { items: true },
-  });
-  if (!batch) {
-    return {
-      title: "SEPA-Lauf",
-      changes: [],
-      summary: "Referenz nicht mehr verfügbar",
-    };
-  }
-
-  // Bank-Account via IBAN suchen (debtorIban des Batches)
-  const bankAccount = await prisma.bankAccount.findFirst({
-    where: { tenantId, iban: batch.debtorIban },
-    select: { name: true, currentBalance: true, iban: true },
-  });
-
-  const total = toNum(batch.totalAmount);
-  const balanceBefore = bankAccount ? toNum(bankAccount.currentBalance) : null;
-  const balanceAfter = balanceBefore !== null ? balanceBefore - total : null;
-
-  const changes: ApprovalDiffChange[] = [];
-
-  // Saldo-Vorschau wenn Bank-Account bekannt
-  if (bankAccount && balanceBefore !== null && balanceAfter !== null) {
-    changes.push({
-      label: `Saldo ${bankAccount.name}`,
-      before: formatCurrency(balanceBefore),
-      after: formatCurrency(balanceAfter),
-      delta: formatDelta(balanceAfter - balanceBefore),
-      tone: balanceAfter < 0 ? "destructive" : "warning",
-    });
-  }
-
-  // Zahlungsanzahl + Gesamtsumme
-  changes.push({
-    label: "Zahlungen",
-    after: `${batch.paymentCount} Stück`,
-    delta: formatCurrency(total),
-    tone: "default",
-  });
-
-  // Top-5 Items als Vorschau (zu lange Listen würden das UI sprengen)
-  const previewItems = batch.items.slice(0, 5);
-  for (const item of previewItems) {
-    changes.push({
-      label: item.creditorName,
-      after: formatCurrency(toNum(item.amount)),
-      tone: "default",
-    });
-  }
-
-  const summary = batch.items.length > previewItems.length
-    ? `+ ${batch.items.length - previewItems.length} weitere Zahlungen — Gesamt ${formatCurrency(total)}`
-    : `Gesamt ${formatCurrency(total)} an ${batch.items.length} Empfänger`;
-
-  // Use approvalId in debug-friendly title so future logging can correlate
-  void approvalId;
-
-  return {
-    title: `SEPA-Lauf ${batch.batchNumber}`,
-    changes,
-    summary,
-  };
-}
 
 async function diffSettlementFinalize(_approvalId: string, tenantId: string, entityId: string): Promise<ApprovalDiff | null> {
   const period = await prisma.leaseSettlementPeriod.findFirst({
@@ -240,7 +166,6 @@ type DiffComputer = (
 ) => Promise<ApprovalDiff | null>;
 
 const COMPUTERS: Partial<Record<ApprovalAction, DiffComputer>> = {
-  SEPA_RUN: diffSepaRun,
   SETTLEMENT_FINALIZE: diffSettlementFinalize,
   INCOMING_INVOICE_APPROVE: diffIncomingInvoiceApprove,
 };

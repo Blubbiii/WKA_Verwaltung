@@ -22,14 +22,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ToggleLeft, RefreshCw, ChevronRight } from "lucide-react";
+import { ToggleLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 // =============================================================================
 // Types
@@ -53,30 +47,9 @@ interface ModuleFlags {
   "gis": boolean;
   "inbox": boolean;
   "wirtschaftsplan": boolean;
-  "accounting": boolean;
   "marketData": boolean;
   "scada-uploader-v2": boolean;
   "uploader-v2-generic": boolean;
-}
-
-// Accounting sub-module flags
-interface AccountingSubFlags {
-  "accounting.reports": boolean;
-  "accounting.bank": boolean;
-  "accounting.dunning": boolean;
-  "accounting.sepa": boolean;
-  "accounting.ustva": boolean;
-  "accounting.assets": boolean;
-  "accounting.cashbook": boolean;
-  "accounting.datev": boolean;
-  "accounting.yearend": boolean;
-  "accounting.costcenter": boolean;
-  "accounting.budget": boolean;
-  "accounting.quotes": boolean;
-  "accounting.liquidity": boolean;
-  "accounting.ocr": boolean;
-  "accounting.multibanking": boolean;
-  "accounting.zm": boolean;
 }
 
 interface TenantWithFlags {
@@ -86,7 +59,6 @@ interface TenantWithFlags {
   status: string;
   features: FeatureFlags;
   modules: ModuleFlags;
-  accountingSub: AccountingSubFlags;
 }
 
 // =============================================================================
@@ -111,69 +83,10 @@ const MODULE_KEYS = [
   "gis",
   "inbox",
   "wirtschaftsplan",
-  "accounting",
   "marketData",
   "scada-uploader-v2",
   "uploader-v2-generic",
 ] as const satisfies readonly (keyof ModuleFlags)[];
-
-const ACCOUNTING_SUB_KEYS = [
-  "accounting.reports",
-  "accounting.bank",
-  "accounting.dunning",
-  "accounting.sepa",
-  "accounting.ustva",
-  "accounting.assets",
-  "accounting.cashbook",
-  "accounting.datev",
-  "accounting.yearend",
-  "accounting.costcenter",
-  "accounting.budget",
-  "accounting.quotes",
-  "accounting.liquidity",
-  "accounting.ocr",
-  "accounting.multibanking",
-  "accounting.zm",
-] as const satisfies readonly (keyof AccountingSubFlags)[];
-
-/**
- * Vom Flag-Namen zum Beschriftungs-Schluessel.
- *
- * Die Flags heissen in der Datenbank `accounting.reports` — der Punkt gehoert
- * dort hin, er trennt Modul und Funktion. In next-intl trennt derselbe Punkt
- * aber Verschachtelungsebenen, und Schluessel duerfen ihn deshalb NICHT
- * enthalten.
- *
- * Genau das stand vorher in den Sprachdateien: `featureFlagsUI.accounting`
- * enthielt sechzehn Schluessel namens `accounting.reports` und so weiter.
- * next-intl lehnte den ganzen Namensraum mit INVALID_KEY ab — nicht nur diese
- * sechzehn, sondern jede Beschriftung dieser Ansicht. Der Aufruf
- * `t("accounting.accounting.reports")` haette sie ohnehin nie gefunden.
- *
- * Der Flag-Name bleibt, wie er ist; nur die Beschriftung wird nachgeschlagen.
- */
-function beschriftungsSchluessel(flagName: string): string {
-  return flagName.replace(/^accounting\./, "");
-}
-
-const _DEFAULT_ACCOUNTING_SUB: AccountingSubFlags = {
-  "accounting.reports": true,
-  "accounting.bank": true,
-  "accounting.dunning": true,
-  "accounting.sepa": true,
-  "accounting.ustva": true,
-  "accounting.assets": true,
-  "accounting.cashbook": true,
-  "accounting.datev": true,
-  "accounting.yearend": true,
-  "accounting.costcenter": true,
-  "accounting.budget": true,
-  "accounting.quotes": true,
-  "accounting.liquidity": true,
-  "accounting.ocr": false,
-  "accounting.multibanking": false,
-  "accounting.zm": false,
-};
 
 // =============================================================================
 // Component
@@ -185,7 +98,6 @@ export function FeatureFlagsTab() {
   const [tenants, setTenants] = useState<TenantWithFlags[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [expandedAccounting, setExpandedAccounting] = useState<Record<string, boolean>>({});
 
   const fetchFlags = useCallback(async () => {
     try {
@@ -323,69 +235,8 @@ export function FeatureFlagsTab() {
     }
   };
 
-  // Toggle accounting sub-module flag
-  const handleToggleAccountingSub = async (
-    tenantId: string,
-    subKey: keyof AccountingSubFlags,
-    newValue: boolean
-  ) => {
-    const tenant = tenants.find((t) => t.id === tenantId);
-    if (!tenant) return;
-
-    // Optimistic update
-    setTenants((prev) =>
-      prev.map((t) =>
-        t.id === tenantId
-          ? { ...t, accountingSub: { ...t.accountingSub, [subKey]: newValue } }
-          : t
-      )
-    );
-
-    const cellKey = `${tenantId}-sub-${subKey}`;
-    setUpdating(cellKey);
-
-    try {
-      const response = await fetch("/api/admin/system-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key: `${subKey}.enabled`,
-          value: String(newValue),
-          category: "features",
-          tenantId,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(t("saveGenericError"));
-      }
-
-      toast.success(
-        t("featureToggled", {
-          label: t(`accounting.${beschriftungsSchluessel(subKey)}`),
-          tenant: tenant.name,
-          state: newValue ? t("stateActivated") : t("stateDeactivated"),
-        })
-      );
-      queryClient.invalidateQueries({ queryKey: ["/api/features"] });
-    } catch {
-      // Revert optimistic update
-      setTenants((prev) =>
-        prev.map((tn) =>
-          tn.id === tenantId
-            ? { ...tn, accountingSub: { ...tn.accountingSub, [subKey]: !newValue } }
-            : tn
-        )
-      );
-      toast.error(t("saveGenericError"));
-    } finally {
-      setUpdating(null);
-    }
-  };
-
   const featureKeys = FLAG_KEYS;
   const moduleKeys = MODULE_KEYS;
-  const accountingSubKeys = ACCOUNTING_SUB_KEYS;
 
   return (
     <div className="space-y-6">
@@ -501,79 +352,6 @@ export function FeatureFlagsTab() {
         </CardContent>
       </Card>
 
-      {/* Accounting sub-modules card */}
-      {!loading && tenants.some((t) => t.modules.accounting) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {t("accountingSubTitle")}
-            </CardTitle>
-            <CardDescription>
-              {t("accountingSubDescription")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {tenants
-                .filter((t) => t.modules.accounting)
-                .map((tenant) => (
-                  <Collapsible
-                    key={tenant.id}
-                    open={expandedAccounting[tenant.id]}
-                    onOpenChange={(open) =>
-                      setExpandedAccounting((prev) => ({ ...prev, [tenant.id]: open }))
-                    }
-                  >
-                    <CollapsibleTrigger asChild>
-                      <button className="flex items-center gap-2 w-full p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left">
-                        <ChevronRight
-                          className={cn(
-                            "h-4 w-4 transition-transform",
-                            expandedAccounting[tenant.id] && "rotate-90"
-                          )}
-                        />
-                        <span className="font-medium">{tenant.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {tenant.slug}
-                        </Badge>
-                        <span className="ml-auto text-xs text-muted-foreground">
-                          {t("activeCount", {
-                            active: accountingSubKeys.filter((k) => tenant.accountingSub[k]).length,
-                            total: accountingSubKeys.length,
-                          })}
-                        </span>
-                      </button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-3 ml-6 border-l-2 border-border">
-                        {accountingSubKeys.map((subKey) => (
-                          <div
-                            key={subKey}
-                            className="flex items-center justify-between gap-3 p-2 rounded-md border bg-card"
-                          >
-                            <span className="text-sm">
-                              {t(`accounting.${beschriftungsSchluessel(subKey)}`)}
-                            </span>
-                            <Switch
-                              checked={tenant.accountingSub[subKey]}
-                              onCheckedChange={(checked) =>
-                                handleToggleAccountingSub(tenant.id, subKey, checked)
-                              }
-                              disabled={
-                                updating === `${tenant.id}-sub-${subKey}`
-                              }
-                              aria-label={`${t(`accounting.${beschriftungsSchluessel(subKey)}`)} für ${tenant.name}`}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   CheckCircle2,
   CreditCard,
-  Download,
   Loader2,
   Inbox,
   ExternalLink,
@@ -38,7 +37,6 @@ import { OcrFieldEditor } from "@/components/inbox/ocr-field-editor";
 import { SplitEditor } from "@/components/inbox/split-editor";
 import { LOCALE_DE } from "@/lib/format";
 import { HTTP_STATUS } from "@/lib/config/http-status";
-import { downloadFromResponse } from "@/lib/download";
 
 // ============================================================================
 // Types
@@ -197,7 +195,6 @@ export default function InboxDetailPage() {
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
-  const [sepaExporting, setSepaExporting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -236,28 +233,6 @@ export default function InboxDetailPage() {
     }
   };
 
-  const exportSepa = async () => {
-    if (!invoice) return;
-    setSepaExporting(true);
-    try {
-      const res = await fetch("/api/inbox/export/sepa", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceIds: [id] }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? t("error"));
-      }
-      await downloadFromResponse(res, `sepa-${id.slice(0, 8)}.xml`);
-      toast.success(t("sepaDownloaded"));
-    } catch (err) {
-      toast.error(String(err instanceof Error ? err.message : err));
-    } finally {
-      setSepaExporting(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -277,7 +252,6 @@ export default function InboxDetailPage() {
   const isEditable = ["INBOX", "REVIEW"].includes(invoice.status);
   const canApprove = ["INBOX", "REVIEW"].includes(invoice.status);
   const canPay = invoice.status === "APPROVED";
-  const canSepa = invoice.status === "APPROVED" && !!invoice.iban;
 
   // Bedienaufwand #6: Belegvorschau.
   // Die ID-basierte Route ersetzt den frueheren Link auf /api/documents/file
@@ -420,18 +394,6 @@ export default function InboxDetailPage() {
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
                   {t("markPaid")}
-                </Button>
-              )}
-
-              {canSepa && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={exportSepa}
-                  disabled={sepaExporting}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {sepaExporting ? t("exporting") : t("exportSepa")}
                 </Button>
               )}
 

@@ -477,12 +477,9 @@ export const PERMISSIONS = {
   WIRTSCHAFTSPLAN_UPDATE: "wirtschaftsplan:update",
   WIRTSCHAFTSPLAN_DELETE: "wirtschaftsplan:delete",
 
-  // Accounting (Buchhaltung)
+  // Zahlungen und Mahnwesen — Name aus der Buchhaltungszeit, siehe Katalog
   ACCOUNTING_READ: "accounting:read",
   ACCOUNTING_CREATE: "accounting:create",
-  // Dedizierte Permissions für POSTING + STORNO (HGB-Verantwortungstrennung).
-  // POSTED-Buchungen sind unveränderlich (§146 AO). Storno = Generalumkehr,
-  // gehört NICHT zu :update — eigene Berechtigung.
 
   // Reports
   REPORTS_READ: "reports:read",
@@ -517,10 +514,6 @@ export const PERMISSIONS = {
   // Energy (granular)
   ENERGY_SCADA_IMPORT: "energy:scada:import",
   ENERGY_SETTLEMENTS_FINALIZE: "energy:settlements:finalize",
-
-  // Accounting (granular — HGB/GoBD)
-
-  // Accounting Reports
 
   // Admin (granular tenant-level)
   ADMIN_EMAIL: "admin:email",

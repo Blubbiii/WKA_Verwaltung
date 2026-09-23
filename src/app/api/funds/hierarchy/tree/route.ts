@@ -87,7 +87,7 @@ const MAX_TREE_DEPTH = 100;
  * Kanten uebersehen konnte), lief der Aufbau vorher unendlich tief und der
  * Request starb mit "RangeError: Maximum call stack size exceeded" → 500.
  * Ein bereits besuchter Fund wird jetzt einmalig ausgelassen; der Baum bleibt
- * darstellbar. Vorbild: `src/lib/accounting/consolidation.ts`.
+ * darstellbar.
  */
 function buildTreeNode(
   fundId: string,

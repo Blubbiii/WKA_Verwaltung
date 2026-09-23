@@ -102,36 +102,6 @@ const executeIncomingInvoiceApprove: Executor = async (request, deciderId) => {
 };
 
 /**
- * SEPA-Lauf finalisieren: setzt SepaPaymentBatch auf APPROVED → SENT-bereit.
- */
-const executeSepaRun: Executor = async (request) => {
-  try {
-    const batch = await prisma.sepaPaymentBatch.findFirst({
-      where: { id: request.entityId, tenantId: request.tenantId },
-    });
-    if (!batch) {
-      return { success: false, error: "SEPA-Batch nicht gefunden" };
-    }
-    if (batch.status !== "DRAFT") {
-      return {
-        success: false,
-        error: `SEPA-Batch ist im Status "${batch.status}" — Approve nicht mehr möglich`,
-      };
-    }
-    const updated = await prisma.sepaPaymentBatch.update({
-      where: { id: batch.id },
-      data: { status: "APPROVED" },
-    });
-    return { success: true, resultData: { batchId: updated.id, status: updated.status } };
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "Unbekannter Fehler",
-    };
-  }
-};
-
-/**
  * Tenant-Settings-Update: schreibt das settings-Delta auf den Tenant und
  * invalidiert den TenantSettings-Cache.
  *
@@ -360,11 +330,24 @@ const executeUserRoleAssign: Executor = async (request, deciderId) => {
 };
 
 /**
+ * Aktionen entfallener Funktionen (Buchungen, SEPA-Zahllauf).
+ *
+ * Sie bleiben im Datenbank-Enum: Das Deployment gleicht das Schema per
+ * `prisma db push` ab, und das scheitert, sobald eine alte Anfrage einen
+ * entfernten Wert trägt — dann startet der Container nicht. Offene Anfragen
+ * dieser Art können also noch auftauchen und werden hier abgefangen.
+ */
+const ENTFALLENE_AKTIONEN: ReadonlySet<string> = new Set([
+  "JOURNAL_POST",
+  "JOURNAL_REVERSE",
+  "SEPA_RUN",
+]);
+
+/**
  * Action → Executor Map.
  */
 const EXECUTORS: Partial<Record<ApprovalAction, Executor>> = {
   SETTLEMENT_FINALIZE: executeSettlementFinalize,
-  SEPA_RUN: executeSepaRun,
   INCOMING_INVOICE_APPROVE: executeIncomingInvoiceApprove,
   TENANT_SETTINGS_UPDATE: executeTenantSettingsUpdate,
   USER_ROLE_ASSIGN: executeUserRoleAssign,
@@ -378,6 +361,14 @@ export async function executeApprovedAction(
   request: ApprovalRequest,
   deciderId: string,
 ): Promise<ExecutorResult> {
+  if (ENTFALLENE_AKTIONEN.has(request.action)) {
+    return {
+      success: false,
+      error:
+        "Diese Freigabe gehört zu einer Funktion, die mit der Buchhaltung entfallen ist, " +
+        "und kann nicht mehr ausgeführt werden. Bitte die Anfrage ablehnen.",
+    };
+  }
   const executor = EXECUTORS[request.action];
   if (!executor) {
     return {

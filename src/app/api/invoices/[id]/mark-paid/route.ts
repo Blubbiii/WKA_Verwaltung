@@ -191,11 +191,9 @@ export async function POST(
       });
 
       /*
-        Hier wurde bei Skonto die Umsatzsteuer nach § 17 UStG berichtigt.
-
-        Entfaellt mit dem Buchhaltungsmodul: die Entgeltminderung bucht der
-        Steuerberater. Der Skontobetrag steht weiterhin an der Rechnung — er
-        geht mit dem Beleg an ihn, und er zieht die Berichtigung.
+        Keine Umsatzsteuer-Berichtigung nach § 17 UStG an dieser Stelle: Die
+        Entgeltminderung durch Skonto bucht der Steuerberater. Der
+        Skontobetrag steht an der Rechnung und geht mit dem Beleg an ihn.
       */
 
       return inv;

@@ -70,7 +70,8 @@ const DEFAULT_QUICK_ACTIONS: QuickAction[] = [
   {
     id: "reports",
     label: "Berichte",
-    href: "/reports",
+    // /reports wurde in /energy/analytics zusammengefuehrt (5ae2c28c).
+    href: "/energy/analytics",
     icon: <FileText className="h-4 w-4" />,
     color: "text-primary",
   },

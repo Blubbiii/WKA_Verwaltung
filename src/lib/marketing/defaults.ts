@@ -114,7 +114,6 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
     title: "Flexible Module f\u00fcr Ihre Anforderungen",
     subtitle: "Aktivieren Sie nur die Funktionen, die Sie brauchen. Jedes Modul kann einzeln freigeschaltet werden.",
     items: [
-      { id: "accounting", title: "Buchhaltung", description: "SKR03-Kontenrahmen, automatische Buchungen, SuSa, BWA und UStVA.", icon: "calculator", badge: "Neu" },
       { id: "document-routing", title: "Dokument-Routing", description: "Automatische Sortierung von Rechnungen in OneDrive/DATEV-Ordner.", icon: "folder-sync", badge: "Neu" },
       { id: "inbox", title: "Rechnungseingang", description: "Digitaler Rechnungseingang mit automatischer Erkennung und Zuordnung.", icon: "inbox" },
       { id: "crm", title: "CRM & Kontakte", description: "Kontaktverwaltung, Aktivit\u00e4tenprotokoll und Kommunikationshistorie.", icon: "contact-round" },

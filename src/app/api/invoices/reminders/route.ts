@@ -26,7 +26,7 @@ export async function GET() {
         tenantId: check.tenantId,
         // Finding 2.3: PARTIALLY_PAID fehlte. Eine teilbezahlte Rechnung
         // verschwand damit aus der Mahnliste, obwohl die Restforderung
-        // offen ist. Der Mahnlauf in lib/accounting/dunning.ts schliesst
+        // offen ist. Der Mahnlauf in lib/mahnwesen/dunning.ts schliesst
         // den Status korrekt ein - hier fehlte er.
         status: { in: ["SENT", "PARTIALLY_PAID"] },
         dueDate: { lt: now },

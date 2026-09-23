@@ -237,9 +237,12 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen ändern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260, unenforcedReason: "superadmin-only" },
   { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien fuer alle Mandanten",    sortOrder: 261, unenforcedReason: "superadmin-only" },
 
-  // ── Accounting (Buchhaltung) ───────────────────────────────────────────
-  { name: "accounting:read",                       module: "zahlungen", action: "read",                   displayName: "Zahlungen und Mahnwesen anzeigen",     sortOrder: 230 },
-  { name: "accounting:create",                     module: "zahlungen", action: "create",                 displayName: "Zahllauf und Mahnung anlegen",      sortOrder: 231 },
+  // ── Zahlungen und Mahnwesen ─────────────────────────────────────────────
+  // Die Namen `accounting:*` stammen aus der Zeit der Buchhaltung. Sie bleiben,
+  // weil Rollen in der Datenbank sie per Name zuordnen; eine Umbenennung
+  // braeuchte eine Datenmigration. Was sie heute schuetzen, steht im Anzeigenamen.
+  { name: "accounting:read",                       module: "zahlungen", action: "read",                   displayName: "Mahnwesen, Freigaben und KapESt anzeigen", description: "Mahnläufe, 4-Augen-Freigaben, KapESt-Bescheinigungen und Basiszinssätze einsehen", sortOrder: 230 },
+  { name: "accounting:create",                     module: "zahlungen", action: "create",                 displayName: "Mahnlauf starten",                  sortOrder: 231 },
 
   // ── Management Billing (Betriebsführung) ───────────────────────────────
   { name: "management-billing:read",      module: "management-billing", action: "read",      displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", sortOrder: 240 },

@@ -5,7 +5,7 @@
  *
  * Wir löschen den Lock-Record NICHT, sondern setzen unlockedAt + unlockedById
  * — Audit-Trail bleibt erhalten. Ein unlocked Record gilt nicht mehr als Sperre
- * (siehe assertPeriodOpen() in src/lib/accounting/period-lock.ts).
+ * (siehe assertPeriodOpen() in src/lib/validation/period-lock.ts).
  *
  * Re-Lock derselben Periode: aktuell blockiert durch UNIQUE-Constraint
  * (siehe period-locks/route.ts Kommentar). Für die seltene Re-Lock-Operation

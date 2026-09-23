@@ -112,7 +112,7 @@ export interface SendReminderJobData extends BaseBillingJobData {
    * Rechnung + Gebühr und bekommt einen OverpaymentError, weil das System die
    * Gebühr nicht kennt. Die Gebühr wird jetzt als DunningItem festgehalten,
    * und dessen DunningRun verlangt einen Verursacher (wie in
-   * lib/accounting/dunning.ts, das denselben Parameter fordert).
+   * lib/mahnwesen/dunning.ts, das denselben Parameter fordert).
    */
   triggeredById: string;
 }

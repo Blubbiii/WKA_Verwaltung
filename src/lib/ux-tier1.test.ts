@@ -81,15 +81,22 @@ describe("Approval verlinkt den Beleg (#5)", () => {
   });
 
   it("die Approval-Entitäten haben ein Ziel", () => {
-    // Die vier Typen, die tatsächlich als Freigabe vorkommen.
+    // Die Typen, die heute als Freigabe vorkommen.
     const urls = read("lib/audit-entity-urls.ts");
-    for (const entity of [
-      "JournalEntry",
-      "IncomingInvoice",
-      "LeaseSettlementPeriod",
-      "SepaPaymentBatch",
-    ]) {
+    for (const entity of ["IncomingInvoice", "LeaseSettlementPeriod"]) {
       expect(urls, `${entity} fehlt in der Zuordnung`).toContain(`case "${entity}":`);
+    }
+  });
+
+  it("entfallene Freigabe-Entitäten zeigen nirgendwohin statt ins Leere", () => {
+    // Buchungen und SEPA-Läufe sind mit der Buchhaltung entfallen. Alte
+    // Einträge verweisen noch darauf; ihre Seiten gibt es nicht mehr, und
+    // "/journal-entries" führte auf eine 404.
+    const urls = read("lib/audit-entity-urls.ts");
+    for (const entity of ["JournalEntry", "SepaPaymentBatch"]) {
+      expect(urls, `${entity} braucht einen eigenen Fall`).toMatch(
+        new RegExp(`case "${entity}":\\s*return null;`),
+      );
     }
   });
 });

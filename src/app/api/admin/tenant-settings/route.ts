@@ -17,7 +17,7 @@ import { DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS } from "@/lib/tenant-sett
 //
 // Das hier stehende `TenantSettings`-Interface bleibt als lokale Variante
 // erhalten — es repräsentiert das _über die Admin-UI verwaltbare_ Subset.
-// Felder wie `postingApprovalThresholdEur` und `abacFundAccessDefault` werden
+// Felder wie `settlementApprovalThresholdEur` und `abacFundAccessDefault` werden
 // separat verwaltet und sind hier bewusst nicht aufgeführt.
 
 export interface TenantSettings {

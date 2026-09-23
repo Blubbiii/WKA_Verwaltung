@@ -13,25 +13,6 @@ export { generateExcel } from './excel';
 // CSV export
 export { generateCsv, generateCsvBuffer } from './csv';
 
-// DATEV export
-export {
-  generateDatevExport,
-  generateDatevExportBuffer,
-  generateDatevFilename,
-  invoiceToBookingEntries,
-  journalEntryToBookingEntries,
-  generateDatevJournalExport,
-  generateDatevJournalExportBuffer,
-} from './datev-export';
-export type {
-  DatevExportOptions,
-  DatevAccountMapping,
-  DatevBookingEntry,
-  DatevInvoiceData,
-  DatevInvoiceItemData,
-  DatevJournalEntryData,
-} from './datev-export';
-
 // Column definitions
 export {
   shareholderColumns,

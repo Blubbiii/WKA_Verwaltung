@@ -665,7 +665,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
   // F19 (Rechenkorrektheit) galt auch hier: gemahnt wurde der Bruttobetrag.
   // Nach einer Teilzahlung ist das mehr als geschuldet — rechtlich angreifbar.
-  // lib/accounting/dunning.ts rechnet seit Welle 2 korrekt mit dem offenen
+  // lib/mahnwesen/dunning.ts rechnet seit Welle 2 korrekt mit dem offenen
   // Betrag; dieser zweite Mahnpfad tat es nicht.
   const openAmount = Math.max(
     0,
@@ -796,7 +796,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
         notes: (invoice.notes || "") + reminderNote,
         // Nur vorwaerts: ein spaeterer Lauf mit niedrigerer Stufe darf die
         // erreichte Mahnstufe nicht zurueckdrehen (gleiche Regel wie in
-        // lib/accounting/dunning.ts).
+        // lib/mahnwesen/dunning.ts).
         ...(invoice.reminderLevel === null || invoice.reminderLevel < data.reminderLevel
           ? { reminderLevel: data.reminderLevel }
           : {}),
@@ -806,7 +806,7 @@ async function processSendReminder(data: SendReminderJobData): Promise<BillingJo
 
     // DunningRun + Item: der strukturierte Ort fuer Stufe und Gebuehr. Der Run
     // ist bewusst einzelpositionig — dieser Pfad mahnt eine einzelne Rechnung,
-    // im Gegensatz zum Sammellauf in lib/accounting/dunning.ts.
+    // im Gegensatz zum Sammellauf in lib/mahnwesen/dunning.ts.
     await tx.dunningRun.create({
       data: {
         tenantId: data.tenantId,

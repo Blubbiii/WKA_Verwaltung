@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 
 // =============================================================================
 // TYPES
@@ -127,7 +128,11 @@ export default function NewClaimPage() {
     async function loadTurbines() {
       setTurbinesLoading(true);
       try {
-        const res = await fetch(`/api/parks/${formData.parkId}/turbines`);
+        // /api/parks/[id]/turbines gab es nie — die Liste blieb deshalb leer,
+        // und weil Anlagen hier optional sind, fiel es niemandem auf.
+        const res = await fetch(
+          `/api/turbines?parkId=${encodeURIComponent(formData.parkId)}&limit=${PAGE_SIZE_DROPDOWN}`,
+        );
         if (res.ok) {
           const json = await res.json();
           if (!cancelled) {

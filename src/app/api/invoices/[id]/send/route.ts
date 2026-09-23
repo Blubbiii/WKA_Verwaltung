@@ -88,13 +88,6 @@ export async function POST(
       return apiError("NOT_FOUND", 404, { message: "Rechnung nicht gefunden nach Update" });
     }
 
-    // Fire-and-forget auto-posting
-    /*
-      Hier wurde die Rechnung automatisch verbucht. Entfaellt mit dem
-      Buchhaltungsmodul: die Buecher fuehrt der Steuerberater, wir liefern
-      ihm den Beleg ueber den Belegexport.
-    */
-
     // Fire-and-forget webhook dispatch
     dispatchWebhook(check.tenantId!, "invoice.sent", {
       id: updated.id,

@@ -20,6 +20,7 @@ import {
   Receipt,
   FileText,
   FileCode2,
+  FileArchive,
   FileSpreadsheet,
   MoreHorizontal,
   Eye,
@@ -72,7 +73,6 @@ import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { cn } from "@/lib/utils";
 import { EditableCell } from "@/components/ui/editable-cell";
-import { DatevExportDialog } from "@/components/invoices/datev-export-dialog";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { RecurringInvoicesManager } from "@/components/invoices/recurring-invoices-manager";
 import { InvoicePreviewDialog } from "@/components/invoices";
@@ -218,7 +218,6 @@ export default function InvoicesPage() {
 
   const debouncedSearch = useDebounce(search, 300);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showDatevExport, setShowDatevExport] = useState(false);
   const [sortField, setSortField] = useState<SortField>("invoiceDate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
@@ -565,9 +564,13 @@ export default function InvoicesPage() {
         createLabel={t("createInvoice")}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowDatevExport(true)}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              {t("datevExport")}
+            {/* Der DATEV-Buchungsstapel ist mit der Buchhaltung entfallen; an
+                seine Stelle tritt der Belegexport (PDF plus Verzeichnis). */}
+            <Button variant="outline" asChild>
+              <Link href="/invoices/beleg-export">
+                <FileArchive className="mr-2 h-4 w-4" />
+                {t("belegExport")}
+              </Link>
             </Button>
             <Button variant="outline" asChild>
               <Link href="/invoices/new?type=CREDIT_NOTE">
@@ -967,12 +970,6 @@ export default function InvoicesPage() {
         onOpenChange={(open) => { if (!open) setPreviewId(null); }}
         invoiceId={previewId}
         invoiceNumber={previewNumber}
-      />
-
-      {/* DATEV Export Dialog */}
-      <DatevExportDialog
-        open={showDatevExport}
-        onOpenChange={setShowDatevExport}
       />
 
       {/* Batch Action Bar */}

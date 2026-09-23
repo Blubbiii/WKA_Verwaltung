@@ -199,12 +199,6 @@ export async function POST(
       },
     });
 
-    // Fire-and-forget auto-posting reversal
-    /*
-      Hier wurde die Stornobuchung erzeugt. Entfaellt mit dem
-      Buchhaltungsmodul — die Stornorechnung selbst bleibt der Beleg.
-    */
-
     // Invalidate dashboard caches after invoice cancellation (both original and storno created)
     invalidate.onInvoiceChange(check.tenantId!, id, 'update').catch((err) => {
       logger.warn({ err }, '[Invoices] Cache invalidation error after cancel');

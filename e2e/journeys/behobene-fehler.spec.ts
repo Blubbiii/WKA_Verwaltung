@@ -1,24 +1,18 @@
 /**
- * Wächter für vier Fehler, die eine Debug-Sitzung am 09.09.2026 zutage
+ * Wächter für drei Fehler, die eine Debug-Sitzung am 09.09.2026 zutage
  * gefördert hat. Sie haben nichts miteinander zu tun außer ihrer Art: alle
- * vier sahen im Alltag nach nichts aus.
+ * drei sahen im Alltag nach nichts aus.
  *
- * 1. (entfallen — /buchhaltung gibt es nicht mehr, das Modul wurde ausgebaut)
- * ALT: `/buchhaltung` gab es nicht. Die Navigation führt acht Gruppen, sieben
- *    zeigen auf eine echte Seite — diese eine auf eine Adresse, die mit 404
- *    antwortete. In der Seitenleiste fiel es nicht auf, weil eine Gruppe mit
- *    Unterpunkten als Schaltfläche gerendert wird und nicht als Verweis.
- *
- * 2. `/portal/proxies` stürzte für jeden Benutzer ohne verknüpftes
+ * 1. `/portal/proxies` stürzte für jeden Benutzer ohne verknüpftes
  *    Gesellschafterprofil ab. Die Route lieferte im Sonderfall
  *    `{ grantedProxies, receivedProxies }` statt `{ granted, received }` —
  *    mit Status 200, also ohne dass eine Fehlerprüfung angeschlagen hätte.
  *
- * 3. Der Beteiligungs-Assistent zeigte als Fehlermeldung den rohen
+ * 2. Der Beteiligungs-Assistent zeigte als Fehlermeldung den rohen
  *    Übersetzungsschlüssel, weil der Namensraum doppelt davorstand. Sichtbar
  *    nur, wenn man den Assistenten absichtlich falsch ausfüllt.
  *
- * 4. Die Anmeldemaske sagte „Ungültige Anmeldedaten" auch dann, wenn die
+ * 3. Die Anmeldemaske sagte „Ungültige Anmeldedaten" auch dann, wenn die
  *    Zugangsdaten nie geprüft wurden. Hier steht die Gegenprobe: ein wirklich
  *    falsches Passwort MUSS weiterhin genau diese Meldung bekommen — sonst
  *    hätte die Unterscheidung die andere Richtung kaputtgemacht.

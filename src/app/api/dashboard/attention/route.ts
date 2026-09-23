@@ -128,7 +128,8 @@ export async function GET(_request: NextRequest) {
           gescheiterteImporte === 1
             ? "Ein SCADA-Import ist in den letzten sieben Tagen gescheitert"
             : `${gescheiterteImporte} SCADA-Importe sind in den letzten sieben Tagen gescheitert`,
-        href: "/energy/scada-import",
+        // Die Importprotokolle liegen im Reiter "logs" der SCADA-Seite.
+        href: "/energy/scada?tab=logs",
         dringend: true,
       });
     }

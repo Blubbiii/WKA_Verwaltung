@@ -172,31 +172,6 @@ describe("Permission-Katalog (TF-12)", () => {
     expect(stale, `Grund gesetzt, obwohl geprüft: ${stale.join(", ")}`).toEqual([]);
   });
 
-  it("der kritische Accounting-Block ist vollständig verdrahtet", () => {
-    // Das war der im Audit hervorgehobene Teil: 15 feingranulare Rechte, u. a.
-    // year-end-close:execute (im Katalog mit requiresApproval: true).
-    const unchecked = new Set(UNCHECKED);
-    const mustBeChecked = [
-      "accounting:year-end-close:execute",
-      "accounting:gobd-export:create",
-      "accounting:datev-export:create",
-      "accounting:period-lock:create",
-      "accounting:period-lock:delete",
-      // "accounting:journal:reverse" ist entfernt — Katalog-Dopplung zu
-      // "accounting:reverse" (siehe merge_duplicate_reverse_permission.sql).
-      "accounting:reverse",
-      "accounting:report:bilanz",
-      "accounting:report:susa",
-      "accounting:report:euer",
-      "accounting:report:gewst",
-      "accounting:report:kontoblatt",
-      "accounting:report:anlagenspiegel",
-    ];
-
-    const stillDead = mustBeChecked.filter((p) => unchecked.has(p));
-    expect(stillDead, `Noch ungeprüft: ${stillDead.join(", ")}`).toEqual([]);
-  });
-
   it(`hat höchstens ${MAX_WITHOUT_CONSTANT} Einträge ohne Konstante`, () => {
     // Ohne Konstante wird die Permission zwangsläufig als Roh-String geprüft
     // oder gar nicht — genau so entstand die Lücke bei news:*: der Katalog
