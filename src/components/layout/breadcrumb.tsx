@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
+import { hatEigeneSeite } from "./brotkrumen-ziele";
 
 // Known path segments that have i18n keys in breadcrumb.path.*
 const KNOWN_SEGMENTS = new Set([
@@ -107,6 +108,8 @@ export function Breadcrumb() {
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
             {item.isCurrentPage ? (
               <span className="font-medium text-foreground">{item.label}</span>
+            ) : !hatEigeneSeite(item.href) ? (
+              <span>{item.label}</span>
             ) : (
               <Link
                 href={item.href}

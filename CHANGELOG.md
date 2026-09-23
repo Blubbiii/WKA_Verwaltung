@@ -53,6 +53,11 @@ dem Monatssatz statt mit fest verdrahteten 0,08 €/kWh.
 - Exporte und Karte halten jetzt ihre Obergrenzen ein; die Energieabrechnung
   stellt zwei statt 2 × n Abfragen; leere `catch`-Blöcke auf dem Server
   35 → 8, jeder verbleibende begründet.
+- **Brotkrumen ins Leere.** Jeder Pfadabschnitt war ein Link, auch ohne
+  eigene Seite: „Verwaltung", „Berichte" und die Erzeugungsdaten-Ansicht
+  endeten in 404, „Setup" bei den Nutzungsentgelten auf einer leeren Seite.
+  Solche Abschnitte stehen jetzt als Text da; ein Test gleicht die Liste mit
+  dem Dateibaum ab.
 
 ### August 2026 — Stabilisierung, UI-Überarbeitung, Admin-Tests
 
