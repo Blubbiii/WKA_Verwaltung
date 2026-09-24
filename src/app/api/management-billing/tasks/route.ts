@@ -15,37 +15,9 @@ import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { enumParam } from "@/lib/validation/query-params";
-import { z } from "zod";
+import { taskCreateSchema } from "@/lib/management-billing/task-schemas";
 
 const TASK_STATUSES = ["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"] as const;
-
-// Concrete shape for a single checklist entry attached to a task.
-// UI (management-billing/tasks/[id]/page.tsx + tasks/new/page.tsx) rendert
-// genau diese Felder — no free-form JSON, kein passthrough.
-const taskChecklistItemSchema = z.object({
-  label: z.string().min(1).max(500),
-  required: z.boolean().optional(),
-  checked: z.boolean().optional(),
-});
-
-const taskCreateSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().nullish(),
-  status: z.enum(["OPEN", "IN_PROGRESS", "DONE", "CANCELLED"]).optional().default("OPEN"),
-  priority: z.number().int().optional().default(2),
-  taskType: z.string().optional().default("OPERATIONAL"),
-  category: z.string().nullish(),
-  dueDate: z.string().nullish(),
-  notes: z.string().nullish(),
-  checklistData: z.array(taskChecklistItemSchema).nullish(),
-  parkId: z.string().nullish(),
-  turbineId: z.string().nullish(),
-  checklistId: z.string().nullish(),
-  assignedToId: z.string().nullish(),
-  costEstimateEur: z.number().nullish(),
-  actualCostEur: z.number().nullish(),
-  benefitNotes: z.string().nullish(),
-});
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
   const enabled = await getConfigBoolean("management-billing.enabled", tenantId, false);

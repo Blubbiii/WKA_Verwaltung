@@ -315,12 +315,12 @@ export default function NewsPage() {
                   : "Erstellen Sie Ihre erste Meldung."}
               </p>
               {!search && fundFilter === "_all" && publishedFilter === "_all" && categoryFilter === "_all" && (
-                <Link href="/news/new" className="mt-4">
-                  <Button>
+                <Button className="mt-4" asChild>
+                  <Link href="/news/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Neue Meldung
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
             </CardContent>
           </Card>

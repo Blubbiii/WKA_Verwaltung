@@ -94,6 +94,11 @@ interface FaultCaseDetail {
   statusCode: { description: string; mainCode: number; subCode: number } | null;
 }
 
+/** ISO timestamp -> value of an <input type="datetime-local"> in local time. */
+function alsOrtszeitFeld(iso: string): string {
+  return format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
+}
+
 export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("faults");
@@ -230,14 +235,59 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                 ? `${formatNumber(Number(data.turbine.ratedPowerKw))} kW`
                 : "–"}
             </Row>
-            <Row label={t("detail.start")}>
-              {format(new Date(data.startAt), "dd.MM.yyyy HH:mm", { locale: dateLocale })}
-            </Row>
-            <Row label={t("detail.end")}>
-              {data.endAt
-                ? format(new Date(data.endAt), "dd.MM.yyyy HH:mm", { locale: dateLocale })
-                : t("stillRunning")}
-            </Row>
+            {/* Editable: a case recorded while the turbine is still down gets
+                its end later — and only with an end can it be valuated. */}
+            <Field label={t("new.titleField")}>
+              <Input
+                key={`title-${data.title}`}
+                defaultValue={data.title}
+                maxLength={200}
+                onBlur={(e) => {
+                  const title = e.target.value.trim();
+                  if (title && title !== data.title) void patch({ title });
+                }}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("detail.start")}>
+                <Input
+                  key={`start-${data.startAt}`}
+                  type="datetime-local"
+                  defaultValue={alsOrtszeitFeld(data.startAt)}
+                  onBlur={(e) => {
+                    if (e.target.value && e.target.value !== alsOrtszeitFeld(data.startAt)) {
+                      void patch({ startAt: new Date(e.target.value).toISOString() });
+                    }
+                  }}
+                />
+              </Field>
+              <Field label={t("detail.end")}>
+                <Input
+                  key={`end-${data.endAt}`}
+                  type="datetime-local"
+                  defaultValue={data.endAt ? alsOrtszeitFeld(data.endAt) : ""}
+                  onBlur={(e) => {
+                    const vorher = data.endAt ? alsOrtszeitFeld(data.endAt) : "";
+                    if (e.target.value === vorher) return;
+                    void patch({ endAt: e.target.value ? new Date(e.target.value).toISOString() : null });
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {data.endAt ? "" : `${t("stillRunning")} · `}{t("detail.endHint")}
+                </p>
+              </Field>
+            </div>
+            <Field label={t("new.notes")}>
+              <Textarea
+                key={`desc-${data.description ?? ""}`}
+                defaultValue={data.description ?? ""}
+                rows={2}
+                onBlur={(e) => {
+                  const description = e.target.value.trim() || null;
+                  if (description !== (data.description ?? null)) void patch({ description });
+                }}
+              />
+            </Field>
             {data.statusCode && (
               <Row label={t("detail.statusCode")}>
                 {data.statusCode.mainCode}/{data.statusCode.subCode} · {data.statusCode.description}

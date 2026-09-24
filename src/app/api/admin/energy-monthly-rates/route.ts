@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { z } from "zod";
+import { createMonthlyRateSchema } from "@/lib/energy/monatssatz-schemas";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
@@ -30,36 +30,6 @@ import { apiError } from "@/lib/api-errors";
  * - notes: Bemerkungen (optional)
  * - revenueTypeId: UUID des Vergütungstyps (erforderlich)
  */
-const createMonthlyRateSchema = z.object({
-  year: z
-    .number()
-    .int()
-    .min(2000, "Jahr muss mindestens 2000 sein")
-    .max(2100, "Jahr darf maximal 2100 sein"),
-  month: z
-    .number()
-    .int()
-    .min(1, "Monat muss zwischen 1 und 12 liegen")
-    .max(12, "Monat muss zwischen 1 und 12 liegen"),
-  ratePerKwh: z
-    .number()
-    .min(0, "Vergütungssatz muss positiv sein")
-    .max(100, "Vergütungssatz erscheint unrealistisch hoch"),
-  marketValue: z
-    .number()
-    .min(0, "Marktwert muss positiv sein")
-    .max(100, "Marktwert erscheint unrealistisch hoch")
-    .optional()
-    .nullable(),
-  managementFee: z
-    .number()
-    .min(0, "Management-Gebühr muss positiv sein")
-    .max(10, "Management-Gebühr erscheint unrealistisch hoch")
-    .optional()
-    .nullable(),
-  notes: z.string().max(1000, "Bemerkungen duerfen maximal 1000 Zeichen haben").optional().nullable(),
-  revenueTypeId: z.string().uuid("Ungültige Vergütungstyp-ID"),
-});
 
 // ============================================================================
 // GET /api/admin/energy-monthly-rates

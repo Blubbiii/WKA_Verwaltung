@@ -90,12 +90,12 @@ export default function DocumentExplorerPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Link href="/documents">
-            <Button variant="ghost" size="sm" className="gap-1.5">
+          <Button variant="ghost" size="sm" className="gap-1.5" asChild>
+            <Link href="/documents">
               <ArrowLeft className="h-4 w-4" />
               {t("back")}
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-2">
             <FolderTreeIcon className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-semibold">{t("title")}</h1>

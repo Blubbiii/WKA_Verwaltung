@@ -1463,7 +1463,36 @@
       "actionDelete": "Löschen",
       "deleteDialogTitle": "PPA löschen?",
       "deleteDialogDescription": "„{title}“ wird unwiderruflich gelöscht.",
-      "deleting": "Lösche..."
+      "deleting": "Lösche...",
+      "form": {
+        "titleNew": "Neuer PPA",
+        "titleEdit": "PPA bearbeiten",
+        "description": "Stromliefervertrag mit Preismodell und Laufzeit.",
+        "parkPlaceholder": "Park wählen",
+        "contractNumber": "Vertragsnummer",
+        "startDate": "Beginn",
+        "endDate": "Ende",
+        "fixedPrice": "Festpreis",
+        "indexBase": "Index",
+        "indexMarkup": "Aufschlag",
+        "floorPrice": "Untergrenze (Floor)",
+        "capPrice": "Obergrenze (Cap)",
+        "minQuantity": "Mindestmenge",
+        "maxQuantity": "Höchstmenge",
+        "billingPeriod": "Abrechnung",
+        "periodMonthly": "Monatlich",
+        "periodQuarterly": "Quartalsweise",
+        "periodYearly": "Jährlich",
+        "notes": "Notizen",
+        "required": "Pflichtfeld",
+        "endBeforeStart": "Das Ende liegt vor dem Beginn.",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "close": "Schließen",
+        "created": "PPA angelegt",
+        "saved": "PPA gespeichert",
+        "saveError": "PPA konnte nicht gespeichert werden"
+      }
     },
     "reconciliation": {
       "pageTitle": "Zahlungs-Abgleich",
@@ -2167,7 +2196,8 @@
         "pctOfProduction": "Anteil an theoretischer Produktion",
         "timeAxisLabel": "Monat",
         "noData": "Keine Abregelungen im ausgewählten Zeitraum",
-        "rateMissingHint": "Für diese Monate ist kein Vergütungssatz hinterlegt, ihr Ertragsausfall fehlt daher in den Euro-Beträgen: {months}"
+        "rateMissingHint": "Für diese Monate ist kein Vergütungssatz hinterlegt, ihr Ertragsausfall fehlt daher in den Euro-Beträgen: {months}",
+        "rateMissingLink": "Monatssätze pflegen"
       }
     },
     "reports": "Berichte",
@@ -6339,10 +6369,9 @@
         "ON_HOLD": "Pausiert"
       },
       "priority": {
-        "LOW": "Niedrig",
-        "MEDIUM": "Mittel",
-        "HIGH": "Hoch",
-        "CRITICAL": "Kritisch"
+        "1": "Hoch",
+        "2": "Normal",
+        "3": "Niedrig"
       },
       "category": {
         "yield": "Ertragssteigerung",
@@ -6385,12 +6414,45 @@
       "tabTranslations": "Übersetzungen",
       "tabWidgets": "Widget-Rollen"
     },
+    "monthlyRates": {
+      "title": "Monatssätze",
+      "description": "Vergütungssatz je Monat und Erlösart. Die Abregelungs-Auswertung bewertet verlorene kWh mit dem Satz des Monats.",
+      "year": "Jahr",
+      "new": "Neuer Satz",
+      "search": "Erlösart oder Notiz suchen",
+      "emptyTitle": "Noch keine Sätze für {year}",
+      "emptyDescription": "Ohne Monatssatz bleibt die Bewertung der Abregelung in Euro leer.",
+      "month": "Monat",
+      "revenueType": "Erlösart",
+      "rate": "Satz",
+      "marketValue": "Marktwert",
+      "managementFee": "Vermarktungsentgelt",
+      "notes": "Notiz",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleteTitle": "Satz löschen?",
+      "deleteDescription": "Der Satz für {month} {year} wird gelöscht.",
+      "deleted": "Satz gelöscht",
+      "deleteError": "Satz konnte nicht gelöscht werden",
+      "newTitle": "Neuer Monatssatz",
+      "editTitle": "Monatssatz bearbeiten",
+      "dialogDescription": "Satz in Euro je kWh.",
+      "keyFixedHint": "Monat und Erlösart stehen fest. Für einen anderen Monat bitte einen neuen Satz anlegen.",
+      "monthPlaceholder": "Monat wählen",
+      "revenueTypePlaceholder": "Erlösart wählen",
+      "required": "Pflichtfeld",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "saved": "Satz gespeichert",
+      "saveError": "Satz konnte nicht gespeichert werden"
+    },
     "masterData": {
       "title": "Stammdaten",
       "description": "Vergütungsarten, Steuersätze, Gesellschaftstypen und weitere Konfiguration",
       "tabRevenueTypes": "Vergütungsarten",
       "tabFundCategories": "Gesellschaftstypen",
       "tabTaxRates": "Steuersätze",
+      "tabMonthlyRates": "Monatssätze",
       "tabWebhooks": "Webhooks",
       "tabScadaCodes": "SCADA-Codes",
       "tabSidebarLinks": "Sidebar-Links"
@@ -9763,6 +9825,7 @@
       "ratedPower": "Nennleistung",
       "start": "Beginn",
       "end": "Ende",
+      "endHint": "Leer lassen, solange die Anlage steht. Ohne Ende keine Bewertung.",
       "statusCode": "Störcode",
       "lossCard": "Ertragsausfall",
       "valuate": "Berechnen",
@@ -9960,6 +10023,7 @@
     }
   },
   "lessorShares": {
+    "loadError": "Die Verpächteranteile konnten nicht geladen werden. Bitte Seite neu laden.",
     "cardTitle": "Verpächteranteile",
     "cardTooltip": "Miteigentumsquoten mit Stichtag. Jeder Miteigentümer ist ein eigenes Umsatzsteuersubjekt und bekommt seine eigene Gutschrift auf sein eigenes Konto.",
     "fallbackBadge": "ein Verpächter",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   BarChart,
@@ -268,7 +269,10 @@ export function CurtailmentChart({
           <AlertDescription>
             {t("rateMissingHint", {
               months: data!.summary.monthsWithoutRate.join(", "),
-            })}
+            })}{" "}
+            <Link href="/admin/master-data?tab=monatssaetze" className="font-medium text-primary underline underline-offset-4">
+              {t("rateMissingLink")}
+            </Link>
           </AlertDescription>
         </Alert>
       )}

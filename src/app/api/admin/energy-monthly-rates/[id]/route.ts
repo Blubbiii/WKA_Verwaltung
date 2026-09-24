@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { z } from "zod";
+import { updateMonthlyRateSchema } from "@/lib/energy/monatssatz-schemas";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
@@ -29,26 +29,6 @@ import { apiError } from "@/lib/api-errors";
  * da sie Teil des Unique-Keys sind. Dafür muss der alte Eintrag gelöscht
  * und ein neuer erstellt werden.
  */
-const updateMonthlyRateSchema = z.object({
-  ratePerKwh: z
-    .number()
-    .min(0, "Vergütungssatz muss positiv sein")
-    .max(100, "Vergütungssatz erscheint unrealistisch hoch")
-    .optional(),
-  marketValue: z
-    .number()
-    .min(0, "Marktwert muss positiv sein")
-    .max(100, "Marktwert erscheint unrealistisch hoch")
-    .optional()
-    .nullable(),
-  managementFee: z
-    .number()
-    .min(0, "Management-Gebühr muss positiv sein")
-    .max(10, "Management-Gebühr erscheint unrealistisch hoch")
-    .optional()
-    .nullable(),
-  notes: z.string().max(1000, "Bemerkungen duerfen maximal 1000 Zeichen haben").optional().nullable(),
-});
 
 // ============================================================================
 // GET /api/admin/energy-monthly-rates/[id]

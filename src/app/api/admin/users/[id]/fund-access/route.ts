@@ -18,6 +18,7 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { verwaltbarerNutzer } from "@/lib/admin/verwaltbarer-nutzer";
 
 const putSchema = z.object({
   fundIds: z.array(z.string().uuid()),
@@ -36,10 +37,9 @@ export async function GET(
 
     const { id: userId } = await params;
 
-    const user = await prisma.user.findFirst({
-      where: { id: userId, tenantId: check.tenantId },
-      select: { id: true, email: true },
-    });
+    // A superadmin sees users of all tenants in the list — and manages their
+    // access with the funds of the user's tenant, not their own.
+    const user = await verwaltbarerNutzer(userId, check);
     if (!user) {
       return apiError("NOT_FOUND", 404, { message: "User nicht gefunden" });
     }
@@ -50,7 +50,7 @@ export async function GET(
         include: { fund: { select: { id: true, name: true } } },
       }),
       prisma.fund.findMany({
-        where: { tenantId: check.tenantId, deletedAt: null },
+        where: { tenantId: user.tenantId, deletedAt: null },
         select: { id: true, name: true, status: true },
         orderBy: { name: "asc" },
       }),
@@ -88,20 +88,17 @@ export async function PUT(
       });
     }
 
-    const user = await prisma.user.findFirst({
-      where: { id: userId, tenantId: check.tenantId },
-      select: { id: true },
-    });
+    const user = await verwaltbarerNutzer(userId, check);
     if (!user) {
       return apiError("NOT_FOUND", 404, { message: "User nicht gefunden" });
     }
 
-    // Funds müssen zum gleichen Tenant gehören
+    // Funds müssen zum Tenant des Users gehören
     if (parsed.data.fundIds.length > 0) {
       const validFunds = await prisma.fund.count({
         where: {
           id: { in: parsed.data.fundIds },
-          tenantId: check.tenantId,
+          tenantId: user.tenantId,
           deletedAt: null,
         },
       });

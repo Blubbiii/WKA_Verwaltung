@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/lib/format";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
@@ -209,20 +209,20 @@ function CreateEditDialog({
   );
   const [saving, setSaving] = useState(false);
 
-  // Reset form when dialog opens
-  const handleOpenChange = useCallback(
-    (isOpen: boolean) => {
-      if (isOpen) {
-        setFormData(
-          editingInvoice
-            ? formDataFromExisting(editingInvoice)
-            : getDefaultFormData()
-        );
-      }
-      onOpenChange(isOpen);
-    },
-    [editingInvoice, onOpenChange]
-  );
+  // Fill the form whenever the dialog opens. Radix calls onOpenChange only for
+  // changes coming from the dialog itself (Esc, overlay, close button) — not
+  // when the parent sets open=true via "Bearbeiten". Resetting there left the
+  // edit form empty.
+  useEffect(() => {
+    if (!open) return;
+    setFormData(
+      editingInvoice
+        ? formDataFromExisting(editingInvoice)
+        : getDefaultFormData()
+    );
+  }, [open, editingInvoice]);
+
+  const handleOpenChange = onOpenChange;
 
   function updateField<K extends keyof RecurringInvoiceFormData>(
     field: K,

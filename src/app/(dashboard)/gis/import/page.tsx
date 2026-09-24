@@ -322,7 +322,13 @@ export default function GisImportPage() {
                     <p className="text-sm font-medium">{t("upload.analyzing")}</p>
                   </div>
                 ) : (
-                  <label className="cursor-pointer flex flex-col items-center gap-3">
+                  // No <label> here: a label points at its first labelable
+                  // descendant, which was the button — so neither the zone nor
+                  // the button reached the hidden file input.
+                  <div
+                    className="cursor-pointer flex flex-col items-center gap-3"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="h-10 w-10 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">{t("upload.drop")}</p>
@@ -330,7 +336,18 @@ export default function GisImportPage() {
                         {t("upload.formats")}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" className="mt-2">{t("upload.chooseFile")}</Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                    >
+                      {t("upload.chooseFile")}
+                    </Button>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -338,7 +355,7 @@ export default function GisImportPage() {
                       accept=".shp,.zip,.geojson,.json"
                       onChange={(e) => e.target.files?.length && handleUpload(e.target.files)}
                     />
-                  </label>
+                  </div>
                 )}
               </div>
               <Alert>

@@ -1,29 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { z } from "zod";
+import { ppaCreateSchema } from "@/lib/ppa/schemas";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 
-const ppaCreateSchema = z.object({
-  title: z.string().min(1, "Titel erforderlich"),
-  counterparty: z.string().min(1, "Vertragspartner erforderlich"),
-  parkId: z.string().uuid("Ungültige Park-ID"),
-  startDate: z.string().min(1, "Startdatum erforderlich"),
-  endDate: z.string().min(1, "Enddatum erforderlich"),
-  contractNumber: z.string().optional().nullable(),
-  pricingMode: z.enum(["FIXED", "INDEXED", "COLLAR"]).default("FIXED"),
-  fixedPriceCentKwh: z.number().optional().nullable(),
-  floorPriceCentKwh: z.number().optional().nullable(),
-  capPriceCentKwh: z.number().optional().nullable(),
-  indexBase: z.string().optional().nullable(),
-  indexMarkupCentKwh: z.number().optional().nullable(),
-  minQuantityMwh: z.number().optional().nullable(),
-  maxQuantityMwh: z.number().optional().nullable(),
-  billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).default("MONTHLY"),
-  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"]).default("DRAFT"),
-  notes: z.string().optional().nullable(),
-});
 
 export async function GET(request: NextRequest) {
   try {

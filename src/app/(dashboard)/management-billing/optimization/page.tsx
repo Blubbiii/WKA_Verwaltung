@@ -24,6 +24,7 @@ import { SearchFilter } from "@/components/ui/search-filter";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate, formatCurrency } from "@/lib/format";
+import { prioritaet } from "@/lib/management-billing/prioritaet";
 
 // =============================================================================
 // TYPES
@@ -33,7 +34,7 @@ interface OptimizationMeasure {
   id: string;
   title: string;
   category: string | null;
-  priority: string;
+  priority: number;
   status: string;
   parkName: string | null;
   costEstimateEur: number | string | null;
@@ -51,13 +52,6 @@ const statusBadgeColors: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-gray-100 text-gray-800",
   ON_HOLD: "bg-orange-100 text-orange-800",
-};
-
-const priorityBadgeColors: Record<string, string> = {
-  LOW: "bg-gray-100 text-gray-700",
-  MEDIUM: "bg-blue-100 text-blue-700",
-  HIGH: "bg-orange-100 text-orange-700",
-  CRITICAL: "bg-red-100 text-red-700",
 };
 
 const CATEGORY_OPTIONS = [
@@ -253,7 +247,7 @@ export default function OptimizationListPage() {
                       <TableCell>
                         <Badge
                           variant="secondary"
-                          className={priorityBadgeColors[measure.priority] ?? ""}
+                          className={prioritaet(measure.priority)?.farbe ?? ""}
                         >
                           {t(`priority.${measure.priority}` as never)}
                         </Badge>

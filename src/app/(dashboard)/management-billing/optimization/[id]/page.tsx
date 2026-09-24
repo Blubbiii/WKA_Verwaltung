@@ -32,6 +32,8 @@ import {
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
+import { massnahmeRumpf } from "@/lib/management-billing/massnahme";
+import { PRIORITAETEN, STANDARD_PRIORITAET, prioritaet } from "@/lib/management-billing/prioritaet";
 
 // =============================================================================
 // TYPES
@@ -42,7 +44,7 @@ interface MeasureDetail {
   title: string;
   description: string | null;
   category: string | null;
-  priority: string;
+  priority: number;
   status: string;
   dueDate: string | null;
   costEstimateEur: number | string | null;
@@ -72,13 +74,6 @@ const statusBadgeColors: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-800",
   CANCELLED: "bg-gray-100 text-gray-800",
   ON_HOLD: "bg-orange-100 text-orange-800",
-};
-
-const priorityLabels: Record<string, string> = {
-  LOW: "Niedrig",
-  MEDIUM: "Mittel",
-  HIGH: "Hoch",
-  CRITICAL: "Kritisch",
 };
 
 const CATEGORY_OPTIONS = [
@@ -112,7 +107,7 @@ export default function MeasureDetailPage({
     title: "",
     description: "",
     category: "",
-    priority: "MEDIUM",
+    priority: String(STANDARD_PRIORITAET),
     status: "OPEN",
     dueDate: "",
     costEstimateEur: "",
@@ -137,7 +132,7 @@ export default function MeasureDetailPage({
             title: data.title,
             description: data.description ?? "",
             category: data.category ?? "",
-            priority: data.priority,
+            priority: String(data.priority),
             status: data.status,
             dueDate: data.dueDate ? data.dueDate.slice(0, 10) : "",
             costEstimateEur: data.costEstimateEur != null ? String(parseFloat(String(data.costEstimateEur))) : "",
@@ -168,18 +163,7 @@ export default function MeasureDetailPage({
 
     try {
       setSaving(true);
-      const payload = {
-        title: formData.title,
-        description: formData.description || null,
-        category: formData.category || null,
-        priority: formData.priority,
-        status: formData.status,
-        dueDate: formData.dueDate || null,
-        costEstimateEur: formData.costEstimateEur ? parseFloat(formData.costEstimateEur) : null,
-        actualCostEur: formData.actualCostEur ? parseFloat(formData.actualCostEur) : null,
-        benefitNotes: formData.benefitNotes || null,
-        taskType: "IMPROVEMENT",
-      };
+      const payload = massnahmeRumpf(formData);
 
       const res = await fetch(`/api/management-billing/tasks/${id}`, {
         method: "PUT",
@@ -395,10 +379,9 @@ export default function MeasureDetailPage({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="LOW">Niedrig</SelectItem>
-                      <SelectItem value="MEDIUM">Mittel</SelectItem>
-                      <SelectItem value="HIGH">Hoch</SelectItem>
-                      <SelectItem value="CRITICAL">Kritisch</SelectItem>
+                      {PRIORITAETEN.map((p) => (
+                        <SelectItem key={p.wert} value={String(p.wert)}>{p.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -509,7 +492,7 @@ export default function MeasureDetailPage({
                 <div className="flex justify-between">
                   <dt className="text-sm text-muted-foreground">Prioritaet</dt>
                   <dd className="text-sm font-medium">
-                    {priorityLabels[measure.priority] ?? measure.priority}
+                    {prioritaet(measure.priority)?.label ?? measure.priority}
                   </dd>
                 </div>
                 <div className="flex justify-between">

@@ -165,11 +165,11 @@ export default function NewsDetailPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/news">
-            <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/news">
               <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-3xl font-bold tracking-tight">{news.title}</h1>
@@ -207,12 +207,12 @@ export default function NewsDetailPage({
               Veröffentlichen
             </Button>
           )}
-          <Link href={`/news/${id}/edit`}>
-            <Button variant="outline">
+          <Button variant="outline" asChild>
+            <Link href={`/news/${id}/edit`}>
               <Pencil className="mr-2 h-4 w-4" />
               Bearbeiten
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button
             variant="outline"
             className="text-destructive"

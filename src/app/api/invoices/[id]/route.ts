@@ -4,8 +4,8 @@ import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { calculateSkontoDiscount, calculateSkontoDeadline } from "@/lib/invoices/skonto";
-import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
+import { invoiceUpdateSchema } from "@/lib/invoices/schemas";
 import { apiLogger as logger } from "@/lib/logger";
 import { invalidate } from "@/lib/cache/invalidation";
 import { serializePrisma } from "@/lib/serialize";
@@ -13,37 +13,6 @@ import { apiError } from "@/lib/api-errors";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { headers } from "next/headers";
 
-const invoiceUpdateSchema = z.object({
-  invoiceDate: z.string().optional(),
-  dueDate: z.string().optional().nullable(),
-  recipientType: z.string().optional(),
-  recipientName: z.string().optional(),
-  recipientAddress: z.string().optional(),
-  // Bedienaufwand #11: Verweis auf den CRM-Kontakt, nullable zum Loesen.
-  recipientPersonId: z.string().uuid().nullable().optional(),
-  serviceStartDate: z.string().optional().nullable(),
-  serviceEndDate: z.string().optional().nullable(),
-  paymentReference: z.string().optional(),
-  notes: z.string().optional().nullable(),
-  fundId: z.uuid().optional().nullable(),
-  shareholderId: z.uuid().optional().nullable(),
-  leaseId: z.uuid().optional().nullable(),
-  parkId: z.uuid().optional().nullable(),
-  // Skonto (early payment discount) - both optional
-  skontoPercent: z.number().min(0.01).max(99.99).optional().nullable(),
-  skontoDays: z.number().int().min(1).max(365).optional().nullable(),
-  // E-Invoice: Leitweg-ID for public sector recipients (XRechnung)
-  leitwegId: z.string().max(46).optional().nullable(),
-  // F15-Compliance: Optimistic Locking PoC.
-  // Client sends the `updatedAt` timestamp it originally read. If the row
-  // was modified in the meantime by another user, we return 409 CONFLICT
-  // instead of silently overwriting their changes ("Lost Update").
-  // Header-Alternative `If-Unmodified-Since` wäre RFC-konformer, aber nur
-  // 1-Sekunden-Auflösung. `expectedUpdatedAt` in ms geht sicher.
-  // TODO: Nach PoC-Erfolg auf weitere PATCH-Routes ausrollen (Contract,
-  // Fund, Person, Lease, Shareholder, JournalEntry).
-  expectedUpdatedAt: z.iso.datetime().optional(),
-});
 
 // GET /api/invoices/[id] - Einzelne Rechnung mit Details
 export async function GET(

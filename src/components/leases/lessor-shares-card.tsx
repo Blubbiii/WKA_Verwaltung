@@ -39,7 +39,7 @@ interface PersonRef {
   lastName: string | null;
   companyName: string | null;
   personType: string;
-  iban: string | null;
+  bankIban: string | null;
 }
 
 interface ShareRow {
@@ -85,7 +85,7 @@ export function LessorSharesCard({ leaseId }: { leaseId: string }) {
   const t = useTranslations("lessorShares");
   const invalidate = useInvalidateQuery();
 
-  const { data, isLoading } = useApiQuery<LessorSharesResponse>(
+  const { data, isLoading, error } = useApiQuery<LessorSharesResponse>(
     ["lease-lessors", leaseId],
     `/api/leases/${leaseId}/lessors`,
   );
@@ -125,7 +125,7 @@ export function LessorSharesCard({ leaseId }: { leaseId: string }) {
     (person) => ({
       value: person.id,
       label: personLabel(person),
-      description: person.iban ? `IBAN ${person.iban.slice(0, 8)}…` : undefined,
+      description: person.bankIban ? `IBAN ${person.bankIban.slice(0, 8)}…` : undefined,
     }),
   );
 
@@ -168,6 +168,17 @@ export function LessorSharesCard({ leaseId }: { leaseId: string }) {
     } finally {
       setSaving(false);
     }
+  }
+
+  // Without this branch a failed load left the skeleton up for good.
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-sm text-destructive">
+          {t("loadError")}
+        </CardContent>
+      </Card>
+    );
   }
 
   if (isLoading || rows === null) {

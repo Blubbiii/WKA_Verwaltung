@@ -1,28 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { z } from "zod";
+import { ppaUpdateSchema } from "@/lib/ppa/schemas";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 
-const ppaUpdateSchema = z.object({
-  title: z.string().min(1).optional(),
-  counterparty: z.string().min(1).optional(),
-  pricingMode: z.enum(["FIXED", "INDEXED", "COLLAR"]).optional(),
-  fixedPriceCentKwh: z.number().optional().nullable(),
-  floorPriceCentKwh: z.number().optional().nullable(),
-  capPriceCentKwh: z.number().optional().nullable(),
-  indexBase: z.string().optional().nullable(),
-  indexMarkupCentKwh: z.number().optional().nullable(),
-  minQuantityMwh: z.number().optional().nullable(),
-  maxQuantityMwh: z.number().optional().nullable(),
-  billingPeriod: z.enum(["MONTHLY", "QUARTERLY", "YEARLY"]).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED", "TERMINATED"]).optional(),
-  notes: z.string().optional().nullable(),
-  contractNumber: z.string().optional().nullable(),
-});
 
 export async function GET(
   request: NextRequest,

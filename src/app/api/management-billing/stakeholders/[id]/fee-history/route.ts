@@ -27,6 +27,24 @@ async function checkFeatureEnabled(tenantId?: string | null): Promise<NextRespon
   return null;
 }
 
+/**
+ * The id alone is no access right: same rule as the stakeholder route —
+ * only entries of the caller's own tenant (superadmin without tenant: all).
+ */
+async function checkStakeholderAccess(id: string, tenantId?: string | null): Promise<NextResponse | null> {
+  const stakeholder = await prisma.parkStakeholder.findUnique({
+    where: { id },
+    select: { id: true, stakeholderTenantId: true },
+  });
+  if (!stakeholder) {
+    return apiError("NOT_FOUND", 404, { message: "Stakeholder nicht gefunden" });
+  }
+  if (tenantId && stakeholder.stakeholderTenantId !== tenantId) {
+    return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
+  }
+  return null;
+}
+
 // =============================================================================
 // GET /api/management-billing/stakeholders/[id]/fee-history
 // =============================================================================
@@ -43,6 +61,8 @@ export async function GET(
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
+    const accessCheck = await checkStakeholderAccess(id, check.tenantId);
+    if (accessCheck) return accessCheck;
 
     const history = await prisma.stakeholderFeeHistory.findMany({
       where: { stakeholderId: id },
@@ -77,6 +97,9 @@ export async function POST(
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
+    const accessCheck = await checkStakeholderAccess(id, check.tenantId);
+    if (accessCheck) return accessCheck;
+
     const body = await request.json();
     const parsed = feeHistoryCreateSchema.safeParse(body);
     if (!parsed.success) {
@@ -84,35 +107,38 @@ export async function POST(
     }
     const { feePercentage, validFrom, reason } = parsed.data;
 
-    // Close the current open entry
-    const lastEntry = await prisma.stakeholderFeeHistory.findFirst({
-      where: { stakeholderId: id, validUntil: null },
-      orderBy: { validFrom: "desc" },
-    });
-
     const effectiveDate = validFrom ? new Date(validFrom) : new Date();
 
-    if (lastEntry) {
-      await prisma.stakeholderFeeHistory.update({
-        where: { id: lastEntry.id },
-        data: { validUntil: effectiveDate },
+    // Close the open entry, add the new one and update the current fee
+    // together — a half-written change would leave two open entries.
+    const entry = await prisma.$transaction(async (tx) => {
+      const lastEntry = await tx.stakeholderFeeHistory.findFirst({
+        where: { stakeholderId: id, validUntil: null },
+        orderBy: { validFrom: "desc" },
       });
-    }
 
-    // Create new entry
-    const entry = await prisma.stakeholderFeeHistory.create({
-      data: {
-        stakeholderId: id,
-        feePercentage,
-        validFrom: effectiveDate,
-        reason: reason || null,
-      },
-    });
+      if (lastEntry) {
+        await tx.stakeholderFeeHistory.update({
+          where: { id: lastEntry.id },
+          data: { validUntil: effectiveDate },
+        });
+      }
 
-    // Also update the stakeholder's current fee
-    await prisma.parkStakeholder.update({
-      where: { id },
-      data: { feePercentage },
+      const created = await tx.stakeholderFeeHistory.create({
+        data: {
+          stakeholderId: id,
+          feePercentage,
+          validFrom: effectiveDate,
+          reason: reason || null,
+        },
+      });
+
+      await tx.parkStakeholder.update({
+        where: { id },
+        data: { feePercentage },
+      });
+
+      return created;
     });
 
     logger.info(

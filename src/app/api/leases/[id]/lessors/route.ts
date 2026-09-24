@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -49,9 +50,9 @@ const PERSON_SELECT = {
     lastName: true,
     companyName: true,
     personType: true,
-    iban: true,
+    bankIban: true,
   },
-} as const;
+} as const satisfies { select: Prisma.PersonSelect };
 
 export async function GET(
   request: NextRequest,

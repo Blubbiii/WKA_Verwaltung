@@ -108,9 +108,9 @@ function ResetPasswordForm() {
           </Alert>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Link href="/forgot-password" className="w-full">
-            <Button className="w-full">{t("requestNewLink")}</Button>
-          </Link>
+          <Button className="w-full" asChild>
+            <Link href="/forgot-password">{t("requestNewLink")}</Link>
+          </Button>
           <Link
             href="/login"
             className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center"
@@ -192,9 +192,9 @@ function ResetPasswordForm() {
           </Alert>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <Link href="/login" className="w-full">
-            <Button className="w-full">{t("signInNow")}</Button>
-          </Link>
+          <Button className="w-full" asChild>
+            <Link href="/login">{t("signInNow")}</Link>
+          </Button>
         </CardFooter>
       </Card>
     );

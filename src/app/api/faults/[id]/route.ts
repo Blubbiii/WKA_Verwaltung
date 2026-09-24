@@ -118,10 +118,21 @@ export async function PATCH(
 
     const existing = await prisma.faultCase.findFirst({
       where: { id, tenantId: check.tenantId! },
-      select: { id: true, caseNumber: true, lostEnergyKwh: true, ratePerKwh: true, status: true },
+      select: { id: true, caseNumber: true, lostEnergyKwh: true, ratePerKwh: true, status: true, startAt: true, endAt: true },
     });
     if (!existing) {
       return apiError("NOT_FOUND", 404, { message: "Störungsvorgang nicht gefunden" });
+    }
+
+    // The schema only compares both times when both are sent. The detail page
+    // sends one field at a time, so check against the stored counterpart.
+    const nextStart = data.startAt !== undefined ? new Date(data.startAt) : existing.startAt;
+    const nextEnd = data.endAt !== undefined ? (data.endAt ? new Date(data.endAt) : null) : existing.endAt;
+    if (nextEnd && nextEnd < nextStart) {
+      return apiError("VALIDATION_FAILED", 400, {
+        message: "Das Störungsende liegt vor dem Beginn",
+        details: [{ path: ["endAt"], message: "Ende liegt vor dem Beginn" }],
+      });
     }
 
     // Wird der Ausfall von Hand gesetzt, muss das Verfahren mitwandern —

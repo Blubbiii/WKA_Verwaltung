@@ -7,12 +7,13 @@ import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Coins, Building2, Percent, Radio, Code2, Link2, Receipt } from "lucide-react";
+import { Coins, Building2, Percent, Radio, Code2, Link2, CalendarRange } from "lucide-react";
 
 // Lazy-loaded tab content
 const RevenueTypesContent = dynamic(() => import("./tabs/revenue-types"), { ssr: false });
 const FundCategoriesContent = dynamic(() => import("./tabs/fund-categories"), { ssr: false });
 const TaxRatesContent = dynamic(() => import("./tabs/tax-rates"), { ssr: false });
+const MonthlyRatesContent = dynamic(() => import("./tabs/monthly-rates"), { ssr: false });
 const WebhooksContent = dynamic(() => import("./tabs/webhooks"), { ssr: false });
 const ScadaCodesContent = dynamic(() => import("./tabs/scada-codes"), { ssr: false });
 const SidebarLinksContent = dynamic(() => import("./tabs/sidebar-links"), { ssr: false });
@@ -58,9 +59,9 @@ function MasterDataPageInner() {
             <Percent className="h-4 w-4" />
             {t("tabTaxRates")}
           </TabsTrigger>
-          <TabsTrigger value="steuerschluessel" className="flex items-center gap-2">
-            <Receipt className="h-4 w-4" />
-            Steuerschlüssel
+          <TabsTrigger value="monatssaetze" className="flex items-center gap-2">
+            <CalendarRange className="h-4 w-4" />
+            {t("tabMonthlyRates")}
           </TabsTrigger>
           <TabsTrigger value="webhooks" className="flex items-center gap-2">
             <Radio className="h-4 w-4" />
@@ -84,7 +85,8 @@ function MasterDataPageInner() {
         <TabsContent value="steuersaetze">
           <Suspense fallback={<LoadingSkeleton />}><TaxRatesContent /></Suspense>
         </TabsContent>
-        <TabsContent value="steuerschluessel">
+        <TabsContent value="monatssaetze">
+          <Suspense fallback={<LoadingSkeleton />}><MonthlyRatesContent /></Suspense>
         </TabsContent>
         <TabsContent value="webhooks">
           <Suspense fallback={<LoadingSkeleton />}><WebhooksContent /></Suspense>

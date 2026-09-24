@@ -182,11 +182,11 @@ export default function EditNewsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href={`/news/${id}`}>
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href={`/news/${id}`}>
             <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Meldung bearbeiten</h1>
           <p className="text-muted-foreground">
@@ -346,11 +346,11 @@ export default function EditNewsPage({
               />
 
               <div className="flex justify-end gap-4">
-                <Link href={`/news/${id}`}>
-                  <Button variant="outline" type="button">
+                <Button variant="outline" asChild>
+                  <Link href={`/news/${id}`}>
                     Abbrechen
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
                 <Button type="submit" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {form.watch("isPublished") ? (

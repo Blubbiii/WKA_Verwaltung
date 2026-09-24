@@ -1463,7 +1463,36 @@
       "actionDelete": "Delete",
       "deleteDialogTitle": "Delete PPA?",
       "deleteDialogDescription": "“{title}” will be permanently deleted.",
-      "deleting": "Deleting..."
+      "deleting": "Deleting...",
+      "form": {
+        "titleNew": "New PPA",
+        "titleEdit": "Edit PPA",
+        "description": "Power purchase agreement with pricing model and term.",
+        "parkPlaceholder": "Select park",
+        "contractNumber": "Contract number",
+        "startDate": "Start",
+        "endDate": "End",
+        "fixedPrice": "Fixed price",
+        "indexBase": "Index",
+        "indexMarkup": "Markup",
+        "floorPrice": "Floor",
+        "capPrice": "Cap",
+        "minQuantity": "Minimum quantity",
+        "maxQuantity": "Maximum quantity",
+        "billingPeriod": "Billing",
+        "periodMonthly": "Monthly",
+        "periodQuarterly": "Quarterly",
+        "periodYearly": "Yearly",
+        "notes": "Notes",
+        "required": "Required",
+        "endBeforeStart": "The end is before the start.",
+        "save": "Save",
+        "cancel": "Cancel",
+        "close": "Close",
+        "created": "PPA created",
+        "saved": "PPA saved",
+        "saveError": "Could not save the PPA"
+      }
     },
     "reconciliation": {
       "pageTitle": "Payment reconciliation",
@@ -2167,7 +2196,8 @@
         "pctOfProduction": "Share of theoretical production",
         "timeAxisLabel": "Month",
         "noData": "No curtailment in the selected period",
-        "rateMissingHint": "No tariff is on file for these months, so their lost revenue is missing from the euro figures: {months}"
+        "rateMissingHint": "No tariff is on file for these months, so their lost revenue is missing from the euro figures: {months}",
+        "rateMissingLink": "Maintain monthly rates"
       }
     },
     "reports": "Reports",
@@ -6339,10 +6369,9 @@
         "ON_HOLD": "Pausiert"
       },
       "priority": {
-        "LOW": "Niedrig",
-        "MEDIUM": "Mittel",
-        "HIGH": "Hoch",
-        "CRITICAL": "Kritisch"
+        "1": "High",
+        "2": "Normal",
+        "3": "Low"
       },
       "category": {
         "yield": "Ertragssteigerung",
@@ -6385,12 +6414,45 @@
       "tabTranslations": "Translations",
       "tabWidgets": "Widget roles"
     },
+    "monthlyRates": {
+      "title": "Monthly rates",
+      "description": "Rate per month and revenue type. The curtailment analysis values lost kWh with the rate of the month.",
+      "year": "Year",
+      "new": "New rate",
+      "search": "Search revenue type or note",
+      "emptyTitle": "No rates for {year} yet",
+      "emptyDescription": "Without a monthly rate the curtailment valuation in euros stays empty.",
+      "month": "Month",
+      "revenueType": "Revenue type",
+      "rate": "Rate",
+      "marketValue": "Market value",
+      "managementFee": "Marketing fee",
+      "notes": "Note",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete rate?",
+      "deleteDescription": "The rate for {month} {year} will be deleted.",
+      "deleted": "Rate deleted",
+      "deleteError": "Could not delete the rate",
+      "newTitle": "New monthly rate",
+      "editTitle": "Edit monthly rate",
+      "dialogDescription": "Rate in euros per kWh.",
+      "keyFixedHint": "Month and revenue type are fixed. For another month, create a new rate.",
+      "monthPlaceholder": "Select month",
+      "revenueTypePlaceholder": "Select revenue type",
+      "required": "Required",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Rate saved",
+      "saveError": "Could not save the rate"
+    },
     "masterData": {
       "title": "Master data",
       "description": "Revenue types, tax rates, company types and other configuration",
       "tabRevenueTypes": "Revenue types",
       "tabFundCategories": "Fund categories",
       "tabTaxRates": "Tax rates",
+      "tabMonthlyRates": "Monthly rates",
       "tabWebhooks": "Webhooks",
       "tabScadaCodes": "SCADA codes",
       "tabSidebarLinks": "Sidebar links"
@@ -9763,6 +9825,7 @@
       "ratedPower": "Rated power",
       "start": "Start",
       "end": "End",
+      "endHint": "Leave empty while the turbine is still down. No valuation without an end.",
       "statusCode": "Fault code",
       "lossCard": "Energy loss",
       "valuate": "Calculate",
@@ -9960,6 +10023,7 @@
     }
   },
   "lessorShares": {
+    "loadError": "Could not load the lessor shares. Please reload the page.",
     "cardTitle": "Lessor shares",
     "cardTooltip": "Co-ownership shares with effective dates. Each co-owner is a separate VAT subject and receives their own credit note to their own account.",
     "fallbackBadge": "single lessor",

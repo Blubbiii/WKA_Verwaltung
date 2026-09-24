@@ -58,6 +58,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { LOCALE_DE } from "@/lib/format";
+import { PpaDialog, type PpaDialogModus } from "@/components/ppa/ppa-dialog";
 
 // ============================================================================
 // Types
@@ -79,6 +80,7 @@ interface PPA {
   startDate: string;
   endDate: string;
   status: "DRAFT" | "ACTIVE" | "EXPIRED" | "TERMINATED";
+  billingPeriod?: "MONTHLY" | "QUARTERLY" | "YEARLY";
   notes: string | null;
   park: { id: string; name: string } | null;
 }
@@ -111,6 +113,7 @@ export default function PPAPage() {
   const numberLocale = locale === "en" ? "en-US" : LOCALE_DE;
   const { isFeatureEnabled, loading: flagsLoading } = useFeatureFlags();
   const [ppas, setPpas] = useState<PPA[]>([]);
+  const [dialog, setDialog] = useState<{ modus: PpaDialogModus; ppa: PPA | null } | null>(null);
 
   const statusLabel = useCallback(
     (s: PPA["status"]) => {
@@ -308,7 +311,7 @@ export default function PPAPage() {
         title={t("pageTitle")}
         description={t("pageDescription")}
         actions={
-          <Button>
+          <Button onClick={() => setDialog({ modus: "neu", ppa: null })}>
             <Plus className="h-4 w-4 mr-2" />
             {t("newPpa")}
           </Button>
@@ -364,7 +367,7 @@ export default function PPAPage() {
                   : t("emptyNotFound")}
               </p>
               {ppas.length === 0 && (
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4" onClick={() => setDialog({ modus: "neu", ppa: null })}>
                   <Plus className="h-4 w-4 mr-2" />
                   {t("createFirst")}
                 </Button>
@@ -431,11 +434,11 @@ export default function PPAPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDialog({ modus: "ansehen", ppa })}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 {t("actionShow")}
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setDialog({ modus: "bearbeiten", ppa })}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 {t("actionEdit")}
                               </DropdownMenuItem>
@@ -460,6 +463,14 @@ export default function PPAPage() {
       </Card>
 
       {/* Delete confirmation */}
+      <PpaDialog
+        open={dialog !== null}
+        onOpenChange={(offen) => { if (!offen) setDialog(null); }}
+        modus={dialog?.modus ?? "neu"}
+        ppa={dialog?.ppa ?? null}
+        onSaved={load}
+      />
+
       <AlertDialog
         open={!!deletePpa}
         onOpenChange={(v) => !v && setDeletePpa(null)}

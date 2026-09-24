@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { massnahmeRumpf } from "@/lib/management-billing/massnahme";
+import { PRIORITAETEN, STANDARD_PRIORITAET } from "@/lib/management-billing/prioritaet";
 
 // =============================================================================
 // TYPES
@@ -63,7 +65,7 @@ export default function NewOptimizationPage() {
     title: "",
     description: "",
     category: "",
-    priority: "MEDIUM",
+    priority: String(STANDARD_PRIORITAET),
     dueDate: "",
     costEstimateEur: "",
     benefitNotes: "",
@@ -107,19 +109,7 @@ export default function NewOptimizationPage() {
     try {
       setSaving(true);
 
-      const payload = {
-        title: formData.title,
-        description: formData.description || null,
-        category: formData.category || null,
-        priority: formData.priority,
-        dueDate: formData.dueDate || null,
-        costEstimateEur: formData.costEstimateEur
-          ? parseFloat(formData.costEstimateEur)
-          : null,
-        benefitNotes: formData.benefitNotes || null,
-        parkId: formData.parkId || null,
-        taskType: "IMPROVEMENT",
-      };
+      const payload = massnahmeRumpf(formData);
 
       const res = await fetch("/api/management-billing/tasks", {
         method: "POST",
@@ -242,10 +232,9 @@ export default function NewOptimizationPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="LOW">Niedrig</SelectItem>
-                      <SelectItem value="MEDIUM">Mittel</SelectItem>
-                      <SelectItem value="HIGH">Hoch</SelectItem>
-                      <SelectItem value="CRITICAL">Kritisch</SelectItem>
+                      {PRIORITAETEN.map((p) => (
+                        <SelectItem key={p.wert} value={String(p.wert)}>{p.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
