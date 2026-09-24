@@ -211,7 +211,7 @@ function ActivityCard({
 
             {/* Actions */}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-              <Button
+              <Button aria-label="Bearbeiten"
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7"

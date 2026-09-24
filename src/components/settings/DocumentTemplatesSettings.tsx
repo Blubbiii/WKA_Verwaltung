@@ -159,14 +159,14 @@ function TemplateList({
             </TableCell>
             <TableCell>
               <div className="flex gap-1">
-                <Button
+                <Button aria-label="Bearbeiten"
                   variant="ghost"
                   size="icon"
                   onClick={() => onEdit(template)}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button
+                <Button aria-label="Löschen"
                   variant="ghost"
                   size="icon"
                   onClick={() => onDelete(template.id)}

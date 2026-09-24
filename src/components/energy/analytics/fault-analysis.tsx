@@ -528,7 +528,7 @@ export function FaultAnalysis({
                 }}
                 className="h-8 text-sm"
               />
-              <Button
+              <Button aria-label="Suchen"
                 variant="outline"
                 size="sm"
                 className="h-8 px-2"
@@ -657,7 +657,7 @@ export function FaultAnalysis({
                     {t("page", { page: eventsPage, total: eventsTotalPages })}
                   </p>
                   <div className="flex items-center gap-1">
-                    <Button
+                    <Button aria-label="Zurück"
                       variant="outline"
                       size="sm"
                       className="h-7 px-2"
@@ -666,7 +666,7 @@ export function FaultAnalysis({
                     >
                       <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
+                    <Button aria-label="Weiter"
                       variant="outline"
                       size="sm"
                       className="h-7 px-2"

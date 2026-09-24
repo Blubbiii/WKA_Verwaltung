@@ -254,7 +254,7 @@ export function SettlementWizard() {
   useEffect(() => {
     async function loadParks() {
       try {
-        // Jeder Park muss waehlbar sein — sonst laesst sich fuer ihn keine
+        // Jeder Park muss waehlbar sein — sonst laesst sich für ihn keine
         // Abrechnung anlegen, und nichts sagt warum. Siehe PAGE_SIZE_SELECTABLE.
         const res = await fetch(`/api/parks?limit=${PAGE_SIZE_SELECTABLE}`);
         if (!res.ok) throw new Error(t("parksLoadError"));
@@ -309,7 +309,7 @@ export function SettlementWizard() {
       //
       // Der zweite Fall ist der schlimmere: wer alles richtig gemacht hat,
       // kam nicht weiter und las "Keine Produktionsdaten, bitte zuerst
-      // importieren" — fuer Daten, die er laengst erfasst und bestaetigt hat.
+      // importieren" — für Daten, die er laengst erfasst und bestaetigt hat.
       //
       // Gefunden am 02.08.2026 von e2e/journeys/energy-settlement-wizard.spec.ts.
       const bestaetigt = new URLSearchParams(params);
@@ -807,7 +807,7 @@ export function SettlementWizard() {
                   productionStatus.totalTurbines > 0 && (
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>Unvollstaendige Daten</AlertTitle>
+                      <AlertTitle>Unvollständige Daten</AlertTitle>
                       <AlertDescription>
                         Nicht alle Turbinen haben Produktionsdaten für{" "}
                         {formatPeriodLabel()}.{" "}
@@ -863,7 +863,7 @@ export function SettlementWizard() {
                               Produktion (kWh)
                             </TableHead>
                             <TableHead className="text-right">
-                              Datensaetze
+                              Datensätze
                             </TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1037,7 +1037,7 @@ export function SettlementWizard() {
                 />
                 <div>
                   <Label htmlFor="mode-smoothed" className="font-medium">
-                    Geglaettet
+                    Geglättet
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     Ausgleich von Standortunterschieden durch Mischung mit
@@ -1067,7 +1067,7 @@ export function SettlementWizard() {
             {formData.distributionMode === "SMOOTHED" && (
               <div className="space-y-3 p-4 rounded-lg bg-muted/50">
                 <Label htmlFor="wizard-smoothing">
-                  Glaettungsfaktor:{" "}
+                  Glättungsfaktor:{" "}
                   <span className="font-mono">
                     {formData.smoothingFactor.toFixed(2)}
                   </span>
@@ -1086,11 +1086,11 @@ export function SettlementWizard() {
                     }))
                   }
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
-                  aria-label="Glaettungsfaktor einstellen"
+                  aria-label="Glättungsfaktor einstellen"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>0 = keine Glaettung</span>
-                  <span>1 = maximale Glaettung</span>
+                  <span>0 = keine Glättung</span>
+                  <span>1 = maximale Glättung</span>
                 </div>
               </div>
             )}
@@ -1203,7 +1203,7 @@ export function SettlementWizard() {
                 {formData.distributionMode === "SMOOTHED" && (
                   <div>
                     <p className="text-xs text-muted-foreground">
-                      Glaettungsfaktor
+                      Glättungsfaktor
                     </p>
                     <p className="font-medium font-mono">
                       {formData.smoothingFactor.toFixed(2)}

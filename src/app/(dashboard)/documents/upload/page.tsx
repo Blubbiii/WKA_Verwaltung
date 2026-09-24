@@ -108,7 +108,7 @@ function DocumentUploadForm() {
    *
    * Vorher `files?.[0]` — 20 Vertraege bedeuteten 20 x (Datei → Kategorie →
    * Park → Fonds → Tags → Speichern), also rund 120 Interaktionen. Die
-   * Metadaten gelten fuer alle gewaehlten Dateien; der Titel kommt je Datei
+   * Metadaten gelten für alle gewaehlten Dateien; der Titel kommt je Datei
    * aus dem Dateinamen, sobald mehr als eine gewaehlt ist.
    */
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -289,7 +289,7 @@ function DocumentUploadForm() {
     return "/documents";
   }
 
-  /** Baut das FormData fuer EINE Datei; Metadaten sind fuer alle gleich. */
+  /** Baut das FormData für EINE Datei; Metadaten sind für alle gleich. */
   function buildFormData(data: DocumentFormValues, file: File, title: string): FormData {
     const formData = new FormData();
     formData.append("file", file);
@@ -589,7 +589,7 @@ function DocumentUploadForm() {
                         {tags.map((tag, index) => (
                           <Badge key={index} variant="secondary">
                             {tag}
-                            <button
+                            <button aria-label="Entfernen"
                               type="button"
                               onClick={() => removeTag(index)}
                               className="ml-2 hover:text-destructive"

@@ -73,7 +73,7 @@ const MONTH_OPTIONS = [
   { value: '__none__', label: '-- Jahresabrechnung --' },
   { value: '1', label: 'Januar' },
   { value: '2', label: 'Februar' },
-  { value: '3', label: 'Maerz' },
+  { value: '3', label: 'März' },
   { value: '4', label: 'April' },
   { value: '5', label: 'Mai' },
   { value: '6', label: 'Juni' },
@@ -399,7 +399,7 @@ export function SettlementEntryDialog({
 
           {/* Direktvermarktung */}
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Direktvermarktung / Marktpraemie</Label>
+            <Label className="text-sm font-semibold">Direktvermarktung / Marktprämie</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label htmlFor="sett-dv-prod" className="text-xs text-muted-foreground">

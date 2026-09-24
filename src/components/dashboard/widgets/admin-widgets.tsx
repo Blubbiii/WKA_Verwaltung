@@ -136,7 +136,7 @@ export function SystemStatusWidget({ className }: SystemStatusWidgetProps) {
 
   if (isLoading) {
     // FP2: Skeleton statt Spinner — matched den finalen Widget-Content-Aufbau
-    // (Overall + 3 Sub-Rows) fuer minimalen Layout-Shift.
+    // (Overall + 3 Sub-Rows) für minimalen Layout-Shift.
     return (
       <div className={cn("space-y-4", className)}>
         <Skeleton className="h-14 w-full" />
@@ -345,7 +345,7 @@ export function AuditLogWidget({ className }: { className?: string }) {
   }, [fetchEntries]);
 
   if (isLoading) {
-    // FP2: Skeleton-Zeilen fuer die Audit-Liste
+    // FP2: Skeleton-Zeilen für die Audit-Liste
     return (
       <div className={cn("flex flex-col h-full gap-2", className)}>
         <Skeleton className="h-8 w-full" />

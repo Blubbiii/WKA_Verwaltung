@@ -14,7 +14,7 @@ import { useTabParam } from "@/hooks/useTabParam";
 // Component
 // =============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["general", "portal", "email", "thresholds", "hgb"] as const;
 
 export default function AdminSettingsPage() {

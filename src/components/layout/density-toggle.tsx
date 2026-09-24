@@ -64,7 +64,7 @@ export function DensityToggle() {
     try {
       window.localStorage.setItem(SPEICHER_SCHLUESSEL, neu ? "compact" : "normal");
     } catch {
-      // Gilt dann nur fuer diese Sitzung.
+      // Gilt dann nur für diese Sitzung.
     }
   }
 

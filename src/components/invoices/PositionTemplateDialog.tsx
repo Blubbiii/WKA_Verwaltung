@@ -49,7 +49,7 @@ interface PositionTemplateDialogProps {
 }
 
 const MONTH_NAMES = [
-  "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember",
 ];
 

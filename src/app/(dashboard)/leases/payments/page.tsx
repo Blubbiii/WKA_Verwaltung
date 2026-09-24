@@ -270,7 +270,7 @@ function LeasePaymentsPageContent() {
 
       {/* Year Navigation */}
       <div className="flex items-center justify-center gap-4">
-        <Button
+        <Button aria-label="Zurück"
           variant="outline"
           size="icon"
           onClick={() => setYear((y) => y - 1)}
@@ -282,7 +282,7 @@ function LeasePaymentsPageContent() {
           <Calendar className="h-5 w-5 text-muted-foreground" />
           <span className="text-2xl font-bold">{year}</span>
         </div>
-        <Button
+        <Button aria-label="Weiter"
           variant="outline"
           size="icon"
           onClick={() => setYear((y) => y + 1)}

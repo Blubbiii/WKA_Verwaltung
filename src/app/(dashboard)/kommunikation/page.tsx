@@ -210,7 +210,7 @@ export default function KommunikationPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button
+                        <Button aria-label="Anzeigen"
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"

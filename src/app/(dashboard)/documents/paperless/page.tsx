@@ -331,7 +331,7 @@ export default function PaperlessDocumentsPage() {
                 className="pl-8 pr-8"
               />
               {search && (
-                <button
+                <button aria-label="Entfernen"
                   onClick={() => setSearch("")}
                   className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
                 >

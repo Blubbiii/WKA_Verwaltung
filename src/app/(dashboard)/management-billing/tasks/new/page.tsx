@@ -441,7 +441,7 @@ export default function NewTaskPage() {
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
                 Die Aufgabe wird mit Status &quot;Offen&quot; erstellt. Sie
-                koennen den Status jederzeit in der Detailansicht aendern.
+                koennen den Status jederzeit in der Detailansicht ändern.
               </p>
             </CardContent>
           </Card>

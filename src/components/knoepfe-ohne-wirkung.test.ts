@@ -14,6 +14,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { jsxElemente } from "./jsx-tags";
 
 const SRC = join(process.cwd(), "src");
 
@@ -35,20 +36,22 @@ const WIRKT = /\bonClick=|\bonSelect=|\basChild\b|type=["{]?["']?submit|\bform=|
 
 function knoepfeOhneWirkung(quelle: string): string[] {
   const funde: string[] = [];
-  const re = /<(Button|DropdownMenuItem|ContextMenuItem)\b([^>]*?)>([\s\S]*?)<\/\1>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(quelle))) {
-    const [, tag, attrs, inhalt] = m;
+  // jsxElemente reads the opening tag with braces/quotes — a plain regex stops
+  // at the ">" of an arrow function inside an attribute.
+  const elemente = ["Button", "DropdownMenuItem", "ContextMenuItem"].flatMap((tag) =>
+    jsxElemente(quelle, tag).map((e) => ({ tag, ...e })),
+  );
+  for (const { tag, attrs, inhalt, start } of elemente) {
     if (WIRKT.test(attrs)) continue;
     // Inside a Trigger/Close with asChild that is still open (FormControl etc. may sit between)
-    const davor = quelle.slice(Math.max(0, m.index - 400), m.index);
+    const davor = quelle.slice(Math.max(0, start - 400), start);
     const trigger = davor.lastIndexOf("asChild");
     const oeffnet = /<\w+(Trigger|Close|Action|Cancel)\b[^>]*asChild[^>]*>/.test(davor.slice(Math.max(0, trigger - 200)));
     if (trigger >= 0 && oeffnet && !/<\/\w+(Trigger|Close|Action|Cancel)>/.test(davor.slice(trigger))) continue;
     const text = inhalt.replace(/<[^>]+>/g, " ").replace(/\{[^}]*\}/g, (x) => (/t\(|\w/.test(x) ? " x " : " ")).replace(/\s+/g, " ").trim();
     // Icon-only buttons are almost always menu/popover triggers
     if (!text) continue;
-    const zeile = quelle.slice(0, m.index).split("\n").length;
+    const zeile = quelle.slice(0, start).split("\n").length;
     funde.push(`<${tag}> Zeile ${zeile}: ${inhalt.replace(/\s+/g, " ").trim().slice(0, 50)}`);
   }
   return funde;

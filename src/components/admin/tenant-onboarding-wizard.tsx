@@ -230,7 +230,7 @@ export function TenantOnboardingWizard() {
             // Diese fuenf wurden eingesammelt und nie verschickt. Der
             // Assistent meldete trotzdem "gespeichert", und der Nutzer stand
             // beim ersten Rechnungsversand vor "Eigene Steuernummer fehlt"
-            // (§ 14 UStG) — fuer eine Angabe, die er gemacht hatte.
+            // (§ 14 UStG) — für eine Angabe, die er gemacht hatte.
             taxId: company.taxId || undefined,
             vatId: company.vatId || undefined,
             bankName: company.bankName || undefined,

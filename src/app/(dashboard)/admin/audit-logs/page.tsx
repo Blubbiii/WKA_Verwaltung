@@ -135,7 +135,7 @@ const ENTITY_OPTIONS: { value: string; label: string }[] = [
   { value: "Fund", label: "Gesellschaft" },
   { value: "FundHierarchy", label: "Gesellschafts-Hierarchie" },
   { value: "Shareholder", label: "Gesellschafter" },
-  { value: "Plot", label: "Flurstueck" },
+  { value: "Plot", label: "Flurstück" },
   { value: "Lease", label: "Pachtvertrag" },
   { value: "Contract", label: "Vertrag" },
   { value: "Document", label: "Dokument" },

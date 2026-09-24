@@ -187,7 +187,7 @@ export default function ServiceEventsPage() {
 
   // Filter state
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
-  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // Seitenwechsel — URL für geteilte Links, LocalStorage für die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
   const [tableState, setTableState] = usePersistedTableState("serviceEvents", { search: "", park: "all", type: "all" });
   const search = tableState.search;

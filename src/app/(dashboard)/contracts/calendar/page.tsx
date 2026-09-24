@@ -213,7 +213,7 @@ export default function ContractsCalendarPage() {
               {format(currentMonth, "MMMM yyyy", { locale: de })}
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button
+              <Button aria-label="Zurück"
                 variant="outline"
                 size="icon"
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -227,7 +227,7 @@ export default function ContractsCalendarPage() {
               >
                 {t("calendar.today")}
               </Button>
-              <Button
+              <Button aria-label="Weiter"
                 variant="outline"
                 size="icon"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}

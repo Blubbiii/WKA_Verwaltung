@@ -352,10 +352,10 @@ export function GISToolbar({
             className="h-7 text-xs w-56"
             onKeyDown={(e) => e.key === "Enter" && handleCoordSearch()}
           />
-          <Button size="sm" className="h-7 px-2" onClick={handleCoordSearch}>
+          <Button aria-label="Suchen" size="sm" className="h-7 px-2" onClick={handleCoordSearch}>
             <Search className="h-3 w-3" />
           </Button>
-          <button
+          <button aria-label="Entfernen"
             onClick={() => { setShowCoordSearch(false); setCoordInput(""); }}
             className="p-1 rounded hover:bg-muted"
           >

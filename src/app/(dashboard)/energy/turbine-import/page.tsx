@@ -572,7 +572,7 @@ function TurbineColumnMappingStep({
           <CardTitle className="text-lg">Vergütungsart</CardTitle>
           <CardDescription>
             Da Turbinendaten keine Vergütungsart enthalten, wird eine
-            Standard-Vergütungsart für alle importierten Datensaetze
+            Standard-Vergütungsart für alle importierten Datensätze
             verwendet.
           </CardDescription>
         </CardHeader>
@@ -869,7 +869,7 @@ function ImportStep({
               </h3>
               <p className="text-muted-foreground">
                 {hasImported
-                  ? `${importResult.imported} Datensaetze erfolgreich importiert`
+                  ? `${importResult.imported} Datensätze erfolgreich importiert`
                   : "Es konnten keine Daten importiert werden"}
               </p>
             </div>
@@ -1030,7 +1030,7 @@ export default function TurbineDataImportPage() {
         const parsed = parseCSV(text);
 
         if (parsed.headers.length === 0) {
-          setFileError("Die Datei enthaelt keine gültigen Daten");
+          setFileError("Die Datei enthält keine gültigen Daten");
           return;
         }
 
@@ -1061,7 +1061,7 @@ export default function TurbineDataImportPage() {
         });
 
         if (headers.length === 0) {
-          setFileError("Die Datei enthaelt keine gültigen Daten");
+          setFileError("Die Datei enthält keine gültigen Daten");
           return;
         }
 
@@ -1148,7 +1148,7 @@ export default function TurbineDataImportPage() {
       remunerationType: "__default_revenue_type__",
       production: columnMapping.production,
       revenue: null,
-      // Betriebsstunden und Verfuegbarkeit wurden erkannt, aber nie
+      // Betriebsstunden und Verfügbarkeit wurden erkannt, aber nie
       // mitgeschickt — die Werte aus der Datei gingen still verloren, obwohl
       // die Spalten in der Zuordnung standen und der Nutzer sie dort sah.
       operatingHours: columnMapping.operatingHours,

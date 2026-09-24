@@ -515,7 +515,7 @@ export function VoteResultTemplate({
       {/*
         Bei `isApproved === null` laesst sich aus den Antwortmoeglichkeiten
         kein Beschluss ablesen — etwa bei „Variante A" / „Variante B". Dann
-        steht hier die Begruendung statt eines Urteils. Ein „ABGELEHNT" waere
+        steht hier die Begründung statt eines Urteils. Ein „ABGELEHNT" waere
         an dieser Stelle eine Falschaussage ueber einen Gesellschafterbeschluss.
       */}
       {data.stats.isApproved === null && data.stats.resultReason && (

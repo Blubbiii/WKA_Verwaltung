@@ -25,6 +25,9 @@ export async function GET() {
       wirtschaftsplanEnabled,
       documentRoutingEnabled,
       marketDataEnabled,
+      // The PPA page and sidebar asked for this flag, the route never
+      // delivered it — the module stayed disabled for every tenant.
+      ppaManagementEnabled,
       scadaUploaderV2Enabled,
       uploaderV2GenericEnabled,
       // TF-8: Das Flag existierte, wurde aber nirgends gelesen — der
@@ -40,6 +43,7 @@ export async function GET() {
       getConfigBoolean("wirtschaftsplan.enabled", tid, false),
       getConfigBoolean("document-routing.enabled", tid, false),
       getConfigBoolean("marketData.enabled", tid, false),
+      getConfigBoolean("ppa-management.enabled", tid, false),
       getConfigBoolean("scada-uploader-v2.enabled", tid, false),
       getConfigBoolean("uploader-v2-generic.enabled", tid, false),
       getConfigBoolean("meilisearch.enabled", tid, false),
@@ -55,6 +59,7 @@ export async function GET() {
       "wirtschaftsplan": wirtschaftsplanEnabled,
       "document-routing": documentRoutingEnabled,
       "marketData": marketDataEnabled,
+      "ppa-management": ppaManagementEnabled,
       "scada-uploader-v2": scadaUploaderV2Enabled,
       "uploader-v2-generic": uploaderV2GenericEnabled,
       "meilisearch": meilisearchEnabled,

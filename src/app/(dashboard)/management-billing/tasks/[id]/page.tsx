@@ -258,11 +258,11 @@ export default function TaskDetailPage() {
     if (!res.ok) {
       const errorData = await res.json().catch(() => null);
       throw new Error(
-        errorData?.error ?? "Fehler beim Loeschen der Aufgabe"
+        errorData?.error ?? "Fehler beim Löschen der Aufgabe"
       );
     }
 
-    toast.success("Aufgabe geloescht");
+    toast.success("Aufgabe gelöscht");
     router.push("/management-billing/tasks");
   }
 
@@ -358,7 +358,7 @@ export default function TaskDetailPage() {
             onClick={() => setDeleteDialogOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
@@ -623,7 +623,7 @@ export default function TaskDetailPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Aufgabe loeschen"
+        title="Aufgabe löschen"
         itemName={task.title}
       />
     </div>

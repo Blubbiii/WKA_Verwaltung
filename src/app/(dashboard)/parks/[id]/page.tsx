@@ -1795,7 +1795,7 @@ export default function ParkDetailsPage({
                           {alloc._count.items}
                         </TableCell>
                         <TableCell>
-                          <Button
+                          <Button aria-label="Anzeigen"
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
@@ -1975,7 +1975,7 @@ export default function ParkDetailsPage({
                                     {/*
                                       Eigentuemer und Bewirtschafter haengen am
                                       FLURSTUECK, nicht am Vertrag. Der
-                                      Verpaechter im Vertrag ist eine dritte
+                                      Verpächter im Vertrag ist eine dritte
                                       Angabe — sie faellt meistens mit dem
                                       Eigentuemer zusammen, muss es aber nicht
                                       (Niessbrauch, Verkauf bei laufendem

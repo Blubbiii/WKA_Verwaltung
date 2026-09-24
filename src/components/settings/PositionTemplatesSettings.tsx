@@ -65,7 +65,7 @@ const TAX_TYPE_LABELS: Record<string, string> = {
 
 const DEFAULT_CATEGORIES = [
   "Pacht",
-  "Ausschuettung",
+  "Ausschüttung",
   "Strom",
   "Verwaltung",
   "Sonstige",
@@ -303,7 +303,7 @@ export function PositionTemplatesSettings() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button
+                              <Button aria-label="Bearbeiten"
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
@@ -311,7 +311,7 @@ export function PositionTemplatesSettings() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button
+                              <Button aria-label="Löschen"
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8 text-destructive"
@@ -350,7 +350,7 @@ export function PositionTemplatesSettings() {
                 id="tpl-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="z.B. Mindestpacht, Gewinnausschuettung"
+                placeholder="z.B. Mindestpacht, Gewinnausschüttung"
               />
             </div>
             <div className="space-y-2">
@@ -359,7 +359,7 @@ export function PositionTemplatesSettings() {
                 id="tpl-description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="z.B. Gewinnausschuettung {lastYear}"
+                placeholder="z.B. Gewinnausschüttung {lastYear}"
               />
               <p className="text-xs text-muted-foreground">
                 Platzhalter: {"{currentYear}"}, {"{lastYear}"}, {"{currentMonth}"}, {"{currentQuarter}"}

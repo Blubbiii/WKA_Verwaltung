@@ -57,7 +57,7 @@ const statusBadgeColors: Record<string, string> = {
 const CATEGORY_OPTIONS = [
   "Ertragssteigerung",
   "Kostensenkung",
-  "Verfuegbarkeit",
+  "Verfügbarkeit",
   "Sicherheit",
   "Sonstiges",
 ];

@@ -504,7 +504,7 @@ function CreateEditDialog({
                   </div>
                   <div className="col-span-1 flex justify-center">
                     {formData.positions.length > 1 && (
-                      <Button
+                      <Button aria-label="Löschen"
                         type="button"
                         variant="ghost"
                         size="icon"

@@ -123,7 +123,7 @@ function StatTile({
 // Page
 // ============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["overview", "relations", "activities", "tasks", "documents"] as const;
 
 export default function CrmContactDetailPage({
@@ -325,10 +325,10 @@ export default function CrmContactDetailPage({
             <Pencil className="mr-2 h-4 w-4" />
             {t("editButton")}
           </Button>
-          {/* TF-11: /api/admin/persons/[id]/data-export war vollstaendig
+          {/* TF-11: /api/admin/persons/[id]/data-export war vollständig
               implementiert und hatte keinen UI-Aufrufer — eine
               Compliance-Pflicht (DSGVO Art. 15) ohne Oberflaeche. Der Endpunkt
-              verlangt admin:audit, deshalb nur fuer Berechtigte sichtbar. */}
+              verlangt admin:audit, deshalb nur für Berechtigte sichtbar. */}
           {hasPermission("admin:audit") && (
             <Button
               variant="outline"

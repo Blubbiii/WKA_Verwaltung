@@ -184,7 +184,7 @@ export function FileList({
             {t("paginationInfo", { total: pagination.total, page: pagination.page, totalPages: pagination.totalPages })}
           </span>
           <div className="flex items-center gap-1">
-            <Button
+            <Button aria-label="Zurück"
               variant="outline"
               size="sm"
               className="h-7 px-2"
@@ -193,7 +193,7 @@ export function FileList({
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <Button
+            <Button aria-label="Weiter"
               variant="outline"
               size="sm"
               className="h-7 px-2"

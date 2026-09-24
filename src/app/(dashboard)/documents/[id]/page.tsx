@@ -502,7 +502,7 @@ export default function DocumentDetailPage() {
                           Zugriff, was bei aufbewahrungspflichtigen
                           Unterlagen ohnehin richtig ist.
                         */}
-                        <Button variant="ghost" size="sm" asChild>
+                        <Button aria-label="Herunterladen" variant="ghost" size="sm" asChild>
                           <a
                             href={`/api/documents/${version.id}/download?redirect=true`}
                             target="_blank"

@@ -48,6 +48,7 @@ interface ModuleFlags {
   "inbox": boolean;
   "wirtschaftsplan": boolean;
   "marketData": boolean;
+  "ppa-management": boolean;
   "scada-uploader-v2": boolean;
   "uploader-v2-generic": boolean;
 }
@@ -84,6 +85,7 @@ const MODULE_KEYS = [
   "inbox",
   "wirtschaftsplan",
   "marketData",
+  "ppa-management",
   "scada-uploader-v2",
   "uploader-v2-generic",
 ] as const satisfies readonly (keyof ModuleFlags)[];

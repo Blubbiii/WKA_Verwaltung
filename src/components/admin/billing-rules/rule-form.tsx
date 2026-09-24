@@ -426,7 +426,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
               <div className="space-y-2">
                 <Label>Beschreibung</Label>
                 <Input
-                  placeholder="z.B. Jahresausschuettung 2024"
+                  placeholder="z.B. Jahresausschüttung 2024"
                   value={getParameter("description", "")}
                   onChange={(e) => setParameter("description", e.target.value)}
                 />

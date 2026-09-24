@@ -363,7 +363,7 @@ export function SettlementImportSheet({
 
           const worksheet = workbook.worksheets[0]
           if (!worksheet) {
-            throw new Error('Die Datei enthaelt keine Tabellenblaetter.')
+            throw new Error('Die Datei enthält keine Tabellenblaetter.')
           }
 
           // Extract headers from first row
@@ -398,12 +398,12 @@ export function SettlementImportSheet({
         }
 
         if (jsonData.length === 0) {
-          throw new Error('Die Datei enthaelt keine Daten.')
+          throw new Error('Die Datei enthält keine Daten.')
         }
 
         if (jsonData.length > 5000) {
           throw new Error(
-            `Die Datei enthaelt ${jsonData.length} Zeilen. Maximal 5.000 Zeilen sind erlaubt.`
+            `Die Datei enthält ${jsonData.length} Zeilen. Maximal 5.000 Zeilen sind erlaubt.`
           )
         }
 

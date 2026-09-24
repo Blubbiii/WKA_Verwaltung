@@ -106,12 +106,12 @@ export function PlotPartiesDialog({
   const t = useTranslations("plotParties");
   const invalidate = useInvalidateQuery();
   // Der Browserdialog kann nicht zeigen, was genau passiert, und laesst sich
-  // fuer die Sitzung unterdruecken — dann liefe das Loeschen kommentarlos
+  // für die Sitzung unterdruecken — dann liefe das Löschen kommentarlos
   // durch. Ein Waechter-Test setzt das durch; er hat diese Datei zu Recht
   // abgewiesen.
   const { confirm, confirmDialog } = useConfirm();
 
-  // useQuery, nicht useEffect + fetch — so schreibt es CLAUDE.md fuer neue
+  // useQuery, nicht useEffect + fetch — so schreibt es CLAUDE.md für neue
   // Abrufe vor, und ein Waechter-Test setzt es durch. Er hat diese Datei beim
   // ersten Anlauf zu Recht abgewiesen.
   const {

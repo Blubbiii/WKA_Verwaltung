@@ -90,16 +90,16 @@ function formatUserName(user: AuditLogUser | null): string {
 }
 
 const actionDisplayNames: Record<string, string> = { CREATE: "Erstellt", UPDATE: "Bearbeitet", DELETE: "Gelöscht", VIEW: "Angesehen", EXPORT: "Exportiert", LOGIN: "Angemeldet", LOGOUT: "Abgemeldet", IMPERSONATE: "Impersoniert" };
-const entityDisplayNames: Record<string, string> = { Park: "Windpark", Turbine: "Anlage", Fund: "Gesellschaft", Shareholder: "Gesellschafter", Plot: "Flurstueck", Lease: "Pachtvertrag", Contract: "Vertrag", Document: "Dokument", Invoice: "Rechnung", Vote: "Abstimmung", ServiceEvent: "Service-Event", News: "Neuigkeit", Person: "Person", User: "Benutzer", Role: "Rolle", Tenant: "Mandant" };
+const entityDisplayNames: Record<string, string> = { Park: "Windpark", Turbine: "Anlage", Fund: "Gesellschaft", Shareholder: "Gesellschafter", Plot: "Flurstück", Lease: "Pachtvertrag", Contract: "Vertrag", Document: "Dokument", Invoice: "Rechnung", Vote: "Abstimmung", ServiceEvent: "Service-Event", News: "Neuigkeit", Person: "Person", User: "Benutzer", Role: "Rolle", Tenant: "Mandant" };
 const categoryDisplayNames: Record<string, string> = { CONTRACT: "Verträge", PROTOCOL: "Protokolle", REPORT: "Berichte", INVOICE: "Rechnungen", PERMIT: "Genehmigungen", CORRESPONDENCE: "Korrespondenz", OTHER: "Sonstige" };
 
 const tableIcons: Record<string, React.ReactNode> = {
   tenants: <Building2 className="h-4 w-4 text-muted-foreground" />, users: <Users className="h-4 w-4 text-muted-foreground" />, parks: <Wind className="h-4 w-4 text-muted-foreground" />, turbines: <Wind className="h-4 w-4 text-muted-foreground" />, funds: <Landmark className="h-4 w-4 text-muted-foreground" />, shareholders: <Users className="h-4 w-4 text-muted-foreground" />, plots: <FileBarChart className="h-4 w-4 text-muted-foreground" />, leases: <ScrollText className="h-4 w-4 text-muted-foreground" />, contracts: <FileText className="h-4 w-4 text-muted-foreground" />, documents: <FileText className="h-4 w-4 text-muted-foreground" />, invoices: <FileBarChart className="h-4 w-4 text-muted-foreground" />, auditLogs: <Shield className="h-4 w-4 text-muted-foreground" />, votes: <CheckCircle2 className="h-4 w-4 text-muted-foreground" />, persons: <Users className="h-4 w-4 text-muted-foreground" />,
 };
 
-const tableDisplayNames: Record<string, string> = { tenants: "Mandanten", users: "Benutzer", parks: "Windparks", turbines: "Windenergieanlagen", funds: "Gesellschaften", shareholders: "Gesellschafter", plots: "Flurstuecke", leases: "Pachtverträge", contracts: "Verträge", documents: "Dokumente", invoices: "Rechnungen", auditLogs: "Audit-Logs", votes: "Abstimmungen", persons: "Personen" };
+const tableDisplayNames: Record<string, string> = { tenants: "Mandanten", users: "Benutzer", parks: "Windparks", turbines: "Windenergieanlagen", funds: "Gesellschaften", shareholders: "Gesellschafter", plots: "Flurstücke", leases: "Pachtverträge", contracts: "Verträge", documents: "Dokumente", invoices: "Rechnungen", auditLogs: "Audit-Logs", votes: "Abstimmungen", persons: "Personen" };
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["health", "maintenance"] as const;
 
 export default function SystemHealthTab() {
@@ -214,7 +214,7 @@ export default function SystemHealthTab() {
           {/* Main Content Grid */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Datenbank-Statistiken</CardTitle><CardDescription>Anzahl Datensaetze pro Tabelle</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Database className="h-5 w-5" />Datenbank-Statistiken</CardTitle><CardDescription>Anzahl Datensätze pro Tabelle</CardDescription></CardHeader>
               <CardContent>
                 {loading ? <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => (<div key={i} className="flex items-center justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="h-4 w-12" /></div>))}</div> : stats ? (
                   <div className="space-y-2">{Object.entries(stats.databaseStats).map(([key, value]) => (<div key={key} className="flex items-center justify-between py-1.5 border-b last:border-0"><div className="flex items-center gap-2">{tableIcons[key]}<span className="text-sm">{tableDisplayNames[key] || key}</span></div><Badge variant="secondary" className="font-mono">{value.toLocaleString(LOCALE_DE)}</Badge></div>))}</div>

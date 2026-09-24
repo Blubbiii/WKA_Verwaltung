@@ -305,7 +305,7 @@ export default function NewLeaseSettlementPage() {
   useEffect(() => {
     async function fetchParks() {
       try {
-        // Jeder Park muss waehlbar sein — sonst laesst sich fuer ihn keine
+        // Jeder Park muss waehlbar sein — sonst laesst sich für ihn keine
         // Abrechnung anlegen, und nichts sagt warum. Siehe PAGE_SIZE_SELECTABLE.
         const res = await fetch(`/api/parks?limit=${PAGE_SIZE_SELECTABLE}`);
         if (res.ok) {

@@ -42,7 +42,7 @@ export interface RecipientSelection {
   recipientType: "PERSON" | "COMPANY";
   recipientName: string;
   /**
-   * Adresse als zweizeiliger Text — weiterhin fuer Formulare, die genau ein
+   * Adresse als zweizeiliger Text — weiterhin für Formulare, die genau ein
    * Adressfeld haben (Rechnung bearbeiten).
    */
   recipientAddress: string;

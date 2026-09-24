@@ -250,7 +250,7 @@ export default function InvoicesPage() {
     `/api/invoices?${queryParams}`
   );
 
-  // Fondsliste fuer den Filter. Eigener Query, damit die Rechnungsliste nicht
+  // Fondsliste für den Filter. Eigener Query, damit die Rechnungsliste nicht
   // darauf wartet.
   const { data: fundsData } = useApiQuery<{ data: Array<{ id: string; name: string }> }>(
     ["funds", "filter-options"],

@@ -160,7 +160,7 @@ const statusLabels: Record<string, string> = Object.fromEntries(
 
 const areaTypeLabels: Record<string, string> = {
   WEA_STANDORT: "WEA-Standort",
-  POOL: "Poolflaeche",
+  POOL: "Poolfläche",
   WEG: "Wegfläche",
   AUSGLEICH: "Ausgleichsfläche",
   KABEL: "Kabeltrasse",
@@ -271,7 +271,7 @@ function LeaseDetailDialog({
       plot.fieldNumber && plot.fieldNumber !== "0"
         ? `Flur ${plot.fieldNumber}`
         : null,
-      plot.plotNumber ? `Flurstueck ${plot.plotNumber}` : null,
+      plot.plotNumber ? `Flurstück ${plot.plotNumber}` : null,
     ].filter(Boolean);
     return parts.length > 0 ? parts.join(", ") : "Unbekannt";
   }
@@ -409,16 +409,16 @@ function LeaseDetailDialog({
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="plots">
-                    Flurstuecke ({leaseDetail.plots?.length || 0})
+                    Flurstücke ({leaseDetail.plots?.length || 0})
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="details" className="mt-4 space-y-6">
-                  {/* Verpaechter */}
+                  {/* Verpächter */}
                   <div className="space-y-3">
                     <h4 className="font-medium flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Verpaechter
+                      Verpächter
                     </h4>
                     <div className="rounded-lg border p-4 space-y-2">
                       <p className="font-medium">{getLessorName()}</p>
@@ -624,7 +624,7 @@ function LeaseDetailDialog({
                                 <TableRow>
                                   <TableHead>Typ</TableHead>
                                   <TableHead className="text-right">
-                                    Flaeche/Länge
+                                    Fläche/Länge
                                   </TableHead>
                                   <TableHead>Entschädigung</TableHead>
                                   <TableHead className="text-right">
@@ -674,7 +674,7 @@ function LeaseDetailDialog({
                                           : "-"}
                                     </TableCell>
                                     <TableCell>
-                                      <Button
+                                      <Button aria-label="Löschen"
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-destructive hover:text-destructive"
@@ -730,7 +730,7 @@ function LeaseDetailDialog({
                                   <Label>
                                     {newArea.areaType === "KABEL"
                                       ? "Länge (m)"
-                                      : "Flaeche (m²)"}
+                                      : "Fläche (m²)"}
                                   </Label>
                                   <Input
                                     type="number"
@@ -819,7 +819,7 @@ function LeaseDetailDialog({
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>Keine Flurstuecke zugeordnet</p>
+                      <p>Keine Flurstücke zugeordnet</p>
                     </div>
                   )}
                 </TabsContent>

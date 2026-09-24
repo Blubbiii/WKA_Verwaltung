@@ -630,7 +630,7 @@ export function MarketingSettings() {
                   {SECTION_LABELS[section.id]}
                 </span>
                 <div className="flex items-center gap-1">
-                  <Button
+                  <Button aria-label="Nach oben"
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
@@ -639,7 +639,7 @@ export function MarketingSettings() {
                   >
                     <ArrowUp className="h-3.5 w-3.5" />
                   </Button>
-                  <Button
+                  <Button aria-label="Nach unten"
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
@@ -753,7 +753,7 @@ export function MarketingSettings() {
                             <IconComp className="h-4 w-4" />
                             Feature {idx + 1}
                           </div>
-                          <Button
+                          <Button aria-label="Löschen"
                             variant="ghost" size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => removeFeature(idx)}
@@ -833,7 +833,7 @@ export function MarketingSettings() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <span className="text-sm font-medium text-muted-foreground">Statistik {idx + 1}</span>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost" size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => removeStat(idx)}
@@ -944,7 +944,7 @@ export function MarketingSettings() {
                         <StepIcon className="h-4 w-4" />
                         Schritt {idx + 1}
                       </div>
-                      <Button
+                      <Button aria-label="Löschen"
                         variant="ghost" size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => removeWorkflowStep(idx)}
@@ -1050,7 +1050,7 @@ export function MarketingSettings() {
                             <ModIcon className="h-4 w-4" />
                             Modul {idx + 1}
                           </div>
-                          <Button
+                          <Button aria-label="Löschen"
                             variant="ghost" size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive"
                             onClick={() => removeModule(idx)}
@@ -1158,7 +1158,7 @@ export function MarketingSettings() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <span className="text-sm font-medium text-muted-foreground">Kundenstimme {idx + 1}</span>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost" size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => removeTestimonial(idx)}

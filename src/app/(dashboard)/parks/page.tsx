@@ -108,7 +108,7 @@ export default function ParksPage() {
   const { confirm, confirmDialog } = useConfirm();
   const tc = useTranslations("common.confirmDialog");
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
-  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // Seitenwechsel — URL für geteilte Links, LocalStorage für die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
   const [tableState, setTableState] = usePersistedTableState("parks", { search: "", status: "all" });
   const search = tableState.search;
@@ -242,7 +242,7 @@ export default function ParksPage() {
     archiveMutation.mutate(parkToArchive);
   }
 
-  // Die Kennzahlen kommen vom SERVER und gelten fuer den gesamten Filter.
+  // Die Kennzahlen kommen vom SERVER und gelten für den gesamten Filter.
   //
   // Vorher wurden sie hier aus `parks` summiert — also aus der geladenen
   // Seite. Bei zwanzig Zeilen je Seite stand ueber der Liste "Windparks 20",

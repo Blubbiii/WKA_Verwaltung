@@ -460,14 +460,14 @@ export function LetterheadSettings() {
                             <Eye className="h-4 w-4" />
                           )}
                         </Button>
-                        <Button
+                        <Button aria-label="Bearbeiten"
                           variant="ghost"
                           size="icon"
                           onClick={() => openEditDialog(letterhead)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(letterhead.id)}
@@ -666,7 +666,7 @@ export function LetterheadSettings() {
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="headerHeight">Header-Hoehe (mm)</Label>
+                      <Label htmlFor="headerHeight">Header-Höhe (mm)</Label>
                       <Input
                         id="headerHeight"
                         type="number"
@@ -791,7 +791,7 @@ export function LetterheadSettings() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="footerHeight">Footer-Hoehe (mm)</Label>
+                      <Label htmlFor="footerHeight">Footer-Höhe (mm)</Label>
                       <Input
                         id="footerHeight"
                         type="number"
@@ -813,7 +813,7 @@ export function LetterheadSettings() {
                       onChange={(e) =>
                         setFormData({ ...formData, footerText: e.target.value })
                       }
-                      placeholder="Geschaeftsfuehrer: Max Mustermann | Amtsgericht: ... | USt-IdNr.: ..."
+                      placeholder="Geschäftsführer: Max Mustermann | Amtsgericht: ... | USt-IdNr.: ..."
                       rows={3}
                     />
                   </div>

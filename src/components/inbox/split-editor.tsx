@@ -158,7 +158,7 @@ export function SplitEditor({
               </Select>
 
               {!disabled && !hasOutgoing && (
-                <Button
+                <Button aria-label="Löschen"
                   variant="ghost"
                   size="icon"
                   className="shrink-0 text-destructive"

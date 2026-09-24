@@ -173,7 +173,7 @@ function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRo
       {/* Delete */}
       {!isLocked && (
         <td className="px-1 py-1">
-          <Button
+          <Button aria-label="Löschen"
             variant="ghost"
             size="icon"
             className="h-7 w-7 opacity-0 group-hover:opacity-100 text-destructive"
@@ -327,7 +327,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/wirtschaftsplan/budget")}>
+        <Button aria-label="Zurück" variant="ghost" size="icon" onClick={() => router.push("/wirtschaftsplan/budget")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">

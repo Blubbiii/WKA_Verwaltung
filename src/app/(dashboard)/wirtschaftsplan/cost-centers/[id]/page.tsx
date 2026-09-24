@@ -136,7 +136,7 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/wirtschaftsplan/cost-centers")}>
+        <Button aria-label="Zurück" variant="ghost" size="icon" onClick={() => router.push("/wirtschaftsplan/cost-centers")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

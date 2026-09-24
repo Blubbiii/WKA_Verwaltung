@@ -9,7 +9,7 @@ import ScadaAutoImportTab from "@/components/energy/scada/ScadaAutoImportTab";
 import ScadaLogsTab from "@/components/energy/scada/ScadaLogsTab";
 import { useTabParam } from "@/hooks/useTabParam";
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["mappings", "import", "auto-import", "logs"] as const;
 
 export default function ScadaPage() {

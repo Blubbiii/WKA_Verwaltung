@@ -42,7 +42,7 @@ const years = Array.from({ length: 11 }, (_, i) => currentYear + 5 - i);
 
 const DISTRIBUTION_MODES = [
   { value: "PROPORTIONAL", label: "Proportional" },
-  { value: "SMOOTHED", label: "Geglaettet" },
+  { value: "SMOOTHED", label: "Geglättet" },
   { value: "TOLERATED", label: "Mit Duldung" },
 ];
 

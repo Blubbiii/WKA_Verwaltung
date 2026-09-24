@@ -95,7 +95,7 @@ const years = Array.from({ length: 10 }, (_, i) => currentYear - i + 1);
 const months = [
   { value: 1, label: "Januar" },
   { value: 2, label: "Februar" },
-  { value: 3, label: "Maerz" },
+  { value: 3, label: "März" },
   { value: 4, label: "April" },
   { value: 5, label: "Mai" },
   { value: 6, label: "Juni" },
@@ -789,7 +789,7 @@ export default function SettlementPeriodsTab() {
               <p className="text-xs text-muted-foreground">
                 {bulkFormData.frequency === "MONTHLY"
                   ? "Erstellt 12 monatliche Vorschussperioden (Januar bis Dezember)"
-                  : "Erstellt 4 quartalsweise Vorschussperioden (Maerz, Juni, September, Dezember)"}
+                  : "Erstellt 4 quartalsweise Vorschussperioden (März, Juni, September, Dezember)"}
               </p>
             </div>
 

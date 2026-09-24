@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
 // Module display names
 /*
   Hier stand eine dritte Kopie der Modul-Beschriftungen — sechzehn Eintraege,
-  waehrend es 32 Module gibt, und „Flurstuecke" ohne Umlaut, waehrend die
+  waehrend es 32 Module gibt, und „Flurstücke" ohne Umlaut, waehrend die
   beiden anderen Kopien „Flurstücke" schrieben. Drei Listen, drei Staende.
 
   Die Beschriftung kommt jetzt fertig aus der Route (`modulBeschriftung()` aus

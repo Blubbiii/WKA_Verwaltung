@@ -265,7 +265,7 @@ export default function LeaseAdvancesPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">{t("labels.year")}</label>
               <div className="flex items-center gap-1">
-                <Button
+                <Button aria-label="Zurück"
                   variant="outline"
                   size="icon"
                   className="h-9 w-9"
@@ -277,7 +277,7 @@ export default function LeaseAdvancesPage() {
                 <div className="flex h-9 w-20 items-center justify-center rounded-md border bg-background text-sm font-medium">
                   {year}
                 </div>
-                <Button
+                <Button aria-label="Weiter"
                   variant="outline"
                   size="icon"
                   className="h-9 w-9"

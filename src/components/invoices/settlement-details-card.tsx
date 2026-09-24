@@ -538,7 +538,7 @@ function renderCalculationSummary(summary: CalculationSummary) {
         {/* Pool share */}
         <div className="rounded-md border p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Poolflaeche</span>
+            <span className="text-sm font-medium">Poolfläche</span>
             <Badge variant="secondary">{formatPercent(summary.poolSharePercentage, 0)}</Badge>
           </div>
           <div className="text-2xl font-bold font-mono tabular-nums">

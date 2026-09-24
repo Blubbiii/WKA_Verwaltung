@@ -82,7 +82,7 @@ interface TurbineOption {
 const MONTH_OPTIONS = [
   { value: '1', label: 'Januar' },
   { value: '2', label: 'Februar' },
-  { value: '3', label: 'Maerz' },
+  { value: '3', label: 'März' },
   { value: '4', label: 'April' },
   { value: '5', label: 'Mai' },
   { value: '6', label: 'Juni' },

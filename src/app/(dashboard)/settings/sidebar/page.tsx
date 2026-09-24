@@ -73,7 +73,7 @@ export default function SidebarSettingsPage() {
         <span className="flex-1 truncate text-sm">
           {label ?? (
             // Ein Favorit, dessen Ziel es nicht mehr gibt — etwa nach einem
-            // Umbau der Navigation. Er wird nicht stillschweigend geloescht:
+            // Umbau der Navigation. Er wird nicht stillschweigend gelöscht:
             // der Nutzer soll sehen, dass da etwas war, und selbst entscheiden.
             <span className="text-muted-foreground italic">{href}</span>
           )}
@@ -203,7 +203,7 @@ export default function SidebarSettingsPage() {
                 variant="outline"
                 disabled={!neuerName.trim()}
                 onClick={() => {
-                  // Kennung aus der Zeit: der Name darf sich aendern, die
+                  // Kennung aus der Zeit: der Name darf sich ändern, die
                   // Zuordnung nicht.
                   void speichern(
                     gruppeAnlegen(prefs, neuerName, `g${Date.now().toString(36)}`),

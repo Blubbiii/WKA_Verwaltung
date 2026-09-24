@@ -155,7 +155,7 @@ const defaultNotificationSettings: NotificationSettings = {
 // MAIN COMPONENT
 // =============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["templates", "smtp", "notifications", "test"] as const;
 
 export default function EmailConfigPage() {
@@ -642,7 +642,7 @@ export default function EmailConfigPage() {
                 E-Mail-Vorlagen
               </CardTitle>
               <CardDescription>
-                Verwalten und bearbeiten Sie die Vorlagen fuer System-E-Mails
+                Verwalten und bearbeiten Sie die Vorlagen für System-E-Mails
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -827,7 +827,7 @@ export default function EmailConfigPage() {
                     System-E-Mails aktiviert
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Haupt-Schalter fuer alle E-Mail-Benachrichtigungen
+                    Haupt-Schalter für alle E-Mail-Benachrichtigungen
                   </p>
                 </div>
                 <Switch

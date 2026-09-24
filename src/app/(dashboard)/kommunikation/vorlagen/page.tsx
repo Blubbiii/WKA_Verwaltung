@@ -136,7 +136,7 @@ export default function MailingTemplatesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Mailing-Vorlagen"
-        description="Vorlagen fuer Serienbriefe an Gesellschafter"
+        description="Vorlagen für Serienbriefe an Gesellschafter"
         actions={
           <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
@@ -158,7 +158,7 @@ export default function MailingTemplatesPage() {
         <EmptyState
           icon={FileText}
           title="Keine Vorlagen"
-          description="Erstellen Sie Ihre erste Mailing-Vorlage mit Platzhaltern fuer Gesellschafterdaten."
+          description="Erstellen Sie Ihre erste Mailing-Vorlage mit Platzhaltern für Gesellschafterdaten."
           action={
             <Button onClick={() => { setEditingTemplate(null); setEditorOpen(true); }}>
               <Plus className="mr-2 h-4 w-4" />
@@ -179,7 +179,7 @@ export default function MailingTemplatesPage() {
                     </Badge>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
+                    <Button aria-label="Bearbeiten"
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
@@ -187,7 +187,7 @@ export default function MailingTemplatesPage() {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
+                    <Button aria-label="Löschen"
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-destructive"
@@ -225,7 +225,7 @@ export default function MailingTemplatesPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Vorlage loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
@@ -233,7 +233,7 @@ export default function MailingTemplatesPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

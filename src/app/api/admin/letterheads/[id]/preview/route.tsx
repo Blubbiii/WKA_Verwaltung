@@ -239,7 +239,7 @@ function formatDateDE(): string {
 const SAMPLE_ITEMS = [
   { pos: "1", desc: "Einspeisevergütung Januar 2025", qty: "125.340", unit: "kWh", tax: "0,00 %", net: "10.528,56" },
   { pos: "2", desc: "Einspeisevergütung Februar 2025", qty: "98.760", unit: "kWh", tax: "0,00 %", net: "8.295,84" },
-  { pos: "3", desc: "Einspeisevergütung Maerz 2025", qty: "142.180", unit: "kWh", tax: "0,00 %", net: "11.943,12" },
+  { pos: "3", desc: "Einspeisevergütung März 2025", qty: "142.180", unit: "kWh", tax: "0,00 %", net: "11.943,12" },
   { pos: "4", desc: "Direktvermarktungsentgelt Q1/2025", qty: "1", unit: "psch.", tax: "19,00 %", net: "-1.250,00" },
 ];
 

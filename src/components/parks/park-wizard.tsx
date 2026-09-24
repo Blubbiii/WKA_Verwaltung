@@ -523,9 +523,9 @@ export function ParkWizard() {
               <CollapsibleTrigger asChild>
                 <div className="flex items-center justify-between w-full">
                   <div>
-                    <CardTitle className="text-base">Vergütungssaetze pro Nutzungsart</CardTitle>
+                    <CardTitle className="text-base">Vergütungssätze pro Nutzungsart</CardTitle>
                     <CardDescription>
-                      Optionale Vergütungssaetze für Zuwegung, Kabeltrasse und Ausgleichsflaechen
+                      Optionale Vergütungssätze für Zuwegung, Kabeltrasse und Ausgleichsflaechen
                     </CardDescription>
                   </div>
                   {showCompensation ? (
@@ -702,7 +702,7 @@ export function ParkWizard() {
                   <>
                     <Separator className="my-2" />
                     <p className="text-muted-foreground text-xs font-medium mb-1">
-                      Vergütungssaetze
+                      Vergütungssätze
                     </p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                       {wegCompensationPerSqm && (

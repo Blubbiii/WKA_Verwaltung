@@ -253,7 +253,7 @@ export default function InspectionsOverviewPage() {
                     {plans.length} aktive Prüfpläne
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
+                <Button aria-label="Verknüpfen" variant="ghost" size="sm" asChild>
                   <Link href="/management-billing/inspections/plans">
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -331,7 +331,7 @@ export default function InspectionsOverviewPage() {
                     Die letzten 5 Berichte
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
+                <Button aria-label="Verknüpfen" variant="ghost" size="sm" asChild>
                   <Link href="/management-billing/inspections/reports">
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -397,7 +397,7 @@ export default function InspectionsOverviewPage() {
                     {defects.length} offene Mängel gesamt
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" asChild>
+                <Button aria-label="Verknüpfen" variant="ghost" size="sm" asChild>
                   <Link href="/management-billing/inspections/defects">
                     <ArrowRight className="h-4 w-4" />
                   </Link>

@@ -63,12 +63,12 @@ function LoginForm() {
   /*
     Die Ursache benennen, statt jeden Fehlschlag dem Nutzer anzulasten.
 
-    Vorher stand hier fuer JEDEN Fehler `t("invalidCredentials")`. Damit las
+    Vorher stand hier für JEDEN Fehler `t("invalidCredentials")`. Damit las
     ein Nutzer „Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und
     Passwort." auch dann, wenn seine Eingabe nie geprueft wurde — etwa weil
     die Datenbank nicht erreichbar war — oder wenn er schlicht gesperrt war.
 
-    Besonders unangenehm im zweiten Fall: Wer nach fuenf Versuchen fuer
+    Besonders unangenehm im zweiten Fall: Wer nach fuenf Versuchen für
     fuenfzehn Minuten gesperrt ist und „Passwort falsch" liest, probiert
     weiter. Jeder weitere Versuch verlaengert die Sperre. Die Anmeldung warf
     die richtige Meldung bereits — die Oberflaeche hat sie verworfen.

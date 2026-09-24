@@ -125,7 +125,7 @@ export function WidgetWrapper({
               <CardTitle className="uppercase tracking-wider text-[11px] font-semibold text-muted-foreground truncate">{title}</CardTitle>
             </div>
             {isEditing && onRemove && (
-              <Button
+              <Button aria-label="Entfernen"
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"

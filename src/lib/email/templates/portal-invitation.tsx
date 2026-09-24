@@ -55,15 +55,15 @@ export function PortalInvitationEmail({
         <Text style={credentialLabelStyle}>E-Mail-Adresse:</Text>
         <Text style={credentialValueStyle}>{email}</Text>
         <Text style={{ ...credentialLabelStyle, marginTop: '12px' }}>
-          Temporaeres Passwort:
+          Temporäres Passwort:
         </Text>
         <Text style={credentialValueStyle}>{temporaryPassword}</Text>
       </InfoBox>
 
       <Section style={warningBoxStyle}>
         <Text style={warningTextStyle}>
-          <strong>Wichtig:</strong> Bitte aendern Sie Ihr Passwort nach der
-          ersten Anmeldung. Das temporaere Passwort sollte nicht dauerhaft
+          <strong>Wichtig:</strong> Bitte ändern Sie Ihr Passwort nach der
+          ersten Anmeldung. Das temporäre Passwort sollte nicht dauerhaft
           verwendet werden.
         </Text>
       </Section>

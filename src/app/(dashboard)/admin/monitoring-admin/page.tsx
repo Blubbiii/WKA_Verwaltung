@@ -13,7 +13,7 @@ import { Activity, AlertTriangle, BarChart2, ClipboardList } from "lucide-react"
 const MonitoringContent = dynamic(() => import("./tabs/monitoring"), { ssr: false });
 const AnalyticsContent = dynamic(() => import("./tabs/analytics"), { ssr: false });
 const AuditContent = dynamic(() => import("./tabs/audit"), { ssr: false });
-// F18: Lesepfad fuer die Dead-Letter-Queue — vorher wurde FailedJob nie gelesen.
+// F18: Lesepfad für die Dead-Letter-Queue — vorher wurde FailedJob nie gelesen.
 const FailedJobsContent = dynamic(() => import("./tabs/failed-jobs"), { ssr: false });
 
 function LoadingSkeleton() {

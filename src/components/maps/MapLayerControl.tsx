@@ -158,14 +158,14 @@ export function MapLayerControl({
             htmlFor="toggle-plots"
             className="text-sm font-medium cursor-pointer select-none"
           >
-            Flurstuecke
+            Flurstücke
           </Label>
         </div>
         <Switch
           id="toggle-plots"
           checked={showPlots}
           onCheckedChange={onTogglePlots}
-          aria-label="Flurstuecke ein-/ausblenden"
+          aria-label="Flurstücke ein-/ausblenden"
         />
       </div>
 

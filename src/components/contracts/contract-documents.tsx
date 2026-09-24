@@ -165,7 +165,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
   async function fetchAvailableDocuments(search: string = "") {
     try {
       setLoadingAvailable(true);
-      // Hole Dokumente die noch nicht mit einem Vertrag verknuepft sind
+      // Hole Dokumente die noch nicht mit einem Vertrag verknüpft sind
       const params = new URLSearchParams({
         limit: "50",
         ...(search && { search }),
@@ -173,7 +173,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
       const response = await fetch(`/api/documents?${params}`);
       if (!response.ok) throw new Error("Fehler beim Laden");
       const data = await response.json();
-      // Filtere Dokumente die bereits mit diesem Vertrag verknuepft sind
+      // Filtere Dokumente die bereits mit diesem Vertrag verknüpft sind
       const linkedIds = new Set(documents.map((d) => d.id));
       setAvailableDocuments(
         data.data.filter((doc: AvailableDocument) => !linkedIds.has(doc.id))

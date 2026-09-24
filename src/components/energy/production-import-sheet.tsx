@@ -130,7 +130,7 @@ const COLUMN_PATTERNS: Record<keyof ColumnMapping, RegExp> = {
  * sie aus einer international erzeugten Datei kommt) nicht ab.
  *
  * Der gemeinsame Parser nimmt `unknown` genauso entgegen und liefert
- * unveraendert `null` fuer Unlesbares — der Vertrag dieser Datei bleibt gleich.
+ * unveraendert `null` für Unlesbares — der Vertrag dieser Datei bleibt gleich.
  */
 function parseGermanNumber(value: unknown): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
@@ -325,7 +325,7 @@ export function ProductionImportSheet({
 
         const worksheet = workbook.worksheets[0]
         if (!worksheet) {
-          throw new Error('Die Datei enthaelt keine Tabellenblaetter.')
+          throw new Error('Die Datei enthält keine Tabellenblaetter.')
         }
 
         // Extract headers from first row
@@ -360,12 +360,12 @@ export function ProductionImportSheet({
       }
 
       if (jsonData.length === 0) {
-        throw new Error('Die Datei enthaelt keine Daten.')
+        throw new Error('Die Datei enthält keine Daten.')
       }
 
       if (jsonData.length > 5000) {
         throw new Error(
-          `Die Datei enthaelt ${jsonData.length} Zeilen. Maximal 5.000 Zeilen sind erlaubt.`
+          `Die Datei enthält ${jsonData.length} Zeilen. Maximal 5.000 Zeilen sind erlaubt.`
         )
       }
 
@@ -1048,8 +1048,8 @@ export function ProductionImportSheet({
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
             {hasImported
-              ? `${importResult.imported} Datensaetze wurden erfolgreich importiert.`
-              : 'Es konnten keine Datensaetze importiert werden.'}
+              ? `${importResult.imported} Datensätze wurden erfolgreich importiert.`
+              : 'Es konnten keine Datensätze importiert werden.'}
           </p>
         </div>
 

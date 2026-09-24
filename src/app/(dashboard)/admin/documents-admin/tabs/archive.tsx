@@ -568,7 +568,7 @@ function ArchiveContent() {
               )}
               {verificationResult.passed && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950">
-                  <p className="text-green-800 dark:text-green-200"><CheckCircle2 className="inline h-4 w-4 mr-1" />Alle Dokumente im Archiv sind integritätsgesichert. Die Hash-Kette ist vollstaendig und unverfälscht.</p>
+                  <p className="text-green-800 dark:text-green-200"><CheckCircle2 className="inline h-4 w-4 mr-1" />Alle Dokumente im Archiv sind integritätsgesichert. Die Hash-Kette ist vollständig und unverfälscht.</p>
                 </div>
               )}
             </div>

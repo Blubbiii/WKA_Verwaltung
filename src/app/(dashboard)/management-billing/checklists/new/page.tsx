@@ -208,7 +208,7 @@ export default function NewChecklistPage() {
           <div>
             <h1 className="text-2xl font-bold">Neue Checkliste anlegen</h1>
             <p className="text-muted-foreground">
-              Erstellen Sie eine neue Checklisten-Vorlage fuer wiederkehrende
+              Erstellen Sie eine neue Checklisten-Vorlage für wiederkehrende
               Pruefungen
             </p>
           </div>
@@ -375,7 +375,7 @@ export default function NewChecklistPage() {
                         />
                         <span className="text-sm">Pflicht</span>
                       </label>
-                      <Button
+                      <Button aria-label="Entfernen"
                         type="button"
                         variant="ghost"
                         size="icon"
@@ -397,7 +397,7 @@ export default function NewChecklistPage() {
           <Card className="border-blue-200 bg-blue-50">
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
-                Checklisten-Vorlagen koennen spaeter mit Aufgaben verknuepft
+                Checklisten-Vorlagen koennen spaeter mit Aufgaben verknüpft
                 werden. Die Prüfpunkte werden dann als Checkliste in die
                 Aufgabe uebernommen.
               </p>

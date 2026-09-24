@@ -34,9 +34,9 @@ const DEFAULT_SETTLEMENT_ARTICLES = [
   { type: "MINDESTPACHT", label: "Mindestnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
   { type: "JAHRESNUTZUNGSENTGELD", label: "Jahresnutzungsentgeld", taxRate: 0, accountNumber: "8400" },
   { type: "VORSCHUSSVERRECHNUNG", label: "Verrechnung Vorschüsse", taxRate: 0, accountNumber: "8400" },
-  { type: "ZUWEGUNG", label: "Zuwegungsentschaedigung", taxRate: 0, accountNumber: "8401" },
-  { type: "KABELTRASSE", label: "Kabeltrassenentschaedigung", taxRate: 0, accountNumber: "8401" },
-  { type: "AUSGLEICH", label: "Ausgleichsentschaedigung", taxRate: 0, accountNumber: "8401" },
+  { type: "ZUWEGUNG", label: "Zuwegungsentschädigung", taxRate: 0, accountNumber: "8401" },
+  { type: "KABELTRASSE", label: "Kabeltrassenentschädigung", taxRate: 0, accountNumber: "8401" },
+  { type: "AUSGLEICH", label: "Ausgleichsentschädigung", taxRate: 0, accountNumber: "8401" },
 ];
 
 interface SettlementArticle {
@@ -445,7 +445,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
                       placeholder="8400"
                       className="font-mono"
                     />
-                    <Button
+                    <Button aria-label="Löschen"
                       type="button"
                       variant="ghost"
                       size="icon"

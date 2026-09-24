@@ -36,6 +36,7 @@ const MODULE_FLAG_KEYS = [
   "wirtschaftsplan.enabled",
   "document-routing.enabled",
   "marketData.enabled",
+  "ppa-management.enabled",
   "scada-uploader-v2.enabled",
   "uploader-v2-generic.enabled",
 ] as const;

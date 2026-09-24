@@ -90,7 +90,7 @@ interface BillingRule {
 // Labels
 const RULE_TYPE_LABELS: Record<string, string> = {
   LEASE_PAYMENT: "Pachtzahlung",
-  DISTRIBUTION: "Ausschuettung",
+  DISTRIBUTION: "Ausschüttung",
   MANAGEMENT_FEE: "Verwaltungsgebühr",
   CUSTOM: "Benutzerdefiniert",
 };

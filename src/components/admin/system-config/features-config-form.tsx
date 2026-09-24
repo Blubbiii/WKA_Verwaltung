@@ -320,7 +320,7 @@ export function FeaturesConfigForm({
           />
         </div>
 
-        {/* TF-8: /api/admin/search/reindex war vollstaendig implementiert und
+        {/* TF-8: /api/admin/search/reindex war vollständig implementiert und
             hatte keinen UI-Auslöser. Ohne Neuaufbau bleiben alle Dokumente
             unsichtbar, die vor dem Aktivieren hochgeladen wurden — der Index
             wird nur beim Upload fortgeschrieben. */}

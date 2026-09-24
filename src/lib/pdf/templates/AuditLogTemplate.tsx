@@ -201,7 +201,7 @@ const ENTITY_LABELS: Record<string, string> = {
   Turbine: "Anlage",
   Fund: "Gesellschaft",
   Shareholder: "Gesellschafter",
-  Plot: "Flurstueck",
+  Plot: "Flurstück",
   Lease: "Pachtvertrag",
   Contract: "Vertrag",
   Document: "Dokument",
@@ -401,7 +401,7 @@ export function AuditLogTemplate({ data }: AuditLogTemplateProps) {
     <Document>
       {pages.map((pageEntries, pageIndex) => (
         <Page key={pageIndex} size="A4" orientation="landscape" style={styles.page}>
-          {/* Header - nur auf erster Seite vollstaendig */}
+          {/* Header - nur auf erster Seite vollständig */}
           <View style={styles.header}>
             <Text style={styles.title}>Audit-Log Export</Text>
             {pageIndex === 0 && (

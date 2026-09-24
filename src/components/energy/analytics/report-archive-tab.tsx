@@ -207,7 +207,7 @@ export function ReportArchiveTab() {
       const response = await fetch(`/api/reports/archive/${reportToDelete.id}`, { method: "DELETE" });
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Loeschen");
+        throw new Error(data.error || "Fehler beim Löschen");
       }
       await fetchReports();
     } catch (error) {
@@ -480,7 +480,7 @@ export function ReportArchiveTab() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Bericht loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Bericht löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie den Bericht &quot;{reportToDelete?.title}&quot; loeschen moechten?
               Diese Aktion kann nicht rückgängig gemacht werden.
@@ -492,7 +492,7 @@ export function ReportArchiveTab() {
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

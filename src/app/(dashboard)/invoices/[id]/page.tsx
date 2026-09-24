@@ -740,7 +740,7 @@ export default function InvoiceDetailPage({
             </a>
           </Button>
           {/* Bedienaufwand #9: "so wie letztes Mal, aber anders".
-              Bewusst fuer JEDEN Status verfuegbar — auch eine stornierte
+              Bewusst für JEDEN Status verfuegbar — auch eine stornierte
               Rechnung ist eine brauchbare Vorlage. */}
           <Button variant="outline" asChild>
             <Link href={`/invoices/new?duplicateFrom=${id}`}>

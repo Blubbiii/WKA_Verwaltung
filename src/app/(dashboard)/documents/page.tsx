@@ -465,7 +465,7 @@ export default function DocumentsPage() {
 
         Vorher standen hier acht Karten in voller Kachelgroesse, SECHS davon
         mit "0": Protokoll, Bericht, Rechnung, Genehmigung, Korrespondenz,
-        Sonstiges. Das ist viel Aufmerksamkeit fuer nichts, und jede leere
+        Sonstiges. Das ist viel Aufmerksamkeit für nichts, und jede leere
         Karte ist ein Klickziel, das zu einer leeren Liste fuehrt.
 
         Jetzt: eine schmale Zeile, und eine Kategorie erscheint erst, wenn sie

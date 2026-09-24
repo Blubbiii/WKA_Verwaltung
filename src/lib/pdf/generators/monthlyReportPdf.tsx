@@ -23,7 +23,7 @@ import { logger } from "@/lib/logger";
 const MONTH_NAMES = [
   "Januar",
   "Februar",
-  "Maerz",
+  "März",
   "April",
   "Mai",
   "Juni",

@@ -638,7 +638,7 @@ function NewInvoiceContent() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {/* Bedienaufwand #17: type="number" liefert fuer
+                          {/* Bedienaufwand #17: type="number" liefert für
                               "1.234,56" einen LEEREN Wert — die Position wurde
                               dadurch still 0,00 EUR. */}
                           <AmountInput
@@ -695,7 +695,7 @@ function NewInvoiceContent() {
                           {formatCurrency(netAmount)}
                         </TableCell>
                         <TableCell>
-                          <Button
+                          <Button aria-label="Löschen"
                             type="button"
                             variant="ghost"
                             size="icon"

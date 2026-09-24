@@ -153,7 +153,7 @@ export default function ProxiesPage() {
         Die Antwort wird geprueft, nicht geglaubt — und ein Fehlschlag wird
         SICHTBAR.
 
-        Die Route lieferte im Fall "kein Gesellschafterprofil verknuepft"
+        Die Route lieferte im Fall "kein Gesellschafterprofil verknüpft"
         `{ grantedProxies, receivedProxies }` statt `{ granted, received }` —
         mit Status 200, also ohne dass die Pruefung oben angeschlagen haette.
         `proxies.granted.length` lief danach auf undefined und riss die ganze

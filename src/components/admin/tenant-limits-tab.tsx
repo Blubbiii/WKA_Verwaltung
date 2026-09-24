@@ -368,7 +368,7 @@ export function TenantLimitsTab() {
 
                     {/* Save Button */}
                     <TableCell className="text-center">
-                      <Button
+                      <Button aria-label="Speichern"
                         size="sm"
                         variant={hasChanges(tenant.id) ? "default" : "outline"}
                         disabled={

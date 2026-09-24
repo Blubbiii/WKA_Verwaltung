@@ -667,7 +667,7 @@ function ImportStep({ isImporting, importProgress, importResult, onRetry }: Impo
               </h3>
               <p className="text-muted-foreground">
                 {hasImported
-                  ? `${importResult.imported} Datensaetze erfolgreich importiert`
+                  ? `${importResult.imported} Datensätze erfolgreich importiert`
                   : "Es konnten keine Daten importiert werden"}
               </p>
             </div>
@@ -778,7 +778,7 @@ export default function ProductionDataImportPage() {
         const parsed = parseCSV(text);
 
         if (parsed.headers.length === 0) {
-          setFileError("Die Datei enthaelt keine gültigen Daten");
+          setFileError("Die Datei enthält keine gültigen Daten");
           return;
         }
 
@@ -961,7 +961,7 @@ export default function ProductionDataImportPage() {
       setImportResult(result);
 
       if (result.imported > 0) {
-        toast.success(`${result.imported} Datensaetze importiert`);
+        toast.success(`${result.imported} Datensätze importiert`);
       } else {
         toast.error("Keine Daten importiert");
       }

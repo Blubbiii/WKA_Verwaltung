@@ -79,7 +79,7 @@ const statusBadgeColors: Record<string, string> = {
 const CATEGORY_OPTIONS = [
   "Ertragssteigerung",
   "Kostensenkung",
-  "Verfuegbarkeit",
+  "Verfügbarkeit",
   "Sicherheit",
   "Sonstiges",
 ];
@@ -194,9 +194,9 @@ export default function MeasureDetailPage({
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => null);
-      throw new Error(errorData?.error ?? "Fehler beim Loeschen");
+      throw new Error(errorData?.error ?? "Fehler beim Löschen");
     }
-    toast.success("Massnahme geloescht");
+    toast.success("Massnahme gelöscht");
     router.push("/management-billing/optimization");
   }
 
@@ -303,7 +303,7 @@ export default function MeasureDetailPage({
             onClick={() => setDeleteOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
@@ -525,7 +525,7 @@ export default function MeasureDetailPage({
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={handleDelete}
-        title="Massnahme loeschen"
+        title="Massnahme löschen"
         itemName={measure.title}
       />
     </div>

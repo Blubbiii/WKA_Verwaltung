@@ -236,11 +236,11 @@ export default function ChecklistDetailPage() {
     if (!res.ok) {
       const errorData = await res.json().catch(() => null);
       throw new Error(
-        errorData?.error ?? "Fehler beim Loeschen der Checkliste"
+        errorData?.error ?? "Fehler beim Löschen der Checkliste"
       );
     }
 
-    toast.success("Checkliste geloescht");
+    toast.success("Checkliste gelöscht");
     router.push("/management-billing/checklists");
   }
 
@@ -336,7 +336,7 @@ export default function ChecklistDetailPage() {
             onClick={() => setDeleteDialogOpen(true)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
@@ -493,7 +493,7 @@ export default function ChecklistDetailPage() {
                         />
                         <span className="text-sm">Pflicht</span>
                       </label>
-                      <Button
+                      <Button aria-label="Entfernen"
                         type="button"
                         variant="ghost"
                         size="icon"
@@ -548,7 +548,7 @@ export default function ChecklistDetailPage() {
             <Card className="border-amber-200 bg-amber-50">
               <CardContent className="pt-6">
                 <p className="text-sm text-amber-800">
-                  Diese Checkliste kann nicht geloescht werden, da sie von{" "}
+                  Diese Checkliste kann nicht gelöscht werden, da sie von{" "}
                   {checklist._count.tasks} Aufgabe
                   {checklist._count.tasks !== 1 ? "n" : ""} referenziert wird.
                 </p>
@@ -563,7 +563,7 @@ export default function ChecklistDetailPage() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
-        title="Checkliste loeschen"
+        title="Checkliste löschen"
         itemName={checklist.title}
       />
     </div>

@@ -649,7 +649,7 @@ export default function RolesPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       {/*
                         Das Feld traegt den Rollennamen und hatte keine
-                        Beschriftung — weder sichtbar noch fuer Vorleseprogramme.
+                        Beschriftung — weder sichtbar noch für Vorleseprogramme.
                         Wer die Seite nicht sieht, hoerte hier nur "Textfeld".
                         Sichtbar wird nichts ergaenzt: die Beschriftung waere
                         neben dem Namen der Rolle blosse Wiederholung.

@@ -905,7 +905,7 @@ function EditShareholderDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-distributionPercentage">Ausschuettungsanteil (%)</Label>
+              <Label htmlFor="edit-distributionPercentage">Ausschüttungsanteil (%)</Label>
               <Input
                 id="edit-distributionPercentage"
                 type="number"
@@ -1142,7 +1142,7 @@ function ShareholderDetailDialog({
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Ausschuettungsanteil</span>
+                <span className="text-muted-foreground">Ausschüttungsanteil</span>
                 <span>
                   {shareholder.distributionPercentage != null
                     ? `${Number(shareholder.distributionPercentage).toFixed(2)}%`

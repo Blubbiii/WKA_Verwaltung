@@ -308,7 +308,7 @@ export function OperatingStateTimeline({
         <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
           <Activity className="h-8 w-8 mb-2" />
           <p>
-            Keine Betriebszustands-Daten fuer {turbineDesignation} im Jahr{" "}
+            Keine Betriebszustands-Daten für {turbineDesignation} im Jahr{" "}
             {selectedYear} vorhanden.
           </p>
         </div>

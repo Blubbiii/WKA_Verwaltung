@@ -57,7 +57,7 @@ interface TurbineFormFieldsProps {
   warrantyEndDateText: string;
   setWarrantyEndDateText: Dispatch<SetStateAction<string>>;
   funds: Fund[];
-  /** Gemeinden des Mandanten fuer die Standortzuordnung (A5). */
+  /** Gemeinden des Mandanten für die Standortzuordnung (A5). */
   municipalities: { id: string; name: string }[];
   onCreateNewFund: (target: "operator" | "netzgesellschaft") => void;
 }
@@ -190,7 +190,7 @@ export function TurbineFormFields({
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Grundlage fuer die Zerlegung nach &sect; 29 GewStG. Ohne Zuordnung
+            Grundlage für die Zerlegung nach &sect; 29 GewStG. Ohne Zuordnung
             faellt die Anlage aus der Auswertung heraus und die Anteile der
             uebrigen Gemeinden sind zu hoch.
           </p>
@@ -390,7 +390,7 @@ export function TurbineFormFields({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`${p}hubHeightM`}>Nabenhoehe (m)</Label>
+            <Label htmlFor={`${p}hubHeightM`}>Nabenhöhe (m)</Label>
             <Input
               id={`${p}hubHeightM`}
               type="number"
@@ -512,7 +512,7 @@ export function TurbineFormFields({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`${p}longitude`}>Laengengrad</Label>
+            <Label htmlFor={`${p}longitude`}>Längengrad</Label>
             <Input
               id={`${p}longitude`}
               type="number"

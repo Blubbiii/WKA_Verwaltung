@@ -198,10 +198,10 @@ export default function EmailRoutesPage() {
                   <TableCell className="text-muted-foreground text-sm">{route.description || "—"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(route)}>
+                      <Button aria-label="Bearbeiten" variant="ghost" size="icon" onClick={() => openEdit(route)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(route.id)}>
+                      <Button aria-label="Löschen" variant="ghost" size="icon" onClick={() => handleDelete(route.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

@@ -7548,6 +7548,7 @@
         "inbox": "Inbox",
         "wirtschaftsplan": "Wirtschaftsplan",
         "marketData": "Marktwert-Vergleich",
+        "ppa-management": "PPA-Verträge",
         "scada-uploader-v2": "SCADA-Uploader V2 (resumable)",
         "uploader-v2-generic": "Uploader V2 generisch (Dokumente/Inbox)"
       }

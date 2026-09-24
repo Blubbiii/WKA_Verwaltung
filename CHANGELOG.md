@@ -59,6 +59,29 @@ dem Monatssatz statt mit fest verdrahteten 0,08 €/kWh.
   Solche Abschnitte stehen jetzt als Text da; ein Test gleicht die Liste mit
   dem Dateibaum ab.
 
+**Bugtest der ganzen Anwendung (16 Befunde, alle behoben und nachgetestet)**
+
+Browser- und API-Durchlauf gegen den Produktions-Build: 530 API-Aufrufe,
+168 Seiten, Anlegen/Bearbeiten/Löschen in allen Formularen und Dialogen.
+
+- **Sicherheit:** Die Gebühren-Historie eines Stakeholders ließ sich über die
+  ID mandantenübergreifend lesen und ändern.
+- **Ging gar nicht:** Verpächteranteile (500 auf jedem Pachtvertrag),
+  Optimierungs-Maßnahmen speichern (Priorität als Text statt Zahl), PPA
+  (Knöpfe ohne Funktion, Modulschalter wurde nie ausgeliefert), GIS-Import
+  per Dateiauswahl, Monatssätze pflegen (keine Oberfläche).
+- **Ging nur halb:** Störungsende nachtragen, wiederkehrende Rechnung
+  bearbeiten (leeres Formular), Rechnungsentwurf ohne Adresse speichern,
+  Fondszugriff des Superadmins für andere Mandanten.
+- **Fehlende Knöpfe:** Bearbeiten beim Pachtvertrag, Kostenstellen, Löschen
+  bei Erzeugungsdaten, Kontakten, Budgets, Posteingang; Gemeinden bearbeiten.
+- **Meldungen und Texte:** Validierungsfehler auf Deutsch mit Feldname statt
+  „Too big: expected string…“; Pachtabrechnung sperrt Jahre vor der
+  Inbetriebnahme; Brotkrumen übersetzt; rund 540 ausgeschriebene Umlaute
+  korrigiert; 180 Symbolknöpfe mit Namen für Screenreader.
+- **Wächter-Tests:** Knöpfe ohne Aktion, Symbolknöpfe ohne Namen, Brotkrumen
+  ohne Übersetzung, abgefragte aber nie ausgelieferte Feature-Schalter.
+
 ### August 2026 — Stabilisierung, UI-Überarbeitung, Admin-Tests
 
 Der Monat hat weniger gebaut als geprüft. Das Ergebnis war unangenehm: mehrere

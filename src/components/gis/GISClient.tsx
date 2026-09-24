@@ -288,7 +288,7 @@ export function GISClient() {
         if (isValidGISData(d)) {
           dispatch({ type: "SET_DATA", payload: d });
           // Die Route kuerzt uebervolle Ebenen an einer Obergrenze. Das muss
-          // man sehen — sonst fehlen Flurstuecke, ohne dass es jemand merkt.
+          // man sehen — sonst fehlen Flurstücke, ohne dass es jemand merkt.
           const { gekuerzt, grenze } = d as { gekuerzt?: string[]; grenze?: number };
           if (gekuerzt && gekuerzt.length > 0) {
             toast.warning(tToast("truncated", { max: grenze ?? 0 }));

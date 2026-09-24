@@ -43,7 +43,7 @@ interface ParkOption {
 const CATEGORY_OPTIONS = [
   "Ertragssteigerung",
   "Kostensenkung",
-  "Verfuegbarkeit",
+  "Verfügbarkeit",
   "Sicherheit",
   "Sonstiges",
 ];
@@ -146,7 +146,7 @@ export default function NewOptimizationPage() {
           <div>
             <h1 className="text-2xl font-bold">Neue Optimierungsmassnahme</h1>
             <p className="text-muted-foreground">
-              Verbesserungsmassnahme fuer Windpark planen
+              Verbesserungsmassnahme für Windpark planen
             </p>
           </div>
         </div>

@@ -460,7 +460,7 @@ export function OnboardingWizard() {
                 <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Temporaeres Passwort</span>
+                    <span className="text-sm font-medium">Temporäres Passwort</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 rounded-md border bg-background px-3 py-2 font-mono text-sm">
@@ -485,7 +485,7 @@ export function OnboardingWizard() {
                   <Alert>
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      Bitte teilen Sie das temporaere Passwort dem Gesellschafter mit.
+                      Bitte teilen Sie das temporäre Passwort dem Gesellschafter mit.
                       Es kann nur jetzt angezeigt werden.
                     </AlertDescription>
                   </Alert>

@@ -135,7 +135,7 @@ const periodTypeColors: Record<string, string> = {
 
 // Month names kept in code for index access
 const months = [
-  "", "Januar", "Februar", "Maerz", "April", "Mai", "Juni",
+  "", "Januar", "Februar", "März", "April", "Mai", "Juni",
   "Juli", "August", "September", "Oktober", "November", "Dezember"
 ];
 
@@ -539,7 +539,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
               )}
             </p>
             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              Begruendung: {period.reviewNotes}
+              Begründung: {period.reviewNotes}
             </p>
           </div>
         </div>
@@ -817,7 +817,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Verpaechter</TableHead>
+                        <TableHead>Verpächter</TableHead>
                         {calculationResult.periodType === "ADVANCE" ? (
                           <>
                             <TableHead className="text-right">Flächen</TableHead>
@@ -838,7 +838,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                       {calculationResult.leases.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={calculationResult.periodType === "ADVANCE" ? 3 : 6} className="text-center py-8 text-muted-foreground">
-                            Keine Verpaechter mit aktiven Pachtverträgen gefunden
+                            Keine Verpächter mit aktiven Pachtverträgen gefunden
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -1129,13 +1129,13 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <DialogHeader>
             <DialogTitle>Abrechnungsperiode ablehnen</DialogTitle>
             <DialogDescription>
-              Geben Sie eine Begruendung für die Ablehnung an. Die Periode wird zurück in den
+              Geben Sie eine Begründung für die Ablehnung an. Die Periode wird zurück in den
               Status &quot;In Bearbeitung&quot; versetzt und kann überarbeitet werden.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rejectionNotes">Begruendung *</Label>
+              <Label htmlFor="rejectionNotes">Begründung *</Label>
               <Textarea
                 id="rejectionNotes"
                 value={rejectionNotes}

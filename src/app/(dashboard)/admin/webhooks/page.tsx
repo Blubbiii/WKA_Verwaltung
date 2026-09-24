@@ -279,7 +279,7 @@ export default function AdminWebhooksPage() {
       const res = await fetch(`/api/admin/webhooks/${deletingWebhook.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Fehler beim Loeschen");
+      if (!res.ok) throw new Error("Fehler beim Löschen");
       toast.success(t("webhookDeleted"));
       setDeleteDialogOpen(false);
       setDeletingWebhook(null);
@@ -482,7 +482,7 @@ export default function AdminWebhooksPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Loeschen"
+                          title="Löschen"
                           onClick={() => {
                             setDeletingWebhook(webhook);
                             setDeleteDialogOpen(true);
@@ -646,7 +646,7 @@ export default function AdminWebhooksPage() {
               <span className="font-mono text-sm">
                 {deletingWebhook?.url ? truncateUrl(deletingWebhook.url, 50) : ""}
               </span>{" "}
-              wird unwiderruflich geloescht. Alle zugehoerigen Zustellungsprotokolle
+              wird unwiderruflich gelöscht. Alle zugehoerigen Zustellungsprotokolle
               werden ebenfalls entfernt.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -658,7 +658,7 @@ export default function AdminWebhooksPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -672,7 +672,7 @@ export default function AdminWebhooksPage() {
           <DialogHeader>
             <DialogTitle>{t("deliveryLog")}</DialogTitle>
             <DialogDescription>
-              Letzte Zustellungen fuer{" "}
+              Letzte Zustellungen für{" "}
               <span className="font-mono text-sm">
                 {deliveryWebhook?.url
                   ? truncateUrl(deliveryWebhook.url, 50)

@@ -144,7 +144,7 @@ export async function generateInvoicePdf(
     throw new Error("Rechnung nicht gefunden");
   }
 
-  // Tenant-Einstellungen fuer konfigurierbare Texte laden.
+  // Tenant-Einstellungen für konfigurierbare Texte laden.
   // getTenantSettings() ist Redis-gecacht (10min) — vermeidet den zweiten
   // Tenant-Roundtrip (invoice.tenant war bereits per include geladen).
   const tenantSettings = await getTenantSettings(invoice.tenantId);

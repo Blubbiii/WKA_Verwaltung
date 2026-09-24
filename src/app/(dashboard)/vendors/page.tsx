@@ -252,7 +252,7 @@ export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
-  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // Seitenwechsel — URL für geteilte Links, LocalStorage für die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
   const [tableState, setTableState] = usePersistedTableState("vendors", { search: "", page: 1 });
   const search = tableState.search;
@@ -526,7 +526,7 @@ export default function VendorsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button
+                        <Button aria-label="Bearbeiten"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7"
@@ -534,7 +534,7 @@ export default function VendorsPage() {
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"

@@ -871,7 +871,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
       {/* Password Change Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Passwort aendern</CardTitle>
+          <CardTitle>Passwort ändern</CardTitle>
           <CardDescription>
             Aktualisieren Sie Ihr Passwort regelmäßig für mehr Sicherheit
           </CardDescription>
@@ -965,7 +965,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
                   ) : (
                     <Lock className="mr-2 h-4 w-4" />
                   )}
-                  Passwort aendern
+                  Passwort ändern
                 </Button>
               </div>
             </form>
@@ -1084,7 +1084,7 @@ interface PaperlessAvailableKey {
   defaultValue?: string;
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features"] as const;
 
 export default function SettingsPage() {

@@ -325,7 +325,7 @@ export default function FundDetailsPage({
   const [distributionDescription, setDistributionDescription] = useState<string>("");
   const [distributionDate, setDistributionDate] = useState<Date>(new Date());
   // Vorbelegt mit dem VORJAHR: ausgeschuettet wird nach dem
-  // Gewinnverwendungsbeschluss, also fuer ein abgeschlossenes Geschäftsjahr.
+  // Gewinnverwendungsbeschluss, also für ein abgeschlossenes Geschäftsjahr.
   // Der Nutzer sieht und aendert es — geraten wird nichts im Hintergrund.
   const [distributionPeriodYear, setDistributionPeriodYear] = useState<string>(
     () => String(new Date().getFullYear() - 1),
@@ -699,7 +699,7 @@ export default function FundDetailsPage({
   }
 
   /**
-   * Vorschau der Ausschuettung — mit derselben Funktion wie der Server.
+   * Vorschau der Ausschüttung — mit derselben Funktion wie der Server.
    *
    * A8 (Finding 4.1): Vorher stand hier eine eigene Rechnung, die auf
    * `status === "ACTIVE"` filterte und die verbleibenden Quoten auf 100 %
@@ -1611,7 +1611,7 @@ export default function FundDetailsPage({
                               : "-"}
                           </TableCell>
                           <TableCell>
-                            <Button
+                            <Button aria-label="Löschen"
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
@@ -1657,7 +1657,7 @@ export default function FundDetailsPage({
                               : "-"}
                           </TableCell>
                           <TableCell>
-                            <Button
+                            <Button aria-label="Löschen"
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
@@ -2187,7 +2187,7 @@ export default function FundDetailsPage({
                 return <p className="text-sm text-muted-foreground">{t("detail.previewNoShares")}</p>;
               }
               if ("error" in preview) {
-                // Die Begruendung des Rechenkerns ist die genaue — sie nennt
+                // Die Begründung des Rechenkerns ist die genaue — sie nennt
                 // den Abschnitt und die Summe.
                 return <p className="text-sm font-medium text-destructive">{preview.error}</p>;
               }

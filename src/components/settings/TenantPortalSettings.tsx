@@ -36,8 +36,8 @@ interface PortalFormData {
 const PORTAL_SECTIONS = [
   {
     id: "distributions",
-    label: "Ausschuettungen",
-    description: "Gesellschafter sehen ihre Ausschuettungen",
+    label: "Ausschüttungen",
+    description: "Gesellschafter sehen ihre Ausschüttungen",
   },
   {
     id: "documents",
@@ -203,9 +203,9 @@ export function TenantPortalSettings() {
 
           <Separator />
 
-          {/* Begruesungstext */}
+          {/* Begrüßungstext */}
           <div className="space-y-2">
-            <Label htmlFor="portalWelcomeText">Begruesungstext</Label>
+            <Label htmlFor="portalWelcomeText">Begrüßungstext</Label>
             <Textarea
               id="portalWelcomeText"
               value={formData.portalWelcomeText}

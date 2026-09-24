@@ -577,7 +577,7 @@ export default function EditContractPage() {
                 {reminderDays.map((days) => (
                   <Badge key={days} variant="secondary">
                     {t("edit.reminderDaysBefore", { days })}
-                    <button
+                    <button aria-label="Entfernen"
                       type="button"
                       onClick={() => removeReminder(days)}
                       className="ml-2 hover:text-destructive"

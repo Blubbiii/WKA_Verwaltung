@@ -354,6 +354,7 @@ export default function NewVotePage() {
                               type="button"
                               onClick={() => removeOption(index)}
                               className="ml-2 hover:text-destructive"
+                              aria-label={`Option „${option}“ entfernen`}
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -373,7 +374,7 @@ export default function NewVotePage() {
                           }
                         }}
                       />
-                      <Button type="button" variant="outline" onClick={addOption}>
+                      <Button type="button" variant="outline" onClick={addOption} aria-label="Option hinzufügen">
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>

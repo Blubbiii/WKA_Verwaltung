@@ -624,7 +624,7 @@ export function ScheduledReportsManager() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
+                      <Button aria-label="Löschen"
                         variant="ghost"
                         size="icon"
                         className="text-destructive hover:text-destructive"

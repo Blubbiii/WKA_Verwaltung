@@ -349,8 +349,8 @@ export default function NewLeaseWizardPage() {
    * Bedienaufwand #21 (Audit 2026-07): EIN Request statt drei.
    *
    * Vorher lief nacheinander POST /api/persons, n x POST /api/plots und
-   * POST /api/leases. Schlug der letzte fehl, waren Verpaechter und
-   * Flurstuecke bereits angelegt — die Fehlermeldung sagte das nicht, und ein
+   * POST /api/leases. Schlug der letzte fehl, waren Verpächter und
+   * Flurstücke bereits angelegt — die Fehlermeldung sagte das nicht, und ein
    * zweiter Speicherversuch legte die Person ein zweites Mal an. Genau solche
    * Stammdaten-Dubletten tauchen spaeter in den Abrechnungen wieder auf.
    *
@@ -361,7 +361,7 @@ export default function NewLeaseWizardPage() {
     setLoading(true);
     try {
       const payload = {
-        // Entweder ein bestehender Verpaechter ODER ein neu anzulegender —
+        // Entweder ein bestehender Verpächter ODER ein neu anzulegender —
         // die Route weist beides gleichzeitig zurück, statt still eines zu
         // bevorzugen.
         ...(lessorMode === "create"
@@ -891,7 +891,7 @@ export default function NewLeaseWizardPage() {
                           <Badge variant="secondary" className="ml-2">{t("plots.badgeNew")}</Badge>
                         </div>
                       </div>
-                      <Button
+                      <Button aria-label="Entfernen"
                         variant="ghost"
                         size="icon"
                         onClick={() => removeNewPlot(plot.tempId)}
@@ -1234,7 +1234,7 @@ export default function NewLeaseWizardPage() {
                     {t("contract.plus25Years")}
                   </Button>
                   {contractData.endDate && (
-                    <Button
+                    <Button aria-label="Entfernen"
                       type="button"
                       variant="ghost"
                       size="sm"

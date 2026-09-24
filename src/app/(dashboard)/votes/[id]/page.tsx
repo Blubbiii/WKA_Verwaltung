@@ -94,7 +94,7 @@ interface VoteDetail {
 }
 
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["voted", "pending", "all"] as const;
 
 export default function VoteDetailPage() {

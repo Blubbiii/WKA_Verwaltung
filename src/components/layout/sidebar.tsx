@@ -208,7 +208,7 @@ export function Sidebar() {
   const { seiten: zuletztBesucht, merken: merkeSeite } = useRecentPages();
   const { prefs: favPrefs } = useSidebarPrefsContext();
 
-  // Eine Stelle fuer alle Beschriftungen — siehe lib/sidebar/labels.ts.
+  // Eine Stelle für alle Beschriftungen — siehe lib/sidebar/labels.ts.
   const beschriftungen = useMemo(() => zielBeschriftungen(t), [t]);
   const zielBeschriftung = useCallback(
     (href: string) => beschriftungen.get(href) ?? null,
@@ -719,7 +719,7 @@ export function Sidebar() {
         */}
         {/*
           Favoriten ERSETZEN "Zuletzt besucht", sie ergaenzen es nicht.
-          Zwei Abschnitte am Kopf der Leiste haetten das Aufraeumen wieder
+          Zwei Abschnitte am Kopf der Leiste haetten das Aufräumen wieder
           zunichte gemacht — und wer Favoriten pflegt, braucht die
           automatische Liste nicht mehr.
         */}

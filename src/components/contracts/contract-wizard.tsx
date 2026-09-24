@@ -139,14 +139,14 @@ const CONTRACT_TYPE_OPTIONS = [
   {
     value: "LEASE",
     label: "Pachtvertrag",
-    description: "Pachtvertrag für Grundstücke/Flurstuecke",
+    description: "Pachtvertrag für Grundstücke/Flurstücke",
     icon: Landmark,
   },
   {
     value: "SERVICE",
     label: "Betriebsführungsvertrag",
     description:
-      "Vertrag zur technischen oder kaufmaennischen Betriebsführung",
+      "Vertrag zur technischen oder kaufmännischen Betriebsführung",
     icon: Building2,
   },
   {
@@ -180,7 +180,7 @@ const STATUS_OPTIONS = [
   { value: "DRAFT", label: "Entwurf" },
   { value: "ACTIVE", label: "Aktiv" },
   { value: "EXPIRED", label: "Abgelaufen" },
-  { value: "TERMINATED", label: "Gekuendigt" },
+  { value: "TERMINATED", label: "Gekündigt" },
 ];
 
 // ==========================================
@@ -689,7 +689,7 @@ export function ContractWizard() {
                     +20 Jahre
                   </Button>
                   {formData.endDate && (
-                    <Button
+                    <Button aria-label="Entfernen"
                       type="button"
                       variant="ghost"
                       size="sm"

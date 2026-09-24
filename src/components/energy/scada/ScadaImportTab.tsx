@@ -1247,7 +1247,7 @@ export default function ScadaImportTab() {
                               )}
                               {t("import")}
                             </Button>
-                            <Button
+                            <Button aria-label="Löschen"
                               size="sm"
                               variant="ghost"
                               onClick={() =>
@@ -2041,7 +2041,7 @@ export default function ScadaImportTab() {
                   <TableHead>Standort</TableHead>
                   <TableHead>Typ</TableHead>
                   <TableHead className="text-right">Dateien</TableHead>
-                  <TableHead className="text-right">Datensaetze</TableHead>
+                  <TableHead className="text-right">Datensätze</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Dauer</TableHead>
                 </TableRow>

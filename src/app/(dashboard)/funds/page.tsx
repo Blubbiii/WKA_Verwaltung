@@ -104,7 +104,7 @@ export default function FundsPage() {
   const { confirm, confirmDialog } = useConfirm();
   const tc = useTranslations("common.confirmDialog");
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
-  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // Seitenwechsel — URL für geteilte Links, LocalStorage für die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
   const [tableState, setTableState] = usePersistedTableState("funds", { search: "", status: "all" });
   const search = tableState.search;
@@ -253,7 +253,7 @@ export default function FundsPage() {
     refetch();
   }
 
-  // Die Kennzahlen kommen vom SERVER und gelten fuer den gesamten Filter.
+  // Die Kennzahlen kommen vom SERVER und gelten für den gesamten Filter.
   // Vorher wurden sie aus der geladenen Seite summiert — derselbe Fehler wie
   // ueber der Parkliste, wo "Windparks 20" die Seitengroesse war und nicht
   // der Bestand von 93.

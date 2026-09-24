@@ -330,7 +330,7 @@ export function CorrectionDialog({
                         className={isEditing ? "bg-blue-50" : ""}
                       >
                         <TableCell>
-                          <Button
+                          <Button aria-label="Bearbeiten"
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7"

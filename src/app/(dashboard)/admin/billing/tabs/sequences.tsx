@@ -8,7 +8,7 @@ import { PositionTemplatesSettings } from "@/components/settings/PositionTemplat
 import { FileText, Receipt, PenTool, List } from "lucide-react";
 import { useTabParam } from "@/hooks/useTabParam";
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["sequences", "billing", "invoice-templates", "positions"] as const;
 
 export default function SequencesTab() {

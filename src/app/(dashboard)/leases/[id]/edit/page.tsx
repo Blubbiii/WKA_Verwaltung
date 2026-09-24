@@ -671,7 +671,7 @@ export default function EditLeasePage({
                       <Plus className="h-4 w-4 mr-1" />
                       {t("areaAdd")}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => togglePlot(plot.id)}>
+                    <Button aria-label="Entfernen" variant="ghost" size="icon" onClick={() => togglePlot(plot.id)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -700,7 +700,7 @@ export default function EditLeasePage({
                             </span>
                           )}
                         </div>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-destructive hover:text-destructive"
@@ -768,7 +768,7 @@ export default function EditLeasePage({
                             )}
                             {t("areaSaveBtn")}
                           </Button>
-                          <Button
+                          <Button aria-label="Entfernen"
                             variant="ghost"
                             size="sm"
                             className="h-9"
@@ -793,7 +793,7 @@ export default function EditLeasePage({
               <div className="space-y-2 border rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">{t("addPlotExisting")}</Label>
-                  <Button variant="ghost" size="sm" onClick={() => setShowAddPlots(false)}>
+                  <Button aria-label="Entfernen" variant="ghost" size="sm" onClick={() => setShowAddPlots(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -844,7 +844,7 @@ export default function EditLeasePage({
               <div className="space-y-3 border rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">{t("createNewPlot")}</Label>
-                  <Button variant="ghost" size="sm" onClick={() => setShowCreatePlot(false)}>
+                  <Button aria-label="Entfernen" variant="ghost" size="sm" onClick={() => setShowCreatePlot(false)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -1150,7 +1150,7 @@ export default function EditLeasePage({
                     {t("add25Years")}
                   </Button>
                   {formData.endDate && (
-                    <Button
+                    <Button aria-label="Entfernen"
                       type="button"
                       variant="ghost"
                       size="sm"

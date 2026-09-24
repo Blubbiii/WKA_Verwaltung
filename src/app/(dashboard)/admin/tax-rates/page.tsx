@@ -76,7 +76,7 @@ interface PositionTaxMapping {
 
 const TAX_TYPE_LABELS: Record<TaxType, string> = {
   STANDARD: "Regelsteuersatz (Standard)",
-  REDUCED: "Ermaessigter Steuersatz",
+  REDUCED: "Ermäßigter Steuersatz",
   EXEMPT: "Steuerbefreit",
 };
 

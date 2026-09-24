@@ -233,6 +233,13 @@ export const CONFIG_KEYS = {
     envFallback: "GIS_ENABLED",
     defaultValue: "false",
   },
+  "ppa-management.enabled": {
+    category: "features" as ConfigCategory,
+    label: "PPA-Verträge (Stromlieferverträge mit Preismodell)",
+    encrypted: false,
+    envFallback: "PPA_MANAGEMENT_ENABLED",
+    defaultValue: "false",
+  },
   "marketData.enabled": {
     category: "features" as ConfigCategory,
     label: "Marktwert-Vergleich (Day-Ahead Marktpreise vs. EEG)",

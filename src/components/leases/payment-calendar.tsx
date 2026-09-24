@@ -151,7 +151,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
     <div className="space-y-4">
       {/* Month Navigation */}
       <div className="flex items-center justify-between">
-        <Button
+        <Button aria-label="Zurück"
           variant="outline"
           size="icon"
           onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
@@ -166,7 +166,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
             {monthSummary.count} Zahlungen - {formatCurrency(monthSummary.total)}
           </p>
         </div>
-        <Button
+        <Button aria-label="Weiter"
           variant="outline"
           size="icon"
           onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
@@ -285,7 +285,7 @@ export function PaymentCalendar({ payments, year }: PaymentCalendarProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Verpaechter</TableHead>
+                  <TableHead>Verpächter</TableHead>
                   <TableHead>Vertrag</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
                   <TableHead>Status</TableHead>

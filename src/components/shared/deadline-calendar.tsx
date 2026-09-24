@@ -95,7 +95,7 @@ export function DeadlineCalendar({ events }: DeadlineCalendarProps) {
     <Card>
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <Button
+          <Button aria-label="Zurück"
             variant="outline"
             size="icon"
             onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
@@ -105,7 +105,7 @@ export function DeadlineCalendar({ events }: DeadlineCalendarProps) {
           <CardTitle className="text-lg">
             {format(currentMonth, "MMMM yyyy", { locale: de })}
           </CardTitle>
-          <Button
+          <Button aria-label="Weiter"
             variant="outline"
             size="icon"
             onClick={() => setCurrentMonth((m) => addMonths(m, 1))}

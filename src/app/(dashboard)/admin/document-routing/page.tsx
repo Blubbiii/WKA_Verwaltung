@@ -335,14 +335,14 @@ export default function DocumentRoutingPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button
+                        <Button aria-label="Bearbeiten"
                           variant="ghost"
                           size="icon"
                           onClick={() => openEdit(rule)}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost"
                           size="icon"
                           onClick={() => {

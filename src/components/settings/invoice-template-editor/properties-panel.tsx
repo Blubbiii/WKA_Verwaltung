@@ -542,7 +542,7 @@ function BlockConfigEditor({
             <Textarea
               value={(config.customText as string) || ""}
               onChange={(e) => updateConfig("customText", e.target.value)}
-              placeholder="z.B. Geschaeftsfuehrer, Handelsregister..."
+              placeholder="z.B. Geschäftsführer, Handelsregister..."
               rows={2}
               className="text-xs"
             />
@@ -572,7 +572,7 @@ function BlockConfigEditor({
         <div className="space-y-2">
           <Label className="text-xs font-medium">Abstand</Label>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Hoehe (px)</Label>
+            <Label className="text-[10px] text-muted-foreground">Höhe (px)</Label>
             <Input
               type="number"
               min={4}

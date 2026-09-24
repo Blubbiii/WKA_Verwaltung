@@ -303,14 +303,14 @@ export default function ScadaCodesPage() {
                     <TableCell>{formatDate(group.lastUpdated)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
+                        <Button aria-label="Anzeigen"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetail(group.controllerType)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
+                        <Button aria-label="Löschen"
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteType(group.controllerType)}
@@ -356,7 +356,7 @@ export default function ScadaCodesPage() {
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="max-w-sm"
               />
-              <Button variant="outline" size="sm" onClick={handleSearch}>
+              <Button aria-label="Suchen" variant="outline" size="sm" onClick={handleSearch}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>

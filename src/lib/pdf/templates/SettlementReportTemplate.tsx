@@ -4,7 +4,7 @@
  * Generiert einen Pacht-Abrechnungsbericht mit:
  * - Übersicht der Abrechnungsperiode
  * - Tabelle mit allen Verpachtern
- * - Spalten: Verpachter, Flurstuecke, Mindestpacht, Erlösanteil, Auszahlung, Differenz
+ * - Spalten: Verpachter, Flurstücke, Mindestpacht, Erlösanteil, Auszahlung, Differenz
  * - Summenzeile
  * - Unterschriftenbereich
  */
@@ -264,7 +264,7 @@ interface SettlementReportTemplateProps {
 // ===========================================
 
 /**
- * Formatiert die Flurstuecke einer Lease als Text
+ * Formatiert die Flurstücke einer Lease als Text
  */
 function formatPlots(lease: LeaseCalculationResult): string {
   const plotsMap = new Map<string, string[]>();
@@ -420,7 +420,7 @@ export function SettlementReportTemplate({
             {/* Tabellenkopf */}
             <View style={styles.tableHeader}>
               <Text style={[styles.tableHeaderText, styles.colLessor]}>Verpachter</Text>
-              <Text style={[styles.tableHeaderText, styles.colPlots]}>Flurstuecke</Text>
+              <Text style={[styles.tableHeaderText, styles.colPlots]}>Flurstücke</Text>
               <Text style={[styles.tableHeaderText, styles.colMinRent]}>Mindestpacht</Text>
               <Text style={[styles.tableHeaderText, styles.colRevShare]}>Erlösanteil</Text>
               <Text style={[styles.tableHeaderText, styles.colPayment]}>Auszahlung</Text>

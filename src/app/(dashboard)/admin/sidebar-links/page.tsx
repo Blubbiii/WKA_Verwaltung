@@ -304,10 +304,10 @@ export default function SidebarLinksPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(link)}>
+                      <Button aria-label="Bearbeiten" variant="ghost" size="icon" onClick={() => openEdit(link)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(link)}>
+                      <Button aria-label="Löschen" variant="ghost" size="icon" onClick={() => setDeleteTarget(link)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>

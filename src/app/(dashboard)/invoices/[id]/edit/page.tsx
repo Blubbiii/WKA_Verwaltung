@@ -741,7 +741,7 @@ export default function EditInvoicePage({
                           {formatCurrency(netAmount)}
                         </TableCell>
                         <TableCell>
-                          <Button
+                          <Button aria-label="Löschen"
                             type="button"
                             variant="ghost"
                             size="icon"

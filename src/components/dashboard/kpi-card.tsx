@@ -190,7 +190,7 @@ export function KPICard({
           Passt der Wert nicht, wird er KLEINER, nicht kuerzer: die
           Container-Abfragen stufen die Schrift von @xs bis @md. Reicht auch
           das nicht, darf er umbrechen — zwei Zeilen sind besser als eine
-          halbe Zahl. `title` haelt den vollen Wert fuer den Mauszeiger
+          halbe Zahl. `title` haelt den vollen Wert für den Mauszeiger
           bereit.
         */}
         <div

@@ -93,7 +93,7 @@ export function LessorSharesCard({ leaseId }: { leaseId: string }) {
   const [rows, setRows] = useState<ShareRow[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [personSearch, setPersonSearch] = useState("");
-  // Zaehler statt Index: nach Hinzufuegen, Loeschen, Hinzufuegen waere der
+  // Zaehler statt Index: nach Hinzufuegen, Löschen, Hinzufuegen waere der
   // Index doppelt und React zoege die falsche Zeile zusammen.
   const nextKey = useRef(0);
 

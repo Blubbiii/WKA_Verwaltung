@@ -115,7 +115,7 @@ export default function ContractsPage() {
   const router = useRouter();
   const t = useTranslations("contracts");
   // Bedienaufwand #15 (Audit 2026-07): Filter ueberleben jetzt einen
-  // Seitenwechsel — URL fuer geteilte Links, LocalStorage fuer die
+  // Seitenwechsel — URL für geteilte Links, LocalStorage für die
   // naechste Sitzung. Der Hook gab es schon, genutzt haben ihn drei Seiten.
   const [tableState, setTableState] = usePersistedTableState("contracts", { search: "", type: "all", status: "all", page: 1 });
   const search = tableState.search;
@@ -176,7 +176,7 @@ export default function ContractsPage() {
   );
 
   // Kommt bereits gefiltert vom Server; der fruehere Block durchsuchte nur den
-  // geladenen Ausschnitt und meldete "nichts gefunden" fuer alles dahinter.
+  // geladenen Ausschnitt und meldete "nichts gefunden" für alles dahinter.
   const filteredContracts = contracts;
 
   // Filterwechsel zurück auf Seite 1 — Seite 4 einer geschrumpften Treffer-

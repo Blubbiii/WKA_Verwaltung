@@ -12,7 +12,7 @@ import { MaintenanceModeTab } from "@/components/admin/maintenance-mode-tab";
 import { ToggleLeft, Gauge, Wrench } from "lucide-react";
 import { useTabParam } from "@/hooks/useTabParam";
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
+/** Bedienaufwand #15: erlaubte Werte für ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["feature-flags", "tenant-limits", "maintenance"] as const;
 
 export default function FlagsTab() {
