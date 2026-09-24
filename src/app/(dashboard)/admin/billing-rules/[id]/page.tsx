@@ -122,7 +122,7 @@ function ParameterDisplay({ parameters }: { parameters: Record<string, unknown>;
   );
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["overview", "history"] as const;
 
 export default function BillingRuleDetailPage({
@@ -285,7 +285,7 @@ export default function BillingRuleDetailPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/admin/billing-rules">
               <ArrowLeft className="h-4 w-4" />
             </Link>

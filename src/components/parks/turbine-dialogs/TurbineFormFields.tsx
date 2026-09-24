@@ -163,7 +163,7 @@ export function TurbineFormFields({
         </div>
         {/*
           Standortgemeinde (A5). Nicht ueber den Park ableitbar — ein Park
-          liegt regelmaessig in mehreren Gemeinden, und genau deshalb wird der
+          liegt regelmäßig in mehreren Gemeinden, und genau deshalb wird der
           Gewerbesteuermessbetrag nach § 29 GewStG zerlegt.
         */}
         <div className="space-y-2">
@@ -244,7 +244,7 @@ export function TurbineFormFields({
           </div>
           <div className="space-y-2">
             <Label htmlFor={`${p}kaufmaennischeBetriebsfuehrung`}>
-              Kaufmaennische Betriebsführung
+              Kaufmännische Betriebsführung
             </Label>
             <Input
               id={`${p}kaufmaennischeBetriebsfuehrung`}

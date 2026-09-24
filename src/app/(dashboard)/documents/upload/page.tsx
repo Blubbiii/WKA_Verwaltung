@@ -254,7 +254,7 @@ function DocumentUploadForm() {
     if (picked.length === 1 && !form.getValues("title")) {
       form.setValue("title", titleFromFile(picked[0]));
     }
-    // Zuruecksetzen, damit dieselbe Auswahl erneut ein change-Event ausloest.
+    // Zurücksetzen, damit dieselbe Auswahl erneut ein change-Event ausloest.
     e.target.value = "";
   }
 
@@ -398,7 +398,7 @@ function DocumentUploadForm() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
           <Link href={getBackLink()}>
             <ArrowLeft className="h-4 w-4" />
           </Link>

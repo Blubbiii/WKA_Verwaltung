@@ -8,7 +8,8 @@ import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 // ============================================================================
 // Validation
 // ============================================================================
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = activitySchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     const data = parsed.data;

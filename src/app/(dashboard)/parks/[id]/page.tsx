@@ -1068,7 +1068,7 @@ export default function ParkDetailsPage({
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <CardTitle>Schluesselrollen</CardTitle>
+                  <CardTitle>Schlüsselrollen</CardTitle>
                   <InfoTooltip text="Wichtige Ansprechpartner und Verantwortliche für diesen Windpark." />
                 </div>
                 <CardDescription>
@@ -1560,7 +1560,7 @@ export default function ParkDetailsPage({
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Gesellschaft waehlen..." />
+                          <SelectValue placeholder="Gesellschaft wählen..." />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="__none">-- Nicht festgelegt --</SelectItem>
@@ -2248,7 +2248,7 @@ export default function ParkDetailsPage({
               <Label>Gesellschaft *</Label>
               <Select value={addFundId} onValueChange={setAddFundId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Gesellschaft auswaehlen..." />
+                  <SelectValue placeholder="Gesellschaft auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {availableFunds
@@ -2461,7 +2461,7 @@ export default function ParkDetailsPage({
             <AlertDialogTitle>Anlage unwiderruflich löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Möchten Sie die Anlage &quot;{turbineToDelete?.designation}&quot; wirklich unwiderruflich löschen?
-              Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

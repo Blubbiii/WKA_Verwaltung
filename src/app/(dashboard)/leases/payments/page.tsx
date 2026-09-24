@@ -116,7 +116,7 @@ function LeasePaymentsPageContent() {
 
   // Bedienaufwand #13: Einsprung von der Vertragsdetailseite. Bewusst aus der
   // URL gelesen und nicht in einen State kopiert — so bleibt der gefilterte
-  // Blick teilbar und der Zurueck-Knopf hebt den Filter auf.
+  // Blick teilbar und der Zurück-Knopf hebt den Filter auf.
   const searchParams = useSearchParams();
   const leaseFilter = searchParams.get("leaseId");
 

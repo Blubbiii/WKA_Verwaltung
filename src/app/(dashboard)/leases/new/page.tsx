@@ -362,7 +362,7 @@ export default function NewLeaseWizardPage() {
     try {
       const payload = {
         // Entweder ein bestehender Verpaechter ODER ein neu anzulegender —
-        // die Route weist beides gleichzeitig zurueck, statt still eines zu
+        // die Route weist beides gleichzeitig zurück, statt still eines zu
         // bevorzugen.
         ...(lessorMode === "create"
           ? {
@@ -1404,7 +1404,7 @@ export default function NewLeaseWizardPage() {
                     <SelectContent>
                       <SelectItem value="none">{t("contract.linkedTurbineNone")}</SelectItem>
                       {(() => {
-                        // Finde Parks aus ausgewaehlten Plots
+                        // Finde Parks aus ausgewählten Plots
                         const selectedParkIds = new Set<string>();
                         selectedPlotIds.forEach((plotId) => {
                           const plot = existingPlots.find((p) => p.id === plotId);
@@ -1653,7 +1653,7 @@ export default function NewLeaseWizardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
           <Link href="/leases">
             <ArrowLeft className="h-4 w-4" />
           </Link>

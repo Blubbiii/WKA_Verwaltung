@@ -302,7 +302,7 @@ export default function TaskDetailPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/tasks">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -313,7 +313,7 @@ export default function TaskDetailPage() {
           <CardContent className="py-8">
             <p className="text-center text-destructive">
               Die Aufgabe konnte nicht geladen werden. Bitte versuchen Sie es
-              erneut oder kehren Sie zur Uebersicht zurueck.
+              erneut oder kehren Sie zur Uebersicht zurück.
             </p>
           </CardContent>
         </Card>
@@ -330,7 +330,7 @@ export default function TaskDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/tasks">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -432,7 +432,7 @@ export default function TaskDetailPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="priority">Prioritaet</Label>
+                  <Label htmlFor="priority">Priorität</Label>
                   <Select
                     value={String(formData.priority)}
                     onValueChange={(value) =>
@@ -454,7 +454,7 @@ export default function TaskDetailPage() {
               {/* Due Date + Park */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Faellig am</Label>
+                  <Label htmlFor="dueDate">Fällig am</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -472,7 +472,7 @@ export default function TaskDetailPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park waehlen..." />
+                      <SelectValue placeholder="Park wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Kein Park</SelectItem>
@@ -493,7 +493,7 @@ export default function TaskDetailPage() {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
-                  placeholder="Zusaetzliche Notizen"
+                  placeholder="Zusätzliche Notizen"
                   rows={3}
                 />
               </div>

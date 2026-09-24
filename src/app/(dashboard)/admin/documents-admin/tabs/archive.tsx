@@ -418,7 +418,7 @@ function ArchiveContent() {
             <div className="space-y-2">
               <Label htmlFor="type-filter">Dokumenttyp</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger id="type-filter"><SelectValue placeholder="Dokumenttyp waehlen" /></SelectTrigger>
+                <SelectTrigger id="type-filter"><SelectValue placeholder="Dokumenttyp wählen" /></SelectTrigger>
                 <SelectContent>
                   {DOCUMENT_TYPE_OPTIONS.map((opt) => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
                 </SelectContent>
@@ -568,7 +568,7 @@ function ArchiveContent() {
               )}
               {verificationResult.passed && (
                 <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950">
-                  <p className="text-green-800 dark:text-green-200"><CheckCircle2 className="inline h-4 w-4 mr-1" />Alle Dokumente im Archiv sind integritaetsgesichert. Die Hash-Kette ist vollstaendig und unverfaelscht.</p>
+                  <p className="text-green-800 dark:text-green-200"><CheckCircle2 className="inline h-4 w-4 mr-1" />Alle Dokumente im Archiv sind integritätsgesichert. Die Hash-Kette ist vollstaendig und unverfälscht.</p>
                 </div>
               )}
             </div>
@@ -582,7 +582,7 @@ function ArchiveContent() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><FileDown className="h-5 w-5" />Export für Betriebsprüfung</DialogTitle>
-            <DialogDescription>Exportiert einen GoBD-konformen Index aller archivierten Dokumente für das ausgewaehlte Jahr.</DialogDescription>
+            <DialogDescription>Exportiert einen GoBD-konformen Index aller archivierten Dokumente für das ausgewählte Jahr.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -596,7 +596,7 @@ function ArchiveContent() {
               <p className="font-medium mb-1">Der Export beinhaltet:</p>
               <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                 <li>Index-CSV mit allen Dokumentmetadaten</li>
-                <li>SHA-256 Hashes für Integritaetsnachweis</li>
+                <li>SHA-256 Hashes für Integritätsnachweis</li>
                 <li>GoBD/GDPdU-konformes Format</li>
               </ul>
             </div>

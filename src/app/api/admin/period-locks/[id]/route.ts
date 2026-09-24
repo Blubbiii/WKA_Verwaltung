@@ -20,6 +20,7 @@ import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const unlockSchema = z.object({
   reason: z.string().min(1, "Begründung für Entsperren ist Pflicht").max(500),
@@ -54,7 +55,7 @@ export async function DELETE(
 
     if (!bodyParsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: bodyParsed.error.issues[0]?.message || "Ungültige Eingabedaten",
+        message: zodMeldung(bodyParsed.error, "Ungültige Eingabedaten"),
       });
     }
 

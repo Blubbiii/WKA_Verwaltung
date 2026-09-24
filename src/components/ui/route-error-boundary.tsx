@@ -38,7 +38,7 @@ export function RouteErrorBoundary({
   error,
   reset,
   title = "Ein Fehler ist aufgetreten",
-  description = "Bitte versuchen Sie es erneut oder kehren Sie zum Dashboard zurueck.",
+  description = "Bitte versuchen Sie es erneut oder kehren Sie zum Dashboard zurück.",
 }: RouteErrorBoundaryProps) {
   useEffect(() => {
     Sentry.captureException(error);
@@ -85,7 +85,7 @@ export function RouteErrorBoundary({
               size="sm"
             >
               <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
-              Zurueck
+              Zurück
             </Button>
             <Button
               onClick={() => {

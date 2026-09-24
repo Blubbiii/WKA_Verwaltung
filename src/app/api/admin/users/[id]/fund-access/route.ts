@@ -19,6 +19,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { verwaltbarerNutzer } from "@/lib/admin/verwaltbarer-nutzer";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const putSchema = z.object({
   fundIds: z.array(z.string().uuid()),
@@ -84,7 +85,7 @@ export async function PUT(
     const parsed = putSchema.safeParse(body);
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: parsed.error.issues[0]?.message || "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
 

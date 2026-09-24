@@ -16,6 +16,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const holdSchema = z
   .object({
@@ -57,7 +58,7 @@ export async function PATCH(
     if (!bodyParsed.success) {
       return apiError("BAD_REQUEST", 400, {
         message:
-          bodyParsed.error.issues[0]?.message || "Ungültige Eingabedaten",
+          zodMeldung(bodyParsed.error, "Ungültige Eingabedaten"),
       });
     }
 

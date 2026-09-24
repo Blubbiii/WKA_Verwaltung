@@ -216,7 +216,7 @@ export default function NewClaimPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/insurance/claims">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -332,8 +332,8 @@ export default function NewClaimPage() {
               </CardTitle>
               <CardDescription>
                 {formData.claimType === "INSURANCE"
-                  ? "Zugehoerigen Versicherungsvertrag auswaehlen"
-                  : "Zustaendigen Dienstleister angeben"}
+                  ? "Zugehörigen Versicherungsvertrag auswählen"
+                  : "Zuständigen Dienstleister angeben"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -350,7 +350,7 @@ export default function NewClaimPage() {
                       }
                     >
                       <SelectTrigger id="contractId">
-                        <SelectValue placeholder="Vertrag auswaehlen..." />
+                        <SelectValue placeholder="Vertrag auswählen..." />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Kein Vertrag</SelectItem>
@@ -384,7 +384,7 @@ export default function NewClaimPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-w-sm">
-                <Label htmlFor="estimatedCostEur">Geschaetzte Kosten (EUR)</Label>
+                <Label htmlFor="estimatedCostEur">Geschätzte Kosten (EUR)</Label>
                 <Input
                   id="estimatedCostEur"
                   type="number"
@@ -420,7 +420,7 @@ export default function NewClaimPage() {
                     }}
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park auswaehlen..." />
+                      <SelectValue placeholder="Park auswählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Kein Park</SelectItem>
@@ -447,7 +447,7 @@ export default function NewClaimPage() {
                     disabled={!formData.parkId}
                   >
                     <SelectTrigger id="turbineId">
-                      <SelectValue placeholder={formData.parkId ? "Anlage auswaehlen..." : "Zuerst Park waehlen"} />
+                      <SelectValue placeholder={formData.parkId ? "Anlage auswählen..." : "Zuerst Park wählen"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Keine Anlage</SelectItem>
@@ -466,7 +466,7 @@ export default function NewClaimPage() {
           {prefilledDefectId && (
             <Card>
               <CardHeader>
-                <CardTitle>Verknuepfter Mangel</CardTitle>
+                <CardTitle>Verknüpfter Mangel</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -489,7 +489,7 @@ export default function NewClaimPage() {
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
                 Nach dem Erstellen koennen Sie weitere Details wie Kosten,
-                Erstattungen und Loesungsnotizen hinzufuegen.
+                Erstattungen und Lösungsnotizen hinzufuegen.
               </p>
             </CardContent>
           </Card>

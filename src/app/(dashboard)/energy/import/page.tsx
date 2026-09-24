@@ -94,7 +94,7 @@ const STEPS = [
 
 // Pflichtfelder, Erkennung und die Kopfzeile der Beispieldatei stehen
 // zusammen in lib/energy/grid-import-mapping.ts — sonst laufen sie wieder
-// auseinander, wie zuletzt bei der fehlenden Spalte "Verguetungsart".
+// auseinander, wie zuletzt bei der fehlenden Spalte "Vergütungsart".
 const REQUIRED_FIELDS = GRID_REQUIRED_FIELDS;
 
 const FIELD_LABELS: Record<keyof ColumnMapping, string> = {
@@ -1055,7 +1055,7 @@ export default function ProductionDataImportPage() {
 
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
           <Link href="/energy/settlements">
             <ArrowLeft className="h-4 w-4" />
           </Link>

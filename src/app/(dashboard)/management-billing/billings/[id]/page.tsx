@@ -118,7 +118,7 @@ const ROLE_LABELS: Record<string, string> = {
   SERVICE_PROVIDER: "Dienstleister",
   GRID_OPERATOR: "Netzbetreiber",
   DIRECT_MARKETER: "Direktvermarkter",
-  LANDOWNER: "Grundstueckseigentuemer",
+  LANDOWNER: "Grundstückseigentümer",
   OTHER: "Sonstiges",
 };
 
@@ -282,7 +282,7 @@ export default function BillingDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/billings">
               <ArrowLeft className="h-4 w-4" />
             </Link>

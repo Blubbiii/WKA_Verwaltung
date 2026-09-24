@@ -50,6 +50,7 @@ import { Stepper, StepContent, StepActions } from "@/components/ui/stepper";
 import { toast } from "sonner";
 import { getSettlementPeriodLabel } from "@/types/billing";
 import { PAGE_SIZE_SELECTABLE } from "@/lib/config/pagination";
+import { jahrVorInbetriebnahme } from "@/lib/lease-revenue/abrechnungsjahr";
 
 // ============================================================================
 // Types
@@ -59,6 +60,7 @@ interface Park {
   id: string;
   name: string;
   shortName: string | null;
+  commissioningDate?: string | null;
 }
 
 interface LeaseInfo {
@@ -499,10 +501,15 @@ export default function NewLeaseSettlementPage() {
   // Validation
   // =========================================================================
 
+  // Operating year 0 cannot be settled; checking it here keeps step 2 from
+  // storing revenue data for a year that fails in step 3.
+  const selectedPark = parks.find((p) => p.id === selectedParkId);
+  const vorInbetriebnahme = jahrVorInbetriebnahme(year, selectedPark?.commissioningDate);
+
   function canProceed(): boolean {
     switch (currentStep) {
       case 0:
-        return !!selectedParkId && year > 0 && leaseSummary.leaseCount > 0;
+        return !!selectedParkId && year > 0 && leaseSummary.leaseCount > 0 && !vorInbetriebnahme;
       case 1:
         if (periodType === "ADVANCE") return true;
         return effectiveRevenue > 0;
@@ -909,6 +916,13 @@ export default function NewLeaseSettlementPage() {
               <p className="text-xs text-muted-foreground">
                 {t("step1.yearHint")}
               </p>
+              {vorInbetriebnahme && (
+                <p className="text-xs text-destructive">
+                  {t("step1.yearBeforeCommissioning", {
+                    year: new Date(selectedPark!.commissioningDate!).getFullYear(),
+                  })}
+                </p>
+              )}
             </div>
 
             <Separator />

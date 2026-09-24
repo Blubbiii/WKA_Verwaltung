@@ -1011,7 +1011,7 @@ export function UserManagement() {
                       <Select value={field.value} onValueChange={field.onChange}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Mandant auswaehlen" />
+                            <SelectValue placeholder="Mandant auswählen" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>

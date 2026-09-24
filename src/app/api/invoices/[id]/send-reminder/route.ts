@@ -9,7 +9,8 @@ import { renderEmail, getBaseTemplateProps } from "@/lib/email/renderer";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { formatDate, LOCALE_DE } from "@/lib/format";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // ============================================================================
 // VALIDATION
@@ -57,7 +58,7 @@ export async function POST(
       const raw = await request.json();
       const parsed = bodySchema.safeParse(raw);
       if (!parsed.success) {
-        return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
+        return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
       }
       body = parsed.data;
     } catch {

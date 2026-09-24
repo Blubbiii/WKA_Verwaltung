@@ -188,7 +188,7 @@ const MODULE_LABELS: Record<string, string> = {
   turbines: "Turbinen",
   funds: "Beteiligungen",
   shareholders: "Gesellschafter",
-  plots: "Flaechen",
+  plots: "Flächen",
   leases: "Pacht",
   contracts: "Verträge",
   documents: "Dokumente",

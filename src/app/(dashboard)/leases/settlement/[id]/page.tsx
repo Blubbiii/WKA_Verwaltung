@@ -1408,7 +1408,7 @@ export default function SettlementDetailPage({
           </CardContent>
         </Card>
 
-        {/* Verknuepfungen */}
+        {/* Verknüpfungen */}
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">

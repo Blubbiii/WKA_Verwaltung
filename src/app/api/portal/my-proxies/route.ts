@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // Validation schema for creating a proxy
 const createProxySchema = z.object({
@@ -241,7 +242,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const parsed = createProxySchema.safeParse(body);
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0].message });
+      return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error) });
     }
 
     const { granteeId, type, voteId } = parsed.data;

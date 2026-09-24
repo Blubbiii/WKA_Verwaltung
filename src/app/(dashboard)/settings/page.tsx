@@ -848,7 +848,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
           }
           return;
         }
-        throw new Error(result.error || "Fehler beim Aendern des Passworts");
+        throw new Error(result.error || "Fehler beim Ändern des Passworts");
       }
 
       const { celebrationToast } = await import("@/lib/celebration-toast");
@@ -859,7 +859,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Fehler beim Aendern des Passworts"
+          : "Fehler beim Ändern des Passworts"
       );
     } finally {
       setIsSaving(false);
@@ -873,7 +873,7 @@ function SecurityTab({ settings }: { settings: UserSettings | null }) {
         <CardHeader>
           <CardTitle>Passwort aendern</CardTitle>
           <CardDescription>
-            Aktualisieren Sie Ihr Passwort regelmaessig für mehr Sicherheit
+            Aktualisieren Sie Ihr Passwort regelmäßig für mehr Sicherheit
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1084,7 +1084,7 @@ interface PaperlessAvailableKey {
   defaultValue?: string;
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features"] as const;
 
 export default function SettingsPage() {

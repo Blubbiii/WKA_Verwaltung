@@ -42,7 +42,7 @@ export function StepPersonalData({ data, onChange, errors }: StepPersonalDataPro
             onValueChange={(value) => update("salutation", value)}
           >
             <SelectTrigger id="onb-salutation">
-              <SelectValue placeholder="Bitte waehlen" />
+              <SelectValue placeholder="Bitte wählen" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Herr">Herr</SelectItem>

@@ -84,7 +84,7 @@ export function StepParticipation({ data, onChange, errors }: StepParticipationP
               aria-invalid={!!errors.fundId}
               aria-describedby={errors.fundId ? "onb-fund-error" : undefined}
             >
-              <SelectValue placeholder="Gesellschaft auswaehlen" />
+              <SelectValue placeholder="Gesellschaft auswählen" />
             </SelectTrigger>
             <SelectContent>
               {funds.map((fund) => (
@@ -189,7 +189,7 @@ export function StepParticipation({ data, onChange, errors }: StepParticipationP
       {/* Calculated ownership hint */}
       {data.capitalContribution && selectedFund?.totalCapital != null && Number(selectedFund.totalCapital) > 0 && (
         <div className="rounded-lg border bg-muted/50 p-3 text-sm">
-          <span className="text-muted-foreground">Geschaetzter Anteil: </span>
+          <span className="text-muted-foreground">Geschätzter Anteil: </span>
           <span className="font-mono font-medium">
             {(
               (parseFloat(data.capitalContribution) /

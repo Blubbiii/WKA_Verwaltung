@@ -22,6 +22,7 @@ import {
 import { PeriodLockedError } from "@/lib/validation/period-lock";
 import { withIdempotency } from "@/lib/idempotency";
 import { isNotInFuture } from "@/lib/validation/not-in-future";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
@@ -55,7 +56,7 @@ export async function POST(
 
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: parsed.error.issues[0]?.message || "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
 

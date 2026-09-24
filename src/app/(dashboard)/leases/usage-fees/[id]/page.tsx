@@ -123,7 +123,7 @@ function getLessorName(
 // PAGE COMPONENT
 // =============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["positions", "allocations"] as const;
 
 export default function UsageFeeDetailPage({
@@ -404,7 +404,7 @@ export default function UsageFeeDetailPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/leases/usage-fees">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -439,7 +439,7 @@ export default function UsageFeeDetailPage({
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/leases/usage-fees">
               <ArrowLeft className="h-4 w-4" />
             </Link>

@@ -533,7 +533,7 @@ export default function InvoiceDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/invoices">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -1140,7 +1140,7 @@ export default function InvoiceDetailPage({
             )}
             {/* Bedienaufwand #14: `lease` wurde geladen (siehe Typ oben) und nie
                 gerendert — verlinkt waren nur Park und Fonds. Von einer
-                Pachtrechnung fuehrte damit kein Weg zurueck zum Vertrag. */}
+                Pachtrechnung fuehrte damit kein Weg zurück zum Vertrag. */}
             {invoice.lease && (
               <div>
                 <span className="text-muted-foreground">{t("leaseContract")} </span>

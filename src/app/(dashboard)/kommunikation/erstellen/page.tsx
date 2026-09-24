@@ -63,7 +63,7 @@ type Step = 1 | 2 | 3 | 4;
 
 const STEPS = [
   { step: 1 as Step, label: "Inhalt", icon: PenLine },
-  { step: 2 as Step, label: "Empfaenger", icon: Users },
+  { step: 2 as Step, label: "Empfänger", icon: Users },
   { step: 3 as Step, label: "Vorschau", icon: Eye },
   { step: 4 as Step, label: "Senden", icon: Send },
 ];
@@ -260,7 +260,7 @@ function CreateMailingWizard() {
       if (res.ok) {
         const parts = [];
         if (data.sentCount > 0) parts.push(`${data.sentCount} E-Mails gesendet`);
-        if (data.postCount > 0) parts.push(`${data.postCount} Post-Empfaenger markiert`);
+        if (data.postCount > 0) parts.push(`${data.postCount} Post-Empfänger markiert`);
         toast.success(parts.join(", ") || "Versand abgeschlossen");
         // Navigate away — after this the component will unmount, so skip
         // the finally-block state update by returning early via mountedRef.
@@ -295,7 +295,7 @@ function CreateMailingWizard() {
     <div className="space-y-6">
       <PageHeader
         title="Neues Mailing erstellen"
-        description="Inhalt erstellen, Empfaenger waehlen und versenden."
+        description="Inhalt erstellen, Empfänger wählen und versenden."
       />
 
       {/* Step indicator */}
@@ -387,7 +387,7 @@ function CreateMailingWizard() {
           {contentSource === "TEMPLATE" && (
             <Card>
               <CardHeader>
-                <CardTitle>Vorlage waehlen *</CardTitle>
+                <CardTitle>Vorlage wählen *</CardTitle>
               </CardHeader>
               <CardContent>
                 {templates.length === 0 ? (
@@ -463,7 +463,7 @@ function CreateMailingWizard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              Empfaenger waehlen
+              Empfänger wählen
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -496,7 +496,7 @@ function CreateMailingWizard() {
                       <Users className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="text-2xl font-bold">{preview.recipientCount}</p>
-                        <p className="text-xs text-muted-foreground">Empfaenger gesamt</p>
+                        <p className="text-xs text-muted-foreground">Empfänger gesamt</p>
                       </div>
                     </div>
                   </CardContent>
@@ -581,7 +581,7 @@ function CreateMailingWizard() {
                 <span className="font-medium">{preview.preview.subject}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Empfaenger:</span>
+                <span className="text-muted-foreground">Empfänger:</span>
                 <span className="font-medium">{preview.recipientCount}</span>
               </div>
               {(preview.deliveryBreakdown?.post ?? 0) > 0 && (
@@ -620,7 +620,7 @@ function CreateMailingWizard() {
           onClick={step === 1 ? () => router.push("/kommunikation") : handleBack}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          {step === 1 ? "Abbrechen" : "Zurueck"}
+          {step === 1 ? "Abbrechen" : "Zurück"}
         </Button>
 
         <div className="flex gap-2">

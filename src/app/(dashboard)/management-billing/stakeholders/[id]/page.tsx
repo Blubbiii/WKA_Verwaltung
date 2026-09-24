@@ -137,7 +137,7 @@ const roleBadgeColors: Record<StakeholderRole, string> = {
 
 const taxTypeLabels: Record<string, string> = {
   STANDARD: "Standard (19%)",
-  REDUCED: "Ermaessigt (7%)",
+  REDUCED: "Ermäßigt (7%)",
   EXEMPT: "Befreit (0%)",
 };
 
@@ -388,7 +388,7 @@ export default function StakeholderDetailPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/stakeholders">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -416,7 +416,7 @@ export default function StakeholderDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/stakeholders">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -594,7 +594,7 @@ export default function StakeholderDetailPage() {
               </div>
               <div className="flex justify-between">
                 <dt className="text-sm text-muted-foreground">
-                  Glaeubiger-ID
+                  Gläubiger-ID
                 </dt>
                 <dd className="text-sm font-medium">
                   {stakeholder.creditorId ?? "-"}

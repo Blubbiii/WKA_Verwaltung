@@ -171,7 +171,7 @@ export default function KommunikationPage() {
                 <TableHead>Titel</TableHead>
                 <TableHead>Vorlage</TableHead>
                 <TableHead>Gesellschaft</TableHead>
-                <TableHead>Empfaenger</TableHead>
+                <TableHead>Empfänger</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Datum</TableHead>
                 <TableHead className="w-[100px]" />

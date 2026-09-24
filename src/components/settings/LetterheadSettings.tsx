@@ -520,9 +520,9 @@ export function LetterheadSettings() {
               </div>
             </div>
 
-            {/* Zugehoerige Gesellschaft */}
+            {/* Zugehörige Gesellschaft */}
             <div className="space-y-2">
-              <Label htmlFor="fundId">Zugehoerige Gesellschaft</Label>
+              <Label htmlFor="fundId">Zugehörige Gesellschaft</Label>
               <Select
                 value={formData.fundId || "__none__"}
                 onValueChange={(value) =>
@@ -829,7 +829,7 @@ export function LetterheadSettings() {
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="primaryColor">Primaerfarbe</Label>
+                      <Label htmlFor="primaryColor">Primärfarbe</Label>
                       <div className="flex gap-2">
                         <Input
                           id="primaryColor"
@@ -848,7 +848,7 @@ export function LetterheadSettings() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="secondaryColor">Sekundaerfarbe</Label>
+                      <Label htmlFor="secondaryColor">Sekundärfarbe</Label>
                       <div className="flex gap-2">
                         <Input
                           id="secondaryColor"
@@ -873,9 +873,9 @@ export function LetterheadSettings() {
               </>
             )}
 
-            {/* Seitenraender */}
+            {/* Seitenränder */}
             <div className="space-y-4">
-              <h4 className="font-medium">Seitenraender (mm)</h4>
+              <h4 className="font-medium">Seitenränder (mm)</h4>
               <div className="grid gap-4 sm:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="marginTop">Oben</Label>

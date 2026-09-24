@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import { hatEigeneSeite, PFADE_OHNE_SEITE } from "./brotkrumen-ziele";
+import { readFileSync as lies } from "node:fs";
+import { hatEigeneSeite, navTitelKey, PFADE_OHNE_SEITE } from "./brotkrumen-ziele";
 
 const APP = join(process.cwd(), "src", "app");
 
@@ -58,5 +59,31 @@ describe("Brotkrumen-Ziele", () => {
     expect(hatEigeneSeite("/parks/3f2b8c1e-0000-4000-8000-000000000001")).toBe(true);
     expect(hatEigeneSeite("/energy/productions")).toBe(true);
     expect(hatEigeneSeite("/leases/usage-fees")).toBe(true);
+  });
+});
+
+describe("Brotkrumen-Beschriftung", () => {
+  // Without a label the breadcrumb showed the raw segment: "Faults",
+  // "Settlement", "Usage-fees", "Setup". Every static segment of every
+  // dashboard page needs a nav title for its path or a breadcrumb.path key.
+  it("kein Abschnitt fällt auf den englischen Rohnamen zurück", () => {
+    const messages = JSON.parse(lies(join(process.cwd(), "src", "messages", "de.json"), "utf8"));
+    const pfadKeys = new Set(Object.keys(messages.breadcrumb.path));
+    const fehlend = new Set<string>();
+    for (const route of seitenRouten(join(APP, "(dashboard)"))) {
+      let pfad = "";
+      for (const segment of route) {
+        pfad += "/" + segment;
+        if (segment === "*") continue; // ids show "Details"
+        if (navTitelKey(pfad.replace(/\/\*/g, "/x")) || pfadKeys.has(segment)) continue;
+        fehlend.add(segment);
+      }
+    }
+    expect([...fehlend].sort()).toEqual([]);
+  });
+
+  it("nimmt für bekannte Pfade den Titel aus der Navigation", () => {
+    expect(navTitelKey("/faults")).toBe("faults");
+    expect(navTitelKey("/gibt/es/nicht")).toBeNull();
   });
 });

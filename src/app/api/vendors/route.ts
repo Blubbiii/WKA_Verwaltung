@@ -6,7 +6,8 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
-import { serializePrisma } from "@/lib/serialize";
+import { serializePrisma } from "@/lib/serialize";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = createSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", 400, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     const d = parsed.data;

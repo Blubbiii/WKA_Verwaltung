@@ -94,7 +94,7 @@ interface VoteDetail {
 }
 
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["voted", "pending", "all"] as const;
 
 export default function VoteDetailPage() {
@@ -200,7 +200,7 @@ export default function VoteDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/votes">
               <ArrowLeft className="h-4 w-4" />
             </Link>

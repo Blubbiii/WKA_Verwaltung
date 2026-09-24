@@ -291,7 +291,7 @@ function DayCell({
                 </p>
               </div>
               <Link href={event.href}>
-                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                <Button aria-label="In neuem Fenster öffnen" variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Button>
               </Link>

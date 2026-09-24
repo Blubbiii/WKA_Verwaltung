@@ -12,8 +12,11 @@ import {
   Loader2,
   Inbox,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -196,6 +199,21 @@ export default function InboxDetailPage() {
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const { confirm, confirmDialog } = useConfirm();
+
+  // A wrong upload (duplicate, not an invoice) could not be removed — the API
+  // allowed it for INBOX/REVIEW, the page had no button. Soft delete.
+  const loeschen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/inbox/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("deleteError"));
+    },
+    onSuccess: () => {
+      toast.success(t("deleted"));
+      router.push("/inbox");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const load = useCallback(async () => {
     try {
@@ -284,7 +302,27 @@ export default function InboxDetailPage() {
             <p className="text-muted-foreground text-sm">{t("invoiceNumber", { number: invoice.invoiceNumber })}</p>
           )}
         </div>
+        {isEditable && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive"
+            disabled={loeschen.isPending}
+            onClick={async () => {
+              const ok = await confirm({
+                title: t("deleteTitle"),
+                description: t("deleteDescription", { name: invoice.fileName }),
+                variant: "destructive",
+              });
+              if (ok) loeschen.mutate();
+            }}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            {t("delete")}
+          </Button>
+        )}
       </div>
+      {confirmDialog}
 
       {/* 2-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

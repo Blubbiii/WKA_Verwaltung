@@ -6,6 +6,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const bodySchema = z.object({
   tagId: z.uuid(),
@@ -26,7 +27,7 @@ export async function POST(
     const raw = await request.json();
     const parsed = bodySchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     // Verify both person and tag belong to tenant

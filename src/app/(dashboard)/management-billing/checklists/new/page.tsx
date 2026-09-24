@@ -133,7 +133,7 @@ export default function NewChecklistPage() {
 
     const validItems = formData.items.filter((item) => item.label.trim());
     if (validItems.length === 0) {
-      toast.error("Mindestens ein Pruefpunkt ist erforderlich");
+      toast.error("Mindestens ein Prüfpunkt ist erforderlich");
       return;
     }
 
@@ -200,7 +200,7 @@ export default function NewChecklistPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/checklists">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -283,12 +283,12 @@ export default function NewChecklistPage() {
                     }
                   >
                     <SelectTrigger id="recurrence">
-                      <SelectValue placeholder="Wiederholung waehlen..." />
+                      <SelectValue placeholder="Wiederholung wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Keine</SelectItem>
-                      <SelectItem value="DAILY">Taeglich</SelectItem>
-                      <SelectItem value="WEEKLY">Woechentlich</SelectItem>
+                      <SelectItem value="DAILY">Täglich</SelectItem>
+                      <SelectItem value="WEEKLY">Wöchentlich</SelectItem>
                       <SelectItem value="MONTHLY">Monatlich</SelectItem>
                       <SelectItem value="ONCE">Einmalig</SelectItem>
                     </SelectContent>
@@ -304,7 +304,7 @@ export default function NewChecklistPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park waehlen..." />
+                      <SelectValue placeholder="Park wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Kein Park</SelectItem>
@@ -325,7 +325,7 @@ export default function NewChecklistPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Pruefpunkte</CardTitle>
+                  <CardTitle>Prüfpunkte</CardTitle>
                   <CardDescription>
                     Definieren Sie die einzelnen Punkte dieser Checkliste
                   </CardDescription>
@@ -344,7 +344,7 @@ export default function NewChecklistPage() {
             <CardContent>
               {formData.items.length === 0 ? (
                 <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-                  Noch keine Pruefpunkte vorhanden. Klicken Sie auf
+                  Noch keine Prüfpunkte vorhanden. Klicken Sie auf
                   &quot;Punkt hinzufuegen&quot;, um den ersten Punkt zu
                   erstellen.
                 </div>
@@ -363,7 +363,7 @@ export default function NewChecklistPage() {
                         onChange={(e) =>
                           handleItemLabelChange(index, e.target.value)
                         }
-                        placeholder="Pruefpunkt beschreiben..."
+                        placeholder="Prüfpunkt beschreiben..."
                         className="flex-1"
                       />
                       <label className="flex items-center gap-2 shrink-0 cursor-pointer">
@@ -398,7 +398,7 @@ export default function NewChecklistPage() {
             <CardContent className="pt-6">
               <p className="text-sm text-blue-800">
                 Checklisten-Vorlagen koennen spaeter mit Aufgaben verknuepft
-                werden. Die Pruefpunkte werden dann als Checkliste in die
+                werden. Die Prüfpunkte werden dann als Checkliste in die
                 Aufgabe uebernommen.
               </p>
             </CardContent>

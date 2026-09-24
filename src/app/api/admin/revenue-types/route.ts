@@ -4,7 +4,8 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
   name: z.string().min(1, "Name erforderlich").max(100),
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     // Check duplicate code

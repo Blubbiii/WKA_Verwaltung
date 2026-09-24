@@ -14,6 +14,7 @@ import { de, enUS } from "date-fns/locale";
 import { formatCurrency, LOCALE_DE } from "@/lib/format";
 import {
   ArrowLeft,
+  Pencil,
   Trash2,
   MapPin,
   Calendar,
@@ -234,7 +235,7 @@ export default function LeaseDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/leases">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -255,6 +256,12 @@ export default function LeaseDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/leases/${lease.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              {t("edit")}
+            </Link>
+          </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={deleting}>

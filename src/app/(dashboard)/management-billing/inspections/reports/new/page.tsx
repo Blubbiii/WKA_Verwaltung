@@ -164,7 +164,7 @@ export default function NewInspectionReportPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/inspections/reports">
               <ArrowLeft className="h-4 w-4" />
             </Link>

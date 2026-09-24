@@ -188,7 +188,7 @@ export function TurbineComparison({
           ? `${best.designation} (${dec2Fmt.format(best.capacityFactor)}%)`
           : "--",
         icon: Trophy,
-        description: "Hoechster Capacity Factor",
+        description: "Höchster Capacity Factor",
       },
       {
         title: "Schlechteste Anlage",

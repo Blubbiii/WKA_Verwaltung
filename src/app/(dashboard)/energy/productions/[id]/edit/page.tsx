@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { monthNames } from "@/hooks/useEnergySettlements";
 
 // =============================================================================
@@ -61,6 +63,21 @@ export default function EditProductionPage({
   const { id } = use(params);
   const router = useRouter();
   const t = useTranslations("energy.productionEdit");
+  const { confirm, confirmDialog } = useConfirm();
+
+  // A duplicate or wrong entry could only be edited, never removed — the
+  // API had DELETE, the UI did not. Invoiced entries stay (API refuses).
+  const loeschen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/energy/productions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("deleteError"));
+    },
+    onSuccess: () => {
+      toast.success(t("deleted"));
+      router.push("/energy/productions");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [production, setProduction] = useState<ProductionData | null>(null);
@@ -169,6 +186,7 @@ export default function EditProductionPage({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {confirmDialog}
       {/* Notice banner */}
       <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
         <p className="text-sm text-blue-800">
@@ -182,7 +200,7 @@ export default function EditProductionPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/energy/productions">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -196,6 +214,27 @@ export default function EditProductionPage({
           </div>
         </div>
         <div className="flex gap-2">
+          {!isInvoiced && (
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={loeschen.isPending}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("deleteTitle"),
+                  description: t("deleteDescription", {
+                    turbine: production.turbine.designation,
+                    period: `${monthNames[production.month]} ${production.year}`,
+                  }),
+                  variant: "destructive",
+                });
+                if (ok) loeschen.mutate();
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("delete")}
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"

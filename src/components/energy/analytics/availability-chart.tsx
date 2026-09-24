@@ -171,7 +171,7 @@ export function AvailabilityChart({
       title: "Störungszeit",
       value: numFmt.format(fleet.totalDowntimeHours) + " h",
       icon: AlertTriangle,
-      description: "Ungeplante Ausfaelle (T5)",
+      description: "Ungeplante Ausfälle (T5)",
     },
     {
       title: "Wartungszeit",

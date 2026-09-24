@@ -116,7 +116,7 @@ export function PdfWindDistribution({
           textAnchor="middle"
           transform={`rotate(-90, 8, ${margin.top + chartH / 2})`}
         >
-          Haeufigkeit (%)
+          Häufigkeit (%)
         </SvgText>
       </G>
     </Svg>

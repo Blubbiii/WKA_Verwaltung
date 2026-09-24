@@ -275,7 +275,7 @@ export default function DocumentDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/documents">
               <ArrowLeft className="h-4 w-4" />
             </Link>

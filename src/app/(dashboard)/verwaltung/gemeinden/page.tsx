@@ -15,7 +15,7 @@
 import { useCallback, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Building2, Download, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Building2, Download, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,9 @@ export default function GemeindenPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", officialKey: "", state: "" });
+  // null = create, otherwise the id being edited. Editing existed in the API
+  // (PATCH) only — a typo in a name or key could not be fixed.
+  const [editId, setEditId] = useState<string | null>(null);
 
   const {
     data: municipalities = [],
@@ -103,8 +106,8 @@ export default function GemeindenPage() {
 
   const createMunicipality = useMutation({
     mutationFn: async (input: typeof form) => {
-      const res = await fetch("/api/municipalities", {
-        method: "POST",
+      const res = await fetch(editId ? `/api/municipalities/${editId}` : "/api/municipalities", {
+        method: editId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: input.name,
@@ -114,7 +117,8 @@ export default function GemeindenPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Anlegen fehlgeschlagen");
+        // apiError puts the message into `error`
+        throw new Error(err.error ?? err.message ?? "Speichern fehlgeschlagen");
       }
       return res.json();
     },
@@ -125,7 +129,8 @@ export default function GemeindenPage() {
       });
       setDialogOpen(false);
       setForm({ name: "", officialKey: "", state: "" });
-      toast.success("Gemeinde angelegt");
+      toast.success(editId ? "Gemeinde gespeichert" : "Gemeinde angelegt");
+      setEditId(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -135,7 +140,7 @@ export default function GemeindenPage() {
       const res = await fetch(`/api/municipalities/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? "Löschen fehlgeschlagen");
+        throw new Error(err.error ?? err.message ?? "Löschen fehlgeschlagen");
       }
     },
     onSuccess: () => {
@@ -183,7 +188,7 @@ export default function GemeindenPage() {
             Gemeinde.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => { setEditId(null); setForm({ name: "", officialKey: "", state: "" }); setDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
           Gemeinde anlegen
         </Button>
@@ -306,7 +311,7 @@ export default function GemeindenPage() {
               description:
                 "Ohne Gemeinden lässt sich keine Anlage zuordnen und die Auswertung bleibt leer.",
               action: (
-                <Button onClick={() => setDialogOpen(true)}>
+                <Button onClick={() => { setEditId(null); setForm({ name: "", officialKey: "", state: "" }); setDialogOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Gemeinde anlegen
                 </Button>
@@ -367,15 +372,29 @@ export default function GemeindenPage() {
                 // Ohne sortValue: eine Spalte mit Schaltflächen zu sortieren
                 // ergibt nichts.
                 cell: (m) => (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(m)}
-                    aria-label={`${m.name} löschen`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditId(m.id);
+                        setForm({ name: m.name, officialKey: m.officialKey ?? "", state: m.state ?? "" });
+                        setDialogOpen(true);
+                      }}
+                      aria-label={`${m.name} bearbeiten`}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDelete(m)}
+                      aria-label={`${m.name} löschen`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 ),
               },
             ]}
@@ -383,10 +402,19 @@ export default function GemeindenPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(offen) => {
+          setDialogOpen(offen);
+          if (!offen) {
+            setEditId(null);
+            setForm({ name: "", officialKey: "", state: "" });
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Gemeinde anlegen</DialogTitle>
+            <DialogTitle>{editId ? "Gemeinde bearbeiten" : "Gemeinde anlegen"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -433,7 +461,7 @@ export default function GemeindenPage() {
               onClick={() => createMunicipality.mutate(form)}
               disabled={!form.name.trim() || createMunicipality.isPending}
             >
-              Anlegen
+              {editId ? "Speichern" : "Anlegen"}
             </Button>
           </DialogFooter>
         </DialogContent>

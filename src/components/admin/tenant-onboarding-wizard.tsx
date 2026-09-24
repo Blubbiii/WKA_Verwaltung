@@ -1181,8 +1181,8 @@ function SummaryItem({
   skipLabel: string;
   /**
    * True if the user entered data for this step but never persisted it via
-   * the "Weiter" button (i.e. they hit "Ueberspringen" instead). We then
-   * show a warning icon + the real label — showing "Uebersprungen" for
+   * the "Weiter" button (i.e. they hit "Überspringen" instead). We then
+   * show a warning icon + the real label — showing "Übersprungen" for
    * a step that had data entered is misleading.
    */
   hasUnsavedData?: boolean;

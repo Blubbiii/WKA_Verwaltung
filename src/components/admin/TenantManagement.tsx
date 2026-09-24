@@ -485,7 +485,7 @@ export function TenantManagement() {
           <DialogHeader>
             <DialogTitle>Mandant bearbeiten</DialogTitle>
             <DialogDescription>
-              Aendern Sie die Firmendaten des Mandanten.
+              Ändern Sie die Firmendaten des Mandanten.
             </DialogDescription>
           </DialogHeader>
 
@@ -603,7 +603,7 @@ export function TenantManagement() {
             {/* Colors */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tenant-primary">Primaerfarbe</Label>
+                <Label htmlFor="tenant-primary">Primärfarbe</Label>
                 <div className="flex gap-2">
                   <input
                     type="color"
@@ -624,7 +624,7 @@ export function TenantManagement() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tenant-secondary">Sekundaerfarbe</Label>
+                <Label htmlFor="tenant-secondary">Sekundärfarbe</Label>
                 <div className="flex gap-2">
                   <input
                     type="color"
@@ -704,7 +704,7 @@ export function TenantManagement() {
                   Gesellschaften, Rechnungen, Dokumente etc.) werden unwiderruflich entfernt.
                 </p>
                 <p className="text-destructive font-medium">
-                  Diese Aktion kann nicht rueckgaengig gemacht werden!
+                  Diese Aktion kann nicht rückgängig gemacht werden!
                 </p>
                 <div className="space-y-2 pt-2">
                   <Label htmlFor="confirm-name">

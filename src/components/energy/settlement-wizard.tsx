@@ -180,7 +180,7 @@ interface InvoicesResponse {
 // =============================================================================
 
 const WIZARD_STEPS = [
-  { id: "park", title: "Park & Periode", description: "Zeitraum waehlen" },
+  { id: "park", title: "Park & Periode", description: "Zeitraum wählen" },
   { id: "data", title: "NB-Daten", description: "Erlös & Verteilung" },
   { id: "calculate", title: "Berechnung", description: "Verteilung prüfen" },
   { id: "invoices", title: "Gutschriften", description: "Erstellen" },
@@ -683,16 +683,16 @@ export function SettlementWizard() {
                 }
                 disabled={parksLoading}
               >
-                <SelectTrigger id="wizard-park" aria-label="Windpark auswaehlen">
+                <SelectTrigger id="wizard-park" aria-label="Windpark auswählen">
                   <SelectValue
                     placeholder={
-                      parksLoading ? "Laden..." : "Windpark auswaehlen..."
+                      parksLoading ? "Laden..." : "Windpark auswählen..."
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none" disabled>
-                    Windpark auswaehlen...
+                    Windpark auswählen...
                   </SelectItem>
                   {parks.map((park) => (
                     <SelectItem key={park.id} value={park.id}>
@@ -713,7 +713,7 @@ export function SettlementWizard() {
                   value={year.toString()}
                   onValueChange={(value) => setYear(parseInt(value, 10))}
                 >
-                  <SelectTrigger id="wizard-year" aria-label="Jahr auswaehlen">
+                  <SelectTrigger id="wizard-year" aria-label="Jahr auswählen">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -741,7 +741,7 @@ export function SettlementWizard() {
                 >
                   <SelectTrigger
                     id="wizard-month"
-                    aria-label="Monat auswaehlen"
+                    aria-label="Monat auswählen"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -904,7 +904,7 @@ export function SettlementWizard() {
             <CardTitle>Netzbetreiber-Abrechnungsdaten</CardTitle>
             <CardDescription>
               Einspeisung und Erlös laut Netzbetreiber-Gutschrift für{" "}
-              {selectedPark?.name || "den ausgewaehlten Park"},{" "}
+              {selectedPark?.name || "den ausgewählten Park"},{" "}
               {formatPeriodLabel()}
             </CardDescription>
           </CardHeader>
@@ -1244,7 +1244,7 @@ export function SettlementWizard() {
             {warnings.length > 0 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Plausibilitaets-Hinweise</AlertTitle>
+                <AlertTitle>Plausibilitäts-Hinweise</AlertTitle>
                 <AlertDescription>
                   <ul className="list-disc list-inside space-y-1 mt-2">
                     {warnings.map((w, i) => (

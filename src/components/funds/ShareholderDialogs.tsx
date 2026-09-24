@@ -458,7 +458,7 @@ function AddShareholderDialog({
                   <RadioGroupItem value="natural" id="natural" />
                   <Label htmlFor="natural" className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Natuerliche Person
+                    Natürliche Person
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -570,7 +570,7 @@ function AddShareholderDialog({
                   setSelectedPerson(null);
                 }}
               >
-                Aendern
+                Ändern
               </Button>
             </div>
 
@@ -593,7 +593,7 @@ function AddShareholderDialog({
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <Calendar className="mr-2 h-4 w-4" />
-                      {entryDate ? format(entryDate, "dd.MM.yyyy") : "Datum waehlen"}
+                      {entryDate ? format(entryDate, "dd.MM.yyyy") : "Datum wählen"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -838,7 +838,7 @@ function EditShareholderDialog({
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <Calendar className="mr-2 h-4 w-4" />
-                    {entryDate ? format(entryDate, "dd.MM.yyyy") : "Datum waehlen"}
+                    {entryDate ? format(entryDate, "dd.MM.yyyy") : "Datum wählen"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -1023,7 +1023,7 @@ function ShareholderDetailDialog({
             <div>
               <DialogTitle>{getPersonName(person)}</DialogTitle>
               <DialogDescription>
-                {person.personType === "legal" ? "Unternehmen" : "Natuerliche Person"} •{" "}
+                {person.personType === "legal" ? "Unternehmen" : "Natürliche Person"} •{" "}
                 {shareholder.shareholderNumber || "Keine Nummer"}
               </DialogDescription>
             </div>

@@ -28,7 +28,7 @@ const DOCUMENT_SLOTS = [
   {
     label: "Personalausweis-Kopie",
     category: "OTHER",
-    description: "Kopie des Personalausweises zur Identitaetsprüfung",
+    description: "Kopie des Personalausweises zur Identitätsprüfung",
   },
 ];
 
@@ -166,7 +166,7 @@ export function StepDocuments({ data, onChange }: StepDocumentsProps) {
                     type="button"
                   >
                     <Upload className="h-4 w-4" />
-                    Datei auswaehlen
+                    Datei auswählen
                   </Button>
                 </div>
               )}

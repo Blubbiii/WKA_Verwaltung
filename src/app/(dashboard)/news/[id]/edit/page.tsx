@@ -182,7 +182,7 @@ export default function EditNewsPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
           <Link href={`/news/${id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -252,7 +252,7 @@ export default function EditNewsPage({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Kategorie waehlen" />
+                          <SelectValue placeholder="Kategorie wählen" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

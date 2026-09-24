@@ -215,7 +215,7 @@ export default function ServiceEventDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${event.turbine.park.id}?tab=turbines`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -251,7 +251,7 @@ export default function ServiceEventDetailPage({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
+            <Button aria-label="Weitere Aktionen" variant="outline" size="icon">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -454,7 +454,7 @@ export default function ServiceEventDetailPage({
                         })}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" asChild>
+                        <Button aria-label="Herunterladen" variant="ghost" size="icon" asChild>
                           <a
                             href={doc.fileUrl}
                             target="_blank"

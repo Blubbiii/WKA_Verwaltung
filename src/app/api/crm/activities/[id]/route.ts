@@ -6,7 +6,8 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().optional().nullable(),
@@ -79,7 +80,7 @@ export async function PUT(
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     const d = parsed.data;

@@ -386,7 +386,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
+            <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
               <Link href="/admin/settlement-periods">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
@@ -820,7 +820,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                         <TableHead>Verpaechter</TableHead>
                         {calculationResult.periodType === "ADVANCE" ? (
                           <>
-                            <TableHead className="text-right">Flaechen</TableHead>
+                            <TableHead className="text-right">Flächen</TableHead>
                             <TableHead className="text-right">Monatliche Mindestpacht</TableHead>
                           </>
                         ) : (
@@ -1039,7 +1039,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                         {formatCurrency(invoice.grossAmount)}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon" asChild>
+                        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
                           <Link href={`/invoices/${invoice.id}`}>
                             <ExternalLink className="h-4 w-4" />
                           </Link>
@@ -1257,7 +1257,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
             <AlertDialogTitle>Abrechnungsperiode abschliessen?</AlertDialogTitle>
             <AlertDialogDescription>
               Nach dem Abschliessen können keine weiteren Änderungen oder Rechnungen
-              für diese Periode erstellt werden. Dieser Vorgang kann nicht rueckgaengig
+              für diese Periode erstellt werden. Dieser Vorgang kann nicht rückgängig
               gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1278,7 +1278,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
             <AlertDialogTitle>Abrechnungsperiode löschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie diese Abrechnungsperiode löschen möchten?
-              Dieser Vorgang kann nicht rueckgaengig gemacht werden.
+              Dieser Vorgang kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

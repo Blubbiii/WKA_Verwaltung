@@ -24,6 +24,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
 import { serializePrisma } from "@/lib/serialize";
 import { MAX_RATE_CT_PER_KWH } from "@/lib/regulatory/municipality-benefit";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
   turbineId: z.string().uuid(),
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
       return apiError("VALIDATION_FAILED", 400, {
-        message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
     const input = parsed.data;

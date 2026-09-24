@@ -368,7 +368,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   <SelectContent>
                     <SelectItem value="EXEMPT">Steuerfrei (0%)</SelectItem>
                     <SelectItem value="STANDARD">Standard (19%)</SelectItem>
-                    <SelectItem value="REDUCED">Ermaessigt (7%)</SelectItem>
+                    <SelectItem value="REDUCED">Ermäßigt (7%)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -394,7 +394,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   onValueChange={(v) => setParameter("fundId", v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Gesellschaft waehlen" />
+                    <SelectValue placeholder="Gesellschaft wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {funds.map((fund) => (
@@ -562,7 +562,7 @@ export function RuleForm({ initialData, funds, parks, onSuccess }: RuleFormProps
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="STANDARD">Standard (19%)</SelectItem>
-                    <SelectItem value="REDUCED">Ermaessigt (7%)</SelectItem>
+                    <SelectItem value="REDUCED">Ermäßigt (7%)</SelectItem>
                     <SelectItem value="EXEMPT">Steuerfrei (0%)</SelectItem>
                   </SelectContent>
                 </Select>

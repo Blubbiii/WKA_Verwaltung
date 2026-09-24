@@ -287,7 +287,7 @@ function LayoutProperties({
 
       {/* Margins */}
       <div className="space-y-2">
-        <Label className="text-xs">Seitenraender (mm)</Label>
+        <Label className="text-xs">Seitenränder (mm)</Label>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-[10px] text-muted-foreground">Oben</Label>
@@ -390,7 +390,7 @@ function LayoutProperties({
         <Label className="text-xs">Farben</Label>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Primaerfarbe</Label>
+            <Label className="text-[10px] text-muted-foreground">Primärfarbe</Label>
             <div className="flex gap-1">
               <Input
                 value={layout.primaryColor}
@@ -590,7 +590,7 @@ function BlockConfigEditor({
         <div className="space-y-2">
           <Label className="text-xs font-medium">Trennlinie</Label>
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">Staerke (px)</Label>
+            <Label className="text-[10px] text-muted-foreground">Stärke (px)</Label>
             <Input
               type="number"
               min={1}

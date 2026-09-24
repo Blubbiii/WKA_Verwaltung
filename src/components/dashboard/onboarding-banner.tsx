@@ -76,7 +76,7 @@ export function OnboardingBanner() {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8 text-muted-foreground">
+          <Button aria-label="Entfernen" variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8 text-muted-foreground">
             <X className="h-4 w-4" />
           </Button>
         </div>

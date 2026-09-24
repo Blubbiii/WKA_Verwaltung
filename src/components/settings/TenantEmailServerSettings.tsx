@@ -584,7 +584,7 @@ export function TenantEmailServerSettings() {
                       <AlertDialogDescription>
                         Alle eigenen SMTP-Einstellungen werden gelöscht.
                         E-Mails werden danach über den System-Standard
-                        versendet. Diese Aktion kann nicht rueckgaengig gemacht
+                        versendet. Diese Aktion kann nicht rückgängig gemacht
                         werden.
                       </AlertDialogDescription>
                     </AlertDialogHeader>

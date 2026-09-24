@@ -57,7 +57,7 @@ interface ConfigResponse {
   }>;
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["email", "weather", "storage", "general", "features"] as const;
 
 export default function SystemConfigTab() {

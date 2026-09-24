@@ -78,7 +78,7 @@ export function KeyboardProvider({ children }: KeyboardProviderProps) {
       {
         key: "k",
         ctrl: true,
-        label: "Suche oeffnen",
+        label: "Suche öffnen",
         group: "Aktionen",
         action: () => {
           // Focus the search input in the header

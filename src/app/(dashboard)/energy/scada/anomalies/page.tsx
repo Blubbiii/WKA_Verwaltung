@@ -124,7 +124,7 @@ const ANOMALY_TYPE_LABELS: Record<string, string> = {
   PERFORMANCE_DROP: "Leistungsabfall",
   LOW_AVAILABILITY: "Niedrige Verfügbarkeit",
   CURVE_DEVIATION: "Kennlinien-Abweichung",
-  DATA_QUALITY: "Datenqualitaet",
+  DATA_QUALITY: "Datenqualität",
   EXTENDED_DOWNTIME: "Langzeit-Stillstand",
 };
 
@@ -989,7 +989,7 @@ export default function ScadaAnomaliesPage() {
                   )}
                   {selectedAnomaly.resolvedAt && (
                     <div>
-                      <Label className="text-xs text-muted-foreground">Geloest am</Label>
+                      <Label className="text-xs text-muted-foreground">Gelöst am</Label>
                       <p className="text-sm mt-1">
                         {format(new Date(selectedAnomaly.resolvedAt), "dd.MM.yyyy HH:mm", {
                           locale: de,
@@ -1054,7 +1054,7 @@ export default function ScadaAnomaliesPage() {
                 {!selectedAnomaly.resolvedAt && (
                   <Button onClick={handleResolve} disabled={saving}>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    {saving ? "Wird geloest..." : "Als geloest markieren"}
+                    {saving ? "Wird gelöst..." : "Als gelöst markieren"}
                   </Button>
                 )}
               </DialogFooter>

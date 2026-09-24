@@ -244,7 +244,7 @@ export function ExpiringContractsWidget() {
             {t("widgetDescription")}
           </CardDescription>
         </div>
-        <Button
+        <Button aria-label="Aktualisieren"
           variant="ghost"
           size="icon"
           onClick={fetchExpiringContracts}

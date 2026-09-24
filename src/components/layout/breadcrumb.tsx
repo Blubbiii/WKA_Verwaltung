@@ -4,15 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
-import { hatEigeneSeite } from "./brotkrumen-ziele";
-
-// Known path segments that have i18n keys in breadcrumb.path.*
-const KNOWN_SEGMENTS = new Set([
-  "dashboard", "parks", "funds", "leases", "contracts", "documents",
-  "invoices", "votes", "reports", "settings", "admin", "news",
-  "service-events", "energy", "settlements", "productions", "import",
-  "new", "edit", "upload", "portal",
-]);
+import { hatEigeneSeite, navTitelKey } from "./brotkrumen-ziele";
 
 // Sections that have detail pages (id-based routes)
 const _detailSections = [
@@ -72,10 +64,16 @@ export function Breadcrumb() {
         isCurrentPage: i === segments.length - 1,
       });
     } else {
-      // Try i18n key first, then fallback to capitalized segment
-      const label = KNOWN_SEGMENTS.has(segment)
-        ? tBc(`path.${segment}` as Parameters<typeof tBc>[0])
-        : segment.charAt(0).toUpperCase() + segment.slice(1);
+      // Sidebar title for this exact path first (what the user knows the page
+      // as), then the segment key, and only then the raw segment.
+      // brotkrumen-ziele.test.ts fails if any page segment would fall through.
+      const navKey = navTitelKey(currentPath);
+      const pfadKey = `path.${segment}` as Parameters<typeof tBc>[0];
+      const label = navKey
+        ? tNav(navKey as Parameters<typeof tNav>[0])
+        : tBc.has(pfadKey)
+          ? tBc(pfadKey)
+          : segment.charAt(0).toUpperCase() + segment.slice(1);
 
       items.push({
         label,

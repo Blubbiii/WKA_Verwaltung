@@ -265,7 +265,7 @@ export default function ClaimDetailPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/insurance/claims">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -292,7 +292,7 @@ export default function ClaimDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/insurance/claims">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -435,7 +435,7 @@ export default function ClaimDetailPage({
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="estimatedCostEur">Geschaetzte Kosten (EUR)</Label>
+                  <Label htmlFor="estimatedCostEur">Geschätzte Kosten (EUR)</Label>
                   <Input
                     id="estimatedCostEur"
                     type="number"
@@ -447,7 +447,7 @@ export default function ClaimDetailPage({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="actualCostEur">Tatsaechliche Kosten (EUR)</Label>
+                  <Label htmlFor="actualCostEur">Tatsächliche Kosten (EUR)</Label>
                   <Input
                     id="actualCostEur"
                     type="number"
@@ -476,17 +476,17 @@ export default function ClaimDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Loesung</CardTitle>
+              <CardTitle>Lösung</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="resolutionNotes">Loesungsnotizen</Label>
+                <Label htmlFor="resolutionNotes">Lösungsnotizen</Label>
                 <Textarea
                   id="resolutionNotes"
                   value={formData.resolutionNotes}
                   onChange={(e) => handleChange("resolutionNotes", e.target.value)}
                   rows={3}
-                  placeholder="Beschreibung der Loesung / Ergebnis..."
+                  placeholder="Beschreibung der Lösung / Ergebnis..."
                 />
               </div>
               {claim.resolvedAt && (
@@ -530,7 +530,7 @@ export default function ClaimDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>Verknuepfungen</CardTitle>
+              <CardTitle>Verknüpfungen</CardTitle>
             </CardHeader>
             <CardContent>
               <dl className="space-y-3">
@@ -568,7 +568,7 @@ export default function ClaimDetailPage({
                 )}
                 {!claim.contract && !claim.vendor && !claim.defect && (
                   <p className="text-sm text-muted-foreground">
-                    Keine Verknuepfungen vorhanden
+                    Keine Verknüpfungen vorhanden
                   </p>
                 )}
               </dl>

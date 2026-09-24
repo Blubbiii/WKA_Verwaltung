@@ -192,7 +192,7 @@ export default function TasksListPage() {
         icon: CheckCircle2,
       },
       {
-        label: "Ueberfaellig",
+        label: "Überfällig",
         value: overdue,
         icon: AlertTriangle,
         cardClassName: overdue > 0 ? "border-l-red-400" : undefined,
@@ -284,7 +284,7 @@ export default function TasksListPage() {
               }
               description={
                 tasks.length === 0
-                  ? "Erstellen Sie die erste Aufgabe, um Betriebsablaeufe zu verfolgen."
+                  ? "Erstellen Sie die erste Aufgabe, um Betriebsabläufe zu verfolgen."
                   : "Passen Sie Ihre Suchkriterien an, um Ergebnisse zu finden."
               }
               action={
@@ -308,10 +308,10 @@ export default function TasksListPage() {
                   <TableRow>
                     <TableHead>Titel</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Prioritaet</TableHead>
+                    <TableHead>Priorität</TableHead>
                     <TableHead>Park</TableHead>
                     <TableHead>Zugewiesen an</TableHead>
-                    <TableHead>Faellig am</TableHead>
+                    <TableHead>Fällig am</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

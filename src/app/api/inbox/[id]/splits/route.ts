@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
-import { serializePrisma } from "@/lib/serialize";
+import { serializePrisma } from "@/lib/serialize";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const splitItemSchema = z.object({
   fundId: z.uuid(),
@@ -42,7 +43,7 @@ export async function POST(
     const raw = await request.json();
     const parsed = splitsSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", 400, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     // Delete existing splits that have no outgoing invoice yet

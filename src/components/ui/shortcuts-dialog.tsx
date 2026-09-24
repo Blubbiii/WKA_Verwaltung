@@ -103,7 +103,7 @@ export function ShortcutsDialog({
 
         <div className="mt-4 pt-4 border-t">
           <p className="text-xs text-muted-foreground text-center">
-            Druecke <Kbd>?</Kbd> um dieses Fenster zu oeffnen oder zu
+            Druecke <Kbd>?</Kbd> um dieses Fenster zu öffnen oder zu
             schliessen.
           </p>
         </div>

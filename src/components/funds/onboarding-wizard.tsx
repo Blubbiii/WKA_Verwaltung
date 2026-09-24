@@ -54,7 +54,7 @@ type Translator = (key: string) => string;
   eine Ebene tiefer gelegt, das Praefix an den Aufrufen aber stehen lassen.
   Gesucht wurde danach `funds.onboardingWizard.validation.validation.
   firstNameRequired` — eine Ebene ZU TIEF statt wie vorher zu hoch. next-intl
-  findet nichts und gibt den Schluessel selbst zurueck: der Nutzer bekam
+  findet nichts und gibt den Schluessel selbst zurück: der Nutzer bekam
   woertlich "funds.onboardingWizard.validation.validation.firstNameRequired"
   als Fehlermeldung unter dem Eingabefeld zu sehen.
 

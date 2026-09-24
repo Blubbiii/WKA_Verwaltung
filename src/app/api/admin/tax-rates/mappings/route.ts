@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const mappingSchema = z.object({
   mappings: z.array(
@@ -24,7 +25,7 @@ export async function PUT(request: NextRequest) {
     const parsed = mappingSchema.safeParse(body);
 
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message || "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     const tenantId = check.tenantId!;

@@ -83,7 +83,7 @@ export function NewFundDialog({
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
             >
-              <option value="">Typ waehlen...</option>
+              <option value="">Typ wählen...</option>
               {fundCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name} ({category.code})

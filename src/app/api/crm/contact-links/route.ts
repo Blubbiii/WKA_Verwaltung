@@ -7,6 +7,7 @@ import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const ENTITY_TYPES = ["PARK", "FUND", "LEASE", "CONTRACT"] as const;
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     const raw = await request.json();
     const parsed = contactLinkSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("BAD_REQUEST", undefined, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
     const d = parsed.data;
 

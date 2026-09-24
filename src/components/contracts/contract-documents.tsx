@@ -198,7 +198,7 @@ export function ContractDocuments({ contractId }: ContractDocumentsProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Fehler beim Verknuepfen");
+        throw new Error(data.error || "Fehler beim Verknüpfen");
       }
 
       toast({

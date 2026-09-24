@@ -875,7 +875,7 @@ export function RecurringInvoicesManager() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
+                            <Button aria-label="Weitere Aktionen"
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"

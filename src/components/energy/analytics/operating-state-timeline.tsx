@@ -214,16 +214,16 @@ export function OperatingStateTimeline({
           ? `${topState.stateCode} (${dec1Fmt.format(topState.percentage)} %)`
           : "-",
         icon: Activity,
-        description: "Haeufigster Betriebszustand",
+        description: "Häufigster Betriebszustand",
       },
       {
         title: "Gesamte Zustandszeit",
         value: `${numFmt.format(Math.round(totalSeconds / 3600))} h`,
         icon: Clock,
-        description: "Summe aller erfassten Zustaende",
+        description: "Summe aller erfassten Zustände",
       },
       {
-        title: "Verschiedene Zustaende",
+        title: "Verschiedene Zustände",
         value: numFmt.format(statePareto.length),
         icon: Layers,
         description: "Anzahl unterschiedlicher Codes",
@@ -428,7 +428,7 @@ export function OperatingStateTimeline({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              Top-10 Zustaende (Tabelle)
+              Top-10 Zustände (Tabelle)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -437,7 +437,7 @@ export function OperatingStateTimeline({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Zustand</TableHead>
-                    <TableHead className="text-right">Haeufigkeit</TableHead>
+                    <TableHead className="text-right">Häufigkeit</TableHead>
                     <TableHead className="text-right">Dauer (h)</TableHead>
                     <TableHead className="text-right">Anteil (%)</TableHead>
                   </TableRow>

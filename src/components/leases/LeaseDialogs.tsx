@@ -161,8 +161,8 @@ const statusLabels: Record<string, string> = Object.fromEntries(
 const areaTypeLabels: Record<string, string> = {
   WEA_STANDORT: "WEA-Standort",
   POOL: "Poolflaeche",
-  WEG: "Wegflaeche",
-  AUSGLEICH: "Ausgleichsflaeche",
+  WEG: "Wegfläche",
+  AUSGLEICH: "Ausgleichsfläche",
   KABEL: "Kabeltrasse",
 };
 
@@ -611,7 +611,7 @@ function LeaseDetailDialog({
                               }}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              Teilflaeche
+                              Teilfläche
                             </Button>
                           </div>
                         </div>
@@ -624,9 +624,9 @@ function LeaseDetailDialog({
                                 <TableRow>
                                   <TableHead>Typ</TableHead>
                                   <TableHead className="text-right">
-                                    Flaeche/Laenge
+                                    Flaeche/Länge
                                   </TableHead>
-                                  <TableHead>Entschaedigung</TableHead>
+                                  <TableHead>Entschädigung</TableHead>
                                   <TableHead className="text-right">
                                     Betrag
                                   </TableHead>
@@ -701,7 +701,7 @@ function LeaseDetailDialog({
                           {editingPlotId === plot.id && isAddingArea && (
                             <div className="mt-4 p-4 border rounded-lg bg-muted/30 space-y-4">
                               <h5 className="font-medium text-sm">
-                                Neue Teilflaeche hinzufügen
+                                Neue Teilfläche hinzufügen
                               </h5>
                               <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -729,7 +729,7 @@ function LeaseDetailDialog({
                                 <div className="space-y-2">
                                   <Label>
                                     {newArea.areaType === "KABEL"
-                                      ? "Laenge (m)"
+                                      ? "Länge (m)"
                                       : "Flaeche (m²)"}
                                   </Label>
                                   <Input
@@ -752,7 +752,7 @@ function LeaseDetailDialog({
                                   />
                                 </div>
                                 <div className="space-y-2">
-                                  <Label>Entschaedigungsart</Label>
+                                  <Label>Entschädigungsart</Label>
                                   <Select
                                     value={newArea.compensationType}
                                     onValueChange={(v) =>
@@ -836,9 +836,9 @@ function LeaseDetailDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Teilflaeche löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Teilfläche löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

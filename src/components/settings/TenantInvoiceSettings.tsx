@@ -58,7 +58,7 @@ interface InvoiceFormData {
   datevAccountInputTax19: string;
   datevAccountInputTax7: string;
   datevAccountDunningFee: string;
-  // Geschaeftsjahr
+  // Geschäftsjahr
   fiscalYearStartMonth: number;
   // GoBD
   gobdRetentionYearsInvoice: number;
@@ -452,12 +452,12 @@ export function TenantInvoiceSettings() {
         </CardContent>
       </Card>
 
-      {/* Geschaeftsjahr */}
+      {/* Geschäftsjahr */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Geschaeftsjahr</CardTitle>
+            <CardTitle className="text-lg">Geschäftsjahr</CardTitle>
           </div>
           <CardDescription>
             Beginn des Geschaeftsjahres für BWA und Jahresvergleiche
@@ -465,7 +465,7 @@ export function TenantInvoiceSettings() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 max-w-xs">
-            <Label htmlFor="fiscalYearStartMonth">Geschaeftsjahr beginnt im</Label>
+            <Label htmlFor="fiscalYearStartMonth">Geschäftsjahr beginnt im</Label>
             <select
               id="fiscalYearStartMonth"
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"

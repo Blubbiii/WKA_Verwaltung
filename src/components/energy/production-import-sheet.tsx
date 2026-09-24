@@ -708,7 +708,7 @@ export function ProductionImportSheet({
             accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={handleFileSelect}
-            aria-label="Datei auswaehlen"
+            aria-label="Datei auswählen"
           />
         </div>
       ) : (
@@ -833,7 +833,7 @@ export function ProductionImportSheet({
                 onValueChange={(v) => updateMapping(key, v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Spalte waehlen..." />
+                  <SelectValue placeholder="Spalte wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">-- Nicht zugeordnet --</SelectItem>

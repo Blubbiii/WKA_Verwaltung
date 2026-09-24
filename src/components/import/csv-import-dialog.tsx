@@ -202,7 +202,7 @@ export function CsvImportDialog({ open, onOpenChange, target, onImported }: CsvI
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  // Zuruecksetzen, damit dieselbe Datei erneut gewaehlt werden
+                  // Zurücksetzen, damit dieselbe Datei erneut gewaehlt werden
                   // kann — sonst feuert change beim zweiten Mal nicht.
                   e.target.value = "";
                   if (file) void handleFile(file);

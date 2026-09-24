@@ -20,6 +20,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 /**
  * MaStR-Nummern beginnen mit einem Präfix (SEE für Einheiten, SEL/SNB für
@@ -113,7 +114,7 @@ export async function PUT(request: NextRequest) {
     const parsed = putSchema.safeParse(await request.json());
     if (!parsed.success) {
       return apiError("VALIDATION_FAILED", 400, {
-        message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
         details: { issues: parsed.error.issues },
       });
     }

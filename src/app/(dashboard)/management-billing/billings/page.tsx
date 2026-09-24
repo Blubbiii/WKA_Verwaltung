@@ -460,7 +460,7 @@ export default function BillingsPage() {
         <CardHeader>
           <CardTitle>Abrechnungen</CardTitle>
           <CardDescription>
-            Alle BF-Abrechnungen im ausgewaehlten Zeitraum
+            Alle BF-Abrechnungen im ausgewählten Zeitraum
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -557,7 +557,7 @@ export default function BillingsPage() {
                       <EmptyState
                         icon={Receipt}
                         title="Keine Abrechnungen"
-                        description="Für den ausgewaehlten Zeitraum wurden keine Abrechnungen gefunden. Starten Sie eine Batch-Berechnung."
+                        description="Für den ausgewählten Zeitraum wurden keine Abrechnungen gefunden. Starten Sie eine Batch-Berechnung."
                       />
                     </TableCell>
                   </TableRow>

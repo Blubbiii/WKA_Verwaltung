@@ -152,7 +152,7 @@ function StatusBadge({ status }: { status: ApprovalStatus }) {
   );
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["requests", "decisions"] as const;
 
 export default function ApprovalsHistoryPage() {

@@ -5,6 +5,9 @@ export async function register() {
   // Only runs on Node runtime (edge runtime has a narrower env surface).
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./lib/env");
+    // German zod messages for every route, also those that do not import
+    // zod-meldung themselves (which sets the same on import).
+    await import("./lib/validation/zod-meldung");
   }
 
   // Skip Sentry instrumentation in development to avoid Turbopack HMR conflicts

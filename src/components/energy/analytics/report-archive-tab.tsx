@@ -303,7 +303,7 @@ export function ReportArchiveTab() {
                   onClick={() => { setSearch(""); setReportType("all"); setFormat("all"); setPage(1); }}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Zuruecksetzen
+                  Zurücksetzen
                 </Button>
               )}
             </div>
@@ -375,7 +375,7 @@ export function ReportArchiveTab() {
                     <TableHead>Format</TableHead>
                     <TableHead>Erstellt von</TableHead>
                     <TableHead>Datum</TableHead>
-                    <TableHead>Groesse</TableHead>
+                    <TableHead>Größe</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -457,7 +457,7 @@ export function ReportArchiveTab() {
                       disabled={page === 1 || loading}
                     >
                       <ChevronLeft className="h-4 w-4" />
-                      Zurueck
+                      Zurück
                     </Button>
                     <Button
                       variant="outline"
@@ -483,7 +483,7 @@ export function ReportArchiveTab() {
             <AlertDialogTitle>Bericht loeschen?</AlertDialogTitle>
             <AlertDialogDescription>
               Sind Sie sicher, dass Sie den Bericht &quot;{reportToDelete?.title}&quot; loeschen moechten?
-              Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "WindparkManager — Die Zukunft der Windpark-Verwaltung",
   description:
-    "Optimieren Sie Ihre Erträge mit AI-gestuetzter Wartung, automatisierter Abrechnung und transparenter Buergerbeteiligung.",
+    "Optimieren Sie Ihre Erträge mit AI-gestützter Wartung, automatisierter Abrechnung und transparenter Bürgerbeteiligung.",
 };
 
 interface MarketingLayoutProps {

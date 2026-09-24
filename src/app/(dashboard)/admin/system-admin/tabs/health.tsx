@@ -99,7 +99,7 @@ const tableIcons: Record<string, React.ReactNode> = {
 
 const tableDisplayNames: Record<string, string> = { tenants: "Mandanten", users: "Benutzer", parks: "Windparks", turbines: "Windenergieanlagen", funds: "Gesellschaften", shareholders: "Gesellschafter", plots: "Flurstuecke", leases: "Pachtverträge", contracts: "Verträge", documents: "Dokumente", invoices: "Rechnungen", auditLogs: "Audit-Logs", votes: "Abstimmungen", persons: "Personen" };
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["health", "maintenance"] as const;
 
 export default function SystemHealthTab() {

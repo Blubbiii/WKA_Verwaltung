@@ -587,7 +587,7 @@ function TurbineColumnMappingStep({
               onValueChange={onDefaultRevenueTypeChange}
             >
               <SelectTrigger id="defaultRevenueType">
-                <SelectValue placeholder="Vergütungsart waehlen..." />
+                <SelectValue placeholder="Vergütungsart wählen..." />
               </SelectTrigger>
               <SelectContent>
                 {availableRevenueTypes.map((rt) => (
@@ -1470,7 +1470,7 @@ export default function TurbineDataImportPage() {
 
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
           <Link href="/energy/productions">
             <ArrowLeft className="h-4 w-4" />
           </Link>

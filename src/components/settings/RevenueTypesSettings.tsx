@@ -45,7 +45,7 @@ type TaxType = "STANDARD" | "REDUCED" | "EXEMPT";
 
 const TAX_TYPE_LABELS: Record<TaxType, string> = {
   STANDARD: "Standard",
-  REDUCED: "Ermaessigt",
+  REDUCED: "Ermäßigt",
   EXEMPT: "Befreit",
 };
 
@@ -417,11 +417,11 @@ export function RevenueTypesSettings() {
                 }
               >
                 <SelectTrigger id="rt-taxType">
-                  <SelectValue placeholder="Steuersatz waehlen" />
+                  <SelectValue placeholder="Steuersatz wählen" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="STANDARD">Standard (Regelsteuersatz)</SelectItem>
-                  <SelectItem value="REDUCED">Ermaessigt</SelectItem>
+                  <SelectItem value="REDUCED">Ermäßigt</SelectItem>
                   <SelectItem value="EXEMPT">Steuerbefreit (0%)</SelectItem>
                 </SelectContent>
               </Select>

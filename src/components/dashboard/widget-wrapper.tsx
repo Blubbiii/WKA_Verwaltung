@@ -77,7 +77,7 @@ export function WidgetWrapper({
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">{title}</CardTitle>
               {isEditing && onRemove && (
-                <Button
+                <Button aria-label="Entfernen"
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"

@@ -315,7 +315,7 @@ export function ParkWizard() {
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {commissioningDate
                         ? format(commissioningDate, "dd.MM.yyyy", { locale: de })
-                        : "Datum waehlen"}
+                        : "Datum wählen"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -564,7 +564,7 @@ export function ParkWizard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="park-ausgleich-comp">Ausgleichsflaeche (EUR/m2/a)</Label>
+                    <Label htmlFor="park-ausgleich-comp">Ausgleichsfläche (EUR/m2/a)</Label>
                     <Input
                       id="park-ausgleich-comp"
                       type="number"
@@ -719,7 +719,7 @@ export function ParkWizard() {
                       )}
                       {ausgleichCompensationPerSqm && (
                         <>
-                          <div><span className="text-muted-foreground">Ausgleichsflaeche:</span></div>
+                          <div><span className="text-muted-foreground">Ausgleichsfläche:</span></div>
                           <div className="font-medium">{formatCurrency(ausgleichCompensationPerSqm)}/m2/a</div>
                         </>
                       )}

@@ -446,7 +446,7 @@ export function ScheduledReportsManager() {
                   <Label>Windpark</Label>
                   <Select value={formParkId} onValueChange={setFormParkId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Windpark auswaehlen..." />
+                      <SelectValue placeholder="Windpark auswählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       {parks.map((park) => (
@@ -650,7 +650,7 @@ export function ScheduledReportsManager() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
         title="Geplanten Bericht löschen"
-        description={`Möchten Sie den geplanten Bericht "${deletingReport?.name}" wirklich löschen? Diese Aktion kann nicht rueckgaengig gemacht werden.`}
+        description={`Möchten Sie den geplanten Bericht "${deletingReport?.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
       />
     </Card>
   );

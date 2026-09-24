@@ -218,7 +218,7 @@ export function PdfReportsTab() {
               <Label htmlFor={parkFieldId}>Windpark</Label>
               <Select value={parkId} onValueChange={setParkId}>
                 <SelectTrigger id={parkFieldId}>
-                  <SelectValue placeholder="Park waehlen..." />
+                  <SelectValue placeholder="Park wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {parks.map((p) => (

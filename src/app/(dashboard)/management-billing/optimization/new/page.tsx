@@ -138,7 +138,7 @@ export default function NewOptimizationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/optimization">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -198,7 +198,7 @@ export default function NewOptimizationPage() {
                     }
                   >
                     <SelectTrigger id="category">
-                      <SelectValue placeholder="Kategorie waehlen..." />
+                      <SelectValue placeholder="Kategorie wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Keine Kategorie</SelectItem>
@@ -223,7 +223,7 @@ export default function NewOptimizationPage() {
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="priority">Prioritaet</Label>
+                  <Label htmlFor="priority">Priorität</Label>
                   <Select
                     value={formData.priority}
                     onValueChange={(value) => handleChange("priority", value)}
@@ -239,7 +239,7 @@ export default function NewOptimizationPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Faellig am</Label>
+                  <Label htmlFor="dueDate">Fällig am</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -248,7 +248,7 @@ export default function NewOptimizationPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="costEstimateEur">Geschaetzte Kosten (EUR)</Label>
+                  <Label htmlFor="costEstimateEur">Geschätzte Kosten (EUR)</Label>
                   <Input
                     id="costEstimateEur"
                     type="number"
@@ -305,7 +305,7 @@ export default function NewOptimizationPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Park auswaehlen..." />
+                      <SelectValue placeholder="Park auswählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Kein Park</SelectItem>

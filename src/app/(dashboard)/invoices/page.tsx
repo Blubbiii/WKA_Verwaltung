@@ -185,13 +185,13 @@ export default function InvoicesPage() {
   const setFromFilter = (s: string) => setTableState({ from: s });
   const setToFilter = (s: string) => setTableState({ to: s });
   // Bedienaufwand #2: Die Seitenzahl laeuft ueber denselben persistierten
-  // State — so ist eine bestimmte Seite teilbar, und der Zurueck-Knopf landet
+  // State — so ist eine bestimmte Seite teilbar, und der Zurück-Knopf landet
   // nicht wieder auf Seite 1.
   const currentPage = tableState.page;
   const setCurrentPage = (p: number) => setTableState({ page: p });
 
   // Bedienaufwand #16: Gespeicherte Filter gab es nur auf der Audit-Log-Seite —
-  // ausgerechnet der Seite, die Buchhalter am seltensten oeffnen. Hier tragen
+  // ausgerechnet der Seite, die Buchhalter am seltensten öffnen. Hier tragen
   // sie mehr: "offene Rechnungen Gesellschaft X" ist eine wiederkehrende Frage.
   const savedFilterPayload = {
     status: statusFilter,
@@ -245,7 +245,7 @@ export default function InvoicesPage() {
 
   const { data: invoicesData, isLoading: loading, error, refetch } = useApiQuery<InvoicesResponse>(
     // Der Query-Key MUSS alle Filter enthalten — sonst liefert react-query den
-    // Cache-Eintrag des vorherigen Filters zurueck.
+    // Cache-Eintrag des vorherigen Filters zurück.
     ["invoices", statusFilter, typeFilter, fundFilter, fromFilter, toFilter, debouncedSearch, sortField, sortDirection, String(currentPage)],
     `/api/invoices?${queryParams}`
   );
@@ -329,7 +329,7 @@ export default function InvoicesPage() {
     clearSelection();
   }, [statusFilter, typeFilter, fundFilter, fromFilter, toFilter, debouncedSearch, currentPage, clearSelection]);
 
-  // Filterwechsel zurueck auf Seite 1: Seite 5 einer 60-Treffer-Menge ist nach
+  // Filterwechsel zurück auf Seite 1: Seite 5 einer 60-Treffer-Menge ist nach
   // dem Filtern auf 12 Treffer leer, und eine leere Tabelle liest sich wie
   // "nichts gefunden".
   useEffect(() => {

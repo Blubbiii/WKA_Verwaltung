@@ -69,13 +69,13 @@ const ROLE_LABELS: Record<string, string> = {
   SERVICE_PROVIDER: "Dienstleister",
   GRID_OPERATOR: "Netzbetreiber",
   DIRECT_MARKETER: "Direktvermarkter",
-  LANDOWNER: "Grundstueckseigentuemer",
+  LANDOWNER: "Grundstückseigentümer",
   OTHER: "Sonstiges",
 };
 
 const TAX_TYPE_OPTIONS = [
   { value: "STANDARD", label: "19% MwSt (Standard)" },
-  { value: "REDUCED", label: "7% MwSt (Ermaessigt)" },
+  { value: "REDUCED", label: "7% MwSt (Ermäßigt)" },
   { value: "EXEMPT", label: "0% (Steuerfrei)" },
 ];
 
@@ -281,7 +281,7 @@ export default function EditStakeholderPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link
               href={`/management-billing/stakeholders/${id}`}
             >
@@ -465,7 +465,7 @@ export default function EditStakeholderPage({
             </div>
             <div className="space-y-2">
               <Label htmlFor="creditorId">
-                Glaeubiger-Identifikationsnummer
+                Gläubiger-Identifikationsnummer
               </Label>
               <Input
                 id="creditorId"

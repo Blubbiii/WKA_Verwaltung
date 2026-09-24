@@ -82,7 +82,7 @@ const TAX_TYPE_LABELS: Record<TaxType, string> = {
 
 const TAX_TYPE_SELECT_LABELS: Record<TaxType, string> = {
   STANDARD: "Standard",
-  REDUCED: "Ermaessigt",
+  REDUCED: "Ermäßigt",
   EXEMPT: "Befreit",
 };
 

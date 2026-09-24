@@ -207,7 +207,7 @@ export function GeneralSettings() {
               onValueChange={(value) => handleChange("defaultTimezone", value)}
             >
               <SelectTrigger id="timezone">
-                <SelectValue placeholder="Zeitzone waehlen" />
+                <SelectValue placeholder="Zeitzone wählen" />
               </SelectTrigger>
               <SelectContent>
                 {TIMEZONES.map((tz) => (
@@ -227,7 +227,7 @@ export function GeneralSettings() {
               onValueChange={(value) => handleChange("defaultLanguage", value)}
             >
               <SelectTrigger id="language">
-                <SelectValue placeholder="Sprache waehlen" />
+                <SelectValue placeholder="Sprache wählen" />
               </SelectTrigger>
               <SelectContent>
                 {LANGUAGES.map((lang) => (
@@ -247,7 +247,7 @@ export function GeneralSettings() {
               onValueChange={(value) => handleChange("dateFormat", value)}
             >
               <SelectTrigger id="dateFormat">
-                <SelectValue placeholder="Datumsformat waehlen" />
+                <SelectValue placeholder="Datumsformat wählen" />
               </SelectTrigger>
               <SelectContent>
                 {DATE_FORMATS.map((format) => (
@@ -267,7 +267,7 @@ export function GeneralSettings() {
               onValueChange={(value) => handleChange("currency", value)}
             >
               <SelectTrigger id="currency">
-                <SelectValue placeholder="Währung waehlen" />
+                <SelectValue placeholder="Währung wählen" />
               </SelectTrigger>
               <SelectContent>
                 {CURRENCIES.map((curr) => (
@@ -398,9 +398,9 @@ export function GeneralSettings() {
 
           <Separator />
 
-          {/* Passwort-Mindestlaenge */}
+          {/* Passwort-Mindestlänge */}
           <div className="space-y-2">
-            <Label htmlFor="minPasswordLength">Passwort-Mindestlaenge</Label>
+            <Label htmlFor="minPasswordLength">Passwort-Mindestlänge</Label>
             <Input
               id="minPasswordLength"
               type="number"

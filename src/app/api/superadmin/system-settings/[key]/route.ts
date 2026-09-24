@@ -18,6 +18,7 @@ import {
 } from "@/lib/system-settings";
 import { serializePrisma } from "@/lib/serialize";
 import { Prisma } from "@prisma/client";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const patchSchema = z.object({
   value: z.unknown(),
@@ -44,7 +45,7 @@ export async function PATCH(
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: parsed.error.issues[0]?.message || "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
 

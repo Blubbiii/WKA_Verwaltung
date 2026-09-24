@@ -332,7 +332,7 @@ export function ParkForm({ initialData }: ParkFormProps) {
                       </div>
                     )}
                   </div>
-                  <Button
+                  <Button aria-label="Entfernen"
                     type="button"
                     variant="destructive"
                     size="icon"

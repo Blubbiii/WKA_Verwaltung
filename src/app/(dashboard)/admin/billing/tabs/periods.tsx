@@ -182,12 +182,12 @@ export default function SettlementPeriodsTab() {
 
   async function handleCreate() {
     if (!formData.parkId) {
-      toast.error("Bitte waehlen Sie einen Windpark aus");
+      toast.error("Bitte wählen Sie einen Windpark aus");
       return;
     }
 
     if (formData.periodType === "ADVANCE" && !formData.month) {
-      toast.error("Bitte waehlen Sie einen Monat für den Vorschuss aus");
+      toast.error("Bitte wählen Sie einen Monat für den Vorschuss aus");
       return;
     }
 
@@ -213,7 +213,7 @@ export default function SettlementPeriodsTab() {
 
   async function handleBulkCreate() {
     if (!bulkFormData.parkId) {
-      toast.error("Bitte waehlen Sie einen Windpark aus");
+      toast.error("Bitte wählen Sie einen Windpark aus");
       return;
     }
 
@@ -528,7 +528,7 @@ export default function SettlementPeriodsTab() {
                     <TableHead>Periode</TableHead>
                     <TableHead>Typ</TableHead>
                     <TableHead className="text-right">Mindestpacht</TableHead>
-                    <TableHead className="text-right">Tatsaechliche Pacht</TableHead>
+                    <TableHead className="text-right">Tatsächliche Pacht</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[80px]">Aktionen</TableHead>
                   </TableRow>
@@ -561,7 +561,7 @@ export default function SettlementPeriodsTab() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button aria-label="Weitere Aktionen" variant="ghost" size="icon">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -617,7 +617,7 @@ export default function SettlementPeriodsTab() {
                 onValueChange={(value) => setFormData({ ...formData, parkId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Windpark auswaehlen" />
+                  <SelectValue placeholder="Windpark auswählen" />
                 </SelectTrigger>
                 <SelectContent>
                   {parkList.map((park) => (
@@ -679,7 +679,7 @@ export default function SettlementPeriodsTab() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Monat waehlen" />
+                      <SelectValue placeholder="Monat wählen" />
                     </SelectTrigger>
                     <SelectContent>
                       {months.map((month) => (
@@ -737,7 +737,7 @@ export default function SettlementPeriodsTab() {
                 onValueChange={(value) => setBulkFormData({ ...bulkFormData, parkId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Windpark auswaehlen" />
+                  <SelectValue placeholder="Windpark auswählen" />
                 </SelectTrigger>
                 <SelectContent>
                   {parkList.map((park) => (

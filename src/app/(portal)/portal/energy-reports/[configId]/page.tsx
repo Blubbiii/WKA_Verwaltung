@@ -355,7 +355,7 @@ export default function EnergyReportDetailPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between print:hidden">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Button variant="ghost" size="icon" asChild>
+            <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
               <Link href="/portal/energy-reports">
                 <ArrowLeft className="h-4 w-4" />
               </Link>

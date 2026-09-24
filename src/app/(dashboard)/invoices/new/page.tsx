@@ -126,7 +126,7 @@ function NewInvoiceContent() {
   ]);
 
   /**
-   * Bedienaufwand #20: Als angefasst gilt das Formular, sobald ein Empfaenger
+   * Bedienaufwand #20: Als angefasst gilt das Formular, sobald ein Empfänger
    * oder eine Position mit Inhalt darin steht. Der Kontext-Prefill aus der URL
    * (#12) zaehlt bewusst NICHT — sonst warnte die Seite schon beim Oeffnen
    * eines vorbelegten Links, ohne dass jemand etwas eingetippt hat.
@@ -453,7 +453,7 @@ function NewInvoiceContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/invoices">
               <ArrowLeft className="h-4 w-4" />
             </Link>

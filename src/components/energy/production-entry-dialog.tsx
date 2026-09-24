@@ -332,7 +332,7 @@ export function ProductionEntryDialog({
               >
                 <SelectTrigger id="prod-park">
                   <SelectValue
-                    placeholder={isLoadingParks ? 'Laden...' : 'Park waehlen...'}
+                    placeholder={isLoadingParks ? 'Laden...' : 'Park wählen...'}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -360,8 +360,8 @@ export function ProductionEntryDialog({
                       isLoadingTurbines
                         ? 'Laden...'
                         : !parkId
-                          ? 'Erst Park waehlen'
-                          : 'Anlage waehlen...'
+                          ? 'Erst Park wählen'
+                          : 'Anlage wählen...'
                     }
                   />
                 </SelectTrigger>
@@ -389,7 +389,7 @@ export function ProductionEntryDialog({
               </Label>
               <Select value={year} onValueChange={setYear} disabled={isEdit}>
                 <SelectTrigger id="prod-year">
-                  <SelectValue placeholder="Jahr waehlen..." />
+                  <SelectValue placeholder="Jahr wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {YEAR_OPTIONS.map((y) => (
@@ -407,7 +407,7 @@ export function ProductionEntryDialog({
               </Label>
               <Select value={month} onValueChange={setMonth} disabled={isEdit}>
                 <SelectTrigger id="prod-month">
-                  <SelectValue placeholder="Monat waehlen..." />
+                  <SelectValue placeholder="Monat wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {MONTH_OPTIONS.map((m) => (

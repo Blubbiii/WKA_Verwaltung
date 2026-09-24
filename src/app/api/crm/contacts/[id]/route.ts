@@ -8,7 +8,8 @@ import { serializePrisma } from "@/lib/serialize";
 import { loadContact360 } from "@/lib/crm/contact-360";
 import { loadLabelsForPersons } from "@/lib/crm/derived-labels";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 const updateSchema = z.object({
   salutation: z.string().max(20).optional().nullable(),
   firstName: z.string().max(100).optional().nullable(),
@@ -112,7 +113,7 @@ export async function PUT(
     const raw = await request.json();
     const parsed = updateSchema.safeParse(raw);
     if (!parsed.success) {
-      return apiError("VALIDATION_FAILED", 400, { message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" });
+      return apiError("VALIDATION_FAILED", 400, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
     // Build update data from all provided fields

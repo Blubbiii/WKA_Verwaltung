@@ -317,7 +317,7 @@ export function InvoiceTemplateSettings() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         title="Rechnungsvorlage löschen"
-        description="Möchten Sie diese Rechnungsvorlage wirklich löschen? Diese Aktion kann nicht rueckgaengig gemacht werden."
+        description="Möchten Sie diese Rechnungsvorlage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
       />
     </div>
   );

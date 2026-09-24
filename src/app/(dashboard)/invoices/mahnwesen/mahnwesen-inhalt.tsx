@@ -52,7 +52,7 @@ function fmt(n: number): string {
   return n.toLocaleString(LOCALE_DE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?subtab= — alles andere faellt auf den Standard zurück. */
 const SUBTAB_VALUES = ["candidates", "history"] as const;
 
 export default function MahnwesenInhalt() {

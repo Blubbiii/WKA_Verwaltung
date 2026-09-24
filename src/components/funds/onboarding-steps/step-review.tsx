@@ -241,7 +241,7 @@ export function StepReview({ data, onGoToStep }: StepReviewProps) {
           <li>1. Person wird in der Datenbank angelegt</li>
           <li>2. Gesellschafterbeteiligung wird erstellt und Anteile werden berechnet</li>
           {portalAccess.createPortalAccess && (
-            <li>3. Portal-Benutzerkonto wird mit temporaerem Passwort erstellt</li>
+            <li>3. Portal-Benutzerkonto wird mit temporärem Passwort erstellt</li>
           )}
           {documents.files.length > 0 && (
             <li>

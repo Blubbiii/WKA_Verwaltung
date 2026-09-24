@@ -17,8 +17,11 @@ import {
   ClipboardList,
   ShieldCheck,
   Loader2,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadFromResponse } from "@/lib/download";
@@ -120,7 +123,7 @@ function StatTile({
 // Page
 // ============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["overview", "relations", "activities", "tasks", "documents"] as const;
 
 export default function CrmContactDetailPage({
@@ -143,6 +146,22 @@ export default function CrmContactDetailPage({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [exportingData, setExportingData] = useState(false);
   const { hasPermission } = usePermissions();
+  const { confirm, confirmDialog } = useConfirm();
+
+  // The API had DELETE, the page had no button. It refuses while leases,
+  // contracts, holdings or plot entries still name the person (§ 147 AO) and
+  // says which — that message goes to the user as is.
+  const loeschen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/persons/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("deleteError"));
+    },
+    onSuccess: () => {
+      toast.success(t("deleteSuccess"));
+      router.push("/crm/contacts");
+    },
+    onError: (e: Error) => toast.error(e.message, { duration: 12_000 }),
+  });
 
   /**
    * TF-11: DSGVO-Art.-15-Auskunft herunterladen.
@@ -325,8 +344,26 @@ export default function CrmContactDetailPage({
               {t("dataExportButton")}
             </Button>
           )}
+          {hasPermission("leases:delete") && (
+            <Button
+              variant="destructive"
+              disabled={loeschen.isPending}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("deleteTitle"),
+                  description: t("deleteDescription", { name: displayName }),
+                  variant: "destructive",
+                });
+                if (ok) loeschen.mutate();
+              }}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("deleteButton")}
+            </Button>
+          )}
         </div>
       </div>
+      {confirmDialog}
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

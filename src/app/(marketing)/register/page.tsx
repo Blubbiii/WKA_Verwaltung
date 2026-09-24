@@ -79,7 +79,7 @@ export default function RegisterPage() {
               <Button asChild variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800">
                 <Link href="/">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Zurueck zur Startseite
+                  Zurück zur Startseite
                 </Link>
               </Button>
             </div>

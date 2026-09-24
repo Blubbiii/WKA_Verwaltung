@@ -20,6 +20,7 @@ import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
 import { serializePrisma } from "@/lib/serialize";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const OFFICIAL_KEY_PATTERN = /^\d{8}$/;
 
@@ -63,7 +64,7 @@ export async function PATCH(
     const parsed = patchSchema.safeParse(await request.json());
     if (!parsed.success) {
       return apiError("VALIDATION_FAILED", 400, {
-        message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
 

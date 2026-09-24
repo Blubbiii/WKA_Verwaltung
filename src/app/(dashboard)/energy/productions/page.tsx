@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   Plus,
   Pencil,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,9 @@ import {
   type ProductionEditData,
 } from "@/components/energy/production-entry-dialog";
 import { LOCALE_DE } from "@/lib/format";
+import { useMutation } from "@tanstack/react-query";
+import { useConfirm } from "@/components/ui/use-confirm";
+import { toast } from "sonner";
 
 // =============================================================================
 // TYPES
@@ -141,6 +145,7 @@ function formatMWh(kwh: number): string {
 
 export default function ProductionDataPage() {
   const t = useTranslations("energy.productions");
+  const { confirm, confirmDialog } = useConfirm();
   const tSrc = useTranslations("energy.sourceLabels");
   const tSt = useTranslations("energy.statusLabels");
   // currentYear per Mount berechnen — sonst zeigt der Long-Running Container
@@ -320,6 +325,19 @@ export default function ProductionDataPage() {
     setEditData(null);
     refetch();
   };
+
+  // Wrong or duplicate entries could only be edited before, never removed.
+  const loeschen = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/energy/productions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("deleteError"));
+    },
+    onSuccess: () => {
+      toast.success(t("deleted"));
+      refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const handleEditClick = (row: TurbineProductionRecord) => {
     setEditData({
@@ -696,15 +714,40 @@ export default function ProductionDataPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEditClick(row)}
-                          aria-label={t("edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditClick(row)}
+                            aria-label={t("edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          {/* Invoiced entries stay — the API refuses to delete them. */}
+                          {row.status !== "INVOICED" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive"
+                              disabled={loeschen.isPending}
+                              aria-label={t("delete")}
+                              onClick={async () => {
+                                const ok = await confirm({
+                                  title: t("deleteTitle"),
+                                  description: t("deleteDescription", {
+                                    turbine: row.turbine?.designation ?? "-",
+                                    period: `${monthNames[row.month] ?? row.month} ${row.year}`,
+                                  }),
+                                  variant: "destructive",
+                                });
+                                if (ok) loeschen.mutate(row.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -753,6 +796,7 @@ export default function ProductionDataPage() {
         onOpenChange={setImportSheetOpen}
         onSuccess={handleImportSuccess}
       />
+      {confirmDialog}
       <ProductionEntryDialog
         // Force a fresh mount whenever the edit target changes. Two internal
         // useEffects (on `open`/`editData` and on `parkId`) can otherwise race

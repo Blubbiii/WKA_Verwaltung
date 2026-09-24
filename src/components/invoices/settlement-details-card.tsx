@@ -503,7 +503,7 @@ function renderCalculationSummary(summary: CalculationSummary) {
               <TableCell className="font-semibold">
                 Tatsaechliches Jahresnutzungsentgelt{" "}
                 <Badge variant="outline" className="ml-2 text-xs">
-                  {usedMinimum ? "Minimum" : usedRevenue ? "Ertragsabhaengig" : "Berechnet"}
+                  {usedMinimum ? "Minimum" : usedRevenue ? "Ertragsabhängig" : "Berechnet"}
                 </Badge>
               </TableCell>
               <TableCell className="text-right tabular-nums font-semibold font-mono text-lg">

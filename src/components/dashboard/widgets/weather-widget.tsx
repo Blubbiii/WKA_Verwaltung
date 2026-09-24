@@ -47,7 +47,7 @@ function getConditionLabel(condition: WeatherData["condition"]) {
     case "sunny":
       return "Sonnig";
     case "cloudy":
-      return "Bewoelkt";
+      return "Bewölkt";
     case "rainy":
       return "Regnerisch";
     case "windy":

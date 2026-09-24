@@ -309,7 +309,7 @@ export function SettlementEntryDialog({
             >
               <SelectTrigger id="sett-park">
                 <SelectValue
-                  placeholder={isLoadingParks ? 'Laden...' : 'Park waehlen...'}
+                  placeholder={isLoadingParks ? 'Laden...' : 'Park wählen...'}
                 />
               </SelectTrigger>
               <SelectContent>
@@ -330,7 +330,7 @@ export function SettlementEntryDialog({
               </Label>
               <Select value={year} onValueChange={setYear} disabled={isEdit}>
                 <SelectTrigger id="sett-year">
-                  <SelectValue placeholder="Jahr waehlen..." />
+                  <SelectValue placeholder="Jahr wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {YEAR_OPTIONS.map((y) => (
@@ -346,7 +346,7 @@ export function SettlementEntryDialog({
               <Label htmlFor="sett-month">Monat</Label>
               <Select value={month} onValueChange={setMonth} disabled={isEdit}>
                 <SelectTrigger id="sett-month">
-                  <SelectValue placeholder="Monat waehlen..." />
+                  <SelectValue placeholder="Monat wählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {MONTH_OPTIONS.map((m) => (

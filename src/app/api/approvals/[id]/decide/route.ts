@@ -17,6 +17,7 @@ import {
   SelfApprovalForbiddenError,
   ApprovalExpiredError,
 } from "@/lib/approvals/manager";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const schema = z.object({
   decision: z.enum(["APPROVED", "REJECTED"]),
@@ -39,7 +40,7 @@ export async function POST(
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: parsed.error.issues[0]?.message || "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
       });
     }
 

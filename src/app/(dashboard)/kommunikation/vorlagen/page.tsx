@@ -227,7 +227,7 @@ export default function MailingTemplatesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Vorlage loeschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

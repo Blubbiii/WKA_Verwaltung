@@ -325,7 +325,7 @@ export default function FundDetailsPage({
   const [distributionDescription, setDistributionDescription] = useState<string>("");
   const [distributionDate, setDistributionDate] = useState<Date>(new Date());
   // Vorbelegt mit dem VORJAHR: ausgeschuettet wird nach dem
-  // Gewinnverwendungsbeschluss, also fuer ein abgeschlossenes Geschaeftsjahr.
+  // Gewinnverwendungsbeschluss, also fuer ein abgeschlossenes Geschäftsjahr.
   // Der Nutzer sieht und aendert es — geraten wird nichts im Hintergrund.
   const [distributionPeriodYear, setDistributionPeriodYear] = useState<string>(
     () => String(new Date().getFullYear() - 1),
@@ -772,7 +772,7 @@ export default function FundDetailsPage({
         distributionDate: format(distributionDate, "yyyy-MM-dd"),
         // Nur mitschicken, wenn zeitanteilig gewuenscht. Ohne Zeitraum
         // verteilt die Route nach dem Stand am Ausschuettungstag und sagt das
-        // auch — sie raet kein Geschaeftsjahr.
+        // auch — sie raet kein Geschäftsjahr.
         ...(proRata
           ? { periodStart: `${year}-01-01`, periodEnd: `${year}-12-31` }
           : {}),
@@ -921,7 +921,7 @@ export default function FundDetailsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href="/funds">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -1188,7 +1188,7 @@ export default function FundDetailsPage({
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
+                              <Button aria-label="Weitere Aktionen" variant="ghost" size="icon">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>

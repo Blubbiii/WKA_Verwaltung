@@ -65,7 +65,7 @@ interface FundOption {
 
 const ROLE_OPTIONS = [
   { value: "TECHNICAL_BF", label: "Technische Betriebsführung" },
-  { value: "COMMERCIAL_BF", label: "Kaufmaennische Betriebsführung" },
+  { value: "COMMERCIAL_BF", label: "Kaufmännische Betriebsführung" },
   { value: "DEVELOPER", label: "Projektierer" },
   { value: "GRID_OPERATOR", label: "Netzbetreiber" },
   { value: "OPERATOR", label: "Betreiber" },
@@ -73,7 +73,7 @@ const ROLE_OPTIONS = [
 
 const TAX_TYPE_OPTIONS = [
   { value: "STANDARD", label: "Standard (19%)" },
-  { value: "REDUCED", label: "Ermaessigt (7%)" },
+  { value: "REDUCED", label: "Ermäßigt (7%)" },
   { value: "EXEMPT", label: "Befreit (0%)" },
 ];
 
@@ -317,7 +317,7 @@ export default function NewStakeholderPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/stakeholders">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -378,11 +378,11 @@ export default function NewStakeholderPage() {
                     }
                   >
                     <SelectTrigger id="stakeholderTenantId">
-                      <SelectValue placeholder="Firma waehlen..." />
+                      <SelectValue placeholder="Firma wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Firma waehlen...
+                        Firma wählen...
                       </SelectItem>
                       {tenantsLoading ? (
                         <SelectItem value="loading" disabled>
@@ -412,11 +412,11 @@ export default function NewStakeholderPage() {
                     }
                   >
                     <SelectTrigger id="parkId">
-                      <SelectValue placeholder="Windpark waehlen..." />
+                      <SelectValue placeholder="Windpark wählen..." />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none" disabled>
-                        Windpark waehlen...
+                        Windpark wählen...
                       </SelectItem>
                       {parksLoading ? (
                         <SelectItem value="loading" disabled>
@@ -480,11 +480,11 @@ export default function NewStakeholderPage() {
                   }
                 >
                   <SelectTrigger id="role" className="max-w-sm">
-                    <SelectValue placeholder="Aufgabe waehlen..." />
+                    <SelectValue placeholder="Aufgabe wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" disabled>
-                      Aufgabe waehlen...
+                      Aufgabe wählen...
                     </SelectItem>
                     {ROLE_OPTIONS.map((role) => (
                       <SelectItem key={role.value} value={role.value}>
@@ -520,7 +520,7 @@ export default function NewStakeholderPage() {
 
                 {!formData.parkId ? (
                   <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                    Bitte waehlen Sie zuerst einen Windpark aus
+                    Bitte wählen Sie zuerst einen Windpark aus
                   </div>
                 ) : fundsLoading ? (
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -704,7 +704,7 @@ export default function NewStakeholderPage() {
 
               {/* Creditor ID */}
               <div className="space-y-2">
-                <Label htmlFor="creditorId">Glaeubiger-ID</Label>
+                <Label htmlFor="creditorId">Gläubiger-ID</Label>
                 <Input
                   id="creditorId"
                   value={formData.creditorId}

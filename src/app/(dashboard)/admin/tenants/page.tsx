@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useTabParam } from "@/hooks/useTabParam";
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["tenants", "users", "roles", "features", "limits"] as const;
 
 export default function AdminTenantsPage() {

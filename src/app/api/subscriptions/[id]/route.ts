@@ -35,6 +35,7 @@ import {
   checkAcceptance,
   type AmlInput,
 } from "@/lib/subscriptions/subscription";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const patchSchema = z
   .object({
@@ -106,7 +107,7 @@ export async function PATCH(
     const parsed = patchSchema.safeParse(await request.json());
     if (!parsed.success) {
       return apiError("VALIDATION_FAILED", 400, {
-        message: parsed.error.issues[0]?.message ?? "Ungültige Eingabe",
+        message: zodMeldung(parsed.error, "Ungültige Eingabe"),
         details: { issues: parsed.error.issues },
       });
     }

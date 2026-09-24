@@ -1,14 +1,33 @@
 "use client";
 
-import { use } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { use, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Building2, Wind, Briefcase, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Building2, Wind, Briefcase, LayoutGrid, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useConfirm } from "@/components/ui/use-confirm";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -47,6 +66,45 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
   const { data: costCenter, isLoading } = useQuery<CostCenterDetail>({
     queryKey: [costCenterUrl],
     queryFn: () => fetcher(costCenterUrl),
+  });
+  const queryClient = useQueryClient();
+  const { confirm, confirmDialog } = useConfirm();
+  const [bearbeiten, setBearbeiten] = useState<{
+    code: string; name: string; type: string; description: string; isActive: boolean;
+  } | null>(null);
+
+  // Edit and delete existed in the API only — the page showed the entry read-only.
+  const speichern = useMutation({
+    mutationFn: async (werte: NonNullable<typeof bearbeiten>) => {
+      const res = await fetch(costCenterUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...werte, description: werte.description.trim() || null }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("saveError"));
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [costCenterUrl] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cost-centers"] });
+      toast.success(t("saveSuccess"));
+      setBearbeiten(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const loeschen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(costCenterUrl, { method: "DELETE" });
+      // 409: budget lines still point here — the API says so.
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("deleteError"));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cost-centers"] });
+      toast.success(t("deleteSuccess"));
+      router.push("/wirtschaftsplan/cost-centers");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading) {
@@ -90,6 +148,40 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
             </Badge>
           </div>
           <p className="text-muted-foreground font-mono">{costCenter.code}</p>
+        </div>
+        <div className="ml-auto flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setBearbeiten({
+                code: costCenter.code,
+                name: costCenter.name,
+                type: costCenter.type,
+                description: costCenter.description ?? "",
+                isActive: costCenter.isActive,
+              })
+            }
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            {t("editButton")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={loeschen.isPending}
+            onClick={async () => {
+              const ok = await confirm({
+                title: t("deleteTitle"),
+                description: t("deleteDescription", { name: costCenter.name }),
+                variant: "destructive",
+              });
+              if (ok) loeschen.mutate();
+            }}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("deleteButton")}
+          </Button>
         </div>
       </div>
 
@@ -148,6 +240,58 @@ export default function CostCenterDetailPage({ params }: { params: Promise<{ id:
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={bearbeiten !== null} onOpenChange={(o) => { if (!o) setBearbeiten(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("editTitle")}</DialogTitle>
+          </DialogHeader>
+          {bearbeiten && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cc-code">{t("fieldCode")}</Label>
+                  <Input id="cc-code" value={bearbeiten.code} onChange={(e) => setBearbeiten({ ...bearbeiten, code: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cc-type">{t("fieldType")}</Label>
+                  <Select value={bearbeiten.type} onValueChange={(v) => setBearbeiten({ ...bearbeiten, type: v })}>
+                    <SelectTrigger id="cc-type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TYPE_META).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{t(v.key)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cc-name">{t("fieldName")}</Label>
+                <Input id="cc-name" value={bearbeiten.name} onChange={(e) => setBearbeiten({ ...bearbeiten, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cc-description">{t("fieldDescription")}</Label>
+                <Input id="cc-description" value={bearbeiten.description} onChange={(e) => setBearbeiten({ ...bearbeiten, description: e.target.value })} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch id="cc-active" checked={bearbeiten.isActive} onCheckedChange={(v) => setBearbeiten({ ...bearbeiten, isActive: v })} />
+                <Label htmlFor="cc-active">{t("statusActive")}</Label>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBearbeiten(null)}>{t("cancelButton")}</Button>
+            <Button
+              disabled={speichern.isPending || !bearbeiten?.code.trim() || !bearbeiten?.name.trim()}
+              onClick={() => bearbeiten && speichern.mutate(bearbeiten)}
+            >
+              {speichern.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("saveButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {confirmDialog}
     </div>
   );
 }

@@ -231,7 +231,7 @@ export function FinancialAnalysis({
         description: "Mittlerer Erlös pro kWh",
       },
       {
-        title: "Geschaetzter Verlust",
+        title: "Geschätzter Verlust",
         value: eurFmt.format(lostRevenue.estimatedLostEur),
         icon: AlertTriangle,
         description: `${formatMwh(lostRevenue.totalLostKwh)} Produktionsverlust`,
@@ -399,7 +399,7 @@ export function FinancialAnalysis({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Geschaetzter Produktionsverlust (Störungen)
+            Geschätzter Produktionsverlust (Störungen)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -414,7 +414,7 @@ export function FinancialAnalysis({
             </div>
             <div className="rounded-lg border p-4">
               <p className="text-sm text-muted-foreground">
-                Geschaetzter Erlösausfall
+                Geschätzter Erlösausfall
               </p>
               <p className="text-xl font-bold mt-1">
                 {eurFmt.format(lostRevenue.estimatedLostEur)}

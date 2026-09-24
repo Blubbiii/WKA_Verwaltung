@@ -425,7 +425,7 @@ export default function PPAPage() {
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button
+                              <Button aria-label="Weitere Aktionen"
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7"

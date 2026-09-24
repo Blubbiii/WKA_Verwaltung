@@ -139,7 +139,7 @@ const CONTRACT_TYPE_OPTIONS = [
   {
     value: "LEASE",
     label: "Pachtvertrag",
-    description: "Pachtvertrag für Grundstuecke/Flurstuecke",
+    description: "Pachtvertrag für Grundstücke/Flurstuecke",
     icon: Landmark,
   },
   {
@@ -599,7 +599,7 @@ export function ContractWizard() {
                         ? format(formData.startDate, "dd.MM.yyyy", {
                             locale: de,
                           })
-                        : "Datum waehlen"}
+                        : "Datum wählen"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -842,7 +842,7 @@ export function ContractWizard() {
               Zuordnungen
             </CardTitle>
             <CardDescription>
-              Verknuepfen Sie den Vertrag mit Windpark, Gesellschaft und
+              Verknüpfen Sie den Vertrag mit Windpark, Gesellschaft und
               Vertragspartner
             </CardDescription>
           </CardHeader>

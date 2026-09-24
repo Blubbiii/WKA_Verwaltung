@@ -179,7 +179,7 @@ export default function ContractsPage() {
   // geladenen Ausschnitt und meldete "nichts gefunden" fuer alles dahinter.
   const filteredContracts = contracts;
 
-  // Filterwechsel zurueck auf Seite 1 — Seite 4 einer geschrumpften Treffer-
+  // Filterwechsel zurück auf Seite 1 — Seite 4 einer geschrumpften Treffer-
   // menge ist leer und liest sich wie "nichts gefunden".
   useEffect(() => {
     setCurrentPage(1);

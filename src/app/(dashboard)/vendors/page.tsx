@@ -177,56 +177,56 @@ function VendorDialog({
 
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
           <div>
-            <Label>Name *</Label>
-            <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
+            <Label htmlFor="vendor-name">Name *</Label>
+            <Input id="vendor-name" value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Steuernummer</Label>
-              <Input value={form.taxId} onChange={(e) => set("taxId", e.target.value)} />
+              <Label htmlFor="vendor-taxId">Steuernummer</Label>
+              <Input id="vendor-taxId" value={form.taxId} onChange={(e) => set("taxId", e.target.value)} />
             </div>
             <div>
-              <Label>USt-IdNr.</Label>
-              <Input value={form.vatId} onChange={(e) => set("vatId", e.target.value)} />
+              <Label htmlFor="vendor-vatId">USt-IdNr.</Label>
+              <Input id="vendor-vatId" value={form.vatId} onChange={(e) => set("vatId", e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>IBAN</Label>
-              <Input value={form.iban} onChange={(e) => set("iban", e.target.value)} placeholder="DE..." />
+              <Label htmlFor="vendor-iban">IBAN</Label>
+              <Input id="vendor-iban" value={form.iban} onChange={(e) => set("iban", e.target.value)} placeholder="DE..." />
             </div>
             <div>
-              <Label>BIC</Label>
-              <Input value={form.bic} onChange={(e) => set("bic", e.target.value)} />
+              <Label htmlFor="vendor-bic">BIC</Label>
+              <Input id="vendor-bic" maxLength={11} value={form.bic} onChange={(e) => set("bic", e.target.value)} />
             </div>
           </div>
 
           <div>
-            <Label>E-Mail</Label>
-            <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
+            <Label htmlFor="vendor-email">E-Mail</Label>
+            <Input id="vendor-email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
 
           <div>
-            <Label>Straße</Label>
-            <Input value={form.street} onChange={(e) => set("street", e.target.value)} />
+            <Label htmlFor="vendor-street">Straße</Label>
+            <Input id="vendor-street" value={form.street} onChange={(e) => set("street", e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>PLZ</Label>
-              <Input value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
+              <Label htmlFor="vendor-postalCode">PLZ</Label>
+              <Input id="vendor-postalCode" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} />
             </div>
             <div>
-              <Label>Stadt</Label>
-              <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+              <Label htmlFor="vendor-city">Stadt</Label>
+              <Input id="vendor-city" value={form.city} onChange={(e) => set("city", e.target.value)} />
             </div>
           </div>
 
           <div>
-            <Label>Notizen</Label>
-            <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
+            <Label htmlFor="vendor-notes">Notizen</Label>
+            <Textarea id="vendor-notes" value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={2} />
           </div>
         </div>
 

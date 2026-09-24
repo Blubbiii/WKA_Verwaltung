@@ -221,7 +221,7 @@ export function CreateReportDialog({
 
           {/* Module Selection - Analytics Groups */}
           <div className="space-y-4">
-            <Label>Module auswaehlen *</Label>
+            <Label>Module auswählen *</Label>
 
             {Array.from(moduleGroups.entries()).map(([groupName, items]) => {
               const allSelected = items.every((m) => selectedModules.has(m.key));
@@ -237,7 +237,7 @@ export function CreateReportDialog({
                       className="h-6 text-xs"
                       onClick={() => toggleGroup(items)}
                     >
-                      {allSelected ? "Alle abwaehlen" : "Alle auswaehlen"}
+                      {allSelected ? "Alle abwählen" : "Alle auswählen"}
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -271,8 +271,8 @@ export function CreateReportDialog({
                   onClick={() => toggleGroup(classicItems)}
                 >
                   {classicItems.every((m) => selectedModules.has(m.key))
-                    ? "Alle abwaehlen"
-                    : "Alle auswaehlen"}
+                    ? "Alle abwählen"
+                    : "Alle auswählen"}
                 </Button>
               </div>
               <div className="grid grid-cols-2 gap-2">

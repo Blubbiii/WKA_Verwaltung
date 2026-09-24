@@ -167,7 +167,7 @@ function formatWindSpeedKmh(ms: number): string {
 // Component
 // =============================================================================
 
-/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurueck. */
+/** Bedienaufwand #15: erlaubte Werte fuer ?tab= — alles andere faellt auf den Standard zurück. */
 const TAB_VALUES = ["overview", "forecast", "history", "statistics"] as const;
 
 export default function ParkWeatherPage({
@@ -291,7 +291,7 @@ export default function ParkWeatherPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${parkId}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -324,7 +324,7 @@ export default function ParkWeatherPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${parkId}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -394,8 +394,8 @@ export default function ParkWeatherPage({
             <p className="text-xs text-muted-foreground">
               {formatWindSpeedKmh(weather.current.windSpeed)} |{" "}
               {weather.current.windGust
-                ? `Boeen: ${formatWindSpeed(weather.current.windGust)}`
-                : "Keine Boeen"}
+                ? `Böen: ${formatWindSpeed(weather.current.windGust)}`
+                : "Keine Böen"}
             </p>
           </CardContent>
         </Card>
@@ -479,7 +479,7 @@ export default function ParkWeatherPage({
                   </div>
                   {weather.current.windGust && (
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Windboeen</span>
+                      <span className="text-muted-foreground">Windböen</span>
                       <span className="font-medium">
                         {formatWindSpeed(weather.current.windGust)}
                       </span>

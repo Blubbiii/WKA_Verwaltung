@@ -22,6 +22,7 @@ import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { PERMISSIONS } from "@/lib/auth/permissions";
+import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
   periodYear: z.number().int().min(2000).max(2100),
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return apiError("BAD_REQUEST", 400, {
-        message: parsed.error.issues[0]?.message || "Ungültige Eingabedaten",
+        message: zodMeldung(parsed.error, "Ungültige Eingabedaten"),
       });
     }
 

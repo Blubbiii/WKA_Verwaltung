@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, use } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/use-confirm";
 import { LOCALE_DE } from "@/lib/format";
 
 const fetcher = (url: string) =>
@@ -218,6 +219,21 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
   }, [budget, initialized]);
 
   const isLocked = budget?.status === "LOCKED";
+  const { confirm, confirmDialog } = useConfirm();
+
+  // The API could delete a plan that is not locked, the page could not.
+  const loeschen = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(budgetUrl, { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || t("detailDeleteError"));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wirtschaftsplan/budgets"] });
+      toast.success(t("detailDeleteSuccess"));
+      router.push("/wirtschaftsplan/budget");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   function addLine() {
     if (!costCenters?.[0]) return;
@@ -338,6 +354,25 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
             </Button>
           )}
           {!isLocked && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive"
+              disabled={loeschen.isPending}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: t("detailDeleteTitle"),
+                  description: t("detailDeleteDescription", { name: budget.name }),
+                  variant: "destructive",
+                });
+                if (ok) loeschen.mutate();
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {t("detailDelete")}
+            </Button>
+          )}
+          {!isLocked && (
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
               {t("detailSave")}
@@ -345,6 +380,8 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
+
+      {confirmDialog}
 
       {/* Summary */}
       <div className="grid gap-3 md:grid-cols-3">
