@@ -85,6 +85,8 @@ export async function GET(
           },
         },
         createdBy: { select: { id: true, firstName: true, lastName: true } },
+        policy: { select: { id: true, policyNumber: true, insurerName: true } },
+        coverage: { select: { id: true, coverageType: true } },
       },
     });
 
@@ -103,6 +105,10 @@ export async function GET(
         estimatedCostEur: claim.estimatedCostEur ? Number(claim.estimatedCostEur) : null,
         actualCostEur: claim.actualCostEur ? Number(claim.actualCostEur) : null,
         reimbursedEur: claim.reimbursedEur ? Number(claim.reimbursedEur) : null,
+        expectedReimbursementEur:
+          claim.expectedReimbursementEur != null ? Number(claim.expectedReimbursementEur) : null,
+        deductibleAppliedEur:
+          claim.deductibleAppliedEur != null ? Number(claim.deductibleAppliedEur) : null,
         defect: claim.defect
           ? {
               ...claim.defect,

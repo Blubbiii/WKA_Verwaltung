@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2, CalendarClock, AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
+import { AmlWiedervorlagenCard } from "@/components/aml/aml-wiedervorlagen-card";
 import {
   DeadlineCalendar,
   type DeadlineEvent,
@@ -96,6 +97,8 @@ export default function FristenPage() {
               },
             ]}
           />
+
+          <AmlWiedervorlagenCard />
 
           <DeadlineCalendar events={events} />
         </>

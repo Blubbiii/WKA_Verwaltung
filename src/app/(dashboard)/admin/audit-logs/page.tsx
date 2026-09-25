@@ -19,8 +19,17 @@ import {
   ChevronDown,
   ChevronUp,
   Users,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { auditExportUrl } from "@/lib/audit/export-url";
+import { downloadFromResponse } from "@/lib/download";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -487,6 +496,33 @@ function AuditLogsContent() {
   if (debouncedSearch) activeFilterEntries.push({ key: "search", value: debouncedSearch });
 
   // Open details dialog
+  const [exporting, setExporting] = useState(false);
+  // The export takes the list's filters (not the free-text search, which the
+  // export route does not know).
+  const exportieren = async (format: "csv" | "xlsx" | "pdf") => {
+    setExporting(true);
+    try {
+      const res = await fetch(
+        auditExportUrl(format, {
+          action: actionFilter,
+          entityType: entityTypeFilter,
+          userId: userFilter,
+          startDate,
+          endDate,
+        }),
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || body.error || t("exportError"));
+      }
+      await downloadFromResponse(res, `audit-log.${format}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("exportError"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const openDetails = (log: AuditLog) => {
     setSelectedLog(log);
     setShowDetailsDialog(true);
@@ -502,10 +538,29 @@ function AuditLogsContent() {
             {t("description")}
           </p>
         </div>
-        <Button variant="outline" onClick={fetchAuditLogs} disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Aktualisieren
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={exporting}>
+                {exporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {t("export")}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportieren("csv")}>CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportieren("xlsx")}>Excel</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportieren("pdf")}>PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" onClick={fetchAuditLogs} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Aktualisieren
+          </Button>
+        </div>
       </div>
 
       {/* Filters Card */}

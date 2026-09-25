@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CacheStatusCard } from "@/components/admin/cache-status-card";
 
 // Recharts (~500KB gzipped) is heavy — load only when the monitoring tab is opened.
 const MonitoringDashboard = dynamic(
@@ -24,5 +25,10 @@ const MonitoringDashboard = dynamic(
 );
 
 export default function MonitoringTab() {
-  return <MonitoringDashboard />;
+  return (
+    <div className="space-y-6">
+      <MonitoringDashboard />
+      <CacheStatusCard />
+    </div>
+  );
 }

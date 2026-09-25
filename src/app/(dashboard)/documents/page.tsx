@@ -24,6 +24,7 @@ import {
   FolderEdit,
   CheckCircle2,
   SendHorizontal,
+  Archive,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -325,6 +326,40 @@ export default function DocumentsPage() {
       toast.success(t("batchDeleteSuccess", { count: successCount }));
     } else {
       toast.warning(t("batchDeletePartial", { success: successCount, failed: failCount }));
+    }
+  }
+
+  // Batch: archive selected (one request, POST /api/batch/documents)
+  async function handleBatchArchive() {
+    const ids = filteredDocuments
+      .filter((doc) => selectedIds.has(doc.id) && !doc.isArchived)
+      .map((doc) => doc.id);
+    if (ids.length === 0) return;
+
+    setIsBatchProcessing(true);
+    try {
+      const response = await fetch("/api/batch/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "archive", documentIds: ids }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || t("batchArchiveError"));
+      const failed = result.failed?.length ?? 0;
+      if (failed === 0) {
+        toast.success(t("batchArchiveSuccess", { count: result.success?.length ?? ids.length }));
+      } else {
+        toast.warning(
+          t("batchArchivePartial", { success: result.success?.length ?? 0, failed }),
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("batchArchiveError"));
+    } finally {
+      setIsBatchProcessing(false);
+      clearSelection();
+      invalidate(["documents"]);
+      invalidate(["documents-search"]);
     }
   }
 
@@ -917,6 +952,12 @@ export default function DocumentsPage() {
             label: t("download"),
             icon: <Download className="h-4 w-4" />,
             onClick: handleBatchDownload,
+            disabled: isBatchProcessing,
+          },
+          {
+            label: t("archive"),
+            icon: <Archive className="h-4 w-4" />,
+            onClick: handleBatchArchive,
             disabled: isBatchProcessing,
           },
           {

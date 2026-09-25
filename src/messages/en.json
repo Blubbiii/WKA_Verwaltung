@@ -1928,7 +1928,14 @@
       "createError": "Error creating",
       "discardCalculationTitle": "Discard calculation",
       "discardCalculation": "Going back discards the existing calculation. Moving forward again will recalculate from scratch.",
-      "discardCalculationConfirm": "Go back and discard"
+      "discardCalculationConfirm": "Go back and discard",
+      "annualQueued": "Queued …",
+      "annualRunning": "Generating …",
+      "annualRunningPercent": "Generating … {percent} %",
+      "annualStuck": "The queue is not being processed right now. You can generate the report directly — this takes longer for large parks.",
+      "annualDirect": "Generate directly",
+      "annualDone": "Annual report created",
+      "annualError": "Annual report could not be created"
     },
     "production": "Production",
     "settlements": "Settlements",
@@ -2643,7 +2650,21 @@
       "moreActions": "More actions",
       "showRange": "Showing {from} to {to} of {total} entries",
       "pageInfo": "Page {page} of {total}",
-      "edit": "Edit"
+      "edit": "Edit",
+      "selectAll": "Select all",
+      "selectRow": "Select settlement",
+      "batchApproveCount": "Approve ({count})",
+      "batchRejectCount": "Reject ({count})",
+      "batchApprove": "Approve",
+      "batchReject": "Reject",
+      "batchApproveTitle": "Approve {count} settlements?",
+      "batchApproveText": "Invoiced settlements are closed. Only settlements with credit notes can be approved.",
+      "batchRejectTitle": "Reject {count} calculations?",
+      "batchRejectText": "The distribution is discarded and the settlements return to draft. Settlements with credit notes are excluded.",
+      "batchSkipped": "{count} of the selected settlements do not fit this action and stay unchanged.",
+      "batchDone": "{count} settlements processed",
+      "batchPartial": "{success} processed, {failed} refused",
+      "batchError": "Batch action failed"
     },
     "topology": {
       "title": "Grid Topology",
@@ -3549,7 +3570,11 @@
       "changeCategory": "Change category",
       "deleteError": "Error deleting document",
       "back": "Back",
-      "next": "Next"
+      "next": "Next",
+      "archive": "Archive",
+      "batchArchiveSuccess": "{count} documents archived",
+      "batchArchivePartial": "{success} archived, {failed} skipped (already archived)",
+      "batchArchiveError": "Archiving failed"
     },
     "detail": {
       "back": "Back",
@@ -3718,7 +3743,13 @@
       "notActivatedTitle": "Paperless-ngx not activated",
       "notActivatedDescription": "The Paperless-ngx integration is not activated. Enable the feature in system settings under Admin → System Configuration → Features.",
       "errorLoading": "Error loading Paperless documents",
-      "preview": "Preview"
+      "preview": "Preview",
+      "syncStatus": {
+        "synced": "Archived in Paperless",
+        "pending": "Transferring",
+        "failed": "Failed",
+        "notSynced": "Not sent yet"
+      }
     },
     "toasts": {
       "sentToPaperless": "Sending document to Paperless-ngx...",
@@ -6847,7 +6878,9 @@
       "filterUser": "User",
       "filterFrom": "From",
       "filterTo": "To",
-      "filterSearch": "Search"
+      "filterSearch": "Search",
+      "export": "Export",
+      "exportError": "Export failed"
     },
     "billingRuleDetail": {
       "active": "Active",
@@ -8020,6 +8053,21 @@
       "pagination": "Page {page} of {totalPages} · {total} entries",
       "prev": "Previous",
       "next": "Next"
+    },
+    "cacheStatus": {
+      "title": "Cache",
+      "description": "Cache for dashboard figures and frequent queries.",
+      "memoryFallback": "In memory",
+      "fallbackHint": "Redis is unreachable — the cache runs in this server's memory and is empty after a restart.",
+      "hitRate": "Hit rate",
+      "hits": "Hits",
+      "misses": "Misses",
+      "keys": "Entries",
+      "memory": "Redis memory",
+      "clear": "Clear caches",
+      "clearTitle": "Clear all dashboard caches?",
+      "clearText": "Figures are recalculated on the next request. The first page loads may be briefly slower.",
+      "clearError": "Cache could not be cleared"
     }
   },
   "portal": {
@@ -10258,6 +10306,25 @@
       "TRANSPORT": "Transport",
       "LEGAL_PROTECTION": "Legal protection",
       "OTHER": "Other"
+    },
+    "assessment": {
+      "title": "Insurance benefit",
+      "description": "Assign a policy and compute the expected reimbursement after deductible, underinsurance and sum insured.",
+      "policy": "Policy",
+      "choosePolicy": "Choose policy",
+      "coverage": "Coverage",
+      "wholePolicy": "Policy values",
+      "loss": "Loss amount (EUR, optional)",
+      "lossPlaceholder": "from the costs",
+      "lossHint": "If empty: lost revenue of the fault case for business interruption, otherwise the saved actual, then the estimated costs.",
+      "assess": "Compute reimbursement",
+      "done": "Reimbursement computed",
+      "error": "Reimbursement could not be computed",
+      "noPolicy": "No policy recorded yet.",
+      "noPolicyForContract": "No policy recorded for the linked insurance contract.",
+      "lossUsed": "Loss amount ({source})",
+      "deductible": "Deductible",
+      "expected": "Expected reimbursement"
     }
   },
   "curtailment": {
@@ -10491,6 +10558,29 @@
       "UPGRADE": "upgrade",
       "PREVENTIVE": "preventive",
       "OTHER": "other"
+    },
+    "replace": {
+      "button": "Replace",
+      "title": "Replace {component} — {turbine}",
+      "description": "The old part stays in the history with removal date and reason; the new one is created.",
+      "oldPart": "Removal",
+      "newPart": "New part",
+      "removedAt": "Removed on",
+      "reason": "Reason",
+      "removalNotes": "Removal note",
+      "installedAt": "Installed on",
+      "installedAtHint": "Empty: same day as the removal.",
+      "manufacturer": "Manufacturer",
+      "model": "Model",
+      "designLife": "Design life (years)",
+      "cost": "Cost (EUR)",
+      "warrantyEnd": "Warranty until",
+      "warrantyHint": "Not taken over from the old part — an exchange part has its own term.",
+      "warrantyProvider": "Warranty provider",
+      "notes": "Notes",
+      "submit": "Save replacement",
+      "done": "Component replaced",
+      "error": "Replacement failed"
     }
   },
   "portfolioCockpit": {
@@ -10605,7 +10695,8 @@
       "PAID": "Paid",
       "WITHDRAWN": "Withdrawn",
       "REJECTED": "Rejected"
-    }
+    },
+    "recordAml": "Record identity check"
   },
   "plotParties": {
     "title": "Owners and farmers",
@@ -10682,5 +10773,56 @@
     "pdfMissing": "{count, plural, one {# document} other {# documents}} could not be rendered as PDF. They are listed in the index but have no file — please check before passing the export on.",
     "errorHttp": "Export failed (HTTP {status})",
     "errorFallback": "Export failed"
+  },
+  "aml": {
+    "title": "Identity check (AML)",
+    "record": "Record check",
+    "recordAgain": "Check again",
+    "none": "No check recorded yet.",
+    "history": "{count} checks in total — each is kept as a separate record.",
+    "reviewIn": "Review due in {days} days",
+    "reviewOverdue": "Review overdue by {days} days",
+    "dialogTitle": "Identity check: {name}",
+    "dialogDescription": "Each check is stored as a separate record and never overwritten (§ 8 GwG).",
+    "identifiedAtRequired": "\"Completed\" requires the identification date — it is part of the record (§ 8 (1) GwG).",
+    "documentTypePlaceholder": "e.g. ID card",
+    "nextReviewHint": "Leave empty to pre-fill by risk (low 5, medium 3, high 1 year).",
+    "saved": "Identity check saved",
+    "saveError": "Identity check could not be saved",
+    "dueTitle": "AML reviews ({count})",
+    "dueDescription": "Identity checks due for review within 60 days, overdue or no longer valid.",
+    "fields": {
+      "status": "Status",
+      "method": "Method",
+      "identifiedAt": "Identified on",
+      "riskLevel": "Risk",
+      "documentType": "Document",
+      "documentNumber": "Document number",
+      "issuingAuthority": "Issuing authority",
+      "documentValidUntil": "Valid until",
+      "nextReviewAt": "Review on",
+      "beneficialOwnerVerified": "Beneficial owner verified",
+      "isPep": "Politically exposed person",
+      "notes": "Notes"
+    },
+    "statuses": {
+      "PENDING": "Open",
+      "VERIFIED": "Completed",
+      "EXPIRED": "Expired",
+      "REJECTED": "Rejected"
+    },
+    "methods": {
+      "IN_PERSON": "In person",
+      "VIDEO_IDENT": "Video ident",
+      "POST_IDENT": "Post ident",
+      "QUALIFIED_SIGNATURE": "Qualified electronic signature",
+      "THIRD_PARTY": "By third party",
+      "OTHER": "Other"
+    },
+    "risks": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High"
+    }
   }
 }

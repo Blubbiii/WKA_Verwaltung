@@ -22,6 +22,7 @@ import { apiLogger as logger } from "@/lib/logger";
 import { createAuditLog } from "@/lib/audit";
 import { checkAml, AML_RETENTION_YEARS } from "@/lib/subscriptions/subscription";
 import { zodMeldung } from "@/lib/validation/zod-meldung";
+import { neuesteJePerson } from "@/lib/aml/wiedervorlage";
 
 const createSchema = z.object({
   personId: z.string().uuid(),
@@ -101,7 +102,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       data: dueOnly
-        ? enriched.filter((entry) => entry.state.reviewDue || !entry.state.isValid)
+        ? neuesteJePerson(enriched).filter(
+            (entry) => entry.state.reviewDue || !entry.state.isValid,
+          )
         : enriched,
     });
   } catch (error) {

@@ -1928,7 +1928,14 @@
       "createError": "Fehler beim Erstellen",
       "discardCalculationTitle": "Berechnung verwerfen",
       "discardCalculation": "Wenn Sie zurückgehen, wird die bestehende Berechnung verworfen. Beim erneuten Vorgehen wird neu gerechnet.",
-      "discardCalculationConfirm": "Zurückgehen und verwerfen"
+      "discardCalculationConfirm": "Zurückgehen und verwerfen",
+      "annualQueued": "In der Warteschlange …",
+      "annualRunning": "Wird erstellt …",
+      "annualRunningPercent": "Wird erstellt … {percent} %",
+      "annualStuck": "Die Warteschlange wird gerade nicht abgearbeitet. Der Bericht lässt sich direkt erzeugen — das dauert bei großen Parks länger.",
+      "annualDirect": "Direkt erzeugen",
+      "annualDone": "Jahresbericht erstellt",
+      "annualError": "Jahresbericht konnte nicht erstellt werden"
     },
     "production": "Produktion",
     "settlements": "Abrechnungen",
@@ -2643,7 +2650,21 @@
       "moreActions": "Weitere Aktionen",
       "showRange": "Zeige {from} bis {to} von {total} Einträgen",
       "pageInfo": "Seite {page} von {total}",
-      "edit": "Bearbeiten"
+      "edit": "Bearbeiten",
+      "selectAll": "Alle auswählen",
+      "selectRow": "Abrechnung auswählen",
+      "batchApproveCount": "Freigeben ({count})",
+      "batchRejectCount": "Zurückweisen ({count})",
+      "batchApprove": "Freigeben",
+      "batchReject": "Zurückweisen",
+      "batchApproveTitle": "{count} Abrechnungen freigeben?",
+      "batchApproveText": "Fakturierte Abrechnungen werden abgeschlossen. Nur Abrechnungen mit Gutschriften lassen sich freigeben.",
+      "batchRejectTitle": "{count} Berechnungen zurückweisen?",
+      "batchRejectText": "Die Verteilung wird verworfen, die Abrechnungen gehen zurück in den Entwurf. Abrechnungen mit Gutschriften sind ausgenommen.",
+      "batchSkipped": "{count} der ausgewählten Abrechnungen passen nicht zu dieser Aktion und bleiben unverändert.",
+      "batchDone": "{count} Abrechnungen bearbeitet",
+      "batchPartial": "{success} bearbeitet, {failed} abgelehnt",
+      "batchError": "Sammelaktion fehlgeschlagen"
     },
     "topology": {
       "title": "Netz-Topologie",
@@ -3549,7 +3570,11 @@
       "changeCategory": "Kategorie ändern",
       "deleteError": "Fehler beim Löschen des Dokuments",
       "back": "Zurück",
-      "next": "Weiter"
+      "next": "Weiter",
+      "archive": "Archivieren",
+      "batchArchiveSuccess": "{count} Dokumente archiviert",
+      "batchArchivePartial": "{success} archiviert, {failed} übersprungen (bereits archiviert)",
+      "batchArchiveError": "Archivieren fehlgeschlagen"
     },
     "detail": {
       "back": "Zurück",
@@ -3718,7 +3743,13 @@
       "notActivatedTitle": "Paperless-ngx nicht aktiviert",
       "notActivatedDescription": "Die Paperless-ngx Integration ist nicht aktiviert. Aktivieren Sie das Feature in den System-Einstellungen unter Admin → System-Konfiguration → Features.",
       "errorLoading": "Fehler beim Laden der Paperless-Dokumente",
-      "preview": "Vorschau"
+      "preview": "Vorschau",
+      "syncStatus": {
+        "synced": "In Paperless archiviert",
+        "pending": "Wird übertragen",
+        "failed": "Fehlgeschlagen",
+        "notSynced": "Noch nicht gesendet"
+      }
     },
     "toasts": {
       "sentToPaperless": "Dokument wird an Paperless-ngx gesendet...",
@@ -6847,7 +6878,9 @@
       "filterUser": "Benutzer",
       "filterFrom": "Von",
       "filterTo": "Bis",
-      "filterSearch": "Suche"
+      "filterSearch": "Suche",
+      "export": "Exportieren",
+      "exportError": "Export fehlgeschlagen"
     },
     "billingRuleDetail": {
       "active": "Aktiv",
@@ -8020,6 +8053,21 @@
       "pagination": "Seite {page} von {totalPages} · {total} Einträge",
       "prev": "Zurück",
       "next": "Weiter"
+    },
+    "cacheStatus": {
+      "title": "Cache",
+      "description": "Zwischenspeicher für Dashboard-Kennzahlen und häufige Abfragen.",
+      "memoryFallback": "Arbeitsspeicher",
+      "fallbackHint": "Redis ist nicht erreichbar — der Cache läuft im Arbeitsspeicher dieses Servers und ist nach einem Neustart leer.",
+      "hitRate": "Trefferquote",
+      "hits": "Treffer",
+      "misses": "Fehlgriffe",
+      "keys": "Einträge",
+      "memory": "Redis-Speicher",
+      "clear": "Caches leeren",
+      "clearTitle": "Alle Dashboard-Caches leeren?",
+      "clearText": "Die Kennzahlen werden beim nächsten Aufruf neu berechnet. Das kann die ersten Seitenaufrufe kurz verlangsamen.",
+      "clearError": "Cache konnte nicht geleert werden"
     }
   },
   "portal": {
@@ -10258,6 +10306,25 @@
       "TRANSPORT": "Transport",
       "LEGAL_PROTECTION": "Rechtsschutz",
       "OTHER": "Sonstige"
+    },
+    "assessment": {
+      "title": "Versicherungsleistung",
+      "description": "Police zuordnen und die erwartete Entschädigung nach Selbstbehalt, Unterversicherung und Versicherungssumme ermitteln.",
+      "policy": "Police",
+      "choosePolicy": "Police wählen",
+      "coverage": "Deckung",
+      "wholePolicy": "Werte der Police",
+      "loss": "Schadenhöhe (EUR, optional)",
+      "lossPlaceholder": "aus den Kosten",
+      "lossHint": "Ohne Angabe gilt: Ertragsausfall des Störungsvorgangs bei Betriebsunterbrechung, sonst die gespeicherten tatsächlichen, dann die geschätzten Kosten.",
+      "assess": "Entschädigung ermitteln",
+      "done": "Entschädigung ermittelt",
+      "error": "Entschädigung konnte nicht ermittelt werden",
+      "noPolicy": "Noch keine Police erfasst.",
+      "noPolicyForContract": "Zum verknüpften Versicherungsvertrag ist keine Police erfasst.",
+      "lossUsed": "Schadenhöhe ({source})",
+      "deductible": "Selbstbehalt",
+      "expected": "Erwartete Entschädigung"
     }
   },
   "curtailment": {
@@ -10491,6 +10558,29 @@
       "UPGRADE": "Ertüchtigung",
       "PREVENTIVE": "vorsorglich",
       "OTHER": "sonstiges"
+    },
+    "replace": {
+      "button": "Tauschen",
+      "title": "{component} tauschen — {turbine}",
+      "description": "Das alte Teil bleibt mit Ausbaudatum und Grund als Historie stehen, das neue wird angelegt.",
+      "oldPart": "Ausbau",
+      "newPart": "Neues Teil",
+      "removedAt": "Ausgebaut am",
+      "reason": "Grund",
+      "removalNotes": "Bemerkung zum Ausbau",
+      "installedAt": "Eingebaut am",
+      "installedAtHint": "Leer: am Tag des Ausbaus.",
+      "manufacturer": "Hersteller",
+      "model": "Modell",
+      "designLife": "Auslegungsdauer (Jahre)",
+      "cost": "Kosten (EUR)",
+      "warrantyEnd": "Gewährleistung bis",
+      "warrantyHint": "Wird nicht vom alten Teil übernommen — ein Austauschteil hat seine eigene Frist.",
+      "warrantyProvider": "Gewährleistungsgeber",
+      "notes": "Notizen",
+      "submit": "Tausch speichern",
+      "done": "Komponente getauscht",
+      "error": "Tausch fehlgeschlagen"
     }
   },
   "portfolioCockpit": {
@@ -10605,7 +10695,8 @@
       "PAID": "Eingezahlt",
       "WITHDRAWN": "Widerrufen",
       "REJECTED": "Abgelehnt"
-    }
+    },
+    "recordAml": "Legitimation erfassen"
   },
   "plotParties": {
     "title": "Eigentümer und Bewirtschafter",
@@ -10682,5 +10773,56 @@
     "pdfMissing": "{count, plural, one {# Beleg konnte} other {# Belege konnten}} nicht als PDF erzeugt werden. Sie stehen im Verzeichnis, aber ohne Datei — bitte vor der Weitergabe prüfen.",
     "errorHttp": "Export fehlgeschlagen (HTTP {status})",
     "errorFallback": "Export fehlgeschlagen"
+  },
+  "aml": {
+    "title": "Legitimationsprüfung (GwG)",
+    "record": "Prüfung erfassen",
+    "recordAgain": "Erneut prüfen",
+    "none": "Noch keine Prüfung erfasst.",
+    "history": "{count} Prüfungen insgesamt — jede bleibt als eigener Nachweis erhalten.",
+    "reviewIn": "Wiedervorlage in {days} Tagen",
+    "reviewOverdue": "Wiedervorlage seit {days} Tagen überfällig",
+    "dialogTitle": "Legitimationsprüfung: {name}",
+    "dialogDescription": "Jede Prüfung wird als eigener Nachweis gespeichert und nicht überschrieben (§ 8 GwG).",
+    "identifiedAtRequired": "Für „abgeschlossen“ ist das Datum der Identifizierung nötig — es gehört zum Nachweis (§ 8 Abs. 1 GwG).",
+    "documentTypePlaceholder": "z. B. Personalausweis",
+    "nextReviewHint": "Leer lassen: wird nach Risiko vorbelegt (niedrig 5, mittel 3, hoch 1 Jahr).",
+    "saved": "Legitimationsprüfung gespeichert",
+    "saveError": "Legitimationsprüfung konnte nicht gespeichert werden",
+    "dueTitle": "GwG-Wiedervorlagen ({count})",
+    "dueDescription": "Legitimationen, deren Wiedervorlage in den nächsten 60 Tagen ansteht, überfällig ist oder die nicht mehr gültig sind.",
+    "fields": {
+      "status": "Status",
+      "method": "Verfahren",
+      "identifiedAt": "Identifiziert am",
+      "riskLevel": "Risiko",
+      "documentType": "Dokument",
+      "documentNumber": "Dokumentnummer",
+      "issuingAuthority": "Ausstellende Behörde",
+      "documentValidUntil": "Gültig bis",
+      "nextReviewAt": "Wiedervorlage am",
+      "beneficialOwnerVerified": "Wirtschaftlich Berechtigter abgeklärt",
+      "isPep": "Politisch exponierte Person",
+      "notes": "Notizen"
+    },
+    "statuses": {
+      "PENDING": "Offen",
+      "VERIFIED": "Abgeschlossen",
+      "EXPIRED": "Abgelaufen",
+      "REJECTED": "Abgelehnt"
+    },
+    "methods": {
+      "IN_PERSON": "Persönlich vor Ort",
+      "VIDEO_IDENT": "Video-Ident",
+      "POST_IDENT": "Post-Ident",
+      "QUALIFIED_SIGNATURE": "Qualifizierte elektronische Signatur",
+      "THIRD_PARTY": "Durch Dritte",
+      "OTHER": "Sonstiges"
+    },
+    "risks": {
+      "LOW": "Niedrig",
+      "MEDIUM": "Mittel",
+      "HIGH": "Hoch"
+    }
   }
 }

@@ -211,6 +211,39 @@ der Sammel-E-Mail-Versand `/api/batch/email`, `/api/reports/park-pl`, die
 `/api/energy/reports/generate` (der Berichts-Baukasten nutzt
 `/api/reports/custom`).
 
+**Verdrahtungs-Audit, Block B: Funktionen, die es nur als API gab**
+
+- **Legitimationsprüfung (GwG):** Im Gesellschafter-Dialog lässt sich die
+  Prüfung jetzt erfassen und ihr Stand ablesen. Die Zeichnungen-Karte sperrte
+  die Annahme bei fehlender Legitimation, bot aber keinen Weg, sie zu erfassen;
+  jetzt steht der Knopf direkt dort. Auf der Fristen-Seite stehen die fälligen
+  Wiedervorlagen. Dabei behoben: Die Wiedervorlageliste zählte jede einzelne
+  Prüfung — eine alte, abgelaufene blieb „fällig", obwohl längst eine neuere
+  vorlag. Maßgeblich ist jetzt die neueste je Person.
+- **Versicherungsschaden:** Ein Schadenfall ließ sich keiner Police zuordnen,
+  „Entschädigung ermitteln" wäre also nie gelaufen. Die neue Karte
+  „Versicherungsleistung" ordnet Police und Deckung zu und rechnet
+  Selbstbehalt, Unterversicherung und Versicherungssumme durch.
+- **Großkomponenten:** „Tauschen" im Register. Das alte Teil bleibt mit
+  Ausbaugrund stehen, Hersteller und Modell werden übernommen, die
+  Gewährleistung ausdrücklich nicht.
+- **Audit-Log:** Export als CSV, Excel oder PDF mit den Filtern der Liste.
+- **Netzbetreiber-Abrechnungen:** Auswahl und Sammelaktionen „Freigeben"
+  (fakturiert → abgeschlossen) und „Zurückweisen" (berechnet → Entwurf). Es
+  gehen nur passende Abrechnungen an den Server; der Rest wird benannt.
+- **Dokumente:** „Archivieren" für mehrere. Die Sammel-Route konnte außerdem
+  freigeben, veröffentlichen und löschen — schwächer als die Einzelroute
+  (keine Admin-Prüfung, kein Freigabedatum, keine Benachrichtigung, endgültiges
+  Löschen). Diese Zweige sind entfernt. Die Einzelfreigabe verlangt jetzt
+  zusätzlich das Recht `documents:approve` bzw. `documents:publish`.
+- **Jahresbericht:** entsteht im Hintergrund, die Seite bleibt bedienbar. Läuft
+  kein Worker, bietet sie nach 45 Sekunden an, den Bericht direkt zu erzeugen.
+  Neue Route `/api/reports/jobs/[id]/download` liefert das fertige PDF.
+- **Monitoring:** Cache-Karte mit Trefferquote, Backend (Redis oder
+  Arbeitsspeicher) und „Caches leeren".
+- **Paperless:** Übersicht archiviert / in Übertragung / fehlgeschlagen /
+  nicht gesendet auf der Paperless-Seite.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

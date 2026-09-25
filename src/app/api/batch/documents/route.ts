@@ -6,22 +6,17 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import { processBatch } from "@/lib/batch/batch-operations";
 import { createAuditLog } from "@/lib/audit";
 
-const validTransitions: Record<string, string[]> = {
-  approve: ["PENDING_REVIEW"],
-  publish: ["APPROVED"],
-  archive: ["PUBLISHED", "APPROVED"],
-  delete: ["DRAFT", "REJECTED"],
-};
-
-const targetStatus: Record<string, string> = {
-  approve: "APPROVED",
-  publish: "PUBLISHED",
-  archive: "PUBLISHED", // keep status, set isArchived
-  delete: "DRAFT", // will be deleted
-};
-
+/**
+ * POST /api/batch/documents — archive several documents in one request.
+ *
+ * Only archiving lives here. The route used to approve, publish and delete as
+ * well, but weaker than the single-document routes: no admin check on
+ * approval, no reviewedAt/publishedAt, no webhooks or notifications, and a
+ * hard delete. Those stay with /api/documents/[id](/approve), which the
+ * document list calls per item (audit 2026-09).
+ */
 const batchDocumentSchema = z.object({
-  action: z.enum(["approve", "publish", "archive", "delete"]),
+  action: z.literal("archive"),
   documentIds: z.array(z.uuid()).min(1).max(100),
 });
 
@@ -35,19 +30,12 @@ export async function POST(request: NextRequest) {
 
     const { action, documentIds } = parsed.data;
 
-    // Granular permission check per action (falls back to documents:update)
-    const permissionMap: Record<string, string[]> = {
-      approve: ["documents:approve", "documents:update"],
-      publish: ["documents:publish", "documents:update"],
-      archive: ["documents:archive", "documents:update"],
-      delete: ["documents:delete"],
-    };
-    const check = await requirePermission(permissionMap[action] || ["documents:update"]);
+    const check = await requirePermission(["documents:archive", "documents:update"]);
     if (!check.authorized) return check.error;
 
     const documents = await prisma.document.findMany({
       where: { id: { in: documentIds }, tenantId: check.tenantId },
-      select: { id: true, approvalStatus: true, isArchived: true },
+      select: { id: true, isArchived: true },
     });
 
     const foundIds = new Set(documents.map((d) => d.id));
@@ -58,41 +46,17 @@ export async function POST(request: NextRequest) {
 
     const result = await processBatch(documentIds, async (id) => {
       const doc = documents.find((d) => d.id === id)!;
-      const allowedStatuses = validTransitions[action];
-
-      if (action === "archive") {
-        if (doc.isArchived) {
-          throw new Error("Dokument ist bereits archiviert");
-        }
-        await prisma.document.update({
-          where: { id, tenantId: check.tenantId! },
-          data: { isArchived: true },
-        });
-      } else if (action === "delete") {
-        if (!allowedStatuses.includes(doc.approvalStatus)) {
-          throw new Error(
-            `Dokument hat Status ${doc.approvalStatus}, nur DRAFT/REJECTED kann gelöscht werden`
-          );
-        }
-        await prisma.document.delete({ where: { id, tenantId: check.tenantId! } });
-      } else {
-        if (!allowedStatuses.includes(doc.approvalStatus)) {
-          throw new Error(
-            `Dokument hat Status ${doc.approvalStatus}, erwartet: ${allowedStatuses.join(", ")}`
-          );
-        }
-        await prisma.document.update({
-          where: { id, tenantId: check.tenantId! },
-          data: {
-            approvalStatus: targetStatus[action] as "APPROVED" | "PUBLISHED",
-            reviewedById: check.userId,
-          },
-        });
+      if (doc.isArchived) {
+        throw new Error("Dokument ist bereits archiviert");
       }
+      await prisma.document.update({
+        where: { id, tenantId: check.tenantId! },
+        data: { isArchived: true },
+      });
 
       after(async () => {
         await createAuditLog({
-          action: action === "delete" ? "DELETE" : "UPDATE",
+          action: "UPDATE",
           entityType: "Document",
           entityId: id,
           newValues: { batchAction: action },

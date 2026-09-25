@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { formatCurrency } from "@/lib/format";
+import { AmlCheckDialog } from "@/components/aml/aml-check-dialog";
 
 interface Subscription {
   id: string;
@@ -85,6 +86,7 @@ export function SubscriptionsCard({ fundId }: { fundId: string }) {
   const t = useTranslations("subscriptions");
   const invalidate = useInvalidateQuery();
   const [busy, setBusy] = useState<string | null>(null);
+  const [amlFuer, setAmlFuer] = useState<Subscription | null>(null);
 
   const { data, isLoading } = useApiQuery<{ data: Subscription[] }>(
     ["subscriptions", fundId],
@@ -231,10 +233,21 @@ export function SubscriptionsCard({ fundId }: { fundId: string }) {
                           )}
                         </span>
                       ) : (
-                        <span className="flex items-start gap-1 text-destructive">
-                          <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
-                          {subscription.aml.problems[0] ?? t("amlMissing")}
-                        </span>
+                        <div className="space-y-1">
+                          <span className="flex items-start gap-1 text-destructive">
+                            <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+                            {subscription.aml.problems[0] ?? t("amlMissing")}
+                          </span>
+                          {/* The only way out of the acceptance block, so it sits right here. */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => setAmlFuer(subscription)}
+                          >
+                            {t("recordAml")}
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
 
@@ -299,6 +312,15 @@ export function SubscriptionsCard({ fundId }: { fundId: string }) {
           {t("amlHint")}
         </p>
       </CardContent>
+      {amlFuer && (
+        <AmlCheckDialog
+          open={!!amlFuer}
+          onOpenChange={(offen) => !offen && setAmlFuer(null)}
+          personId={amlFuer.person.id}
+          personName={personName(amlFuer.person)}
+          subscriptionId={amlFuer.id}
+        />
+      )}
     </Card>
   );
 }

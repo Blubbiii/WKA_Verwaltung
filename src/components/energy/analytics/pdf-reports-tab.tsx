@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { ANALYTICS_MODULES } from "@/types/analytics";
 import { downloadFromResponse } from "@/lib/download";
+import { useBackgroundReport } from "./use-background-report";
 
 // =============================================================================
 // Types
@@ -102,6 +103,10 @@ export function PdfReportsTab() {
   const [parks, setParks] = useState<Park[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState<string | null>(null);
+  const jahresbericht = useBackgroundReport({
+    fertig: t("annualDone"),
+    fehler: t("annualError"),
+  });
 
   const currentYear = new Date().getFullYear();
   const [parkId, setParkId] = useState("");
@@ -363,25 +368,57 @@ export function PdfReportsTab() {
                   values={annualSections}
                   onToggle={(key) => toggleSection(setAnnualSections, key)}
                 />
+                {/* Generated in the background — the annual report is the one
+                    that ran into the request timeout. */}
                 <Button
                   className="w-full"
                   onClick={() =>
-                    downloadPdf(
-                      "/api/reports/annual",
-                      { parkId, year: yearInt, sections: buildSectionsParam(annualSections) },
-                      `Jahresbericht_${year}.pdf`,
-                      "Jahresbericht"
-                    )
+                    jahresbericht.starten({
+                      parkId,
+                      year: yearInt,
+                      sections: buildSectionsParam(annualSections),
+                    })
                   }
-                  disabled={!!generating || !parkId}
+                  disabled={!!generating || jahresbericht.beschaeftigt || !parkId}
                 >
-                  {generating === "Jahresbericht" ? (
+                  {generating === "Jahresbericht" || jahresbericht.beschaeftigt ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <Download className="mr-2 h-4 w-4" />
                   )}
                   Generieren
                 </Button>
+                {jahresbericht.phase === "wartet" && (
+                  <p className="text-xs text-muted-foreground">{t("annualQueued")}</p>
+                )}
+                {jahresbericht.phase === "laeuft" && (
+                  <p className="text-xs text-muted-foreground">
+                    {jahresbericht.fortschritt !== null
+                      ? t("annualRunningPercent", { percent: jahresbericht.fortschritt })
+                      : t("annualRunning")}
+                  </p>
+                )}
+                {jahresbericht.phase === "haengt" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-amber-600">{t("annualStuck")}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        jahresbericht.abbrechen();
+                        downloadPdf(
+                          "/api/reports/annual",
+                          { parkId, year: yearInt, sections: buildSectionsParam(annualSections) },
+                          `Jahresbericht_${year}.pdf`,
+                          "Jahresbericht",
+                        );
+                      }}
+                    >
+                      {t("annualDirect")}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

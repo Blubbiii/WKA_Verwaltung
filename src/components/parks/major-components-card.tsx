@@ -16,7 +16,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { AlertTriangle, Cog, ShieldAlert, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Cog, Replace, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import {
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { ComponentLifetime } from "@/lib/components/lifetime";
+import { ReplaceComponentDialog } from "./replace-component-dialog";
 
 interface ComponentRow {
   id: string;
@@ -73,6 +74,7 @@ export function MajorComponentsCard({
 }) {
   const t = useTranslations("majorComponents");
   const [includeRemoved, setIncludeRemoved] = useState(false);
+  const [tauschFuer, setTauschFuer] = useState<ComponentRow | null>(null);
 
   const query = new URLSearchParams();
   if (turbineId) query.set("turbineId", turbineId);
@@ -179,6 +181,7 @@ export function MajorComponentsCard({
                   <TableHead className="text-right">{t("table.age")}</TableHead>
                   <TableHead>{t("table.warranty")}</TableHead>
                   <TableHead className="text-right">{t("table.cost")}</TableHead>
+                  <TableHead className="w-0" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -274,6 +277,15 @@ export function MajorComponentsCard({
                     <TableCell className="text-right text-xs tabular-nums">
                       {component.costEur ? formatCurrency(Number(component.costEur)) : "–"}
                     </TableCell>
+                    <TableCell className="text-right">
+                      {/* A removed part cannot be replaced again (the server refuses it). */}
+                      {!component.removedAt && (
+                        <Button variant="outline" size="sm" onClick={() => setTauschFuer(component)}>
+                          <Replace className="mr-1 h-3 w-3" aria-hidden />
+                          {t("replace.button")}
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -283,6 +295,9 @@ export function MajorComponentsCard({
 
         <p className="text-xs text-muted-foreground">{t("designLifeHint")}</p>
       </CardContent>
+      {tauschFuer && (
+        <ReplaceComponentDialog component={tauschFuer} onClose={() => setTauschFuer(null)} />
+      )}
     </Card>
   );
 }

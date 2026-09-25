@@ -20,7 +20,15 @@ import {
   Plus,
   Pencil,
   Wand2,
+  CheckCircle2,
+  Undo2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { BatchActionBar } from "@/components/ui/batch-action-bar";
+import { useConfirm } from "@/components/ui/use-confirm";
+import { useBatchSelection } from "@/hooks/useBatchSelection";
+import { sammelAuswahl } from "@/lib/energy/settlement-batch";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -242,6 +250,61 @@ export default function SettlementsPage() {
   };
 
   // Overlay handlers
+  // ---------------------------------------------------------------------------
+  // Batch actions (POST /api/batch/settlements)
+  // ---------------------------------------------------------------------------
+  const {
+    selectedIds,
+    isAllSelected,
+    isSomeSelected,
+    toggleItem,
+    toggleAll,
+    clearSelection,
+    selectedCount,
+  } = useBatchSelection({ items: sortedSettlements });
+  const { confirm, confirmDialog } = useConfirm();
+  const [batchBusy, setBatchBusy] = useState(false);
+  const auswahl = sammelAuswahl(sortedSettlements.filter((s) => selectedIds.has(s.id)));
+
+  const sammelAktion = async (action: "approve" | "reject") => {
+    const ids = action === "approve" ? auswahl.freigeben : auswahl.zurueckweisen;
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: t(action === "approve" ? "batchApproveTitle" : "batchRejectTitle", { count: ids.length }),
+      description: t(action === "approve" ? "batchApproveText" : "batchRejectText"),
+      details:
+        selectedCount > ids.length ? t("batchSkipped", { count: selectedCount - ids.length }) : undefined,
+      confirmLabel: t(action === "approve" ? "batchApprove" : "batchReject"),
+    });
+    if (!ok) return;
+
+    setBatchBusy(true);
+    try {
+      const res = await fetch("/api/batch/settlements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, settlementIds: ids }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.message || json.error || t("batchError"));
+      const fehler: { id: string; error: string }[] = json.failed ?? [];
+      if (fehler.length === 0) {
+        toast.success(t("batchDone", { count: json.success?.length ?? ids.length }));
+      } else {
+        toast.warning(t("batchPartial", { success: json.success?.length ?? 0, failed: fehler.length }), {
+          description: fehler[0]?.error,
+          duration: 12_000,
+        });
+      }
+      clearSelection();
+      mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("batchError"));
+    } finally {
+      setBatchBusy(false);
+    }
+  };
+
   const handleImportSuccess = () => {
     setImportSheetOpen(false);
     mutate();
@@ -506,6 +569,13 @@ export default function SettlementsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={isAllSelected ? true : isSomeSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      aria-label={t("selectAll")}
+                    />
+                  </TableHead>
                   <TableHead
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort("park")}
@@ -570,6 +640,7 @@ export default function SettlementsPage() {
                   // Loading Skeleton
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={`skeleton-${i}`}>
+                      <TableCell />
                       <TableCell>
                         <Skeleton className="h-5 w-32" />
                       </TableCell>
@@ -596,7 +667,7 @@ export default function SettlementsPage() {
                 ) : isError ? (
                   // Error State
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell colSpan={8} className="h-32 text-center">
                       <div className="text-destructive">
                         {t("loadError")}
                       </div>
@@ -606,7 +677,7 @@ export default function SettlementsPage() {
                   // Empty State
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="h-32 text-center text-muted-foreground"
                     >
                       <div className="flex flex-col items-center gap-2">
@@ -658,6 +729,13 @@ export default function SettlementsPage() {
                         }
                       }}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(settlement.id)}
+                          onCheckedChange={() => toggleItem(settlement.id)}
+                          aria-label={t("selectRow")}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {settlement.park?.name || "-"}
                       </TableCell>
@@ -839,6 +917,26 @@ export default function SettlementsPage() {
         onSuccess={handleEntrySuccess}
         editData={editData}
       />
+
+      <BatchActionBar
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        actions={[
+          {
+            label: t("batchApproveCount", { count: auswahl.freigeben.length }),
+            icon: <CheckCircle2 className="h-4 w-4" />,
+            onClick: () => sammelAktion("approve"),
+            disabled: batchBusy || auswahl.freigeben.length === 0,
+          },
+          {
+            label: t("batchRejectCount", { count: auswahl.zurueckweisen.length }),
+            icon: <Undo2 className="h-4 w-4" />,
+            onClick: () => sammelAktion("reject"),
+            disabled: batchBusy || auswahl.zurueckweisen.length === 0,
+          },
+        ]}
+      />
+      {confirmDialog}
     </div>
   );
 }

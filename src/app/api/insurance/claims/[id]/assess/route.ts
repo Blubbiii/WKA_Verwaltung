@@ -24,6 +24,13 @@ const bodySchema = z.object({
    * actualCost bzw. estimatedCost.
    */
   lossEur: z.number().nonnegative().optional(),
+  /**
+   * Assign the policy (and optionally one of its coverages) in the same step.
+   * Nothing else links a claim to a policy — without this the assessment
+   * could never run. Omitted: the stored assignment is used.
+   */
+  policyId: z.uuid().optional(),
+  coverageId: z.uuid().nullable().optional(),
 });
 
 export async function POST(
@@ -56,9 +63,43 @@ export async function POST(
     if (!claim) {
       return apiError("NOT_FOUND", 404, { message: "Schadenfall nicht gefunden" });
     }
-    if (!claim.policy) {
+
+    let policy = claim.policy;
+    if (parsed.data.policyId && parsed.data.policyId !== claim.policyId) {
+      policy = await prisma.insurancePolicy.findFirst({
+        where: { id: parsed.data.policyId, tenantId: check.tenantId! },
+        include: { insuredObjects: true },
+      });
+      if (!policy) return apiError("NOT_FOUND", 404, { message: "Police nicht gefunden" });
+    }
+    if (!policy) {
       return apiError("VALIDATION_FAILED", 400, {
         message: "Dem Schadenfall ist keine Police zugeordnet",
+      });
+    }
+
+    // A coverage only counts if it belongs to the chosen policy — a stale one
+    // from a previously assigned policy would apply the wrong terms.
+    let coverage = claim.coverage?.policyId === policy.id ? claim.coverage : null;
+    if (parsed.data.coverageId !== undefined) {
+      coverage = parsed.data.coverageId
+        ? await prisma.insuranceCoverage.findFirst({
+            where: { id: parsed.data.coverageId, policyId: policy.id },
+          })
+        : null;
+      if (parsed.data.coverageId && !coverage) {
+        return apiError("VALIDATION_FAILED", 400, {
+          message: "Die Deckung gehört nicht zu dieser Police",
+        });
+      }
+    }
+
+    // Keep the assignment even if the assessment below stops for a missing
+    // amount — the user chose it, and it is needed for the next attempt.
+    if (policy.id !== claim.policyId || (coverage?.id ?? null) !== claim.coverageId) {
+      await prisma.insuranceClaim.update({
+        where: { id },
+        data: { policyId: policy.id, coverageId: coverage?.id ?? null },
       });
     }
 
@@ -69,7 +110,7 @@ export async function POST(
     let lossEur: number | null = parsed.data.lossEur ?? null;
     let lossSource = "manuell";
 
-    if (lossEur === null && claim.coverage?.coverageType === "BUSINESS_INTERRUPTION") {
+    if (lossEur === null && coverage?.coverageType === "BUSINESS_INTERRUPTION") {
       const lost = toNumber(claim.faultCase?.lostRevenueEur);
       if (lost !== null) {
         lossEur = lost;
@@ -95,7 +136,7 @@ export async function POST(
         {
           assessed: false,
           reason:
-            claim.coverage?.coverageType === "BUSINESS_INTERRUPTION"
+            coverage?.coverageType === "BUSINESS_INTERRUPTION"
               ? "Keine Schadenhöhe: Bei Betriebsunterbrechung muss der Störungsvorgang bewertet sein oder die Höhe manuell angegeben werden."
               : "Keine Schadenhöhe hinterlegt — bitte Kosten erfassen oder Betrag angeben.",
         },
@@ -106,9 +147,6 @@ export async function POST(
     // Deckungsspezifische Werte schlagen die der Police. Fehlt an der Deckung
     // etwas, gilt der Wert der Police — so lassen sich Policen mit einer
     // Gesamtsumme und solche mit Einzelsummen gleich behandeln.
-    const policy = claim.policy;
-    const coverage = claim.coverage;
-
     const sumInsured =
       toNumber(coverage?.sumInsuredEur) ?? toNumber(policy.sumInsuredEur);
     if (sumInsured === null) {
@@ -146,6 +184,8 @@ export async function POST(
     const updated = await prisma.insuranceClaim.update({
       where: { id },
       data: {
+        policyId: policy.id,
+        coverageId: coverage?.id ?? null,
         deductibleAppliedEur: result.deductibleEur,
         expectedReimbursementEur: result.expectedReimbursementEur,
         reimbursementBasis: {

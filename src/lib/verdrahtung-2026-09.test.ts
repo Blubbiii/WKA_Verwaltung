@@ -4,7 +4,7 @@
  * Jeder Fall wurde gegen den laufenden Server nachgestellt.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -44,5 +44,39 @@ describe("F9 Abrechnungen-Liste: bezahlt markieren und Status", () => {
   it("die Status-Spalte ist eine Anzeige, kein Eingabefeld", () => {
     // PATCH /api/invoices/[id] kennt kein status und lehnt alles außer Entwürfen ab.
     expect(liste).not.toMatch(/body: JSON\.stringify\(\{ status: val \}\)/);
+  });
+});
+
+describe("Block B: Routen, die eine Oberfläche bekommen haben, werden aufgerufen", () => {
+  const quellen: string[] = [];
+  const sammle = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const pfad = join(dir, name);
+      if (statSync(pfad).isDirectory()) {
+        if (name !== "api") sammle(pfad);
+      } else if (pfad.endsWith(".tsx") || (pfad.endsWith(".ts") && !pfad.endsWith(".test.ts"))) {
+        quellen.push(readFileSync(pfad, "utf8"));
+      }
+    }
+  };
+  sammle(join(process.cwd(), "src", "app"));
+  sammle(join(process.cwd(), "src", "components"));
+  sammle(join(process.cwd(), "src", "lib"));
+  const alles = quellen.join("\n");
+
+  it.each([
+    ['"/api/aml-checks"', "Legitimationsprüfung erfassen"],
+    ["/api/aml-checks?dueOnly=true", "GwG-Wiedervorlagen"],
+    ["/assess`", "Entschädigung ermitteln"],
+    ["/replace`", "Großkomponente tauschen"],
+    ["/api/admin/audit-logs/export", "Audit-Log exportieren"],
+    ['"/api/batch/documents"', "Dokumente archivieren"],
+    ['"/api/batch/settlements"', "Abrechnungen freigeben/zurückweisen"],
+    ['"/api/reports/annual/async"', "Jahresbericht im Hintergrund"],
+    ["/download`", "fertigen Bericht laden"],
+    ['"/api/admin/cache"', "Cache-Status"],
+    ['"/api/integrations/paperless/sync/status"', "Paperless-Übersicht"],
+  ])("%s (%s)", (aufruf) => {
+    expect(alles).toContain(aufruf);
   });
 });

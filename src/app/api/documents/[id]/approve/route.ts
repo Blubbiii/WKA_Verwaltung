@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth/withPermission";
 import {
   PERMISSIONS,
   getUserHighestHierarchy,
+  hasPermission,
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -108,6 +109,18 @@ export async function POST(
       !isAdmin
     ) {
       return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren können Dokumente genehmigen, ablehnen oder veroeffentlichen." });
+    }
+
+    // On top of the role level, the specific right is required — the catalog
+    // has documents:approve/publish, and a custom admin role without them
+    // must not approve (audit 2026-09; before, only the batch route checked it).
+    const noetigesRecht = action.publish
+      ? PERMISSIONS.DOCUMENTS_PUBLISH
+      : action.approve || action.reject
+        ? PERMISSIONS.DOCUMENTS_APPROVE
+        : null;
+    if (noetigesRecht && !(await hasPermission(check.userId, noetigesRecht))) {
+      return apiError("FORBIDDEN", undefined, { message: `Es fehlt die Berechtigung ${noetigesRecht}.` });
     }
 
     // Build update data

@@ -47,6 +47,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { PaperlessSyncStatus } from "@/components/documents/paperless-sync-status";
 import {
   Sheet,
   SheetContent,
@@ -307,6 +308,8 @@ export default function PaperlessDocumentsPage() {
           </Button>
         }
       />
+
+      <PaperlessSyncStatus />
 
       {/* Search & Filters */}
       <Card>

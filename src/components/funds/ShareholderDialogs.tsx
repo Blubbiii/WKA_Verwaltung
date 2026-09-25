@@ -1,5 +1,6 @@
 "use client";
 
+import { AmlSection } from "@/components/aml/aml-section";
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
@@ -1110,6 +1111,10 @@ function ShareholderDetailDialog({
               )}
             </div>
           </div>
+
+          <Separator />
+
+          <AmlSection personId={person.id} personName={getPersonName(person)} />
 
           <Separator />
 

@@ -33,6 +33,7 @@ import {
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/format";
+import { ClaimAssessmentCard } from "@/components/insurance/claim-assessment-card";
 
 // =============================================================================
 // TYPES
@@ -57,6 +58,10 @@ interface ClaimDetail {
   defect: { id: string; title: string } | null;
   park: { id: string; name: string } | null;
   turbine: { id: string; name: string } | null;
+  policy: { id: string } | null;
+  coverage: { id: string } | null;
+  expectedReimbursementEur: number | null;
+  deductibleAppliedEur: number | null;
 }
 
 // =============================================================================
@@ -473,6 +478,17 @@ export default function ClaimDetailPage({
               </div>
             </CardContent>
           </Card>
+
+          {claim.claimType === "INSURANCE" && (
+            <ClaimAssessmentCard
+              claimId={claim.id}
+              contractId={claim.contract?.id ?? null}
+              policyId={claim.policy?.id ?? null}
+              coverageId={claim.coverage?.id ?? null}
+              expectedReimbursementEur={claim.expectedReimbursementEur}
+              deductibleAppliedEur={claim.deductibleAppliedEur}
+            />
+          )}
 
           <Card>
             <CardHeader>

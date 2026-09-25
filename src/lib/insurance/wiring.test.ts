@@ -118,7 +118,7 @@ describe("Bewertungsroute", () => {
   const route = src("app/api/insurance/claims/[id]/assess/route.ts");
 
   it("bei Betriebsunterbrechung kommt der Schaden aus dem Stoerungsvorgang", () => {
-    expect(route).toContain('claim.coverage?.coverageType === "BUSINESS_INTERRUPTION"');
+    expect(route).toContain('coverage?.coverageType === "BUSINESS_INTERRUPTION"');
     expect(route).toContain("claim.faultCase?.lostRevenueEur");
   });
 
