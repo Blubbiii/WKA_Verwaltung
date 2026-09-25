@@ -42,6 +42,9 @@ async function processMaintenanceJob(
     case MAINTENANCE_JOBS.BUNDESBANK_RATES:
       return tasks.runBundesbankRateFetch();
 
+    case MAINTENANCE_JOBS.CONTRACT_AUTO_RENEW:
+      return tasks.runContractAutoRenewal();
+
     default:
       // Lautes Scheitern statt stillem Erfolg: ein Job-Name, den niemand
       // verarbeitet, ist ein Fehler im Zeitplan und muss auffallen.

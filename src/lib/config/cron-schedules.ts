@@ -44,6 +44,14 @@ export const CRON_SCHEDULES = {
    */
   BUNDESBANK_RATES: envCron("CRON_BUNDESBANK_RATES", "0 4 * * MON"),
   /**
+   * Täglich 6:30 Uhr — Verlängerungsentwürfe für Verträge mit
+   * `autoRenewal`, die in den nächsten 30 Tagen enden.
+   *
+   * Vor der Fristenprüfung um 7:00, damit deren Benachrichtigung den Entwurf
+   * schon vorfindet. Idempotent: ein vorhandener Entwurf wird übersprungen.
+   */
+  CONTRACT_AUTO_RENEW: envCron("CRON_CONTRACT_AUTO_RENEW", "30 6 * * *"),
+  /**
    * Täglich 6:00 Uhr — Zustand der Bankverbindungen.
    *
    * Vor dem Mahnlauf um 8:00, damit eine seit Tagen stumme Verbindung auffällt,

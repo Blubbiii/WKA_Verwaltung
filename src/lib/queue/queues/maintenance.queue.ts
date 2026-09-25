@@ -7,6 +7,8 @@
  *   - `check-deadlines`        täglich 07:00 — Fristen prüfen, benachrichtigen
  *   - `bundesbank-rates`       montags 04:00 — Basiszinssatz § 247 BGB
  *   - `bank-connection-check`  täglich 06:00 — stumme Bankverbindungen melden
+ *   - `contract-auto-renew`    täglich 06:30 — Verlängerungsentwürfe (Audit
+ *     2026-09: vorher nur `/api/admin/contracts/auto-renew`, ohne Aufrufer)
  *
  * ## Warum EINE Queue mit drei Job-Namen
  *
@@ -33,6 +35,7 @@ import type {
   DeadlineCheckResult,
 } from "@/lib/maintenance/tasks";
 import type { BundesbankFetchResult } from "@/lib/mahnwesen/bundesbank-fetch";
+import type { AutoRenewalResult } from "@/lib/contracts/auto-renewal";
 
 export const MAINTENANCE_QUEUE_NAME = "maintenance";
 
@@ -43,6 +46,7 @@ export const MAINTENANCE_QUEUE_NAME = "maintenance";
 export const MAINTENANCE_JOBS = {
   DEADLINE_CHECK: "check-deadlines",
   BUNDESBANK_RATES: "bundesbank-rates",
+  CONTRACT_AUTO_RENEW: "contract-auto-renew",
 } as const;
 
 export type MaintenanceJobName =
@@ -53,7 +57,8 @@ export type MaintenanceJobData = Record<string, never>;
 
 export type MaintenanceJobResult =
   | DeadlineCheckResult
-  | BundesbankFetchResult;
+  | BundesbankFetchResult
+  | AutoRenewalResult;
 
 const defaultJobOptions = getJobOptions("background");
 
@@ -86,6 +91,11 @@ const SCHEDULES: { name: MaintenanceJobName; pattern: string; label: string }[] 
     name: MAINTENANCE_JOBS.BUNDESBANK_RATES,
     pattern: CRON_SCHEDULES.BUNDESBANK_RATES,
     label: "Bundesbank-Basiszinssatz",
+  },
+  {
+    name: MAINTENANCE_JOBS.CONTRACT_AUTO_RENEW,
+    pattern: CRON_SCHEDULES.CONTRACT_AUTO_RENEW,
+    label: "Automatische Vertragsverlängerung",
   },
 ];
 

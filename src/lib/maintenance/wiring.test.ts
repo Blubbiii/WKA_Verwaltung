@@ -167,3 +167,32 @@ describe("Keine zweite Kopie der Fachlogik", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Vertragsverlaengerung (Verdrahtungs-Audit 2026-09, Block C)
+// ---------------------------------------------------------------------------
+
+describe("Automatische Vertragsverlaengerung", () => {
+  it("ist ein taeglicher Wartungslauf statt eines Knopfes, den niemand drueckt", () => {
+    // /api/admin/contracts/auto-renew hatte keinen Aufrufer — Vertraege mit
+    // autoRenewal bekamen nie ihren Verlaengerungsentwurf.
+    expect(MAINTENANCE_JOBS.CONTRACT_AUTO_RENEW).toBe("contract-auto-renew");
+    expect(CRON_SCHEDULES.CONTRACT_AUTO_RENEW.trim().split(/\s+/)).toHaveLength(5);
+    expect(CRON_SCHEDULES.CONTRACT_AUTO_RENEW.trim().split(/\s+/)[4]).toBe("*");
+  });
+
+  it("laeuft vor der Fristenpruefung, damit deren Benachrichtigung den Entwurf schon kennt", () => {
+    const hour = (pattern: string) => Number(pattern.trim().split(/\s+/)[1]);
+    expect(hour(CRON_SCHEDULES.CONTRACT_AUTO_RENEW)).toBeLessThan(
+      hour(CRON_SCHEDULES.DEADLINE_CHECK),
+    );
+  });
+
+  it("der Worker ruft die Fachlogik fuer alle Mandanten auf", () => {
+    const tasks = read("lib/maintenance/tasks.ts");
+    expect(tasks).toContain("export async function runContractAutoRenewal");
+    // Without a tenant filter processAutoRenewals covers every tenant.
+    expect(tasks).toMatch(/processAutoRenewals\(\)/);
+    expect(WORKER_SOURCE).toContain("tasks.runContractAutoRenewal()");
+  });
+});

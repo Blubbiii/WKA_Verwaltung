@@ -22,6 +22,7 @@
  * sie landen als Job-Ergebnis in Redis.
  */
 
+import { processAutoRenewals } from "@/lib/contracts/auto-renewal";
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
 import { checkDeadlinesAndNotify } from "@/lib/notifications/deadline-checker";
@@ -89,6 +90,24 @@ export async function runDeadlineCheck(): Promise<DeadlineCheckResult> {
 export async function runBundesbankRateFetch() {
   const result = await fetchAndUpsertBundesbankRates();
   logger.info({ result }, "[Maintenance] Bundesbank-Basiszinssatz abgerufen");
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Automatische Vertragsverlaengerung
+// ---------------------------------------------------------------------------
+
+/**
+ * Legt Verlaengerungsentwuerfe fuer alle Mandanten an. Ohne Mandantenfilter
+ * deckt processAutoRenewals jeden Mandanten ab; ein Fehler an einem Vertrag
+ * steht im Ergebnis (`errors`) und bricht die uebrigen nicht ab.
+ */
+export async function runContractAutoRenewal() {
+  const result = await processAutoRenewals();
+  logger.info(
+    { processed: result.processed, created: result.renewalsCreated, errors: result.errors.length },
+    "[Maintenance] Vertragsverlaengerung abgeschlossen",
+  );
   return result;
 }
 

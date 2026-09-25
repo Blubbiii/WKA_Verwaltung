@@ -244,6 +244,15 @@ der Sammel-E-Mail-Versand `/api/batch/email`, `/api/reports/park-pl`, die
 - **Paperless:** Übersicht archiviert / in Übertragung / fehlgeschlagen /
   nicht gesendet auf der Paperless-Seite.
 
+**Verdrahtungs-Audit, Block C: Vertragsverlängerung läuft von selbst**
+
+Verträge mit „automatischer Verlängerung" bekamen nie ihren
+Verlängerungsentwurf: `/api/admin/contracts/auto-renew` war der einzige Weg,
+und niemand rief ihn auf. Jetzt ist es ein täglicher Wartungslauf um 6:30
+(`CRON_CONTRACT_AUTO_RENEW`), vor der Fristenprüfung um 7:00. Er ist
+idempotent, ein vorhandener Entwurf wird übersprungen. Die Route bleibt zum
+Anstoßen von Hand.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten
