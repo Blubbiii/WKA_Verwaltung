@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { formatCurrency } from "@/lib/format";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useBatchSelection } from "@/hooks/useBatchSelection";
 import { useApiQuery, useApiMutation, useInvalidateQuery } from "@/hooks/useApiQuery";
@@ -16,7 +15,6 @@ import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
 import {
   MapPin,
-  Calendar,
   AlertTriangle,
   MoreHorizontal,
   Pencil,
@@ -28,9 +26,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -80,7 +75,6 @@ interface Lease {
   id: string;
   startDate: string;
   endDate: string | null;
-  annualRent: number | null;
   status: string;
   notes: string | null;
   plots: Plot[];
@@ -240,7 +234,6 @@ export default function LeasesPage() {
         getLessorName(l.lessor),
         getPlotsLabel(l.plots),
         getParksLabel(l.plots),
-        l.annualRent != null ? l.annualRent.toString().replace(".", ",") : "-",
         getStatusBadge(CONTRACT_STATUS, l.status).label,
       ].join(";")
     );
@@ -277,10 +270,6 @@ export default function LeasesPage() {
     return days !== null && days > 0 && days <= 90;
   });
 
-  const totalAnnualRent = leases
-    .filter((l) => l.status === "ACTIVE")
-    .reduce((sum, l) => sum + (l.annualRent || 0), 0);
-
   if (error) {
     return (
       <div className="p-8 text-center">
@@ -308,18 +297,23 @@ export default function LeasesPage() {
         columns={3}
         stats={[
           { label: t("stats.contracts"), value: leases.length, icon: MapPin, subtitle: t("stats.active", { count: leases.filter((l) => l.status === "ACTIVE").length }) },
-          { label: t("stats.annualRent"), value: formatCurrency(totalAnnualRent), icon: Calendar, subtitle: t("stats.activeContracts") },
-          { label: t("stats.expiring"), value: expiringLeases.length, icon: AlertTriangle, iconClassName: expiringLeases.length > 0 ? "text-yellow-500" : undefined, cardClassName: expiringLeases.length > 0 ? "border-yellow-500" : "", subtitle: t("stats.expiringHint") },
+          // Lease has no annual rent field (rent comes from revenue shares and
+          // per-area amounts) — the "Jährliche Pacht" figure always read 0,00 €.
+          {
+            label: t("stats.expiring"),
+            value: expiringLeases.length,
+            icon: AlertTriangle,
+            iconClassName: expiringLeases.length > 0 ? "text-yellow-500" : undefined,
+            subtitle: t("stats.expiringHint"),
+            onClick: expiringLeases.length > 0 ? () => setStatusFilter("EXPIRING") : undefined,
+          },
         ]}
       />
 
       {/* Filters & Table */}
+      {/* No card header: it repeated the page title ("Pachtverträge"). */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t("card.title")}</CardTitle>
-          <CardDescription>{t("card.description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <SearchFilter
             search={search}
             onSearchChange={setSearch}
@@ -352,7 +346,6 @@ export default function LeasesPage() {
                   <TableHead>{t("table.plot")}</TableHead>
                   <TableHead>{t("table.park")}</TableHead>
                   <TableHead>{t("table.term")}</TableHead>
-                  <TableHead className="text-right">{t("table.annualRent")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
                   <TableHead className="max-w-[180px]">Notiz</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -362,7 +355,7 @@ export default function LeasesPage() {
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 8 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -371,7 +364,7 @@ export default function LeasesPage() {
                   ))
                 ) : filteredLeases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                       {t("table.emptyText")}
                     </TableCell>
                   </TableRow>
@@ -417,9 +410,6 @@ export default function LeasesPage() {
                               {t("table.daysRemaining", { days: daysUntilEnd })}
                             </div>
                           )}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {lease.annualRent ? formatCurrency(lease.annualRent) : "-"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={getStatusBadge(CONTRACT_STATUS, lease.status).className}>

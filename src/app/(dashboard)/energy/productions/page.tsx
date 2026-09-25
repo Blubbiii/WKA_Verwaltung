@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -442,14 +441,9 @@ export default function ProductionDataPage() {
       </div>
 
       {/* Filters & Table */}
+      {/* No card header: it repeated the page title ("Produktionsdaten"). */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t("productionData")}</CardTitle>
-          <CardDescription>
-            {t("monthlyPerTurbine")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {/* Filter Bar */}
           <SearchFilter
             filters={[

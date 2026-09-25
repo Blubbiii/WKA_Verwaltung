@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { format } from "date-fns";
-import { formatCurrency, formatCapacity } from "@/lib/format";
+import { formatCurrency, formatCapacity, formatDate } from "@/lib/format";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
@@ -1021,6 +1021,61 @@ export default function ParkDetailsPage({
         {/* Overview Tab */}
         <TabsContent value="overview">
           <div className="grid gap-6">
+            {/* UX-Durchsicht 2026-09: the overview opened with metering points
+                and dismantling — the basics were nowhere on this tab. */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wind className="h-5 w-5" />
+                  Stammdaten
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid gap-x-8 gap-y-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <dt className="text-muted-foreground">Standort</dt>
+                    <dd className="font-medium">
+                      {[park.address, [park.postalCode, park.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "–"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Inbetriebnahme</dt>
+                    <dd className="font-medium">{park.commissioningDate ? formatDate(park.commissioningDate) : "–"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Leistung</dt>
+                    <dd className="font-medium">
+                      {park.totalCapacityKw
+                        ? formatCapacity(park.totalCapacityKw)
+                        : park.stats.calculatedCapacityKw > 0
+                          ? formatCapacity(park.stats.calculatedCapacityKw)
+                          : "–"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Betreiber</dt>
+                    <dd className="font-medium">
+                      {park.operatorFund ? (
+                        <Link href={`/funds/${park.operatorFund.id}`} className="text-primary hover:underline">
+                          {park.operatorFund.name}
+                        </Link>
+                      ) : (
+                        "–"
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Technische Betriebsführung</dt>
+                    <dd className="font-medium">{park.technischeBetriebsfuehrung || "–"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Kaufmännische Betriebsführung</dt>
+                    <dd className="font-medium">{park.kaufmaennischeBetriebsfuehrung || "–"}</dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
+
             {/* A3 (Audit 2026-07): Zaehlpunkte. Sie sind der Schluessel, ueber
                 den sich eine Netzbetreiber-Abrechnung dem Park zuordnen
                 laesst — und fehlten im ganzen System. */}

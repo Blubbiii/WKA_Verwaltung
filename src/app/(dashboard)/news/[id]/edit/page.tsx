@@ -13,9 +13,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor-dynamic";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Form,
@@ -196,13 +194,7 @@ export default function EditNewsPage({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Meldung bearbeiten</CardTitle>
-          <CardDescription>
-            Aktualisieren Sie die Felder der Meldung
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField

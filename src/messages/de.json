@@ -2442,8 +2442,6 @@
       "selectedPark": "Ausgewaehlter Park",
       "records": "Datensaetze",
       "filteredEntries": "Gefilterte Einträge",
-      "productionData": "Produktionsdaten",
-      "monthlyPerTurbine": "Monatliche Produktionsdaten pro Anlage",
       "allMonths": "Alle Monate",
       "selectPark": "Park waehlen",
       "allStatus": "Alle Status",
@@ -5165,14 +5163,8 @@
       "stats": {
         "contracts": "Pachtverträge",
         "active": "{count} aktiv",
-        "annualRent": "Jährliche Pacht",
-        "activeContracts": "Aktive Verträge",
         "expiring": "Auslaufend",
         "expiringHint": "In den nächsten 90 Tagen"
-      },
-      "card": {
-        "title": "Pachtverträge",
-        "description": "Übersicht aller Pachtverträge"
       },
       "searchPlaceholder": "Suchen nach Verpächter, Flurstück...",
       "filters": {
@@ -5189,7 +5181,6 @@
         "plot": "Flurstück",
         "park": "Park",
         "term": "Laufzeit",
-        "annualRent": "Jahrespacht",
         "status": "Status",
         "emptyText": "Keine Pachtverträge gefunden",
         "plotsLabel": "{count} Flurstücke",
@@ -5207,7 +5198,7 @@
         "edit": "Bearbeiten"
       },
       "csv": {
-        "headers": "Verpächter;Grundstück;Park;Jahrespacht;Status",
+        "headers": "Verpächter;Grundstück;Park;Status",
         "filePrefix": "pachtvertraege_export",
         "exportedToast": "{count} Pachtverträge exportiert"
       },
@@ -8742,7 +8733,7 @@
       "statsCapital": "Kapital",
       "statsCapitalTooltip": "Summe aller Kapitaleinlagen der aktiven Gesellschafter.",
       "statsCapitalSubtitle": "Gesamteinlagen",
-      "statsCompanies": "Gesellschaften",
+      "statsCompanies": "Verbundene Gesellschaften",
       "statsCompaniesTooltip": "Mutter- oder Tochtergesellschaften in der Unternehmensstruktur.",
       "statsCompaniesSubtitle": "In der Konzernstruktur",
       "statsTurbines": "Anlagen",

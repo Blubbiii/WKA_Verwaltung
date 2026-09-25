@@ -1,10 +1,4 @@
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +8,11 @@ interface StatCard {
   icon?: LucideIcon;
   iconClassName?: string;
   subtitle?: string;
+  /** Kept for compatibility; the strip has no per-card frame any more. */
   cardClassName?: string;
   valueClassName?: string;
   /**
-   * Ziel beim Klick auf die Karte.
+   * Ziel beim Klick auf die Kennzahl.
    *
    * Bedienaufwand #4 (Audit 2026-07): Die Karten sahen durch Hover-Schatten
    * klickbar aus, hatten aber weder href noch onClick — in 15 Listenseiten.
@@ -25,9 +20,7 @@ interface StatCard {
    * setzen. Der Filter steckt in der Regel schon in der URL, es fehlte nur
    * der Link.
    *
-   * Beides optional und rückwärtskompatibel: Karten ohne href/onClick bleiben
-   * wie bisher nicht interaktiv — sonst würden 15 Seiten auf einmal eine
-   * Klickfläche ohne Ziel bekommen.
+   * Beides optional: Kennzahlen ohne href/onClick bleiben nicht interaktiv.
    */
   href?: string;
   /** Alternative zu href, wenn der Klick lokalen State setzt statt zu navigieren. */
@@ -38,72 +31,55 @@ interface StatCard {
 
 interface StatsCardsProps {
   stats: StatCard[];
+  /** Kept for compatibility; the strip wraps on its own. */
   columns?: 2 | 3 | 4;
 }
 
-export function StatsCards({ stats, columns = 4 }: StatsCardsProps) {
-  const gridCols = {
-    2: "grid-cols-2",
-    3: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3",
-    4: "grid-cols-2 md:grid-cols-4",
-  };
-
+/**
+ * Key figures above a list, as one slim strip.
+ *
+ * UX-Durchsicht 2026-09, Punkt 12: four framed cards took ~180 px before
+ * every list and often showed zeros or the same number twice. Now one line;
+ * figures with a target (a filter or a page) are links/buttons, the others
+ * are plain text.
+ */
+export function StatsCards({ stats }: StatsCardsProps) {
   return (
-    <div className={cn("grid gap-4", gridCols[columns])}>
+    <div className="flex flex-wrap items-stretch gap-x-2 gap-y-2 rounded-lg border bg-card px-2 py-2">
       {stats.map((stat) => {
         const interactive = !!(stat.href || stat.onClick);
 
-        const card = (
-          <Card
+        const inhalt = (
+          <span
             className={cn(
-              "border-l-4 border-l-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-transparent hover:shadow-md transition-shadow duration-200",
-              // Der Cursor darf nur dort auf Klickbarkeit hindeuten, wo es
-              // auch ein Ziel gibt — der Hover-Schatten allein hat genau
-              // diesen falschen Eindruck erzeugt.
-              interactive && "cursor-pointer h-full focus-visible:outline-none",
-              stat.cardClassName
+              "flex items-baseline gap-2 rounded-md px-3 py-1.5",
+              interactive && "cursor-pointer hover:bg-muted",
             )}
           >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.label}
-              </CardTitle>
-              {stat.icon && (
-                <div className="rounded-md bg-gradient-to-br from-primary/15 to-primary/5 p-2">
-                  <stat.icon
-                    className={cn(
-                      "h-5 w-5 text-primary",
-                      stat.iconClassName
-                    )}
-                  />
-                </div>
+            {stat.icon && (
+              <stat.icon className={cn("h-4 w-4 self-center text-muted-foreground", stat.iconClassName)} aria-hidden="true" />
+            )}
+            <span className="text-sm text-muted-foreground">{stat.label}</span>
+            <span
+              className={cn(
+                "text-lg font-semibold tabular-nums",
+                interactive && "text-primary underline-offset-4 group-hover:underline",
+                stat.valueClassName,
               )}
-            </CardHeader>
-            <CardContent>
-              <div className={cn("text-3xl font-bold tracking-tight tabular-nums", stat.valueClassName)}>
-                {stat.value}
-              </div>
-              {stat.subtitle && (
-                <p className="text-sm text-muted-foreground mt-1">{stat.subtitle}</p>
-              )}
-            </CardContent>
-          </Card>
+            >
+              {stat.value}
+            </span>
+            {stat.subtitle && <span className="text-xs text-muted-foreground">{stat.subtitle}</span>}
+          </span>
         );
 
-        // Fokusring am Wrapper, nicht an der Card — sonst liegt er innerhalb
-        // des farbigen Rands und ist kaum sichtbar.
         const focusRing =
-          "rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+          "group rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
         if (stat.href) {
           return (
-            <Link
-              key={stat.label}
-              href={stat.href}
-              aria-label={stat.ariaLabel}
-              className={cn("block", focusRing)}
-            >
-              {card}
+            <Link key={stat.label} href={stat.href} aria-label={stat.ariaLabel} className={focusRing}>
+              {inhalt}
             </Link>
           );
         }
@@ -115,14 +91,14 @@ export function StatsCards({ stats, columns = 4 }: StatsCardsProps) {
               type="button"
               onClick={stat.onClick}
               aria-label={stat.ariaLabel}
-              className={cn("block w-full text-left", focusRing)}
+              className={cn("text-left", focusRing)}
             >
-              {card}
+              {inhalt}
             </button>
           );
         }
 
-        return <div key={stat.label}>{card}</div>;
+        return <div key={stat.label}>{inhalt}</div>;
       })}
     </div>
   );

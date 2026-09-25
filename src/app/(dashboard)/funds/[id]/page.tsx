@@ -312,7 +312,8 @@ export default function FundDetailsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRecalculating, setIsRecalculating] = useState(false);
-  const [activeTab, setActiveTab] = useState("shareholders");
+  // Opens with the overview, like every other detail page.
+  const [activeTab, setActiveTab] = useState("overview");
 
   // Hierarchy dialog state
   const [isAddHierarchyDialogOpen, setIsAddHierarchyDialogOpen] = useState(false);
@@ -1040,10 +1041,10 @@ export default function FundDetailsPage({
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
+          <TabsTrigger value="overview">{t("detail.tabOverview")}</TabsTrigger>
           <TabsTrigger value="shareholders">
             {t("detail.tabShareholders")} ({fund.stats.activeShareholderCount})
           </TabsTrigger>
-          <TabsTrigger value="overview">{t("detail.tabOverview")}</TabsTrigger>
           <TabsTrigger value="distributions">
             <Banknote className="mr-2 h-4 w-4" />
             {t("detail.tabDistributions")} ({distributions?.length || 0})

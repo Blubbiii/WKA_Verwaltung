@@ -114,6 +114,24 @@ die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
   es zweimal: jetzt „Mein Konto“ und „Systemeinstellungen“. Die
   Periodensperre bleibt bewusst neben dem Belegexport.
 
+**UX-Durchsicht, Welle 4: Seitenaufbau**
+
+- **Kennzahlen als eine Zeile:** Die vier gerahmten Karten vor jeder Liste
+  (rund 180 px) sind eine schmale Zeile; klickbar nur, was filtert. Gilt für
+  alle Listen mit Kennzahlen auf einmal. In der Pachtliste filtert „Laufen
+  aus“ jetzt die Liste.
+- **Phantom-Jahrespacht:** Spalte „Jahrespacht“ und Kennzahl „Jährliche
+  Pacht“ zeigten immer „–“ bzw. 0,00 € — `Lease` hat kein solches Feld; die
+  Pacht entsteht aus Erlösanteilen und Flächenbeträgen. Beides entfernt, auch
+  aus dem CSV-Export.
+- **Doppelte Überschriften** (Pachtverträge, Produktionsdaten, Meldung
+  bearbeiten) entfernt; ein Wächter-Test vergleicht Seiten- und Kartentitel
+  über die deutschen Texte.
+- **Park:** Die Übersicht beginnt mit den Stammdaten (Standort,
+  Inbetriebnahme, Leistung, Betreiber, Betriebsführung).
+- **Gesellschaft:** öffnet mit „Übersicht“ als erstem Reiter; die Kennzahl
+  „Gesellschaften“ heißt „Verbundene Gesellschaften“.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

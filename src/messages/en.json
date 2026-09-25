@@ -2442,8 +2442,6 @@
       "selectedPark": "Selected wind farm",
       "records": "Records",
       "filteredEntries": "Filtered entries",
-      "productionData": "Production data",
-      "monthlyPerTurbine": "Monthly production data per turbine",
       "allMonths": "All months",
       "selectPark": "Select wind farm",
       "allStatus": "All statuses",
@@ -5165,14 +5163,8 @@
       "stats": {
         "contracts": "Leases",
         "active": "{count} active",
-        "annualRent": "Annual Rent",
-        "activeContracts": "Active contracts",
         "expiring": "Expiring",
         "expiringHint": "Within the next 90 days"
-      },
-      "card": {
-        "title": "Leases",
-        "description": "Overview of all leases"
       },
       "searchPlaceholder": "Search by lessor, parcel...",
       "filters": {
@@ -5189,7 +5181,6 @@
         "plot": "Parcel",
         "park": "Park",
         "term": "Term",
-        "annualRent": "Annual Rent",
         "status": "Status",
         "emptyText": "No leases found",
         "plotsLabel": "{count} parcels",
@@ -5207,7 +5198,7 @@
         "edit": "Edit"
       },
       "csv": {
-        "headers": "Lessor;Parcel;Park;Annual Rent;Status",
+        "headers": "Lessor;Parcel;Park;Status",
         "filePrefix": "leases_export",
         "exportedToast": "{count} leases exported"
       },
@@ -8742,7 +8733,7 @@
       "statsCapital": "Capital",
       "statsCapitalTooltip": "Sum of all capital contributions from active shareholders.",
       "statsCapitalSubtitle": "Total contributions",
-      "statsCompanies": "Companies",
+      "statsCompanies": "Related companies",
       "statsCompaniesTooltip": "Parent or subsidiary companies in the corporate structure.",
       "statsCompaniesSubtitle": "In corporate structure",
       "statsTurbines": "Turbines",
