@@ -5,7 +5,7 @@
  * älter als 5 Minuten sind, und ruft `executeApprovedAction` erneut auf.
  *
  * Idempotent: Executor prüft Ziel-Entity-Status und überspringt wenn die
- * Aktion bereits durchgeführt wurde (z.B. journalEntry.status !== DRAFT).
+ * Aktion bereits durchgeführt wurde (z.B. Periode schon abgeschlossen).
  */
 
 import { Worker, Job } from "bullmq";

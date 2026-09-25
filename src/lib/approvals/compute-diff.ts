@@ -2,11 +2,11 @@
  * Feature B7: Diff-Vorschau für ApprovalRequests.
  *
  * Vor jeder 4-Augen-Freigabe sieht der Decider strukturiert *was sich
- * verändern wird*. Bisher: nur "Max will SEPA-Lauf X freigeben" — ohne
+ * verändern wird*. Bisher: nur "Max will Periode X abschließen" — ohne
  * Details. Jetzt: konkrete Vorher/Nachher-Werte pro Action-Type.
  *
- * Die computeApprovalDiff-Funktion lädt die referenzierte Entity (SEPA-
- * Batch, JournalEntry, SettlementPeriod, IncomingInvoice) und stellt die
+ * Die computeApprovalDiff-Funktion lädt die referenzierte Entity
+ * (SettlementPeriod, IncomingInvoice) und stellt die
  * Änderung als ApprovalDiff-Struktur zusammen. Die UI rendert das als
  * Tabelle mit tone-basiertem Color-Coding.
  *
@@ -34,7 +34,7 @@ export interface ApprovalDiffChange {
 }
 
 export interface ApprovalDiff {
-  /** User-friendly title, z.B. "SEPA-Lauf 2026-06" */
+  /** User-friendly title, z.B. "Abrechnungsperiode 2026-06" */
   title: string;
   /** Strukturierte Änderungen */
   changes: ApprovalDiffChange[];
@@ -151,7 +151,7 @@ async function diffIncomingInvoiceApprove(_approvalId: string, tenantId: string,
   return {
     title: `Eingangsrechnung ${invoice.invoiceNumber ?? invoice.id.slice(0, 8)}`,
     changes,
-    summary: "Nach Freigabe ist die Rechnung zahlungsbereit und kann in den SEPA-Lauf aufgenommen werden.",
+    summary: "Nach Freigabe ist die Rechnung zahlungsbereit.",
   };
 }
 

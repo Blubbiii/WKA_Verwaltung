@@ -87,6 +87,6 @@ export const invoiceUpdateSchema = z.object({
   // Header-Alternative `If-Unmodified-Since` wäre RFC-konformer, aber nur
   // 1-Sekunden-Auflösung. `expectedUpdatedAt` in ms geht sicher.
   // TODO: Nach PoC-Erfolg auf weitere PATCH-Routes ausrollen (Contract,
-  // Fund, Person, Lease, Shareholder, JournalEntry).
+  // Fund, Person, Lease, Shareholder).
   expectedUpdatedAt: z.iso.datetime().optional(),
 });

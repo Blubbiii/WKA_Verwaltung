@@ -51,7 +51,7 @@ export interface ApprovalCardProps {
   requesterName: string;
   /** Optional Avatar URL — fällt sonst auf Initialen zurück */
   requesterAvatar?: string;
-  /** Was der Requester tun will, im Satz: "will SEPA-Lauf 2026-06 freigeben" */
+  /** Was der Requester tun will, im Satz: "will Periode 2026-06 abschließen" */
   actionText: string;
   /** Betrag (formatted, e.g. "47 281,42 €") — optional, Currency-Surface */
   amount?: string;

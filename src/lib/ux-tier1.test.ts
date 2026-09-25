@@ -12,6 +12,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { getAuditEntityHref } from "./audit-entity-urls";
 
 const SRC = join(process.cwd(), "src");
 
@@ -92,11 +93,9 @@ describe("Approval verlinkt den Beleg (#5)", () => {
     // Buchungen und SEPA-Läufe sind mit der Buchhaltung entfallen. Alte
     // Einträge verweisen noch darauf; ihre Seiten gibt es nicht mehr, und
     // "/journal-entries" führte auf eine 404.
-    const urls = read("lib/audit-entity-urls.ts");
-    for (const entity of ["JournalEntry", "SepaPaymentBatch"]) {
-      expect(urls, `${entity} braucht einen eigenen Fall`).toMatch(
-        new RegExp(`case "${entity}":\\s*return null;`),
-      );
+    // Behaviour instead of source form: removed types fall through to null.
+    for (const entity of ["JournalEntry", "SepaPaymentBatch", "BankTransaction"]) {
+      expect(getAuditEntityHref(entity, "x"), `${entity} darf nicht verlinken`).toBeNull();
     }
   });
 });

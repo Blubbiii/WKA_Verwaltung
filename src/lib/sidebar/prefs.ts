@@ -8,8 +8,8 @@
  * CRM. Das ist richtig: so findet man etwas, das man noch nie gesucht hat.
  *
  * Arbeit läuft aber nicht nach Sachgebieten. Ein Monatsabschluss braucht
- * Rechnungen (Finanzen), Ertragsdaten (Energie), das Buchungsjournal
- * (Finanzen) und Abstimmungen (Kommunikation) — vier Einträge, drei
+ * Rechnungen (Finanzen), Ertragsdaten (Energie), die Pachtabrechnung
+ * (Pacht) und Abstimmungen (Kommunikation) — vier Einträge, vier
  * Sachgebiete, ein Vorgang. Wer das jeden Monat macht, klappert vier Gruppen
  * ab.
  *

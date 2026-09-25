@@ -3,14 +3,11 @@
 /**
  * P21: HGB-Compliance Tenant-Settings (Audit B/C + P10/P11/P13).
  *
- * Pflege der 7 HGB-Compliance-spezifischen Felder:
+ * Pflege der HGB-Compliance-spezifischen Felder:
  *  - kleinunternehmer (§19 UStG)
  *  - useTaxSplit (P11 USt-Split Feature-Flag)
  *  - fourEyesThresholdEur (P13 4-Augen-Schwelle)
  *  - bankMatchToleranceEur (Audit B Bank-Match-Toleranz)
- *  - bilanzToleranceEur (Audit B Bilanz-Identität-Toleranz)
- *  - datevAccountAnnualResult (Audit B Jahresergebnis-Konto)
- *  - chartOfAccountsVersion (Audit C SKR03/SKR04-Switch)
  */
 
 import { useEffect, useState } from "react";
@@ -27,13 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Save, AlertTriangle, Scale, ShieldCheck } from "lucide-react";
 
@@ -42,9 +32,6 @@ interface HgbSettings {
   useTaxSplit: boolean;
   fourEyesThresholdEur: number | null;
   bankMatchToleranceEur: number;
-  bilanzToleranceEur: number;
-  datevAccountAnnualResult: string;
-  chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
 const DEFAULTS: HgbSettings = {
@@ -52,9 +39,6 @@ const DEFAULTS: HgbSettings = {
   useTaxSplit: false,
   fourEyesThresholdEur: 1000,
   bankMatchToleranceEur: 0.02,
-  bilanzToleranceEur: 0.01,
-  datevAccountAnnualResult: "9999",
-  chartOfAccountsVersion: "SKR04",
 };
 
 function LoadingSkel() {
@@ -100,12 +84,6 @@ export function HgbComplianceSettings() {
               : data.fourEyesThresholdEur,
           bankMatchToleranceEur:
             data.bankMatchToleranceEur ?? DEFAULTS.bankMatchToleranceEur,
-          bilanzToleranceEur:
-            data.bilanzToleranceEur ?? DEFAULTS.bilanzToleranceEur,
-          datevAccountAnnualResult:
-            data.datevAccountAnnualResult ?? DEFAULTS.datevAccountAnnualResult,
-          chartOfAccountsVersion:
-            data.chartOfAccountsVersion ?? DEFAULTS.chartOfAccountsVersion,
         };
         setFormData(merged);
         setHasChanges(false);
@@ -248,7 +226,7 @@ export function HgbComplianceSettings() {
             Cent-Toleranzen
           </CardTitle>
           <CardDescription>
-            Rundungs-Toleranzen für Bank-Match und Bilanz-Identitäts-Check
+            Rundungs-Toleranz für den Zahlungsabgleich
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -271,82 +249,6 @@ export function HgbComplianceSettings() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bilanzTol">Bilanz-Toleranz (EUR)</Label>
-              <Input
-                id="bilanzTol"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                value={formData.bilanzToleranceEur}
-                onChange={(e) =>
-                  handleChange("bilanzToleranceEur", Number(e.target.value))
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Default 0,01 €. Bei großen Bilanzen ggf. erhöhen.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Konten + Kontenrahmen */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Konten & Kontenrahmen</CardTitle>
-          <CardDescription>
-            Jahresergebnis-Konto und Kontenrahmen-Variante festlegen
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="annualResultAcct">
-                Jahresergebnis-Vortragskonto
-              </Label>
-              <Input
-                id="annualResultAcct"
-                type="text"
-                value={formData.datevAccountAnnualResult}
-                onChange={(e) =>
-                  handleChange("datevAccountAnnualResult", e.target.value)
-                }
-                placeholder='Default "9999"'
-              />
-              <p className="text-xs text-muted-foreground">
-                Konto auf das Jahresüberschuss/Jahresfehlbetrag fließt. SKR04
-                z.B. &quot;2010&quot; / &quot;2120&quot;, SKR03 z.B. &quot;0860&quot;.
-                &quot;9999&quot; = synthetisch (kein automatischer Vortrag).
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="chartVersion">Kontenrahmen</Label>
-              <Select
-                value={formData.chartOfAccountsVersion}
-                onValueChange={(v) =>
-                  handleChange("chartOfAccountsVersion", v as "SKR03" | "SKR04")
-                }
-              >
-                <SelectTrigger id="chartVersion">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SKR04">
-                    SKR04 (Bilanzorientiert, Standard)
-                  </SelectItem>
-                  <SelectItem value="SKR03">
-                    SKR03 (BWA-orientiert, klassisch)
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Achtung: Wechsel ändert die Bilanz-Section-Zuordnung der Konten.
-                Nach Wechsel ggf. balanceSheetSection-Backfill erneut laufen lassen.
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

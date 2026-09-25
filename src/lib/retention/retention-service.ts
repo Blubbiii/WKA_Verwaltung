@@ -6,7 +6,7 @@
  * sagen in DE:
  *
  * - **10 Jahre:** Rechnungen, Kontoauszüge, Buchungsbelege, Jahresabschlüsse
- *   → Invoice, IncomingInvoice, JournalEntry, Quote
+ *   → Invoice, IncomingInvoice
  * - **6 Jahre:**  Geschäftsbriefe, Handelsbriefe, Verträge (sofern sie
  *   nicht unter die 10-Jahre-Pflicht fallen)
  *   → Contract, Document (Geschäftsbriefe), CrmActivity
@@ -57,8 +57,6 @@ const RETENTION_POLICY_DEFAULT = {
   // 10 Jahre — GoBD Buchführungs- und Aufzeichnungspflichten
   Invoice: 10,
   IncomingInvoice: 10,
-  JournalEntry: 10,
-  Quote: 10,
   // 6 Jahre — Geschäftsbriefe und operative Verträge
   Contract: 6,
   Document: 6,
@@ -79,7 +77,7 @@ const CREATED_AT_RETENTION_DAYS: Record<string, number> = {
 };
 
 /** Models with 10-year retention (GoBD Buchführungs-/Aufzeichnungspflichten). */
-type InvoiceRetentionModel = "Invoice" | "IncomingInvoice" | "JournalEntry" | "Quote";
+type InvoiceRetentionModel = "Invoice" | "IncomingInvoice";
 /** Models with 6-year retention (Geschäftsbriefe + operative Verträge). */
 type ContractRetentionModel = "Contract" | "Document" | "CrmActivity";
 
@@ -92,7 +90,7 @@ export type RetentionPolicy = Record<RetentionModel, number>;
  *
  * Die Defaults aus RETENTION_POLICY_DEFAULT werden mit den TenantSettings
  * überschrieben:
- *  - gobdRetentionYearsInvoice → Invoice / IncomingInvoice / JournalEntry / Quote
+ *  - gobdRetentionYearsInvoice → Invoice / IncomingInvoice
  *  - gobdRetentionYearsContract → Contract / Document / CrmActivity
  */
 export async function getRetentionPolicy(tenantId: string): Promise<RetentionPolicy> {
@@ -100,8 +98,6 @@ export async function getRetentionPolicy(tenantId: string): Promise<RetentionPol
   return {
     Invoice: settings.gobdRetentionYearsInvoice,
     IncomingInvoice: settings.gobdRetentionYearsInvoice,
-    JournalEntry: settings.gobdRetentionYearsInvoice,
-    Quote: settings.gobdRetentionYearsInvoice,
     Contract: settings.gobdRetentionYearsContract,
     Document: settings.gobdRetentionYearsContract,
     CrmActivity: settings.gobdRetentionYearsContract,
@@ -120,11 +116,8 @@ export async function getRetentionPolicy(tenantId: string): Promise<RetentionPol
  * der Beleg-Struktur).
  *
  * Liste (Stand 2026-05):
- *   - CashBookEntry (Kassenbuch-Einträge — GoBD §147 10J)
- *   - BankTransaction (Buchungsbelege — GoBD §147 10J)
  *   - DunningRun + DunningItem (Mahnverlauf — Beweisbelege, unbefristet)
  *   - AuditLog (siehe docs/devops/audit-log-hardening.md — separater DB-User)
- *   - JournalEntryLine (Cascade via parent JournalEntry)
  */
 
 export interface RetentionRunResult {

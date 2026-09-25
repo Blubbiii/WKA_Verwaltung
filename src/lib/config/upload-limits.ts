@@ -51,8 +51,6 @@ export const UPLOAD_LIMITS = {
   scadaSingleFile: envMB("UPLOAD_LIMIT_SCADA_SINGLE_MB", 100),
   /** Inbox-Email-Attachment (50 MB) */
   inboxAttachment: envMB("UPLOAD_LIMIT_INBOX_MB", 50),
-  /** Journal-Entry-Attachment / Buchungsbeleg (25 MB) */
-  journalAttachment: envMB("UPLOAD_LIMIT_JOURNAL_MB", 25),
 } as const;
 
 /** Format bytes as human-readable string (e.g. "10 MB") */

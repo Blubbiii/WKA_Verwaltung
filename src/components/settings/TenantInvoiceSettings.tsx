@@ -16,48 +16,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Loader2, Save, Receipt, FileText, Database, Archive, RotateCcw, Bell } from "lucide-react";
+import { Loader2, Save, Receipt, FileText, Archive, Bell } from "lucide-react";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
-
-const SKR03_DEFAULTS = {
-  datevAccountEinspeisung: "8400",
-  datevAccountDirektvermarktung: "8338",
-  datevAccountPachtEinnahmen: "8210",
-  datevAccountPachtAufwand: "4210",
-  datevAccountWartung: "4950",
-  datevAccountBF: "4120",
-  datevAccountReceivables: "1200",
-  datevAccountOutputTax19: "1776",
-  datevAccountOutputTax7: "1771",
-  datevAccountInputTax19: "1576",
-  datevAccountInputTax7: "1571",
-  // F9-Rest: bewusst OHNE Default. Die konkrete Nummer haengt am
-  // Kontenrahmen; ein geratenes Konto wuerde Ertraege falsch buchen.
-  datevAccountDunningFee: "",
-};
 
 interface InvoiceFormData {
   paymentTermDays: number;
   invoicePaymentText: string;
   creditNotePaymentText: string;
-  // DATEV
-  datevRevenueAccount: string;
-  datevExpenseAccount: string;
-  datevDebtorStart: number;
-  datevCreditorStart: number;
-  // SKR03 Kontenrahmen
-  datevAccountEinspeisung: string;
-  datevAccountDirektvermarktung: string;
-  datevAccountPachtEinnahmen: string;
-  datevAccountPachtAufwand: string;
-  datevAccountWartung: string;
-  datevAccountBF: string;
-  datevAccountReceivables: string;
-  datevAccountOutputTax19: string;
-  datevAccountOutputTax7: string;
-  datevAccountInputTax19: string;
-  datevAccountInputTax7: string;
-  datevAccountDunningFee: string;
   // Geschäftsjahr
   fiscalYearStartMonth: number;
   // GoBD
@@ -105,22 +70,6 @@ export function TenantInvoiceSettings() {
         paymentTermDays: settings.paymentTermDays,
         invoicePaymentText: settings.invoicePaymentText,
         creditNotePaymentText: settings.creditNotePaymentText,
-        datevRevenueAccount: settings.datevRevenueAccount ?? "8400",
-        datevExpenseAccount: settings.datevExpenseAccount ?? "8000",
-        datevDebtorStart: settings.datevDebtorStart ?? 10000,
-        datevCreditorStart: settings.datevCreditorStart ?? 70000,
-        datevAccountEinspeisung: settings.datevAccountEinspeisung ?? SKR03_DEFAULTS.datevAccountEinspeisung,
-        datevAccountDirektvermarktung: settings.datevAccountDirektvermarktung ?? SKR03_DEFAULTS.datevAccountDirektvermarktung,
-        datevAccountPachtEinnahmen: settings.datevAccountPachtEinnahmen ?? SKR03_DEFAULTS.datevAccountPachtEinnahmen,
-        datevAccountPachtAufwand: settings.datevAccountPachtAufwand ?? SKR03_DEFAULTS.datevAccountPachtAufwand,
-        datevAccountWartung: settings.datevAccountWartung ?? SKR03_DEFAULTS.datevAccountWartung,
-        datevAccountBF: settings.datevAccountBF ?? SKR03_DEFAULTS.datevAccountBF,
-        datevAccountReceivables: settings.datevAccountReceivables ?? SKR03_DEFAULTS.datevAccountReceivables,
-        datevAccountOutputTax19: settings.datevAccountOutputTax19 ?? SKR03_DEFAULTS.datevAccountOutputTax19,
-        datevAccountOutputTax7: settings.datevAccountOutputTax7 ?? SKR03_DEFAULTS.datevAccountOutputTax7,
-        datevAccountInputTax19: settings.datevAccountInputTax19 ?? SKR03_DEFAULTS.datevAccountInputTax19,
-        datevAccountInputTax7: settings.datevAccountInputTax7 ?? SKR03_DEFAULTS.datevAccountInputTax7,
-        datevAccountDunningFee: settings.datevAccountDunningFee ?? "",
         fiscalYearStartMonth: settings.fiscalYearStartMonth ?? 1,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
@@ -150,16 +99,6 @@ export function TenantInvoiceSettings() {
     if (!formData) return;
 
     if (formData.paymentTermDays < 1 || formData.paymentTermDays > 365) {
-      toast.error(t("saveError"));
-      return;
-    }
-
-    if (formData.datevRevenueAccount && !/^\d{4,10}$/.test(formData.datevRevenueAccount)) {
-      toast.error(t("saveError"));
-      return;
-    }
-
-    if (formData.datevExpenseAccount && !/^\d{4,10}$/.test(formData.datevExpenseAccount)) {
       toast.error(t("saveError"));
       return;
     }
@@ -291,167 +230,6 @@ export function TenantInvoiceSettings() {
         </CardContent>
       </Card>
 
-      {/* DATEV Export */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Database className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">DATEV Export</CardTitle>
-          </div>
-          <CardDescription>
-            Standard-Kontenrahmen und Nummernkreise für den DATEV-Export
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="datevRevenueAccount">Erlöskonto</Label>
-              <Input
-                id="datevRevenueAccount"
-                value={formData.datevRevenueAccount}
-                onChange={(e) =>
-                  handleChange("datevRevenueAccount", e.target.value)
-                }
-                placeholder="8400"
-              />
-              <p className="text-xs text-muted-foreground">
-                Standard-Sachkonto für Erlöse (z.B. 8400 bei SKR04)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="datevExpenseAccount">Aufwandskonto</Label>
-              <Input
-                id="datevExpenseAccount"
-                value={formData.datevExpenseAccount}
-                onChange={(e) =>
-                  handleChange("datevExpenseAccount", e.target.value)
-                }
-                placeholder="8000"
-              />
-              <p className="text-xs text-muted-foreground">
-                Standard-Sachkonto für Aufwendungen (z.B. 8000 bei SKR04)
-              </p>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Kontenrahmen SKR03 */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Kontenrahmen (SKR03)</p>
-                <p className="text-xs text-muted-foreground">
-                  Kontenzuordnung pro Transaktionsart — wird beim DATEV-Export automatisch verwendet
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (formData) {
-                    setFormData({ ...formData, ...SKR03_DEFAULTS });
-                    setHasChanges(true);
-                  }
-                }}
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                SKR03-Defaults
-              </Button>
-            </div>
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">Transaktionsart</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground w-36">Kontonummer</th>
-                    <th className="px-3 py-2 text-left font-medium text-muted-foreground w-28">SKR03 Standard</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {[
-                    { label: "Einspeisevergütung", key: "datevAccountEinspeisung" as const, default: SKR03_DEFAULTS.datevAccountEinspeisung },
-                    { label: "Direktvermarktung", key: "datevAccountDirektvermarktung" as const, default: SKR03_DEFAULTS.datevAccountDirektvermarktung },
-                    { label: "Pachteinnahmen", key: "datevAccountPachtEinnahmen" as const, default: SKR03_DEFAULTS.datevAccountPachtEinnahmen },
-                    { label: "Pachtaufwand", key: "datevAccountPachtAufwand" as const, default: SKR03_DEFAULTS.datevAccountPachtAufwand },
-                    { label: "Wartung / Instandhaltung", key: "datevAccountWartung" as const, default: SKR03_DEFAULTS.datevAccountWartung },
-                    { label: "Betriebsführungsentgelt", key: "datevAccountBF" as const, default: SKR03_DEFAULTS.datevAccountBF },
-                    { label: "Forderungen", key: "datevAccountReceivables" as const, default: SKR03_DEFAULTS.datevAccountReceivables },
-                    { label: "USt 19%", key: "datevAccountOutputTax19" as const, default: SKR03_DEFAULTS.datevAccountOutputTax19 },
-                    { label: "USt 7%", key: "datevAccountOutputTax7" as const, default: SKR03_DEFAULTS.datevAccountOutputTax7 },
-                    { label: "VSt 19%", key: "datevAccountInputTax19" as const, default: SKR03_DEFAULTS.datevAccountInputTax19 },
-                    { label: "VSt 7%", key: "datevAccountInputTax7" as const, default: SKR03_DEFAULTS.datevAccountInputTax7 },
-                    // F9-Rest: Mahngebuehren/Verzugszinsen nach §288 BGB sind
-                    // Verzugsschaden und nicht umsatzsteuerbar. Solange hier
-                    // nichts steht, wird der Gebuehrenanteil einer Zahlung
-                    // nicht als Ertrag gebucht.
-                    { label: "Mahngebühren / Verzugszinsen (Ertrag)", key: "datevAccountDunningFee" as const, default: "— nicht gesetzt" },
-                  ].map((row) => (
-                    <tr key={row.key}>
-                      <td className="px-3 py-2 text-muted-foreground">{row.label}</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          value={formData[row.key]}
-                          onChange={(e) => handleChange(row.key, e.target.value)}
-                          className="h-7 w-28 font-mono text-sm"
-                          maxLength={10}
-                          placeholder={row.default}
-                        />
-                      </td>
-                      <td className="px-3 py-2 font-mono text-muted-foreground">{row.default}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="datevDebtorStart">Debitorennummernkreis ab</Label>
-              <Input
-                id="datevDebtorStart"
-                type="number"
-                min={1000}
-                max={99999999}
-                value={formData.datevDebtorStart}
-                onChange={(e) =>
-                  handleChange(
-                    "datevDebtorStart",
-                    parseInt(e.target.value, 10) || 10000
-                  )
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Startnummer für Debitorenkonten (Standard: 10000)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="datevCreditorStart">Kreditorennummernkreis ab</Label>
-              <Input
-                id="datevCreditorStart"
-                type="number"
-                min={1000}
-                max={99999999}
-                value={formData.datevCreditorStart}
-                onChange={(e) =>
-                  handleChange(
-                    "datevCreditorStart",
-                    parseInt(e.target.value, 10) || 70000
-                  )
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                Startnummer für Kreditorenkonten (Standard: 70000)
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Geschäftsjahr */}
       <Card>
         <CardHeader>
@@ -505,7 +283,7 @@ export function TenantInvoiceSettings() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="gobdRetentionYearsInvoice">
-                Rechnungen & Buchungsbelege (Jahre)
+                Rechnungen & Belege (Jahre)
               </Label>
               <Input
                 id="gobdRetentionYearsInvoice"

@@ -31,7 +31,6 @@ const globalForPrisma = globalThis as unknown as {
  */
 const SOFT_DELETE_MODELS = new Set([
   "Invoice",
-  "JournalEntry",
   "CrmActivity",
   "Park",
   "Fund",

@@ -49,9 +49,7 @@ export type AuditEntityType =
   | "MassCommunication"
   | "ArchivedDocument"
   | "ArchiveVerification"
-  | "IncomingInvoice"
-  | "JournalEntry"
-  | "BankTransaction";
+  | "IncomingInvoice";
 
 /**
  * Get entity display name for German UI
@@ -90,8 +88,6 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     ArchivedDocument: "Archiviertes Dokument",
     ArchiveVerification: "Archiv-Integritaetsprüfung",
     IncomingInvoice: "Eingangsrechnung",
-    JournalEntry: "Buchung",
-    BankTransaction: "Banktransaktion",
   };
   return displayNames[entityType] || entityType;
 }

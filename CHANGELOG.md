@@ -32,6 +32,20 @@ Differenz zur Windleistung, wenn eine Grenze tatsächlich bindet — 2.571 MWh
 (11,5 %), dreifach gegengerechnet (Python, SQL, TypeScript). Bewertet wird mit
 dem Monatssatz statt mit fest verdrahteten 0,08 €/kWh.
 
+**Buchhaltungs-Reste entfernt**
+
+Nach dem Ausbau standen noch DATEV-Konten, Kontenrahmen, Bilanz-Toleranz und
+das Konto „Jahresergebnis" in den Einstellungen — ohne jede Wirkung. Sie sind
+aus Oberfläche, API und Typen entfernt. Die Einstellungs-API filtert beim Lesen
+und Schreiben auf bekannte Felder, so verschwinden die Altwerte auch aus dem
+gespeicherten JSON eines Mandanten. Aufbewahrungsfristen und Soft-Delete
+nannten noch die gelöschten Modelle `JournalEntry` und `Quote`; ein neuer Test
+gleicht beide Listen mit `schema.prisma` ab. Das Audit-Log verlinkt Buchungen,
+SEPA-Läufe und Bankumsätze nicht mehr ins Leere.
+
+Bleibt bewusst: der DATEV-Export der Eingangsrechnungen für den Steuerberater,
+die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

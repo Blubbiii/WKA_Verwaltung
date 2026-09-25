@@ -208,10 +208,10 @@ export default function PeriodLockManagerPage() {
             GoBD-Hinweis
           </CardTitle>
           <CardDescription className="text-amber-900/80 dark:text-amber-200/80">
-            Gesperrte Perioden verhindern jegliche Buchungsänderung (neuer
-            JournalEntry, DRAFT→POSTED, Storno-Buchung in der Periode).
-            Stornos werden in die aktuelle offene Periode gebucht.
-            Unlock ist nachvollziehbar (Audit-Trail).
+            In einem gesperrten Monat lassen sich keine Rechnungen mehr
+            anlegen, stornieren oder Zahlungen darauf erfassen. Stornos
+            abgeschlossener Monate landen im aktuellen offenen Monat.
+            Jedes Entsperren wird im Änderungsprotokoll festgehalten.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -238,9 +238,9 @@ export default function PeriodLockManagerPage() {
             <DialogHeader>
               <DialogTitle>Periode sperren</DialogTitle>
               <DialogDescription>
-                Nach Sperren können keine Buchungen mehr in den gewählten Monat
-                gebucht werden. Unlock ist möglich, hinterlässt aber einen
-                Audit-Eintrag.
+                Nach dem Sperren lassen sich im gewählten Monat keine Rechnungen,
+                Stornos oder Zahlungen mehr erfassen. Entsperren ist möglich,
+                hinterlässt aber einen Eintrag im Änderungsprotokoll.
               </DialogDescription>
             </DialogHeader>
 
@@ -416,8 +416,8 @@ export default function PeriodLockManagerPage() {
             <DialogTitle>Periode entsperren?</DialogTitle>
             <DialogDescription>
               Begründung ist Pflicht — sie wird im Audit-Trail festgehalten.
-              Nach dem Entsperren können wieder Buchungen in der Periode angelegt
-              werden.
+              Nach dem Entsperren lassen sich in der Periode wieder Rechnungen,
+              Stornos und Zahlungen erfassen.
             </DialogDescription>
           </DialogHeader>
 

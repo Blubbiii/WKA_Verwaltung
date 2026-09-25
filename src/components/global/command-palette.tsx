@@ -6,7 +6,7 @@
  * Strukturiertes Modal mit vier Sektionen:
  *   1. Recent     — letzte 5 besuchte Pages aus localStorage
  *   2. Treffer    — Entitaeten aus /api/quick-search (Parks, Rechnungen,
- *                   Kontakte, Vertraege, Beteiligungen, Buchungen)
+ *                   Kontakte, Vertraege, Beteiligungen)
  *   3. Quick Actions — kuratierte Liste mit ~10 Schnellaktionen
  *   4. Navigation — alle Items aus nav-config.ts (Permission/Feature-gefiltert)
  *

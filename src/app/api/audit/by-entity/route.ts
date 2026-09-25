@@ -4,11 +4,11 @@
  * Feature A4 — Last-Edit-Strip
  *
  * Lädt die letzten N AuditLog-Einträge für eine konkrete Entity (entityType + entityId).
- * Wird vom <LastEditStrip /> auf Detail-Seiten (Rechnungen, Verträge, Buchungen …) genutzt,
+ * Wird vom <LastEditStrip /> auf Detail-Seiten (Rechnungen, Verträge …) genutzt,
  * um eine kompakte Versionshistorie als Footer-Strip + Popover anzuzeigen.
  *
  * Query-Params:
- *   - entityType (required)  z.B. "Invoice", "Contract", "JournalEntry"
+ *   - entityType (required)  z.B. "Invoice", "Contract", "Lease"
  *   - entityId   (required)  UUID
  *   - limit      (optional)  default 10, max 50
  *

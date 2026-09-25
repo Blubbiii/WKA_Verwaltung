@@ -56,27 +56,17 @@ export function getAuditEntityHref(
       return `/leases/cost-allocation/${entityId}`;
     case "TurbineProduction":
       return `/energy/productions/${entityId}/edit`;
-    // Bedienaufwand #5: Diese beiden Typen kommen als 4-Augen-Freigaben vor
-    // (Abrechnungsperiode einreichen, SEPA-Lauf) und fehlten hier, obwohl
-    // Detailseiten existieren. Ohne Eintrag sah der Genehmiger nur
-    // "will SEPA_RUN freigeben · 47.281,42 €" und musste blind zustimmen.
+    // Bedienaufwand #5: Abrechnungsperioden kommen als 4-Augen-Freigaben vor
+    // und fehlten hier, obwohl die Detailseite existiert. Ohne Eintrag sah der
+    // Genehmiger nur Typ und Betrag und musste blind zustimmen.
     case "LeaseSettlementPeriod":
       return `/admin/settlement-periods/${entityId}`;
-    // SEPA-Zahllauf und Buchungen sind mit der Buchhaltung entfallen. Alte
-    // Protokolleinträge und Freigaben verweisen noch darauf — ein Ziel gibt es
-    // nicht mehr, und kein Link ist besser als ein Link ins Leere.
-    case "SepaPaymentBatch":
-      return null;
 
     // ---- Only a list page exists — besser als ein 404 ----
     case "FundHierarchy":
       return "/funds";
     case "Document":
       return "/documents";
-    case "JournalEntry":
-      return null;
-    case "BankTransaction":
-      return null;
     case "EnergySettlementItem":
       return "/energy/settlements";
     case "ArchivedDocument":

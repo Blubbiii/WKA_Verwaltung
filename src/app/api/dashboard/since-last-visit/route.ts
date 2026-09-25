@@ -34,7 +34,6 @@ const ENTITY_LABELS: Record<string, string> = {
   Contract: "Vertrag",
   ServiceEvent: "Service-Vorgang",
   ApprovalRequest: "Freigabe",
-  JournalEntry: "Buchung",
 };
 
 function buildEntityHref(entityType: string, entityId: string | null): string | null {

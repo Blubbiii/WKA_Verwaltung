@@ -27,7 +27,6 @@
  * Ziel-Endpoints (F16 P1-Scope):
  *   - POST /api/invoices/[id]/payments
  *   - POST /api/invoices/[id]/mark-paid
- *   - POST /api/journal-entries
  */
 
 import { NextRequest, NextResponse } from "next/server";

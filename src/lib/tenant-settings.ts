@@ -28,63 +28,6 @@ export interface TenantSettings {
   companyPhone: string;
   companyEmail: string;
   companyWebsite: string;
-  // DATEV accounts
-  datevRevenueAccount: string;
-  datevExpenseAccount: string;
-  datevDebtorStart: number;
-  datevCreditorStart: number;
-  // SKR03 Kontenrahmen (konfigurierbar je Mandant)
-  datevAccountEinspeisung: string;
-  datevAccountDirektvermarktung: string;
-  datevAccountPachtEinnahmen: string;
-  datevAccountPachtAufwand: string;
-  datevAccountWartung: string;
-  datevAccountBF: string;
-  datevAccountReceivables: string;
-  datevAccountOutputTax19: string;
-  datevAccountOutputTax7: string;
-  datevAccountInputTax19: string;
-  datevAccountInputTax7: string;
-  // Zahlungsverkehrs-Konten für die Zahlungsbuchung (Bank an Forderung).
-  // Leerstring = "nicht konfiguriert" → resolvePaymentAccount() leitet den
-  // Standard aus chartOfAccountsVersion ab (SKR03 Bank 1200 / Kasse 1000,
-  // SKR04 Bank 1800 / Kasse 1600). Tenants mit mehreren Bankkonten sollten
-  // hier ihr Haupt-Geldkonto eintragen.
-  datevAccountBank: string;
-  datevAccountCash: string;
-  // Aufwandskonto für endgültige Forderungsausfälle (SKR03 2400 /
-  // SKR04 6930 "Forderungsverluste"). Leer = Fallback auf
-  // datevAccountEinspeisung, damit die Ausbuchung in jedem Fall
-  // ausgeglichen ins Hauptbuch geht.
-  datevAccountBadDebt: string;
-  // Wertberichtigungs-Konten für EWB/PWB (§253 HGB). Anders als beim
-  // endgültigen Forderungsausfall bleibt die Forderung hier OFFEN stehen —
-  // gebucht wird Aufwand (Soll) an Wertberichtigung (Haben, Passivposten).
-  //   datevAccountValueAdjustmentExpense: Aufwandskonto
-  //     SKR03 2400 "Forderungsverluste" / SKR04 6930
-  //   datevAccountValueAdjustment: Wertberichtigungskonto (Gegenkonto)
-  //     SKR03 0996/3070 / SKR04 3090 "Wertberichtigungen auf Forderungen"
-  // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
-  datevAccountValueAdjustment: string;
-  datevAccountValueAdjustmentExpense: string;
-  // Ertragskonto für Mahngebühren und Verzugszinsen (F9-Rest, Audit 2026-07).
-  //
-  // Umsatzsteuer: Mahngebühren und Verzugszinsen nach §288 BGB sind
-  // Verzugsschaden, also Schadensersatz und KEIN Leistungsaustausch — damit
-  // nicht umsatzsteuerbar. Es wird deshalb ohne USt-Split gebucht (EXEMPT).
-  //
-  // Zeitpunkt: gebucht wird bei ZAHLUNG, nicht bei Versand der Mahnung. Ein
-  // Schadensersatzanspruch von unsicherer Einbringlichkeit wird nach dem
-  // Vorsichtsprinzip (§252 Abs. 1 Nr. 4 HGB) nicht vorab als Forderung
-  // aktiviert. Das vermeidet zugleich eine Forderung, die nie ausgeglichen
-  // werden kann, weil die Rechnung selbst ihren Bruttobetrag behält.
-  //
-  // KEIN Default: fachlich gehören die Erträge unter "sonstige betriebliche
-  // Erträge", die konkrete Kontonummer hängt aber am Kontenrahmen des
-  // Mandanten. Solange hier nichts steht, wird der Gebührenanteil NICHT
-  // gebucht (Verhalten wie bisher) und der Fall geloggt — lieber nicht buchen
-  // als auf ein geratenes Konto buchen. Gleiche Linie wie datevAccountBank.
-  datevAccountDunningFee: string;
   // Geschaeftsjahr
   fiscalYearStartMonth: number; // 1-12 (1 = January)
   // GoBD retention
@@ -131,18 +74,6 @@ export interface TenantSettings {
   // genutzt — wer 0,10 € im Match akzeptiert, akzeptiert auch isFullyPaid bei
   // -0,10 € Differenz.
   bankMatchToleranceEur: number;
-  // Toleranz für Bilanz-Identitäts-Check (Aktiva = Passiva).
-  // Bei großen Tenants mit vielen Buchungen können Cent-Rundungs-Summen
-  // schnell ein paar Cent erreichen.
-  bilanzToleranceEur: number;
-  // Konto auf das das Jahresergebnis beim year-end-close vorgetragen
-  // wird. Default "9999" = synthetisches Konto (Vortrag NICHT auto).
-  // Tenants sollten ein echtes EK-Konto setzen (SKR04 z.B. "2010" oder
-  // "2120" Gewinnvortrag).
-  datevAccountAnnualResult: string;
-  // Kontenrahmen-Version. Steuert das Range-Mapping in der
-  // Bilanz (skr04-mapping vs skr03-mapping).
-  chartOfAccountsVersion: "SKR03" | "SKR04";
   // ABAC Default-Verhalten für FundAccess.
   //  - "allow" (Default): User ohne FundAccess-Einträge sehen ALLE Funds
   //    (Backward-Kompatibilität, bestehende Tenants).
@@ -174,35 +105,6 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   companyPhone: "",
   companyEmail: "",
   companyWebsite: "",
-  // DATEV defaults (SKR03)
-  datevRevenueAccount: "8400",
-  datevExpenseAccount: "8000",
-  datevDebtorStart: 10000,
-  datevCreditorStart: 70000,
-  // SKR03 Kontenrahmen-Defaults
-  datevAccountEinspeisung: "8400",
-  datevAccountDirektvermarktung: "8338",
-  datevAccountPachtEinnahmen: "8210",
-  datevAccountPachtAufwand: "4210",
-  datevAccountWartung: "4950",
-  datevAccountBF: "4120",
-  datevAccountReceivables: "1200",
-  datevAccountOutputTax19: "1776",
-  datevAccountOutputTax7: "1771",
-  datevAccountInputTax19: "1576",
-  datevAccountInputTax7: "1571",
-  // Leer = aus chartOfAccountsVersion ableiten (siehe resolvePaymentAccount).
-  // Kein hartkodierter Default, weil "1200" je nach Kontenrahmen entweder
-  // Bank (SKR03) oder Forderungen (SKR04) bedeutet — ein falscher Default
-  // würde Bank an Bank buchen.
-  datevAccountBank: "",
-  datevAccountCash: "",
-  datevAccountBadDebt: "",
-  // Leer = aus chartOfAccountsVersion ableiten (resolveValueAdjustmentAccounts).
-  datevAccountValueAdjustment: "",
-  datevAccountValueAdjustmentExpense: "",
-  // Leer = Gebührenanteil wird nicht gebucht (siehe Kommentar am Typ).
-  datevAccountDunningFee: "",
   // Geschaeftsjahr
   fiscalYearStartMonth: 1,
   // GoBD retention (§147 AO)
@@ -225,14 +127,22 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   fourEyesThresholdEur: 1000,
   // Sprint 3: 4-Augen für weitere kritische Aktionen — Defaults konservativ.
   settlementApprovalThresholdEur: 0,  // jedes Settlement-Finalize
-  // Bank-Match + Bilanz-Toleranz Defaults.
+  // Bank-Match-Toleranz Default.
   bankMatchToleranceEur: 0.02,
-  bilanzToleranceEur: 0.01,
-  datevAccountAnnualResult: "9999",
-  chartOfAccountsVersion: "SKR04",
   // Default "allow" → bestehende Tenants verhalten sich unverändert.
   abacFundAccessDefault: "allow",
 };
+
+/**
+ * Only the fields TenantSettings still knows. Stored JSON may carry fields of
+ * removed features (DATEV accounts, chart of accounts); passing them on would
+ * keep them alive in every read and every write forever.
+ */
+export function nurBekannteEinstellungen(gespeichert: Record<string, unknown>): Partial<TenantSettings> {
+  return Object.fromEntries(
+    Object.entries(gespeichert).filter(([key]) => key in DEFAULT_TENANT_SETTINGS),
+  ) as Partial<TenantSettings>;
+}
 
 /**
  * Load tenant settings from DB, merged with defaults.
@@ -273,7 +183,7 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
         companyPhone: tenant.contactPhone || "",
         companyAddress: tenant.address || "",
         emailFromName: tenant.emailFromName || "",
-        ...stored,
+        ...nurBekannteEinstellungen(stored),
       };
     },
     CACHE_TTL.TENANT_SETTINGS,
@@ -288,56 +198,6 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
 export async function invalidateTenantSettings(tenantId: string): Promise<void> {
   const { cache } = await import("@/lib/cache");
   await cache.del("tenant-settings", tenantId);
-}
-
-/**
- * Geldkonto (Bank / Kasse) für Zahlungsbuchungen auflösen.
- *
- * Bevorzugt die explizite Tenant-Konfiguration. Ist sie leer, wird der
- * DATEV-Standard des jeweiligen Kontenrahmens genommen:
- *   SKR03: Bank 1200, Kasse 1000
- *   SKR04: Bank 1800, Kasse 1600
- *
- * @param kind "BANK" für Bank-/SEPA-Zahlungen, "CASH" für Barzahlungen.
- */
-export function resolvePaymentAccount(
-  settings: TenantSettings,
-  kind: "BANK" | "CASH",
-): string {
-  const configured = kind === "CASH" ? settings.datevAccountCash : settings.datevAccountBank;
-  if (configured && configured.trim().length > 0) return configured.trim();
-
-  const isSkr03 = settings.chartOfAccountsVersion === "SKR03";
-  if (kind === "CASH") return isSkr03 ? "1000" : "1600";
-  return isSkr03 ? "1200" : "1800";
-}
-
-/**
- * Konten für die Wertberichtigung (EWB/PWB, §253 Abs. 4 HGB) auflösen.
- *
- * Buchungssatz: Aufwand (Soll) an Wertberichtigung (Haben).
- * Die Forderung selbst bleibt unberührt — das ist der Unterschied zum
- * endgültigen Forderungsausfall (DIRECT_WRITEOFF), der die Forderung ausbucht.
- *
- * Bevorzugt die explizite Tenant-Konfiguration, sonst DATEV-Standard:
- *   SKR03: Aufwand 2400 (Forderungsverluste) / WB-Konto 0996
- *   SKR04: Aufwand 6930 (Forderungsverluste) / WB-Konto 3090
- */
-export function resolveValueAdjustmentAccounts(settings: TenantSettings): {
-  expenseAccount: string;
-  adjustmentAccount: string;
-} {
-  const isSkr03 = settings.chartOfAccountsVersion === "SKR03";
-
-  const expenseConfigured =
-    settings.datevAccountValueAdjustmentExpense?.trim() ||
-    settings.datevAccountBadDebt?.trim();
-  const adjustmentConfigured = settings.datevAccountValueAdjustment?.trim();
-
-  return {
-    expenseAccount: expenseConfigured || (isSkr03 ? "2400" : "6930"),
-    adjustmentAccount: adjustmentConfigured || (isSkr03 ? "0996" : "3090"),
-  };
 }
 
 /**

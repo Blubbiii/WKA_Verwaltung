@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
-import { DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS } from "@/lib/tenant-settings";
+import { DEFAULT_TENANT_SETTINGS as CANONICAL_DEFAULTS, nurBekannteEinstellungen } from "@/lib/tenant-settings";
 
 // =============================================================================
 // TYPES & DEFAULTS
@@ -51,34 +51,7 @@ export interface TenantSettings {
   companyEmail: string;
   companyWebsite: string;
 
-  // DATEV Export
-  datevRevenueAccount: string;
-  datevExpenseAccount: string;
-  datevDebtorStart: number;
-  datevCreditorStart: number;
 
-  // SKR03 Kontenrahmen
-  datevAccountEinspeisung: string;
-  datevAccountDirektvermarktung: string;
-  datevAccountPachtEinnahmen: string;
-  datevAccountPachtAufwand: string;
-  datevAccountWartung: string;
-  datevAccountBF: string;
-  datevAccountReceivables: string;
-  datevAccountOutputTax19: string;
-  datevAccountOutputTax7: string;
-  datevAccountInputTax19: string;
-  datevAccountInputTax7: string;
-  // Geldkonten für die Zahlungsbuchung (leer = aus Kontenrahmen ableiten)
-  datevAccountBank: string;
-  datevAccountCash: string;
-  // Aufwandskonto Forderungsverluste (leer = Fallback Erlöskonto)
-  datevAccountBadDebt: string;
-  // EWB/PWB (§253 HGB): Aufwand an Wertberichtigung.
-  // Leer = aus Kontenrahmen ableiten (SKR03 2400/0996, SKR04 6930/3090).
-  datevAccountValueAdjustment: string;
-  datevAccountValueAdjustmentExpense: string;
-  datevAccountDunningFee: string;
 
   // Geschaeftsjahr
   fiscalYearStartMonth: number;
@@ -103,12 +76,6 @@ export interface TenantSettings {
   fourEyesThresholdEur: number | null;
   // Cent-Toleranz für Bank-Match + Voll-bezahlt
   bankMatchToleranceEur: number;
-  // Toleranz für Bilanz-Identitäts-Check (A=P)
-  bilanzToleranceEur: number;
-  // Konto auf das das Jahresergebnis vorgetragen wird
-  datevAccountAnnualResult: string;
-  // Kontenrahmen-Version (steuert Range-Mapping)
-  chartOfAccountsVersion: "SKR03" | "SKR04";
 }
 
 // Defaults werden aus dem kanonischen Settings-Modul übernommen.
@@ -222,55 +189,7 @@ const tenantSettingsSchema = z.object({
     .max(200, "Website darf maximal 200 Zeichen haben")
     .optional(),
 
-  // DATEV Export
-  datevRevenueAccount: z
-    .string()
-    .max(10, "Sachkonto darf maximal 10 Zeichen haben")
-    .regex(/^\d{4,10}$/, "Sachkonto muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevExpenseAccount: z
-    .string()
-    .max(10, "Sachkonto darf maximal 10 Zeichen haben")
-    .regex(/^\d{4,10}$/, "Sachkonto muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevDebtorStart: z
-    .number()
-    .int()
-    .min(1000, "Debitorennummernkreis muss mindestens 1000 sein")
-    .max(99999999, "Debitorennummernkreis darf maximal 99999999 sein")
-    .optional(),
-  datevCreditorStart: z
-    .number()
-    .int()
-    .min(1000, "Kreditorennummernkreis muss mindestens 1000 sein")
-    .max(99999999, "Kreditorennummernkreis darf maximal 99999999 sein")
-    .optional(),
 
-  // SKR03 Kontenrahmen
-  datevAccountEinspeisung: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevAccountDirektvermarktung: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevAccountPachtEinnahmen: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevAccountPachtAufwand: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevAccountWartung: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  datevAccountBF: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
 
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: z
@@ -336,45 +255,6 @@ const tenantSettingsSchema = z.object({
     .min(0, "Toleranz darf nicht negativ sein")
     .max(100, "Toleranz zu hoch (max 100€)")
     .optional(),
-  bilanzToleranceEur: z
-    .number()
-    .min(0, "Toleranz darf nicht negativ sein")
-    .max(100, "Toleranz zu hoch (max 100€)")
-    .optional(),
-  datevAccountAnnualResult: z
-    .string()
-    .regex(/^\d{4,10}$/, "Kontonummer muss 4-10 Ziffern enthalten")
-    .optional(),
-  chartOfAccountsVersion: z.enum(["SKR03", "SKR04"]).optional(),
-  // Geldkonten für die Zahlungsbuchung. Leerstring explizit erlaubt =
-  // "nicht konfiguriert" → Ableitung aus chartOfAccountsVersion.
-  datevAccountBank: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
-  datevAccountCash: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
-  datevAccountBadDebt: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
-  // EWB/PWB (§253 HGB): Aufwandskonto + Wertberichtigungs-Gegenkonto.
-  datevAccountValueAdjustment: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
-  datevAccountValueAdjustmentExpense: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
-  // F9-Rest: Ertragskonto fuer Mahngebuehren/Verzugszinsen (§288 BGB,
-  // nicht umsatzsteuerbar). Leer = Gebuehrenanteil wird nicht gebucht.
-  datevAccountDunningFee: z
-    .string()
-    .regex(/^(\d{4,10})?$/, "Kontonummer muss 4-10 Ziffern enthalten (oder leer)")
-    .optional(),
 });
 
 // =============================================================================
@@ -424,7 +304,7 @@ export async function GET(_request: NextRequest) {
     // Merge stored settings on top of defaults
     const merged: TenantSettings = {
       ...dynamicDefaults,
-      ...storedTenantSettings,
+      ...nurBekannteEinstellungen(storedTenantSettings),
     };
 
     return NextResponse.json(merged);
@@ -474,9 +354,10 @@ export async function PUT(request: NextRequest) {
     const currentTenantSettings =
       (currentSettings.tenantSettings as Record<string, unknown>) || {};
 
-    // Merge only provided fields (partial update)
+    // Merge only provided fields (partial update). Fields of removed
+    // features (DATEV accounts, chart of accounts) drop out on this write.
     const updatedTenantSettings = {
-      ...currentTenantSettings,
+      ...nurBekannteEinstellungen(currentTenantSettings),
       ...parsed.data,
     };
 

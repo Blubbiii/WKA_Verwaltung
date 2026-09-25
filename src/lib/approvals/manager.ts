@@ -5,7 +5,7 @@
  *  - createApprovalRequest: erzeugt eine PENDING-Request für eine
  *    4-Augen-pflichtige Aktion.
  *  - approveRequest: setzt Status APPROVED. Caller muss danach die
- *    eigentliche Aktion durchführen (z.B. journal-entry posten).
+ *    eigentliche Aktion durchführen (z.B. Abrechnungsperiode abschließen).
  *  - rejectRequest: setzt REJECTED mit Begründung.
  *  - listPendingForUser: zeigt Requests die der User entscheiden kann
  *    (= nicht die er selbst initiiert hat).
