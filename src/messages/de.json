@@ -7398,7 +7398,8 @@
       "saving": "Wird gespeichert...",
       "inviteUsers": "Benutzer einladen",
       "continueWithout": "Ohne Benutzer fortfahren",
-      "next": "Weiter"
+      "next": "Weiter",
+      "roleAssignError": "{email} wurde angelegt, die Rolle konnte aber nicht vergeben werden. Bitte unter Rollen & Rechte nachtragen."
     },
     "tenantCreation": {
       "nameRequired": "Firmenname ist ein Pflichtfeld",
@@ -8719,7 +8720,7 @@
       "colShareholders": "Gesellschafter",
       "colCapital": "Kapital",
       "colStatus": "Status",
-      "colNotes": "Notizen",
+      "colNotes": "Letzte Notiz",
       "noResults": "Keine Gesellschaften gefunden",
       "showDetails": "Details anzeigen",
       "edit": "Bearbeiten",
@@ -8749,7 +8750,9 @@
       },
       "bulkDeleteConfirm": "{count} Gesellschaften wirklich löschen?",
       "bulkDeleteSuccess": "{count} Gesellschaften gelöscht",
-      "batchDelete": "Löschen"
+      "batchDelete": "Löschen",
+      "noteSaved": "Notiz im CRM gespeichert",
+      "noteSaveError": "Notiz konnte nicht gespeichert werden"
     },
     "detail": {
       "edit": "Bearbeiten",

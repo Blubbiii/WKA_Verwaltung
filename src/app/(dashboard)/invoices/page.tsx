@@ -73,7 +73,6 @@ import { Input } from "@/components/ui/input";
 import { INVOICE_STATUS, getStatusBadge } from "@/lib/status-config";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { cn } from "@/lib/utils";
-import { EditableCell } from "@/components/ui/editable-cell";
 import { getSkontoStatus, getSkontoStatusLabel, getSkontoStatusBadgeClass } from "@/lib/invoices/skonto";
 import { RecurringInvoicesManager } from "@/components/invoices/recurring-invoices-manager";
 import { InvoicePreviewDialog } from "@/components/invoices";
@@ -419,10 +418,12 @@ export default function InvoicesPage() {
 
     for (const id of sentIds) {
       try {
-        const response = await fetch(`/api/invoices/${id}`, {
-          method: "PATCH",
+        // PATCH /api/invoices/[id] edits drafts only and knows no status;
+        // paying goes through the same route as on the detail page.
+        const response = await fetch(`/api/invoices/${id}/mark-paid`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "PAID" }),
+          body: JSON.stringify({ applySkonto: false }),
         });
         if (response.ok) {
           successCount++;
@@ -842,29 +843,11 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          <EditableCell
-                            value={invoice.status}
-                            type="select"
-                            options={[
-                              { value: "DRAFT", label: t("statusDraft") },
-                              { value: "SENT", label: t("statusSent") },
-                              { value: "PAID", label: t("statusPaid") },
-                              { value: "CANCELLED", label: t("statusCancelled") },
-                            ]}
-                            formatDisplay={() => getStatusBadge(INVOICE_STATUS, invoice.status).label}
-                            onSave={async (val) => {
-                              const res = await fetch(`/api/invoices/${invoice.id}`, {
-                                method: "PATCH",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ status: val }),
-                              });
-                              if (!res.ok) {
-                                const err = await res.json().catch(() => ({ error: t("deleteErrorDefault") }));
-                                throw new Error(err.error ?? t("deleteErrorDefault"));
-                              }
-                              refetch();
-                            }}
-                          />
+                          {/* Display only: status changes have their own actions
+                              (send, record payment, cancel) with their checks. */}
+                          <Badge variant="secondary" className={getStatusBadge(INVOICE_STATUS, invoice.status).className}>
+                            {getStatusBadge(INVOICE_STATUS, invoice.status).label}
+                          </Badge>
                           {getSkontoStatus(invoice) !== "NONE" && (
                             <Badge variant="outline" className={`text-xs ${getSkontoStatusBadgeClass(getSkontoStatus(invoice))}`}>
                               {getSkontoStatusLabel(getSkontoStatus(invoice))}

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { productionCreateSchema } from "@/lib/energy/production-schemas";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
-import { z } from "zod";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -15,17 +15,6 @@ import { apiError } from "@/lib/api-errors";
  * Schema für neue Produktionsdaten
  * Validiert alle erforderlichen Felder für einen TurbineProduction-Eintrag
  */
-const productionCreateSchema = z.object({
-  turbineId: z.string().uuid("Ungültige Turbinen-ID"),
-  year: z.number().int().min(2000).max(2100),
-  month: z.number().int().min(1).max(12),
-  productionKwh: z.number().nonnegative("Produktion muss >= 0 sein"),
-  operatingHours: z.number().nonnegative("Betriebsstunden muessen >= 0 sein").optional().nullable(),
-  availabilityPct: z.number().min(0).max(100, "Verfügbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
-  source: z.enum(["MANUAL", "CSV_IMPORT", "EXCEL_IMPORT", "SCADA"]).default("MANUAL"),
-  status: z.enum(["DRAFT", "CONFIRMED", "INVOICED"]).default("DRAFT"),
-  notes: z.string().max(1000).optional().nullable(),
-});
 
 // =============================================================================
 // GET /api/energy/productions - Alle Produktionsdaten mit Filtern
@@ -80,6 +69,7 @@ export async function GET(request: NextRequest) {
       prisma.turbineProduction.findMany({
         where,
         include: {
+          revenueType: { select: { id: true, name: true, code: true } },
           turbine: {
             select: {
               id: true,
@@ -142,6 +132,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = productionCreateSchema.parse(body);
 
+    // A revenue type of another tenant must not be linkable.
+    if (validatedData.revenueTypeId) {
+      const art = await prisma.energyRevenueType.findFirst({
+        where: { id: validatedData.revenueTypeId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!art) return apiError("VALIDATION_FAILED", 400, { message: "Unbekannte Erlösart" });
+    }
+
+
     // Validierung: Turbine gehoert zum Tenant
     const turbine = await prisma.turbine.findFirst({
       where: {
@@ -185,9 +185,12 @@ export async function POST(request: NextRequest) {
         source: validatedData.source as ProductionDataSource,
         status: validatedData.status as ProductionStatus,
         notes: validatedData.notes ?? null,
+        revenueEur: validatedData.revenueEur ?? null,
+        revenueTypeId: validatedData.revenueTypeId ?? null,
         tenantId: check.tenantId!,
       },
       include: {
+        revenueType: { select: { id: true, name: true, code: true } },
         turbine: {
           select: {
             id: true,

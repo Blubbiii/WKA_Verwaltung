@@ -348,7 +348,8 @@ export default function DocumentsPage() {
     for (const id of ids) {
       try {
         const response = await fetch(`/api/documents/${id}`, {
-          method: "PATCH",
+          // The route has PUT only; PATCH ran into 405 for every document.
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ category: newCategory }),
         });

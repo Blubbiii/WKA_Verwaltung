@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
+import { getConfigBoolean } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
@@ -86,6 +87,12 @@ export async function GET(request: NextRequest) {
       ...(status && { status: status as "ACTIVE" | "INACTIVE" | "ARCHIVED" }),
     };
 
+    // Latest note per company comes from the CRM (decision E2) — only for
+    // users who may read CRM entries and with the CRM module switched on.
+    const notizenSichtbar =
+      (await getConfigBoolean("crm.enabled", check.tenantId, false)) &&
+      (await hasPermission(check.userId!, "crm:read"));
+
     const [funds, total, gesamtGesellschafter, gesamtKapital] = await Promise.all([
       prisma.fund.findMany({
         where,
@@ -108,6 +115,14 @@ export async function GET(request: NextRequest) {
               },
             },
           },
+          crmActivities: notizenSichtbar
+            ? {
+                where: { type: "NOTE" },
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { id: true, title: true, description: true, createdAt: true },
+              }
+            : false,
           _count: {
             select: {
               shareholders: true,
@@ -139,9 +154,13 @@ export async function GET(request: NextRequest) {
         0
       );
 
+      const notizen = (fund as { crmActivities?: Array<{ id: string; title: string; description: string | null; createdAt: Date }> }).crmActivities;
       return {
         ...fund,
         shareholders: undefined,
+        crmActivities: undefined,
+        letzteNotiz: notizen?.[0] ?? null,
+        notizenSichtbar,
         stats: {
           shareholderCount: fund._count.shareholders,
           activeShareholderCount: fund.shareholders.length,

@@ -266,6 +266,20 @@ export async function resolveLetterhead(
 }
 
 /**
+ * One specific letterhead of a tenant (for its preview). Null when it does
+ * not exist or belongs to another tenant.
+ */
+export async function loadLetterheadById(
+  tenantId: string,
+  letterheadId: string
+): Promise<ResolvedLetterhead | null> {
+  const letterhead = await prisma.letterhead.findFirst({
+    where: { id: letterheadId, tenantId },
+  });
+  return letterhead ? mapLetterhead(letterhead) : null;
+}
+
+/**
  * Loedt Template und Letterhead zusammen
  */
 export async function resolveTemplateAndLetterhead(

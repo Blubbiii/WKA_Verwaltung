@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { productionUpdateSchema } from "@/lib/energy/production-schemas";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
-import { z } from "zod";
 import { ProductionDataSource, ProductionStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -17,15 +17,6 @@ import { apiError } from "@/lib/api-errors";
  * Schema für Aktualisierung von Produktionsdaten
  * Alle Felder sind optional - nur mitgeschickte Felder werden aktualisiert
  */
-const productionUpdateSchema = z.object({
-  productionKwh: z.number().nonnegative("Produktion muss >= 0 sein").optional(),
-  operatingHours: z.number().nonnegative("Betriebsstunden muessen >= 0 sein").optional().nullable(),
-  availabilityPct: z.number().min(0).max(100, "Verfügbarkeit muss zwischen 0 und 100 liegen").optional().nullable(),
-  source: z.enum(["MANUAL", "CSV_IMPORT", "EXCEL_IMPORT", "SCADA"]).optional(),
-  status: z.enum(["DRAFT", "CONFIRMED", "INVOICED"]).optional(),
-  notes: z.string().max(1000).optional().nullable(),
-  // Jahr/Monat/Turbine sind NICHT aenderbar (unique constraint)
-});
 
 // =============================================================================
 // GET /api/energy/productions/[id] - Einzelne Produktionsdaten abrufen
@@ -45,6 +36,7 @@ export async function GET(
     const production = await prisma.turbineProduction.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
+        revenueType: { select: { id: true, name: true, code: true } },
         turbine: {
           select: {
             id: true,
@@ -92,6 +84,16 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = productionUpdateSchema.parse(body);
 
+    // A revenue type of another tenant must not be linkable.
+    if (validatedData.revenueTypeId) {
+      const art = await prisma.energyRevenueType.findFirst({
+        where: { id: validatedData.revenueTypeId, tenantId: check.tenantId! },
+        select: { id: true },
+      });
+      if (!art) return apiError("VALIDATION_FAILED", 400, { message: "Unbekannte Erlösart" });
+    }
+
+
     // Existenz und Tenant prüfen
     const existing = await prisma.turbineProduction.findFirst({
       where: { id, tenantId: check.tenantId! },
@@ -136,8 +138,15 @@ export async function PATCH(
         ...(validatedData.notes !== undefined && {
           notes: validatedData.notes,
         }),
+        ...(validatedData.revenueEur !== undefined && {
+          revenueEur: validatedData.revenueEur,
+        }),
+        ...(validatedData.revenueTypeId !== undefined && {
+          revenueTypeId: validatedData.revenueTypeId,
+        }),
       },
       include: {
+        revenueType: { select: { id: true, name: true, code: true } },
         turbine: {
           select: {
             id: true,

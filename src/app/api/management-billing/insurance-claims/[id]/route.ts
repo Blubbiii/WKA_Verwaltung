@@ -30,6 +30,9 @@ const claimUpdateSchema = z.object({
   defectId: z.string().nullish(),
   parkId: z.string().nullish(),
   turbineId: z.string().nullish(),
+  // The edit form always sent it; the schema dropped it (audit 2026-09).
+  // Required in the model, so null/empty means "unchanged".
+  incidentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}/, "Ungültiges Datum").nullish(),
 });
 
 async function checkFeatureEnabled(tenantId?: string | null): Promise<NextResponse | null> {
@@ -137,7 +140,7 @@ export async function PUT(
     if (!parsed.success) {
       return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
-    const { title, claimNumber, description, status, claimType, estimatedCostEur, actualCostEur, reimbursedEur, resolutionNotes, contractId, vendorId, defectId, parkId, turbineId } = parsed.data;
+    const { title, claimNumber, description, status, claimType, estimatedCostEur, actualCostEur, reimbursedEur, resolutionNotes, contractId, vendorId, defectId, parkId, turbineId, incidentDate } = parsed.data;
 
     const existing = await prisma.insuranceClaim.findUnique({
       where: { id },
@@ -164,6 +167,7 @@ export async function PUT(
     const updated = await prisma.insuranceClaim.update({
       where: { id, tenantId: check.tenantId!},
       data: {
+        ...(incidentDate && { incidentDate: new Date(incidentDate) }),
         ...(title !== undefined && { title }),
         ...(claimNumber !== undefined && { claimNumber }),
         ...(description !== undefined && { description }),

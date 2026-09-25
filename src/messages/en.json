@@ -7398,7 +7398,8 @@
       "saving": "Saving...",
       "inviteUsers": "Invite users",
       "continueWithout": "Continue without users",
-      "next": "Next"
+      "next": "Next",
+      "roleAssignError": "{email} was created, but the role could not be assigned. Please add it under Roles & permissions."
     },
     "tenantCreation": {
       "nameRequired": "Company name is required",
@@ -8719,7 +8720,7 @@
       "colShareholders": "Shareholders",
       "colCapital": "Capital",
       "colStatus": "Status",
-      "colNotes": "Notes",
+      "colNotes": "Latest note",
       "noResults": "No companies found",
       "showDetails": "Show details",
       "edit": "Edit",
@@ -8749,7 +8750,9 @@
       },
       "bulkDeleteConfirm": "Really delete {count} participations?",
       "bulkDeleteSuccess": "{count} participations deleted",
-      "batchDelete": "Delete"
+      "batchDelete": "Delete",
+      "noteSaved": "Note saved to CRM",
+      "noteSaveError": "Note could not be saved"
     },
     "detail": {
       "edit": "Edit",

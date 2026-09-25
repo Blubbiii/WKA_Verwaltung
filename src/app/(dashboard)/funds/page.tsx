@@ -1,5 +1,6 @@
 "use client";
 
+import { notizAlsAktivitaet, notizText } from "@/lib/crm/notiz";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,7 +71,9 @@ interface Fund {
   name: string;
   legalForm: string | null;
   totalCapital: number | null;
-  notes: string | null;
+  /** Latest CRM note (decision E2) — Fund itself has no notes field. */
+  letzteNotiz: { id: string; title: string; description: string | null; createdAt: string } | null;
+  notizenSichtbar: boolean;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
   fundParks: FundPark[];
   stats: {
@@ -132,6 +135,9 @@ export default function FundsPage() {
   );
 
   const funds = fundsData?.data ?? [];
+  // The server only sends notes with CRM switched on and crm:read.
+  const notizenSichtbar = funds.some((f) => f.notizenSichtbar);
+  const spalten = notizenSichtbar ? 8 : 7;
   const pagination = fundsData?.pagination ?? { page: 1, limit, total: 0, totalPages: 0 };
 
   // Batch selection
@@ -337,7 +343,7 @@ export default function FundsPage() {
                   <TableHead className="text-center">{t("list.colShareholders")}</TableHead>
                   <TableHead className="text-right">{t("list.colCapital")}</TableHead>
                   <TableHead>{t("list.colStatus")}</TableHead>
-                  <TableHead>{t("list.colNotes")}</TableHead>
+                  {notizenSichtbar && <TableHead>{t("list.colNotes")}</TableHead>}
                   <TableHead className="w-[120px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,14 +357,14 @@ export default function FundsPage() {
                       <TableCell><Skeleton className="h-5 w-8 mx-auto" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
                       <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      {notizenSichtbar && <TableCell><Skeleton className="h-5 w-24" /></TableCell>}
                       <TableCell><Skeleton className="h-5 w-8" /></TableCell>
                     </TableRow>
                   ))
                 ) : funds.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={spalten}
                       className="h-32 text-center text-muted-foreground"
                     >
                       {t("list.noResults")}
@@ -420,20 +426,31 @@ export default function FundsPage() {
                           {getStatusBadge(ENTITY_STATUS, fund.status).label}
                         </Badge>
                       </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <EditableCell
-                          value={fund.notes}
-                          onSave={async (val) => {
-                            await fetch(`/api/funds/${fund.id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ notes: val }),
-                            });
-                            refetch();
-                          }}
-                          placeholder="—"
-                        />
-                      </TableCell>
+                      {notizenSichtbar && (
+                        <TableCell onClick={(e) => e.stopPropagation()} title={fund.letzteNotiz ? new Date(fund.letzteNotiz.createdAt).toLocaleDateString("de-DE") : undefined}>
+                          {/* Saving adds a new CRM note (history under "Aktivitäten");
+                              it used to PUT a field Fund does not have. */}
+                          <EditableCell
+                            value={notizText(fund.letzteNotiz)}
+                            onSave={async (val) => {
+                              const notiz = notizAlsAktivitaet(val ?? "", fund.id);
+                              if (!notiz || val === notizText(fund.letzteNotiz)) return;
+                              const res = await fetch("/api/crm/activities", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(notiz),
+                              });
+                              if (!res.ok) {
+                                const err = await res.json().catch(() => ({}));
+                                throw new Error(err.message ?? err.error ?? t("list.noteSaveError"));
+                              }
+                              toast.success(t("list.noteSaved"));
+                              refetch();
+                            }}
+                            placeholder="—"
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button

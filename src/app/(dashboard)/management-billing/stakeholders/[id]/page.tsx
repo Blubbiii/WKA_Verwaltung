@@ -302,24 +302,30 @@ export default function StakeholderDetailPage() {
         reason: newFee.reason || null,
       };
 
+      // The stakeholder PUT ignored the fee sent to it (audit 2026-09). This
+      // route writes the history entry and the current fee together.
       const res = await fetch(
-        `/api/management-billing/stakeholders/${id}`,
+        `/api/management-billing/stakeholders/${id}/fee-history`,
         {
-          method: "PUT",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ addFeeHistory: payload }),
+          body: JSON.stringify(payload),
         }
       );
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
         throw new Error(
-          errorData?.error ?? "Fehler beim Hinzufügen der Gebühr"
+          errorData?.message ?? errorData?.error ?? "Fehler beim Hinzufügen der Gebühr"
         );
       }
 
-      const json = await res.json();
-      setStakeholder(json.stakeholder ?? json);
+      // The response carries the entry only — reload the stakeholder.
+      const neu = await fetch(`/api/management-billing/stakeholders/${id}`);
+      if (neu.ok) {
+        const json = await neu.json();
+        setStakeholder(json.stakeholder ?? json);
+      }
       setFeeDialogOpen(false);
       setNewFee({ feePercentage: "", validFrom: "", reason: "" });
       toast.success("Gebühr erfolgreich hinzugefügt");

@@ -1698,6 +1698,7 @@ model EnergyRevenueType {
   @@unique([code, tenantId])
   @@index([tenantId])
   @@map("energy_revenue_types")
+  turbineProductions   TurbineProduction[]
 }
 
 model EnergySettlementItem {
@@ -3004,6 +3005,11 @@ model TurbineProduction {
   source          ProductionDataSource @default(MANUAL)
   status          ProductionStatus     @default(DRAFT)
   notes           String?
+  // Manually entered revenue (decision E1, 2026-09): stored and shown only,
+  // calculations use the grid operator statement (EnergySettlement).
+  revenueEur      Decimal?             @db.Decimal(14, 2)
+  revenueTypeId   String?
+  revenueType     EnergyRevenueType?   @relation(fields: [revenueTypeId], references: [id], onDelete: SetNull)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime @updatedAt
   turbineId       String

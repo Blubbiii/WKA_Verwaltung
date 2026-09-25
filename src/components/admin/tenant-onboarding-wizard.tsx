@@ -1,5 +1,6 @@
 "use client";
 
+import { systemrolleFuer } from "@/lib/auth/systemrolle";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -427,6 +428,12 @@ export function TenantOnboardingWizard() {
     const successfulEmails: string[] = [];
 
     try {
+      // /api/admin/users drops the role — it is assigned via /roles below
+      // (audit 2026-09: users of a new tenant ended up without any rights).
+      // Superadmins only get system roles on request.
+      const rollenRes = await fetch("/api/admin/roles?includeSystem=true");
+      const rollen: Array<{ id: string; isSystem: boolean; hierarchy: number }> = rollenRes.ok ? await rollenRes.json() : [];
+
       for (const user of validUsers) {
         const tempPassword = generatePassword();
         const res = await fetch("/api/admin/users", {
@@ -437,12 +444,24 @@ export function TenantOnboardingWizard() {
             firstName: user.firstName.trim(),
             lastName: user.lastName.trim(),
             password: tempPassword,
-            role: user.role,
             tenantId: onboardingStatus?.tenant?.id,
           }),
         });
 
         if (res.ok) {
+          const angelegt = await res.json();
+          const roleId = systemrolleFuer(rollen, user.role);
+          const rolleRes = roleId
+            ? await fetch(`/api/admin/users/${angelegt.id}/roles`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ roleId }),
+              })
+            : null;
+          if (!rolleRes?.ok) {
+            // Created, but without rights — say so instead of reporting success.
+            toast.error(t("roleAssignError", { email: user.email }));
+          }
           successfulEmails.push(user.email.trim());
         } else {
           const data = await res.json();
