@@ -1,5 +1,6 @@
 "use client";
 
+import { GesellschaftAuswahl, KontaktAuswahl, ParkAuswahl } from "@/components/auswahl";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,11 +36,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CONTRACT_STATUS } from "@/lib/status-config";
 import { CONTRACT_REMINDER_DAYS_DEFAULT } from "@/lib/config/business-thresholds";
 
-interface SelectOption {
-  id: string;
-  name: string;
-}
-
 const statusOptions = Object.entries(CONTRACT_STATUS).map(([value, { label }]) => ({
   value,
   label,
@@ -51,9 +47,6 @@ export default function EditContractPage() {
   const t = useTranslations("contracts");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [parks, setParks] = useState<SelectOption[]>([]);
-  const [funds, setFunds] = useState<SelectOption[]>([]);
-  const [partners, setPartners] = useState<SelectOption[]>([]);
   const [reminderDays, setReminderDays] = useState<number[]>([...CONTRACT_REMINDER_DAYS_DEFAULT]);
   const [newReminder, setNewReminder] = useState("");
 
@@ -111,12 +104,8 @@ export default function EditContractPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [contractRes, parksRes, fundsRes, personsRes] = await Promise.all([
-          fetch(`/api/contracts/${params.id}`),
-          fetch("/api/parks?limit=100"),
-          fetch("/api/funds?limit=100"),
-          fetch("/api/persons?limit=100"),
-        ]);
+        // Park, company and partner lists come from the pickers themselves.
+        const contractRes = await fetch(`/api/contracts/${params.id}`);
 
         if (contractRes.ok) {
           const contract = await contractRes.json();
@@ -140,23 +129,6 @@ export default function EditContractPage() {
           setReminderDays(contract.reminderDays || [...CONTRACT_REMINDER_DAYS_DEFAULT]);
         }
 
-        if (parksRes.ok) {
-          const data = await parksRes.json();
-          setParks(
-            data.data.map((p: { id: string; name: string; shortName?: string | null }) => ({
-              id: p.id,
-              name: p.shortName || p.name,
-            }))
-          );
-        }
-        if (fundsRes.ok) {
-          const data = await fundsRes.json();
-          setFunds(data.data.map((f: { id: string; name: string }) => ({ id: f.id, name: f.name })));
-        }
-        if (personsRes.ok) {
-          const data = await personsRes.json();
-          setPartners(data.data.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
-        }
       } catch {
       } finally {
         setLoading(false);
@@ -489,21 +461,14 @@ export default function EditContractPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("edit.windpark")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("edit.noWindpark")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="_none">{t("edit.noWindpark")}</SelectItem>
-                          {parks.map((park) => (
-                            <SelectItem key={park.id} value={park.id}>
-                              {park.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <ParkAuswahl
+                          value={field.value === "_none" ? "" : field.value}
+                          onChange={field.onChange}
+                          leerText={t("edit.noWindpark")}
+                          aria-label={t("edit.noWindpark")}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
@@ -514,27 +479,14 @@ export default function EditContractPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("edit.fundLabel")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("edit.noFund")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="_none">{t("edit.noFund")}</SelectItem>
-                          {funds.map((fund) => (
-                            <SelectItem key={fund.id} value={fund.id}>
-                              {fund.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
-                        <Link href="/funds/new" target="_blank">
-                          <Plus className="mr-1 h-3 w-3" />
-                          {t("edit.newFund")}
-                        </Link>
-                      </Button>
+                      <FormControl>
+                        <GesellschaftAuswahl
+                          value={field.value === "_none" ? "" : field.value}
+                          onChange={field.onChange}
+                          leerText={t("edit.noFund")}
+                          aria-label={t("edit.noFund")}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
@@ -545,21 +497,14 @@ export default function EditContractPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("edit.partnerLabel")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("edit.noPartner")} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="_none">{t("edit.noPartner")}</SelectItem>
-                          {partners.map((partner) => (
-                            <SelectItem key={partner.id} value={partner.id}>
-                              {partner.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <KontaktAuswahl
+                          value={field.value === "_none" ? "" : field.value}
+                          onChange={field.onChange}
+                          leerText={t("edit.noPartner")}
+                          aria-label={t("edit.noPartner")}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />

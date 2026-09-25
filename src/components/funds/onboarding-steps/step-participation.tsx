@@ -1,15 +1,9 @@
 "use client";
 
+import { GesellschaftAuswahl } from "@/components/auswahl";
 import { useEffect, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import type { ParticipationData, Fund } from "../onboarding-types";
@@ -78,28 +72,18 @@ export function StepParticipation({ data, onChange, errors }: StepParticipationP
             <span className="text-sm text-muted-foreground">Gesellschaften werden geladen...</span>
           </div>
         ) : (
-          <Select value={data.fundId} onValueChange={handleFundChange}>
-            <SelectTrigger
-              id="onb-fund"
-              aria-invalid={!!errors.fundId}
-              aria-describedby={errors.fundId ? "onb-fund-error" : undefined}
-            >
-              <SelectValue placeholder="Gesellschaft auswählen" />
-            </SelectTrigger>
-            <SelectContent>
-              {funds.map((fund) => (
-                <SelectItem key={fund.id} value={fund.id}>
-                  {fund.name}
-                  {fund.legalForm ? ` (${fund.legalForm})` : ""}
-                </SelectItem>
-              ))}
-              {funds.length === 0 && (
-                <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  Keine Gesellschaften gefunden
-                </div>
-              )}
-            </SelectContent>
-          </Select>
+          <GesellschaftAuswahl
+            id="onb-fund"
+            value={data.fundId}
+            onChange={handleFundChange}
+            placeholder="Gesellschaft auswählen"
+            aria-label="Gesellschaft"
+            onAngelegt={(neu) => {
+              // Name for the summary; the local list does not know it yet.
+              setFunds((vorher) => [...vorher, { id: neu.id, name: neu.name } as Fund]);
+              onChange({ ...data, fundId: neu.id, fundName: neu.name });
+            }}
+          />
         )}
         {errors.fundId && (
           <p id="onb-fund-error" className="text-sm text-destructive">

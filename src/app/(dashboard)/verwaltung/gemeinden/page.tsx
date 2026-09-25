@@ -12,21 +12,13 @@
  * für die Zerlegung nach § 29 GewStG, die der Steuerberater vornimmt.
  */
 
+import { GemeindeDialog } from "@/components/verwaltung/gemeinde-dialog";
 import { useCallback, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Building2, Download, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -74,7 +66,6 @@ export default function GemeindenPage() {
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", officialKey: "", state: "" });
   // null = create, otherwise the id being edited. Editing existed in the API
   // (PATCH) only — a typo in a name or key could not be fixed.
   const [editId, setEditId] = useState<string | null>(null);
@@ -102,37 +93,6 @@ export default function GemeindenPage() {
       return res.json();
     },
     staleTime: 60_000,
-  });
-
-  const createMunicipality = useMutation({
-    mutationFn: async (input: typeof form) => {
-      const res = await fetch(editId ? `/api/municipalities/${editId}` : "/api/municipalities", {
-        method: editId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: input.name,
-          officialKey: input.officialKey || null,
-          state: input.state || null,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        // apiError puts the message into `error`
-        throw new Error(err.error ?? err.message ?? "Speichern fehlgeschlagen");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/municipalities"] });
-      queryClient.invalidateQueries({
-        queryKey: ["/api/regulatory/capacity-by-municipality"],
-      });
-      setDialogOpen(false);
-      setForm({ name: "", officialKey: "", state: "" });
-      toast.success(editId ? "Gemeinde gespeichert" : "Gemeinde angelegt");
-      setEditId(null);
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMunicipality = useMutation({
@@ -188,7 +148,7 @@ export default function GemeindenPage() {
             Gemeinde.
           </p>
         </div>
-        <Button onClick={() => { setEditId(null); setForm({ name: "", officialKey: "", state: "" }); setDialogOpen(true); }}>
+        <Button onClick={() => { setEditId(null); setDialogOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />
           Gemeinde anlegen
         </Button>
@@ -290,7 +250,7 @@ export default function GemeindenPage() {
         </CardContent>
       </Card>
 
-      <MunicipalityBenefitSection year={year} municipalities={municipalities} />
+      <MunicipalityBenefitSection year={year} />
 
       {/* ------------------------------------------------------------------ */}
       {/* Stammdaten                                                          */}
@@ -311,7 +271,7 @@ export default function GemeindenPage() {
               description:
                 "Ohne Gemeinden lässt sich keine Anlage zuordnen und die Auswertung bleibt leer.",
               action: (
-                <Button onClick={() => { setEditId(null); setForm({ name: "", officialKey: "", state: "" }); setDialogOpen(true); }}>
+                <Button onClick={() => { setEditId(null); setDialogOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Gemeinde anlegen
                 </Button>
@@ -378,7 +338,6 @@ export default function GemeindenPage() {
                       size="icon"
                       onClick={() => {
                         setEditId(m.id);
-                        setForm({ name: m.name, officialKey: m.officialKey ?? "", state: m.state ?? "" });
                         setDialogOpen(true);
                       }}
                       aria-label={`${m.name} bearbeiten`}
@@ -402,70 +361,14 @@ export default function GemeindenPage() {
         </CardContent>
       </Card>
 
-      <Dialog
+      <GemeindeDialog
         open={dialogOpen}
         onOpenChange={(offen) => {
           setDialogOpen(offen);
-          if (!offen) {
-            setEditId(null);
-            setForm({ name: "", officialKey: "", state: "" });
-          }
+          if (!offen) setEditId(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editId ? "Gemeinde bearbeiten" : "Gemeinde anlegen"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="m-name">Name</Label>
-              <Input
-                id="m-name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Musterdorf"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m-key">Amtlicher Gemeindeschlüssel</Label>
-              <Input
-                id="m-key"
-                value={form.officialKey}
-                onChange={(e) =>
-                  setForm({ ...form, officialKey: e.target.value })
-                }
-                placeholder="03456001"
-                inputMode="numeric"
-              />
-              <p className="text-xs text-muted-foreground">
-                Acht Ziffern. Optional — aber der Steuerberater ordnet darüber
-                zu, und es unterscheidet die fünfzehn Gemeinden namens
-                &bdquo;Neustadt&ldquo;.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="m-state">Bundesland</Label>
-              <Input
-                id="m-state"
-                value={form.state}
-                onChange={(e) => setForm({ ...form, state: e.target.value })}
-                placeholder="Niedersachsen"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button
-              onClick={() => createMunicipality.mutate(form)}
-              disabled={!form.name.trim() || createMunicipality.isPending}
-            >
-              {editId ? "Speichern" : "Anlegen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        gemeinde={editId ? municipalities.find((m) => m.id === editId) ?? null : null}
+      />
 
       {confirmDialog}
     </div>

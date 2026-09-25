@@ -1,5 +1,6 @@
 "use client";
 
+import { KostenstelleDialog, KOSTENSTELLEN_TYPEN } from "@/components/wirtschaftsplan/kostenstelle-dialog";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -7,10 +8,6 @@ import { useTranslations } from "next-intl";
 import {
   Plus,
   RefreshCw,
-  Building2,
-  Wind,
-  Briefcase,
-  LayoutGrid,
   Loader2,
   Search,
 } from "lucide-react";
@@ -26,22 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 
 const fetcher = (url: string) =>
@@ -50,20 +32,7 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const TYPE_META: Record<
-  string,
-  { key: string; icon: React.ElementType; color: string }
-> = {
-  PARK: { key: "typePark", icon: Building2, color: "text-blue-600" },
-  TURBINE: { key: "typeTurbine", icon: Wind, color: "text-green-600" },
-  FUND: { key: "typeFund", icon: Briefcase, color: "text-purple-600" },
-  OVERHEAD: { key: "typeOverhead", icon: LayoutGrid, color: "text-orange-600" },
-  CUSTOM: {
-    key: "typeCustom",
-    icon: LayoutGrid,
-    color: "text-muted-foreground",
-  },
-};
+const TYPE_META = KOSTENSTELLEN_TYPEN;
 
 interface CostCenter {
   id: string;
@@ -78,12 +47,6 @@ interface CostCenter {
   _count: { budgetLines: number; children: number };
 }
 
-interface NewCostCenterForm {
-  code: string;
-  name: string;
-  type: string;
-  description: string;
-}
 
 export default function CostCentersPage() {
   const router = useRouter();
@@ -99,13 +62,6 @@ export default function CostCentersPage() {
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState<NewCostCenterForm>({
-    code: "",
-    name: "",
-    type: "CUSTOM",
-    description: "",
-  });
-  const [creating, setCreating] = useState(false);
 
   const filtered = (data ?? []).filter(
     (c) =>
@@ -130,38 +86,6 @@ export default function CostCentersPage() {
       toast.error(e instanceof Error ? e.message : t("syncError"));
     } finally {
       setSyncing(false);
-    }
-  }
-
-  async function handleCreate() {
-    if (!form.code.trim() || !form.name.trim()) {
-      toast.error(t("validationRequired"));
-      return;
-    }
-    setCreating(true);
-    try {
-      const res = await fetch("/api/cost-centers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          code: form.code.trim().toUpperCase(),
-          name: form.name.trim(),
-          type: form.type,
-          description: form.description.trim() || null,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? t("createError"));
-      }
-      toast.success(t("createSuccess"));
-      setShowNew(false);
-      setForm({ code: "", name: "", type: "CUSTOM", description: "" });
-      mutate();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("createError"));
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -320,75 +244,7 @@ export default function CostCentersPage() {
         </CardContent>
       </Card>
 
-      {/* New Cost Center Dialog */}
-      <Dialog open={showNew} onOpenChange={setShowNew}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("dialogTitle")}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{t("fieldCode")}</Label>
-                <Input
-                  value={form.code}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, code: e.target.value }))
-                  }
-                  placeholder={t("placeholderCode")}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>{t("fieldType")}</Label>
-                <Select
-                  value={form.type}
-                  onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(TYPE_META).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {t(v.key)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("fieldName")}</Label>
-              <Input
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-                placeholder={t("placeholderName")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("fieldDescription")}</Label>
-              <Input
-                value={form.description}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-                placeholder={t("placeholderDescription")}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNew(false)}>
-              {t("cancelButton")}
-            </Button>
-            <Button onClick={handleCreate} disabled={creating}>
-              {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {t("createButton")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <KostenstelleDialog open={showNew} onOpenChange={setShowNew} onCreated={() => mutate()} />
     </div>
   );
 }

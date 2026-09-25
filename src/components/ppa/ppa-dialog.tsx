@@ -7,6 +7,7 @@
  * Handler. Dieser Dialog ist die fehlende Hälfte.
  */
 
+import { ParkAuswahl } from "@/components/auswahl";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useMutation } from "@tanstack/react-query";
@@ -32,8 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useApiQuery } from "@/hooks/useApiQuery";
-import { PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
 import {
   leeresPpaFormular,
   ppaFehler,
@@ -65,11 +64,6 @@ export function PpaDialog({ open, onOpenChange, modus, ppa, onSaved }: PpaDialog
     setFormular(ppa ? ppaFormularAus(ppa) : leeresPpaFormular());
     setGeprueft(false);
   }, [open, ppa]);
-
-  const { data: parksData } = useApiQuery<{ data: { id: string; name: string }[] }>(
-    ["ppa-parks"],
-    open && modus === "neu" ? `/api/parks?limit=${PAGE_SIZE_DROPDOWN}` : null,
-  );
 
   const speichern = useMutation({
     mutationFn: async () => {
@@ -123,16 +117,12 @@ export function PpaDialog({ open, onOpenChange, modus, ppa, onSaved }: PpaDialog
 
           <Feld id="ppa-park" label={`${t("colPark")} *`} fehler={zeigeFehler("parkId") ? t("form.required") : undefined}>
             {modus === "neu" ? (
-              <Select value={formular.parkId} onValueChange={(v) => setze("parkId", v)}>
-                <SelectTrigger id="ppa-park">
-                  <SelectValue placeholder={t("form.parkPlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(parksData?.data ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ParkAuswahl
+                id="ppa-park"
+                value={formular.parkId}
+                onChange={(v) => setze("parkId", v)}
+                placeholder={t("form.parkPlaceholder")}
+              />
             ) : (
               // The update API does not move a PPA to another park.
               <Input id="ppa-park" value={(ppa as { park?: { name?: string } } | null)?.park?.name ?? ""} disabled />

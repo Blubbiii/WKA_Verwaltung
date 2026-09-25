@@ -9,6 +9,7 @@
  * nächsten Falls.
  */
 
+import { GemeindeAuswahl } from "@/components/auswahl";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -69,13 +70,7 @@ interface TurbineOption {
   park: { name: string } | null;
 }
 
-export function MunicipalityBenefitSection({
-  year,
-  municipalities,
-}: {
-  year: number;
-  municipalities: { id: string; name: string }[];
-}) {
+export function MunicipalityBenefitSection({ year }: { year: number }) {
   const queryClient = useQueryClient();
   const { confirm, confirmDialog } = useConfirm();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -227,7 +222,6 @@ export function MunicipalityBenefitSection({
           className="shrink-0"
           variant="outline"
           onClick={() => setDialogOpen(true)}
-          disabled={municipalities.length === 0}
         >
           <Plus className="mr-2 h-4 w-4" />
           Vereinbarung
@@ -283,13 +277,9 @@ export function MunicipalityBenefitSection({
             empty={{
               icon: HandCoins,
               title:
-                municipalities.length === 0
-                  ? "Zuerst eine Gemeinde anlegen"
-                  : "Noch keine Vereinbarung erfasst",
+                "Noch keine Vereinbarung erfasst",
               description:
-                municipalities.length === 0
-                  ? "Ohne Gemeinde lässt sich keine Vereinbarung erfassen."
-                  : "Ohne Vereinbarung wird nichts berechnet.",
+                "Ohne Vereinbarung wird nichts berechnet.",
             }}
             columns={[
               {
@@ -400,21 +390,12 @@ export function MunicipalityBenefitSection({
 
             <div className="space-y-1.5">
               <Label>Gemeinde</Label>
-              <Select
+              <GemeindeAuswahl
                 value={form.municipalityId}
-                onValueChange={(v) => setForm({ ...form, municipalityId: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Gemeinde wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {municipalities.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(v) => setForm({ ...form, municipalityId: v })}
+                placeholder="Gemeinde wählen"
+                aria-label="Gemeinde"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

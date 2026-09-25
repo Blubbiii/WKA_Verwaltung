@@ -156,6 +156,29 @@ Je Sache ein Wort, festgelegt mit dem Fachbereich:
   Prisma-Client.
 - Wächter-Tests für Glossar und Umlaute.
 
+**Aus der Auswahl anlegen**
+
+Fehlte beim Vertrag die Gesellschaft, der Partner oder der Windpark, hieß das
+bisher: Assistent verlassen, anlegen, von vorn anfangen. Jetzt steht in der
+Auswahl unten „+ Neue Gesellschaft anlegen“ — mit dem Suchtext als
+Vorschlag („„Siedecamp“ als neue Gesellschaft anlegen“). Das volle Formular
+öffnet als Dialog, der neue Eintrag ist danach ausgewählt, alle übrigen
+Eingaben bleiben.
+
+- Für Gesellschaft, Windpark (der ganze Assistent), Kontakt (Firma oder
+  Person wird am Suchtext erkannt; mit CRM samt Dublettenprüfung und
+  „Vorhandenen übernehmen“), Lieferant, Gemeinde und Kostenstelle — nur mit
+  dem Recht zum Anlegen.
+- Eingesetzt in: Vertrag (Assistent und Bearbeiten), Rechnung (neu und
+  bearbeiten), PPA, Eingangsrechnung (Lieferant, Aufteilung auf
+  Gesellschaften), Beteiligung, Anlage und Gemeindebeteiligung (Gemeinde),
+  Budget (Kostenstelle). Nicht beim BF-Vertrag: dort wählt der Superadmin
+  Parks über Mandanten hinweg.
+- Listenseite und Dialog nutzen dasselbe Formular; Wächter-Test.
+- Nebenbei: „Vertrag bearbeiten“ zeigte leere Vertragspartner (die Seite las
+  ein Feld `name`, das Personen nicht haben), mehrere Auswahlfelder waren auf
+  100 Einträge begrenzt.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

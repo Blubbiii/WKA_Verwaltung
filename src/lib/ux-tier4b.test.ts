@@ -120,7 +120,9 @@ describe("Lange Auswahllisten sind durchsuchbar (#19)", () => {
 
   it("der Vertrags-Assistent ebenso", () => {
     const wizard = src("components/contracts/contract-wizard.tsx");
-    expect(wizard).toContain("<Combobox");
+    // KontaktAuswahl is the searchable Combobox plus "create" (Aus der Auswahl anlegen).
+    expect(wizard).toContain("<KontaktAuswahl");
+    expect(src("components/auswahl/auswahl-mit-anlegen.tsx")).toContain("<Combobox");
     expect(codeOnly(wizard)).not.toContain("<SelectItem key={person.id}");
   });
 

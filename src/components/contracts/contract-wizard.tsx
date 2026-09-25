@@ -1,8 +1,9 @@
 "use client";
 
+import { GesellschaftAuswahl, KontaktAuswahl, ParkAuswahl } from "@/components/auswahl";
+import { PAGE_SIZE_SELECTABLE } from "@/lib/config/pagination";
 import { useState, useEffect, useCallback } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
-import { Combobox } from "@/components/ui/combobox";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -236,49 +237,51 @@ export function ContractWizard() {
     message: tToast("unsavedWarning"),
   });
 
-  // Load dropdown data on mount
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [parksRes, fundsRes, personsRes] = await Promise.all([
-          fetch("/api/parks?limit=100"),
-          fetch("/api/funds?limit=100"),
-          fetch("/api/persons?limit=500"),
-        ]);
+  // Lists for partner details and the summary. Reloaded when a picker
+  // creates a record, so step 4 shows its name too.
+  const ladeStammdaten = useCallback(async () => {
+    try {
+      const [parksRes, fundsRes, personsRes] = await Promise.all([
+        fetch(`/api/parks?limit=${PAGE_SIZE_SELECTABLE}`),
+        fetch(`/api/funds?limit=${PAGE_SIZE_SELECTABLE}`),
+        fetch(`/api/persons?limit=${PAGE_SIZE_SELECTABLE}`),
+      ]);
 
-        if (parksRes.ok) {
-          const data = await parksRes.json();
-          setParks(
-            (data.data || []).map(
-              (p: { id: string; name: string; shortName: string | null }) => ({
-                id: p.id,
-                name: p.shortName || p.name,
-                shortName: p.shortName,
-              })
-            )
-          );
-        }
-        if (fundsRes.ok) {
-          const data = await fundsRes.json();
-          setFunds(
-            (data.data || []).map((f: { id: string; name: string }) => ({
-              id: f.id,
-              name: f.name,
-            }))
-          );
-        }
-        if (personsRes.ok) {
-          const data = await personsRes.json();
-          setPersons(data.data || []);
-        }
-      } catch {
-        toast.error(tToast("loadStammdatenError"));
-      } finally {
-        setLoadingData(false);
+      if (parksRes.ok) {
+        const data = await parksRes.json();
+        setParks(
+          (data.data || []).map(
+            (p: { id: string; name: string; shortName: string | null }) => ({
+              id: p.id,
+              name: p.shortName || p.name,
+              shortName: p.shortName,
+            })
+          )
+        );
       }
+      if (fundsRes.ok) {
+        const data = await fundsRes.json();
+        setFunds(
+          (data.data || []).map((f: { id: string; name: string }) => ({
+            id: f.id,
+            name: f.name,
+          }))
+        );
+      }
+      if (personsRes.ok) {
+        const data = await personsRes.json();
+        setPersons(data.data || []);
+      }
+    } catch {
+      toast.error(tToast("loadStammdatenError"));
+    } finally {
+      setLoadingData(false);
     }
-    fetchData();
   }, [tToast]);
+
+  useEffect(() => {
+    void ladeStammdaten();
+  }, [ladeStammdaten]);
 
   // Helper: get display name for a person
   const getPersonLabel = useCallback((person: Person): string => {
@@ -851,78 +854,36 @@ export function ContractWizard() {
               {/* Park */}
               <div className="space-y-2">
                 <Label htmlFor="parkId">Windpark</Label>
-                <Select
-                  value={formData.parkId || "_none"}
-                  onValueChange={(v) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      parkId: v === "_none" ? "" : v,
-                    }))
-                  }
-                >
-                  <SelectTrigger id="parkId">
-                    <SelectValue placeholder="Kein Windpark" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Kein Windpark</SelectItem>
-                    {parks.map((park) => (
-                      <SelectItem key={park.id} value={park.id}>
-                        {park.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ParkAuswahl
+                  id="parkId"
+                  value={formData.parkId}
+                  onChange={(v) => setFormData((prev) => ({ ...prev, parkId: v }))}
+                  leerText="Kein Windpark"
+                  onAngelegt={() => void ladeStammdaten()}
+                />
               </div>
 
               {/* Fund */}
               <div className="space-y-2">
                 <Label htmlFor="fundId">Gesellschaft</Label>
-                <Select
-                  value={formData.fundId || "_none"}
-                  onValueChange={(v) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      fundId: v === "_none" ? "" : v,
-                    }))
-                  }
-                >
-                  <SelectTrigger id="fundId">
-                    <SelectValue placeholder="Keine Gesellschaft" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">Keine Gesellschaft</SelectItem>
-                    {funds.map((fund) => (
-                      <SelectItem key={fund.id} value={fund.id}>
-                        {fund.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <GesellschaftAuswahl
+                  id="fundId"
+                  value={formData.fundId}
+                  onChange={(v) => setFormData((prev) => ({ ...prev, fundId: v }))}
+                  leerText="Keine Gesellschaft"
+                  onAngelegt={() => void ladeStammdaten()}
+                />
               </div>
 
               {/* Partner */}
               <div className="space-y-2">
                 <Label htmlFor="partnerId">Vertragspartner</Label>
-                {/* Bedienaufwand #19: persons wird mit limit=500 geladen —
-                    ein Select ohne Suchfeld ist darin nicht bedienbar. */}
-                <Combobox
+                <KontaktAuswahl
                   id="partnerId"
-                  value={formData.partnerId || "_none"}
-                  onChange={(v) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      partnerId: v === "_none" ? "" : v,
-                    }))
-                  }
-                  placeholder="Kein Partner"
-                  options={[
-                    { value: "_none", label: "Kein Partner" },
-                    ...persons.map((person) => ({
-                      value: person.id,
-                      label: getPersonLabel(person),
-                      description: person.personType === "legal" ? "Firma" : "Person",
-                    })),
-                  ]}
+                  value={formData.partnerId}
+                  onChange={(v) => setFormData((prev) => ({ ...prev, partnerId: v }))}
+                  leerText="Kein Partner"
+                  onAngelegt={() => void ladeStammdaten()}
                 />
               </div>
             </div>

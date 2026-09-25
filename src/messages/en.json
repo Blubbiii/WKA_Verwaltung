@@ -237,6 +237,38 @@
       "edit": "Edit",
       "more": "More actions",
       "delete": "Delete"
+    },
+    "auswahl": {
+      "hinweis": "After saving, the new entry is selected right away — your other input is kept.",
+      "gesellschaft": {
+        "neu": "Create new company",
+        "mitName": "Create “{name}” as new company",
+        "titel": "New company"
+      },
+      "park": {
+        "neu": "Create new wind farm",
+        "mitName": "Create “{name}” as new wind farm",
+        "titel": "New wind farm"
+      },
+      "kontakt": {
+        "neu": "Create new contact",
+        "mitName": "Create “{name}” as new contact",
+        "vorhandenen": "Use existing",
+        "person": "Person",
+        "firma": "Company"
+      },
+      "lieferant": {
+        "neu": "Create new vendor",
+        "mitName": "Create “{name}” as new vendor"
+      },
+      "gemeinde": {
+        "neu": "Create new municipality",
+        "mitName": "Create “{name}” as new municipality"
+      },
+      "kostenstelle": {
+        "neu": "Create new cost center",
+        "mitName": "Create “{name}” as new cost center"
+      }
     }
   },
   "statusLabels": {

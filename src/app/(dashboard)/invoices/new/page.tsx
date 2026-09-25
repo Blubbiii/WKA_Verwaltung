@@ -1,5 +1,6 @@
 "use client";
 
+import { GesellschaftAuswahl, ParkAuswahl } from "@/components/auswahl";
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -148,8 +149,6 @@ function NewInvoiceContent() {
     Record<"STANDARD" | "REDUCED" | "EXEMPT", number>
   >(FALLBACK_TAX_RATES);
 
-  const [parks, setParks] = useState<Array<{ id: string; name: string }>>([]);
-  const [funds, setFunds] = useState<Array<{ id: string; name: string }>>([]);
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTargetItemId, setTemplateTargetItemId] = useState<string | null>(null);
@@ -236,17 +235,6 @@ function NewInvoiceContent() {
   }, [searchParams, t]);
 
   useEffect(() => {
-    // Lade Parks und Gesellschaften für Dropdown
-    fetch("/api/parks?limit=100")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setParks(data.data || []))
-      .catch(() => { /* silently ignore */ });
-
-    fetch("/api/funds?limit=100")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setFunds(data.data || []))
-      .catch(() => { /* silently ignore */ });
-
     // Load skonto + tax defaults from tenant settings
     fetch("/api/admin/tenant-settings")
       .then((res) => res.ok ? res.json() : Promise.reject())
@@ -907,51 +895,21 @@ function NewInvoiceContent() {
               <Separator />
               <div className="space-y-2">
                 <Label htmlFor="parkId">{t("windparkLabel")}</Label>
-                <Select
-                  value={formData.parkId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, parkId: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="parkId">
-                    <SelectValue placeholder={t("windparkPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("noAssignment")}</SelectItem>
-                    {parks.map((park) => (
-                      <SelectItem key={park.id} value={park.id}>
-                        {park.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ParkAuswahl
+                  id="parkId"
+                  value={formData.parkId}
+                  onChange={(value) => setFormData({ ...formData, parkId: value })}
+                  leerText={t("noAssignment")}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fundId">{t("fundLabel")}</Label>
-                <Select
-                  value={formData.fundId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, fundId: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="fundId">
-                    <SelectValue placeholder={t("fundPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("noAssignment")}</SelectItem>
-                    {funds.map((fund) => (
-                      <SelectItem key={fund.id} value={fund.id}>
-                        {fund.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild>
-                  <Link href="/funds/new" target="_blank">
-                    <Plus className="mr-1 h-3 w-3" />
-                    {t("createNewFund")}
-                  </Link>
-                </Button>
+                <GesellschaftAuswahl
+                  id="fundId"
+                  value={formData.fundId}
+                  onChange={(value) => setFormData({ ...formData, fundId: value })}
+                  leerText={t("noAssignment")}
+                />
               </div>
             </CardContent>
           </Card>

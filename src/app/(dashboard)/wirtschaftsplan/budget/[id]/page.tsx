@@ -1,5 +1,6 @@
 "use client";
 
+import { KostenstelleAuswahl } from "@/components/auswahl";
 import { useState, useCallback, useEffect, use } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -99,34 +100,24 @@ function rowSum(line: BudgetLine): number {
 interface LineRowProps {
   line: BudgetLine;
   isLocked: boolean;
-  costCenters: CostCenter[] | undefined;
   updateLine: (localId: string, field: string, value: string | number) => void;
   removeLine: (localId: string) => void;
 }
 
-function LineRow({ line, isLocked, costCenters, updateLine, removeLine }: LineRowProps) {
+function LineRow({ line, isLocked, updateLine, removeLine }: LineRowProps) {
   const t = useTranslations("wirtschaftsplan.budget");
   const annual = rowSum(line);
   return (
     <tr className="border-b hover:bg-muted/20 group">
       {/* Kostenstelle */}
       <td className="px-2 py-1 min-w-[140px]">
-        <Select
+        <KostenstelleAuswahl
+          className="h-7 text-xs"
           value={line.costCenterId}
-          onValueChange={(v) => updateLine(line._localId!, "costCenterId", v)}
+          onChange={(v) => updateLine(line._localId!, "costCenterId", v)}
           disabled={isLocked}
-        >
-          <SelectTrigger className="h-7 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(costCenters ?? []).map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          aria-label="Kostenstelle"
+        />
       </td>
       {/* Kategorie */}
       <td className="px-2 py-1 min-w-[140px]">
@@ -435,7 +426,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                         {t("detailSectionRevenue")}
                       </td>
                     </tr>
-                    {revenueLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
+                    {revenueLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} updateLine={updateLine} removeLine={removeLine} />)}
                   </>
                 )}
                 {costLines.length > 0 && (
@@ -445,7 +436,7 @@ export default function BudgetDetailPage({ params }: { params: Promise<{ id: str
                         {t("detailSectionExpenses")}
                       </td>
                     </tr>
-                    {costLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} costCenters={costCenters} updateLine={updateLine} removeLine={removeLine} />)}
+                    {costLines.map((l) => <LineRow key={l._localId} line={l} isLocked={isLocked} updateLine={updateLine} removeLine={removeLine} />)}
                   </>
                 )}
                 {lines.length === 0 && (

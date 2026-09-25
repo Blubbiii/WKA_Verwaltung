@@ -1,17 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { GesellschaftAuswahl } from "@/components/auswahl";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,11 +18,6 @@ interface Split {
   description: string;
   datevAccount: string;
   outgoingInvoiceId?: string | null;
-}
-
-interface Fund {
-  id: string;
-  name: string;
 }
 
 interface SplitEditorProps {
@@ -48,16 +37,8 @@ export function SplitEditor({
 }: SplitEditorProps) {
   const tToast = useTranslations("inbox.toasts");
   const [splits, setSplits] = useState<Split[]>(initialSplits);
-  const [funds, setFunds] = useState<Fund[]>([]);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/funds?limit=200")
-      .then((r) => r.json())
-      .then((data) => setFunds(data.data ?? []))
-      .catch(() => {});
-  }, []);
 
   const totalPercent = splits.reduce((s, sp) => s + (sp.splitPercent ?? 0), 0);
   const totalAmount = splits.reduce((s, sp) => s + (sp.splitAmount ?? 0), 0);
@@ -140,22 +121,13 @@ export function SplitEditor({
         return (
           <div key={idx} className="border rounded-md p-3 space-y-2">
             <div className="flex items-center gap-2">
-              <Select
+              <GesellschaftAuswahl
+                className="flex-1"
                 value={split.fundId}
-                onValueChange={(v) => updateSplit(idx, "fundId", v)}
+                onChange={(v) => updateSplit(idx, "fundId", v)}
                 disabled={disabled || hasOutgoing}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Gesellschaft auswählen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {funds.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Gesellschaft auswählen..."
+              />
 
               {!disabled && !hasOutgoing && (
                 <Button aria-label="Löschen"

@@ -4,7 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, User, X, Search } from "lucide-react";
+import { Building2, User, X, Search, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { usePermissions } from "@/hooks/usePermissions";
+import { anlegenEintrag } from "@/lib/ui/anlegen-eintrag";
+import { VendorDialog } from "@/components/vendors/vendor-dialog";
 
 interface VendorResult {
   type: "vendor";
@@ -44,6 +48,12 @@ export function VendorAutocomplete({
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  // "Aus der Auswahl anlegen": create a vendor without leaving the invoice.
+  const t = useTranslations("common.auswahl");
+  const { hasPermission } = usePermissions();
+  const darfAnlegen = hasPermission("vendors:create");
+  const [anlegenOffen, setAnlegenOffen] = useState(false);
+  const [vorbelegung, setVorbelegung] = useState("");
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -163,7 +173,7 @@ export function VendorAutocomplete({
             <div className="px-3 py-2 text-sm text-muted-foreground">Suche...</div>
           ) : results.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">
-              Keine Ergebnisse — Rechnung ohne Lieferant speichern oder Lieferant anlegen
+              Keine Ergebnisse — Rechnung ohne Lieferant speichern{darfAnlegen ? " oder unten anlegen" : ""}
             </div>
           ) : (
             <ul className="max-h-60 overflow-auto py-1">
@@ -189,7 +199,37 @@ export function VendorAutocomplete({
               ))}
             </ul>
           )}
+          {darfAnlegen && !loading && (() => {
+            const eintrag = anlegenEintrag(query, { neu: t("lieferant.neu"), mitName: t("lieferant.mitName") }, results.length > 0);
+            return (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 border-t px-3 py-2 text-left text-sm font-medium text-primary hover:bg-accent"
+                onClick={() => {
+                  setVorbelegung(eintrag.vorbelegung);
+                  setOpen(false);
+                  setAnlegenOffen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">{eintrag.text}</span>
+              </button>
+            );
+          })()}
         </div>
+      )}
+      {darfAnlegen && (
+        <VendorDialog
+          open={anlegenOffen}
+          onClose={() => setAnlegenOffen(false)}
+          vorbelegung={vorbelegung}
+          onSaved={(v) => {
+            if (!v) return;
+            onChange(v.id, { name: v.name });
+            setQuery("");
+            setResults([]);
+          }}
+        />
       )}
     </div>
   );

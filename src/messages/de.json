@@ -237,6 +237,38 @@
       "edit": "Bearbeiten",
       "more": "Weitere Aktionen",
       "delete": "Löschen"
+    },
+    "auswahl": {
+      "hinweis": "Nach dem Speichern ist der neue Eintrag gleich ausgewählt — Ihre übrigen Eingaben bleiben erhalten.",
+      "gesellschaft": {
+        "neu": "Neue Gesellschaft anlegen",
+        "mitName": "„{name}“ als neue Gesellschaft anlegen",
+        "titel": "Neue Gesellschaft"
+      },
+      "park": {
+        "neu": "Neuen Windpark anlegen",
+        "mitName": "„{name}“ als neuen Windpark anlegen",
+        "titel": "Neuer Windpark"
+      },
+      "kontakt": {
+        "neu": "Neuen Kontakt anlegen",
+        "mitName": "„{name}“ als neuen Kontakt anlegen",
+        "vorhandenen": "Vorhandenen übernehmen",
+        "person": "Person",
+        "firma": "Firma"
+      },
+      "lieferant": {
+        "neu": "Neuen Lieferanten anlegen",
+        "mitName": "„{name}“ als neuen Lieferanten anlegen"
+      },
+      "gemeinde": {
+        "neu": "Neue Gemeinde anlegen",
+        "mitName": "„{name}“ als neue Gemeinde anlegen"
+      },
+      "kostenstelle": {
+        "neu": "Neue Kostenstelle anlegen",
+        "mitName": "„{name}“ als neue Kostenstelle anlegen"
+      }
     }
   },
   "statusLabels": {

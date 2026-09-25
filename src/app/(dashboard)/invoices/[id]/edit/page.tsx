@@ -1,5 +1,6 @@
 "use client";
 
+import { GesellschaftAuswahl, ParkAuswahl } from "@/components/auswahl";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -169,8 +170,6 @@ export default function EditInvoicePage({
   const [skontoPercent, setSkontoPercent] = useState(2);
   const [skontoDays, setSkontoDays] = useState(7);
 
-  const [parks, setParks] = useState<Array<{ id: string; name: string }>>([]);
-  const [funds, setFunds] = useState<Array<{ id: string; name: string }>>([]);
   const [recipientDialogOpen, setRecipientDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateTargetItemId, setTemplateTargetItemId] = useState<string | null>(null);
@@ -244,19 +243,6 @@ export default function EditInvoicePage({
 
     fetchInvoice();
   }, [id, router, t]);
-
-  // Lade Parks und Gesellschaften
-  useEffect(() => {
-    fetch("/api/parks?limit=100")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setParks(data.data || []))
-      .catch(() => { /* silently ignore */ });
-
-    fetch("/api/funds?limit=100")
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data) => setFunds(data.data || []))
-      .catch(() => { /* silently ignore */ });
-  }, []);
 
   function handleAddItem() {
     setItems([
@@ -968,45 +954,21 @@ export default function EditInvoicePage({
               <Separator />
               <div className="space-y-2">
                 <Label htmlFor="parkId">{t("fieldPark")}</Label>
-                <Select
-                  value={formData.parkId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, parkId: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="parkId">
-                    <SelectValue placeholder={t("selectNoneAssign")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("selectNone")}</SelectItem>
-                    {parks.map((park) => (
-                      <SelectItem key={park.id} value={park.id}>
-                        {park.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ParkAuswahl
+                  id="parkId"
+                  value={formData.parkId}
+                  onChange={(value) => setFormData({ ...formData, parkId: value })}
+                  leerText={t("selectNone")}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fundId">{t("fieldFund")}</Label>
-                <Select
-                  value={formData.fundId || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, fundId: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger id="fundId">
-                    <SelectValue placeholder={t("selectNoneAssign")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("selectNone")}</SelectItem>
-                    {funds.map((fund) => (
-                      <SelectItem key={fund.id} value={fund.id}>
-                        {fund.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <GesellschaftAuswahl
+                  id="fundId"
+                  value={formData.fundId}
+                  onChange={(value) => setFormData({ ...formData, fundId: value })}
+                  leerText={t("selectNone")}
+                />
               </div>
             </CardContent>
           </Card>

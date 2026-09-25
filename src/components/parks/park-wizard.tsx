@@ -92,15 +92,24 @@ const LEASE_SETTLEMENT_MODE_LABELS: Record<LeaseSettlementMode, { label: string;
   },
 };
 
-export function ParkWizard() {
+export interface ParkWizardProps {
+  /** Prefill for the name, e.g. the text typed into a park picker's search. */
+  vorbelegung?: string;
+  /** Opened as dialog from a picker: hand the new park back instead of navigating. */
+  onCreated?: (park: { id: string; name: string }) => void;
+  onCancel?: () => void;
+}
+
+export function ParkWizard({ vorbelegung, onCreated, onCancel }: ParkWizardProps = {}) {
   const router = useRouter();
+  const alsDialog = !!onCreated;
   const t = useTranslations("parks.wizard");
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showCompensation, setShowCompensation] = useState(false);
 
   // Step 1: Stammdaten
-  const [name, setName] = useState("");
+  const [name, setName] = useState(vorbelegung ?? "");
   const [shortName, setShortName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ParkStatus>("ACTIVE");
@@ -208,7 +217,8 @@ export function ParkWizard() {
 
       const park = await res.json();
       toast.success(t("toast.created"));
-      router.push(`/parks/${park.id}`);
+      if (onCreated) onCreated({ id: park.id, name: park.name });
+      else router.push(`/parks/${park.id}`);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : t("toast.createError")
@@ -736,7 +746,8 @@ export function ParkWizard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header — as dialog the dialog title says it already */}
+      {!alsDialog && (
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/parks">
@@ -751,6 +762,7 @@ export function ParkWizard() {
           </p>
         </div>
       </div>
+      )}
 
       {/* Stepper */}
       <Stepper
@@ -771,7 +783,7 @@ export function ParkWizard() {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => (onCancel ? onCancel() : router.back())}
           >
             Abbrechen
           </Button>

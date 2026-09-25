@@ -23,7 +23,8 @@
 
 import * as React from "react";
 import { Command } from "cmdk";
-import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Plus, Search } from "lucide-react";
+import { anlegenEintrag } from "@/lib/ui/anlegen-eintrag";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,18 @@ export interface ComboboxProps {
   contentClassName?: string;
   id?: string;
   "aria-label"?: string;
+  /**
+   * "Aus der Auswahl anlegen": a last entry that creates a new record. It is
+   * always shown (also when the search finds nothing); the typed search is
+   * handed over as prefill.
+   */
+  anlegen?: {
+    /** "Neue Gesellschaft anlegen" */
+    neu: string;
+    /** "„{name}“ als neue Gesellschaft anlegen" */
+    mitName: string;
+    onAnlegen: (vorbelegung: string) => void;
+  };
 }
 
 export function Combobox({
@@ -78,6 +91,7 @@ export function Combobox({
   contentClassName,
   id,
   "aria-label": ariaLabel,
+  anlegen,
 }: ComboboxProps) {
   const t = useTranslations("common.combobox");
   const [open, setOpen] = React.useState(false);
@@ -91,6 +105,16 @@ export function Combobox({
   }, [search, serverSide, onSearchChange]);
 
   const selected = options.find((o) => o.value === value);
+
+  // Does the search match anything? Decides whether the typed text is offered
+  // as the new record's name.
+  const nadel = search.trim().toLocaleLowerCase("de");
+  const hatTreffer =
+    !nadel ||
+    (serverSide
+      ? options.length > 0
+      : options.some((o) => `${o.label} ${o.description ?? ""} ${o.keywords ?? ""}`.toLocaleLowerCase("de").includes(nadel)));
+  const eintrag = anlegen ? anlegenEintrag(search, anlegen, hatTreffer) : null;
 
   return (
     <Popover
@@ -182,6 +206,24 @@ export function Combobox({
                 </span>
               </Command.Item>
             ))}
+
+            {anlegen && eintrag && (
+              <>
+                <div className="-mx-1 my-1 h-px bg-border" aria-hidden />
+                <Command.Item
+                  forceMount
+                  value="__anlegen__"
+                  onSelect={() => {
+                    setOpen(false);
+                    anlegen.onAnlegen(eintrag.vorbelegung);
+                  }}
+                  className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm font-medium text-primary data-[selected=true]:bg-accent"
+                >
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                  <span className="truncate">{eintrag.text}</span>
+                </Command.Item>
+              </>
+            )}
           </Command.List>
         </Command>
       </PopoverContent>
