@@ -25,6 +25,13 @@ describe("nurBekannteEinstellungen", () => {
     expect(nurBekannteEinstellungen(gespeichert)).toEqual({ paymentTermDays: 45, bankMatchToleranceEur: 0.05 });
   });
 
+  it("lässt die wirkungslosen Steuer- und Geschäftsjahr-Schalter weg", () => {
+    // Kleinunternehmer (§19 UStG), USt-Split und Geschäftsjahresbeginn hatten
+    // nach dem Ausbau der Buchhaltung keine Wirkung mehr.
+    const gespeichert = { kleinunternehmer: true, useTaxSplit: true, fiscalYearStartMonth: 7, paymentTermDays: 30 };
+    expect(nurBekannteEinstellungen(gespeichert)).toEqual({ paymentTermDays: 30 });
+  });
+
   it("kennt jedes Feld der Standardwerte", () => {
     const alle = { ...DEFAULT_TENANT_SETTINGS };
     expect(Object.keys(nurBekannteEinstellungen(alle)).sort()).toEqual(Object.keys(alle).sort());

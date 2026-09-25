@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Wind, Menu } from "lucide-react";
+import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Menu, Rows2, Rows3 } from "lucide-react";
 import { getMobileSidebarOpener } from "@/components/layout/mobile-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { useSession, signOut } from "next-auth/react";
 import { useKeyboardContext } from "@/components/providers/keyboard-provider";
 import { useTranslations } from "next-intl";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { DensityToggle } from "@/components/layout/density-toggle";
+import { SpracheUntermenue } from "@/components/layout/language-switcher";
+import { useDichte } from "@/components/layout/density-toggle";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { HealthIndicator } from "@/components/layout/health-indicator";
@@ -59,6 +59,7 @@ export function Header() {
   // Keyboard shortcuts context - safe to call here since Header is always
   // rendered inside the dashboard layout which wraps with KeyboardProvider
   const { openShortcutsDialog } = useKeyboardContext();
+  const { kompakt: dichteKompakt, umschalten: dichteUmschalten } = useDichte();
 
   // Mark as mounted after first render to avoid hydration mismatch
   useEffect(() => {
@@ -163,17 +164,6 @@ export function Header() {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          {/* Tenant name */}
-          {session?.user && (
-            <div className="hidden md:flex items-center gap-2 shrink-0">
-              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <Wind className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="text-sm font-semibold truncate max-w-[140px]">
-                {(session.user as { tenantName?: string }).tenantName || "WindparkManager"}
-              </span>
-            </div>
-          )}
           <div data-tour="header-search" className="flex items-center gap-4 flex-1 max-w-md">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -199,29 +189,6 @@ export function Header() {
           ) : (
             <TenantSwitcher />
           )}
-
-          {/* Theme Toggle - only render icon after mount to prevent hydration mismatch */}
-          <Button data-tour="header-theme-toggle" variant="ghost" size="icon" onClick={toggleTheme} className="transition-all duration-200 hover:bg-accent" title={mounted ? (resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")) : undefined} aria-label="Toggle theme">
-            {mounted ? (resolvedTheme === "dark" ? <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-12" /> : <Moon className="h-5 w-5 transition-transform duration-200 hover:-rotate-12" />) : <div className="h-5 w-5" />}
-          </Button>
-
-          {/* Language Switcher — hidden on small mobile */}
-          <div className="hidden sm:flex">
-            <LanguageSwitcher />
-            <DensityToggle />
-          </div>
-
-          {/* Keyboard Shortcuts — hidden on mobile */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={openShortcutsDialog}
-            className="hidden md:inline-flex transition-all duration-200 hover:bg-accent"
-            title={t("header.keyboardShortcuts") + " (?)"}
-            aria-label={t("header.keyboardShortcuts")}
-          >
-            <Keyboard className="h-5 w-5" />
-          </Button>
 
           {/* Idee B: System-Health-Indicator (kleiner Dot) — links der Glocke */}
           <HealthIndicator />
@@ -249,7 +216,7 @@ export function Header() {
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
                   <span>{impersonation ? impersonation.targetName : (session?.user?.name || t("common.user"))}</span>
@@ -281,6 +248,22 @@ export function Header() {
                 </Link>
               </DropdownMenuItem>
               <TourTriggerMenuItem />
+              <DropdownMenuSeparator />
+              {/* Display settings — were five unlabeled icons in the bar. */}
+              <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+                {mounted && resolvedTheme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                {mounted && resolvedTheme === "dark" ? t("common.lightMode") : t("common.darkMode")}
+              </DropdownMenuItem>
+              <SpracheUntermenue />
+              <DropdownMenuItem onClick={dichteUmschalten} className="cursor-pointer">
+                {dichteKompakt ? <Rows3 className="mr-2 h-4 w-4" /> : <Rows2 className="mr-2 h-4 w-4" />}
+                {dichteKompakt ? t("common.density.toNormal") : t("common.density.toCompact")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={openShortcutsDialog} className="cursor-pointer">
+                <Keyboard className="mr-2 h-4 w-4" />
+                {t("header.keyboardShortcuts")}
+                <span className="ml-auto text-xs text-muted-foreground">?</span>
+              </DropdownMenuItem>
               {impersonation && (
                 <>
                   <DropdownMenuSeparator />

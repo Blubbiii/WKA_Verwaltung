@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 import { usePersistedTableState } from "@/hooks/usePersistedTableState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -226,13 +227,7 @@ export default function InboxPage() {
   if (flagsLoading) return null;
 
   if (!flags.inbox) {
-    return (
-      <div className="p-8 text-center">
-        <Inbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h2 className="text-xl font-semibold mb-2">{t("notEnabled")}</h2>
-        <p className="text-muted-foreground">{t("notEnabledDesc")}</p>
-      </div>
-    );
+    return <ModulAus icon={Inbox} titel={t("notEnabled")} />;
   }
 
   // Stats

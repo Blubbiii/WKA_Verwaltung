@@ -1,13 +1,9 @@
 "use client";
 
 /**
- * P21: HGB-Compliance Tenant-Settings (Audit B/C + P10/P11/P13).
- *
- * Pflege der HGB-Compliance-spezifischen Felder:
- *  - kleinunternehmer (§19 UStG)
- *  - useTaxSplit (P11 USt-Split Feature-Flag)
- *  - fourEyesThresholdEur (P13 4-Augen-Schwelle)
- *  - bankMatchToleranceEur (Audit B Bank-Match-Toleranz)
+ * Tenant check rules:
+ *  - fourEyesThresholdEur: four-eyes approval threshold for incoming invoices
+ *  - bankMatchToleranceEur: rounding tolerance when matching payments
  */
 
 import { useEffect, useState } from "react";
@@ -21,22 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, Save, AlertTriangle, Scale, ShieldCheck } from "lucide-react";
+import { Loader2, Save, AlertTriangle, Scale } from "lucide-react";
 
 interface HgbSettings {
-  kleinunternehmer: boolean;
-  useTaxSplit: boolean;
   fourEyesThresholdEur: number | null;
   bankMatchToleranceEur: number;
 }
 
 const DEFAULTS: HgbSettings = {
-  kleinunternehmer: false,
-  useTaxSplit: false,
   fourEyesThresholdEur: 1000,
   bankMatchToleranceEur: 0.02,
 };
@@ -73,11 +64,9 @@ export function HgbComplianceSettings() {
         return res.json();
       })
       .then((data) => {
-        // Server liefert verschachteltes Object — wir extrahieren nur die HGB-Felder
+        // Server returns all tenant settings — pick the check-rule fields
         // mit Fallback auf Defaults für noch nicht persistierte Werte.
         const merged: HgbSettings = {
-          kleinunternehmer: data.kleinunternehmer ?? DEFAULTS.kleinunternehmer,
-          useTaxSplit: data.useTaxSplit ?? DEFAULTS.useTaxSplit,
           fourEyesThresholdEur:
             data.fourEyesThresholdEur === undefined
               ? DEFAULTS.fourEyesThresholdEur
@@ -117,10 +106,10 @@ export function HgbComplianceSettings() {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Fehler beim Speichern");
       }
-      toast.success("HGB-Compliance-Einstellungen gespeichert");
+      toast.success("Prüfregeln gespeichert");
       setHasChanges(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "HGB-Einstellungen konnten nicht gespeichert werden");
+      toast.error(e instanceof Error ? e.message : "Prüfregeln konnten nicht gespeichert werden");
     } finally {
       setIsSaving(false);
     }
@@ -130,60 +119,12 @@ export function HgbComplianceSettings() {
 
   return (
     <div className="space-y-6">
-      {/* §19 UStG + USt-Split */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5" />
-            Umsatzsteuer-Modus
-          </CardTitle>
-          <CardDescription>
-            Kleinunternehmer §19 UStG und USt-Split-Engine (Phase 11) konfigurieren
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="kleinunternehmer" className="text-base">
-                Kleinunternehmer §19 UStG
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Aus: Ausgangsrechnungen ohne USt-Ausweis, keine UStVA-Pflicht.
-              </p>
-            </div>
-            <Switch
-              id="kleinunternehmer"
-              checked={formData.kleinunternehmer}
-              onCheckedChange={(v) => handleChange("kleinunternehmer", v)}
-            />
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="useTaxSplit" className="text-base">
-                USt-Split aktivieren (Phase 11)
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Auto-Posting splittet Brutto in Netto + USt (3-Lines). Default OFF
-                während Shadow-Phase — erst nach Goldmaster-Validierung aktivieren!
-              </p>
-            </div>
-            <Switch
-              id="useTaxSplit"
-              checked={formData.useTaxSplit}
-              onCheckedChange={(v) => handleChange("useTaxSplit", v)}
-              disabled={formData.kleinunternehmer}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* P13: 4-Augen-Schwelle */}
+      {/* Four-eyes threshold */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Kreditoren-Härtung (P13)
+            Vier-Augen-Freigabe
           </CardTitle>
           <CardDescription>
             Vier-Augen-Prinzip für Eingangsrechnungen oberhalb einer Schwelle
@@ -192,7 +133,7 @@ export function HgbComplianceSettings() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="fourEyesThreshold">
-              4-Augen-Schwelle (EUR) — leer lassen für immer 4-Augen
+              Schwelle (EUR) — leer lassen, wenn jede Rechnung zwei Personen braucht
             </Label>
             <Input
               id="fourEyesThreshold"
@@ -211,8 +152,8 @@ export function HgbComplianceSettings() {
               placeholder="z.B. 1000"
             />
             <p className="text-xs text-muted-foreground">
-              Rechnungen über dieser Schwelle müssen von einer anderen Person als
-              dem Ersteller freigegeben werden. null/leer = immer 4-Augen.
+              Eingangsrechnungen über dieser Schwelle muss eine andere Person
+              freigeben als die, die sie erfasst hat.
             </p>
           </div>
         </CardContent>
@@ -223,7 +164,7 @@ export function HgbComplianceSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Scale className="h-5 w-5" />
-            Cent-Toleranzen
+            Zahlungsabgleich
           </CardTitle>
           <CardDescription>
             Rundungs-Toleranz für den Zahlungsabgleich
@@ -232,7 +173,7 @@ export function HgbComplianceSettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bankTol">Bank-Match-Toleranz (EUR)</Label>
+              <Label htmlFor="bankTol">Rundungs-Toleranz (EUR)</Label>
               <Input
                 id="bankTol"
                 type="number"
@@ -245,7 +186,8 @@ export function HgbComplianceSettings() {
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Default 0,02 €. Wird auch für isFullyPaid-Übergang genutzt.
+                Standard 0,02 €. Weicht eine Zahlung höchstens um diesen Betrag ab,
+                gilt die Rechnung als vollständig bezahlt.
               </p>
             </div>
 

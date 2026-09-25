@@ -10,7 +10,6 @@ import {
   Eye,
   Pencil,
   Trash2,
-  AlertTriangle,
   TrendingUp,
   Zap,
   Clock,
@@ -19,6 +18,7 @@ import { format, differenceInDays } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -290,19 +290,7 @@ export default function PPAPage() {
   if (flagsLoading) return null;
 
   if (!isFeatureEnabled("ppa-management")) {
-    return (
-      <div className="p-8">
-        <Card className="max-w-lg mx-auto">
-          <CardContent className="py-12 text-center">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold mb-2">{t("notEnabledTitle")}</h2>
-            <p className="text-muted-foreground">
-              {t("notEnabledHint")}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ModulAus icon={Zap} titel={t("notEnabledTitle")} />;
   }
 
   return (

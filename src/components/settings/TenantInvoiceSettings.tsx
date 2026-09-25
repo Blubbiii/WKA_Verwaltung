@@ -24,7 +24,6 @@ interface InvoiceFormData {
   invoicePaymentText: string;
   creditNotePaymentText: string;
   // Geschäftsjahr
-  fiscalYearStartMonth: number;
   // GoBD
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -70,7 +69,6 @@ export function TenantInvoiceSettings() {
         paymentTermDays: settings.paymentTermDays,
         invoicePaymentText: settings.invoicePaymentText,
         creditNotePaymentText: settings.creditNotePaymentText,
-        fiscalYearStartMonth: settings.fiscalYearStartMonth ?? 1,
         gobdRetentionYearsInvoice: settings.gobdRetentionYearsInvoice ?? 10,
         gobdRetentionYearsContract: settings.gobdRetentionYearsContract ?? 10,
         reminderEnabled: settings.reminderEnabled ?? true,
@@ -230,43 +228,6 @@ export function TenantInvoiceSettings() {
         </CardContent>
       </Card>
 
-      {/* Geschäftsjahr */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-muted-foreground" />
-            <CardTitle className="text-lg">Geschäftsjahr</CardTitle>
-          </div>
-          <CardDescription>
-            Beginn des Geschaeftsjahres für BWA und Jahresvergleiche
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-w-xs">
-            <Label htmlFor="fiscalYearStartMonth">Geschäftsjahr beginnt im</Label>
-            <select
-              id="fiscalYearStartMonth"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
-              value={formData.fiscalYearStartMonth}
-              onChange={(e) => handleChange("fiscalYearStartMonth", parseInt(e.target.value, 10))}
-            >
-              {[
-                { value: 1, label: "Januar" }, { value: 2, label: "Februar" },
-                { value: 3, label: "März" }, { value: 4, label: "April" },
-                { value: 5, label: "Mai" }, { value: 6, label: "Juni" },
-                { value: 7, label: "Juli" }, { value: 8, label: "August" },
-                { value: 9, label: "September" }, { value: 10, label: "Oktober" },
-                { value: 11, label: "November" }, { value: 12, label: "Dezember" },
-              ].map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground">
-              Standard: Januar (Kalenderjahr = Geschaeftsjahr)
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* GoBD Aufbewahrung */}
       <Card>

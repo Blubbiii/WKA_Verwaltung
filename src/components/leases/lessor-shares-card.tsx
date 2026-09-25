@@ -32,6 +32,7 @@ import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { useApiQuery, useInvalidateQuery } from "@/hooks/useApiQuery";
 import { PAGE_SIZE_DROPDOWN } from "@/lib/config/pagination";
+import { istVerschluesselterRohwert } from "@/lib/format";
 
 interface PersonRef {
   id: string;
@@ -125,7 +126,7 @@ export function LessorSharesCard({ leaseId }: { leaseId: string }) {
     (person) => ({
       value: person.id,
       label: personLabel(person),
-      description: person.bankIban ? `IBAN ${person.bankIban.slice(0, 8)}…` : undefined,
+      description: person.bankIban && !istVerschluesselterRohwert(person.bankIban) ? `IBAN ${person.bankIban.slice(0, 8)}…` : undefined,
     }),
   );
 

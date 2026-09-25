@@ -220,7 +220,19 @@
       "toNormal": "Normal tables — roomier rows"
     },
     "hidden": "Hidden",
-    "visible": "Visible"
+    "visible": "Visible",
+    "modulAus": {
+      "aktivieren": "This module is switched off for this tenant. You can switch it on under feature flags.",
+      "aktivierenButton": "Activate module now",
+      "betreiberFragen": "This module is switched off for this tenant. Only the system operator (superadmin) can enable it.",
+      "adminFragen": "This module is switched off for this tenant. Your administrator can request activation."
+    },
+    "rundgang": {
+      "angebot": "Take a quick tour?",
+      "angebotText": "Two minutes to see the most important places.",
+      "starten": "Start tour",
+      "nichtJetzt": "Not now"
+    }
   },
   "statusLabels": {
     "common": {
@@ -718,7 +730,9 @@
       "stepScada": "Connect yield data",
       "stepScadaDesc": "Import SCADA or production data",
       "stepInvite": "Invite shareholders",
-      "stepInviteDesc": "Invite additional users"
+      "stepInviteDesc": "Invite additional users",
+      "nextStep": "Next: {step}",
+      "dismiss": "Dismiss"
     }
   },
   "parks": {
@@ -1442,7 +1456,6 @@
       "statExpiring": "Expiring (<90 days)",
       "deleteSuccess": "PPA deleted",
       "notEnabledTitle": "PPA management not enabled",
-      "notEnabledHint": "The PPA module is not enabled for this tenant. Please contact your administrator.",
       "pageTitle": "Power Purchase Agreements",
       "pageDescription": "Manage electricity supply contracts",
       "newPpa": "New PPA",
@@ -3840,7 +3853,6 @@
       "createSuccess": "Contact created",
       "createError": "Failed to create",
       "crmDisabled": "CRM not enabled",
-      "crmDisabledHint": "The CRM module is not enabled for this tenant. Please contact your administrator.",
       "pagination": {
         "pageOf": "Page {page} of {totalPages} ({totalCount} contacts)",
         "prev": "Previous",
@@ -4782,7 +4794,9 @@
         "summaryNewSuffix": " ({count} new)",
         "flur": "Field {value}",
         "flurstueck": "Plot {value}",
-        "searchPlaceholder": "Search cadastral district, field, plot or park …"
+        "searchPlaceholder": "Search cadastral district, field, plot or park …",
+        "allLeased": "All {count} plots are already leased and hidden by the filter.",
+        "showAll": "Show all plots"
       },
       "contract": {
         "cardTitle": "Contract terms",
@@ -4859,6 +4873,14 @@
         "createError": "Failed to create lease agreement",
         "genericError": "Failed to create",
         "unsavedWarning": "There are unsaved entries. Leave the wizard anyway?"
+      },
+      "blocked": {
+        "lessorMissing": "Please select a lessor.",
+        "lessorNameMissing": "First and last name of the lessor are missing.",
+        "companyNameMissing": "The company name of the lessor is missing.",
+        "plotMissing": "Select at least one plot or create a new one.",
+        "plotIncomplete": "The new plot is missing district or plot number.",
+        "startDateMissing": "Please enter the contract start date."
       }
     },
     "importShp": {
@@ -5343,7 +5365,9 @@
         "email": "Email",
         "phone": "Phone",
         "address": "Address",
-        "bank": "Bank details"
+        "bank": "Bank details",
+        "bankUnreadable": "Bank details unreadable",
+        "bankUnreadableHint": "The stored value could not be decrypted. Please check the server encryption key."
       },
       "term": {
         "title": "Contract Term",
@@ -5355,7 +5379,12 @@
         "remaining": "Remaining",
         "daysRemaining": "{days} days",
         "expired": "Expired",
-        "extensionOption": "Extension option"
+        "extensionOption": "Extension option",
+        "rest": {
+          "years": "{count, plural, one {# year} other {# years}}",
+          "months": "{count, plural, one {# month} other {# months}}",
+          "days": "{days, plural, one {# day} other {# days}}"
+        }
       },
       "billing": {
         "title": "Billing",
@@ -6535,7 +6564,8 @@
       "tabGeneral": "General",
       "tabPortal": "Portal",
       "tabEmail": "Email",
-      "tabThresholds": "Thresholds"
+      "tabThresholds": "Thresholds",
+      "tabCheckRules": "Check rules"
     },
     "tenants": {
       "title": "Tenant management",
@@ -9209,7 +9239,6 @@
     "description": "Manage invoices and credit notes",
     "upload": "Upload",
     "notEnabled": "Inbox not enabled",
-    "notEnabledDesc": "The incoming invoices module is not enabled for this tenant.",
     "kpi": {
       "open": "Open",
       "approved": "Approved",

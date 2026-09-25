@@ -6,6 +6,8 @@
  * `LOCALE_EN`. UI-Komponenten sollen NICHT mehr LOCALE_DE inline schreiben —
  * stattdessen aus diesem Modul importieren.
  */
+import { intervalToDuration } from "date-fns";
+
 export const LOCALE_DE = "de-DE";
 export const LOCALE_EN = "en-US";
 export const CURRENCY_EUR = "EUR";
@@ -193,3 +195,43 @@ export const MONTH_NAMES_DE_SHORT: readonly string[] = [
   "Nov",
   "Dez",
 ] as const;
+
+/**
+ * Remaining term of a contract as calendar years/months/days.
+ * Returns null when the end date is today or in the past.
+ */
+export function restlaufzeit(
+  ende: Date,
+  heute: Date = new Date(),
+): { jahre: number; monate: number; tage: number } | null {
+  const start = new Date(heute.getFullYear(), heute.getMonth(), heute.getDate());
+  const ziel = new Date(ende.getFullYear(), ende.getMonth(), ende.getDate());
+  if (ziel <= start) return null;
+  const d = intervalToDuration({ start, end: ziel });
+  return { jahre: d.years ?? 0, monate: d.months ?? 0, tage: d.days ?? 0 };
+}
+
+/**
+ * "24 Jahre, 6 Monate" — days only when less than a month is left.
+ * `t` resolves the keys years/months/days (ICU plural with `count`/`days`).
+ */
+export function restlaufzeitText(
+  teile: { jahre: number; monate: number; tage: number },
+  t: (key: "years" | "months" | "days", values: { count?: number; days?: number }) => string,
+): string {
+  const parts: string[] = [];
+  if (teile.jahre > 0) parts.push(t("years", { count: teile.jahre }));
+  if (teile.monate > 0) parts.push(t("months", { count: teile.monate }));
+  return parts.length > 0 ? parts.join(", ") : t("days", { days: teile.tage });
+}
+
+/**
+ * True when a bank field arrived as raw ciphertext. The encryption middleware
+ * passes the stored value through when decryption fails (missing or rotated
+ * key); the UI must never show that as if it were an IBAN.
+ * Ciphertext: base64 of at least 97 bytes -> 132+ chars, no spaces.
+ */
+export function istVerschluesselterRohwert(value: string | null | undefined): boolean {
+  if (!value || value.length < 132) return false;
+  return /^[A-Za-z0-9+/]+={0,2}$/.test(value);
+}

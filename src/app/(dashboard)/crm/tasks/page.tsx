@@ -31,6 +31,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 
 interface CrmUser {
   id: string;
@@ -106,7 +107,7 @@ function linkedEntityLabel(
 }
 
 export default function CrmTasksPage() {
-  const { flags } = useFeatureFlags();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const t = useTranslations("crm.tasks");
   const tContacts = useTranslations("crm.contacts");
   const locale = useLocale();
@@ -187,17 +188,9 @@ export default function CrmTasksPage() {
     return { all: tasks.length, overdue, today, upcoming };
   }, [tasks]);
 
-  if (!flags.crm) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{tContacts("crmDisabled")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          {tContacts("crmDisabledHint")}
-        </p>
-      </div>
-    );
-  }
+  // Flags still loading: the placeholder says "off" — don't flash the hint.
+  if (flagsLoading) return null;
+  if (!flags.crm) return <ModulAus icon={CheckSquare} titel={tContacts("crmDisabled")} />;
 
   return (
     <div className="space-y-6">

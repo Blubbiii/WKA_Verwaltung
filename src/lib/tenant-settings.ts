@@ -28,8 +28,6 @@ export interface TenantSettings {
   companyPhone: string;
   companyEmail: string;
   companyWebsite: string;
-  // Geschaeftsjahr
-  fiscalYearStartMonth: number; // 1-12 (1 = January)
   // GoBD retention
   gobdRetentionYearsInvoice: number;
   gobdRetentionYearsContract: number;
@@ -51,16 +49,6 @@ export interface TenantSettings {
   reminderFee1: number;
   reminderFee2: number;
   reminderFee3: number;
-  // P10: §19 UStG Kleinunternehmer-Status. Wenn true:
-  // - Ausgangsrechnungen ohne USt-Ausweis
-  // - UStVA wird nicht abgegeben
-  // - Tax-Codes mit Kategorie STANDARD_19/REDUCED_7 ergeben 0% effektiv
-  kleinunternehmer: boolean;
-  // P11: Feature-Flag für USt-Split im Auto-Posting.
-  // Default false → bestehende 2-Lines-Engine (Brutto auf Erlöskonto).
-  // true → neue 3-Lines-Engine (Netto auf Erlöskonto + USt-Konto separat).
-  // Sanfter Rollout: pro Tenant umschaltbar, nach Validierung Default flippen.
-  useTaxSplit: boolean;
   // P13: 4-Augen-Freigabe-Schwelle für Eingangsrechnungen (in EUR).
   // null = jede Rechnung braucht 4-Augen-Freigabe (createdById ≠ approvedById).
   // > 0 = nur Rechnungen mit grossAmount > Schwelle brauchen 4-Augen.
@@ -105,8 +93,6 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   companyPhone: "",
   companyEmail: "",
   companyWebsite: "",
-  // Geschaeftsjahr
-  fiscalYearStartMonth: 1,
   // GoBD retention (§147 AO)
   gobdRetentionYearsInvoice: 10,
   gobdRetentionYearsContract: 10,
@@ -119,10 +105,6 @@ export const DEFAULT_TENANT_SETTINGS: TenantSettings = {
   reminderFee1: 0,
   reminderFee2: 5,
   reminderFee3: 10,
-  // P10: §19 UStG — Default: Standard-Unternehmer (USt-pflichtig).
-  kleinunternehmer: false,
-  // P11: USt-Split Feature-Flag — default OFF während Shadow-Phase.
-  useTaxSplit: false,
   // P13: 4-Augen-Schwelle Default 1.000 € — übliche Praxis im Mittelstand.
   fourEyesThresholdEur: 1000,
   // Sprint 3: 4-Augen für weitere kritische Aktionen — Defaults konservativ.

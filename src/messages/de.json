@@ -220,7 +220,19 @@
       "toNormal": "Normale Tabellen — luftigere Zeilen"
     },
     "hidden": "Ausgeblendet",
-    "visible": "Sichtbar"
+    "visible": "Sichtbar",
+    "modulAus": {
+      "aktivieren": "Das Modul ist für diesen Mandanten ausgeschaltet. Sie können es bei den Feature-Schaltern einschalten.",
+      "aktivierenButton": "Modul jetzt aktivieren",
+      "betreiberFragen": "Das Modul ist für diesen Mandanten ausgeschaltet. Freischalten kann es nur der Systembetreiber (Superadmin).",
+      "adminFragen": "Das Modul ist für diesen Mandanten ausgeschaltet. Ihr Administrator kann die Freischaltung veranlassen."
+    },
+    "rundgang": {
+      "angebot": "Kurzer Rundgang gefällig?",
+      "angebotText": "In zwei Minuten zeigen wir Ihnen die wichtigsten Stellen.",
+      "starten": "Rundgang starten",
+      "nichtJetzt": "Nicht jetzt"
+    }
   },
   "statusLabels": {
     "common": {
@@ -718,7 +730,9 @@
       "stepScada": "Ertragsdaten verbinden",
       "stepScadaDesc": "Importieren Sie SCADA- oder Produktionsdaten",
       "stepInvite": "Gesellschafter einladen",
-      "stepInviteDesc": "Laden Sie weitere Benutzer ein"
+      "stepInviteDesc": "Laden Sie weitere Benutzer ein",
+      "nextStep": "Weiter mit: {step}",
+      "dismiss": "Ausblenden"
     }
   },
   "parks": {
@@ -1442,7 +1456,6 @@
       "statExpiring": "Auslaufend (<90 Tage)",
       "deleteSuccess": "PPA gelöscht",
       "notEnabledTitle": "PPA-Management nicht aktiviert",
-      "notEnabledHint": "Das PPA-Modul ist für diesen Mandanten nicht aktiviert. Bitte wenden Sie sich an Ihren Administrator.",
       "pageTitle": "Power Purchase Agreements",
       "pageDescription": "Verwaltung von Stromlieferverträgen",
       "newPpa": "Neuer PPA",
@@ -3840,7 +3853,6 @@
       "createSuccess": "Kontakt erstellt",
       "createError": "Fehler beim Erstellen",
       "crmDisabled": "CRM nicht aktiviert",
-      "crmDisabledHint": "Das CRM-Modul ist für diesen Mandanten nicht freigeschaltet. Bitte wenden Sie sich an Ihren Administrator.",
       "pagination": {
         "pageOf": "Seite {page} von {totalPages} ({totalCount} Kontakte)",
         "prev": "Zurück",
@@ -4782,7 +4794,9 @@
         "summaryNewSuffix": " ({count} neu)",
         "flur": "Flur {value}",
         "flurstueck": "Flurstück {value}",
-        "searchPlaceholder": "Gemarkung, Flur, Flurstück oder Park suchen …"
+        "searchPlaceholder": "Gemarkung, Flur, Flurstück oder Park suchen …",
+        "allLeased": "Alle {count} Flurstücke sind bereits verpachtet und durch den Filter ausgeblendet.",
+        "showAll": "Alle Flurstücke anzeigen"
       },
       "contract": {
         "cardTitle": "Vertragsdaten",
@@ -4859,6 +4873,14 @@
         "createError": "Fehler beim Erstellen des Pachtvertrags",
         "genericError": "Fehler beim Erstellen",
         "unsavedWarning": "Es gibt ungespeicherte Eingaben. Assistent trotzdem verlassen?"
+      },
+      "blocked": {
+        "lessorMissing": "Bitte einen Verpächter auswählen.",
+        "lessorNameMissing": "Vor- und Nachname des Verpächters fehlen.",
+        "companyNameMissing": "Der Firmenname des Verpächters fehlt.",
+        "plotMissing": "Mindestens ein Flurstück wählen oder neu anlegen.",
+        "plotIncomplete": "Beim neuen Flurstück fehlen Gemarkung oder Flurstücksnummer.",
+        "startDateMissing": "Bitte den Vertragsbeginn angeben."
       }
     },
     "importShp": {
@@ -5343,7 +5365,9 @@
         "email": "E-Mail",
         "phone": "Telefon",
         "address": "Adresse",
-        "bank": "Bankverbindung"
+        "bank": "Bankverbindung",
+        "bankUnreadable": "Bankverbindung nicht lesbar",
+        "bankUnreadableHint": "Der gespeicherte Wert ließ sich nicht entschlüsseln. Bitte den Verschlüsselungsschlüssel des Servers prüfen."
       },
       "term": {
         "title": "Vertragslaufzeit",
@@ -5355,7 +5379,12 @@
         "remaining": "Restlaufzeit",
         "daysRemaining": "{days} Tage",
         "expired": "Abgelaufen",
-        "extensionOption": "Verlängerungsoption"
+        "extensionOption": "Verlängerungsoption",
+        "rest": {
+          "years": "{count, plural, one {# Jahr} other {# Jahre}}",
+          "months": "{count, plural, one {# Monat} other {# Monate}}",
+          "days": "{days, plural, one {# Tag} other {# Tage}}"
+        }
       },
       "billing": {
         "title": "Abrechnung",
@@ -6535,7 +6564,8 @@
       "tabGeneral": "Allgemein",
       "tabPortal": "Portal",
       "tabEmail": "E-Mail",
-      "tabThresholds": "Schwellenwerte"
+      "tabThresholds": "Schwellenwerte",
+      "tabCheckRules": "Prüfregeln"
     },
     "tenants": {
       "title": "Mandantenverwaltung",
@@ -9209,7 +9239,6 @@
     "description": "Rechnungen und Gutschriften verwalten",
     "upload": "Hochladen",
     "notEnabled": "Inbox nicht aktiviert",
-    "notEnabledDesc": "Das Eingangsrechnungs-Modul ist für diesen Mandanten nicht aktiviert.",
     "kpi": {
       "open": "Offen",
       "approved": "Genehmigt",

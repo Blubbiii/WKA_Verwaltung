@@ -411,7 +411,7 @@ export default function LeasesPage() {
                           {getParksLabel(lease.plots)}
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm">
+                          <div className="text-sm whitespace-nowrap">
                             {format(new Date(lease.startDate), "dd.MM.yyyy", { locale: dateLocale })}
                             {" - "}
                             {lease.endDate

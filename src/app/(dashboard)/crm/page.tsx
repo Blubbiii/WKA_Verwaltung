@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { ActivityFormDialog } from "@/components/crm/activity-form-dialog";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 
 // ============================================================================
 // Types
@@ -101,7 +102,7 @@ function entityLabel(a: CrmActivityItem) {
 
 export default function CrmDashboardPage() {
   const router = useRouter();
-  const { flags } = useFeatureFlags();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const t = useTranslations("crm.overview");
   const tContacts = useTranslations("crm.contacts");
   const tTimeline = useTranslations("crm.activityTimeline");
@@ -146,17 +147,9 @@ export default function CrmDashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flags.crm]);
 
-  if (!flags.crm) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{tContacts("crmDisabled")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          {tContacts("crmDisabledHint")}
-        </p>
-      </div>
-    );
-  }
+  // Flags still loading: the placeholder says "off" — don't flash the hint.
+  if (flagsLoading) return null;
+  if (!flags.crm) return <ModulAus icon={Users} titel={tContacts("crmDisabled")} />;
 
   return (
     <div className="space-y-6">

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PAGE_SIZE_DEFAULT } from "@/lib/config/pagination";
 import { Card, CardContent } from "@/components/ui/card";
@@ -171,7 +172,7 @@ function activityAgeClass(lastActivityAt: string | null): string {
 
 export default function CrmContactsPage() {
   const router = useRouter();
-  const { flags } = useFeatureFlags();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const t = useTranslations("crm.contacts");
   const tLabels = useTranslations("crm.labels");
   const tCommon = useTranslations("common");
@@ -509,17 +510,9 @@ export default function CrmContactsPage() {
   // --------------------------------------------------------------------------
   // Guard
   // --------------------------------------------------------------------------
-  if (!flags.crm) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{t("crmDisabled")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          {t("crmDisabledHint")}
-        </p>
-      </div>
-    );
-  }
+  // Flags still loading: the placeholder says "off" — don't flash the hint.
+  if (flagsLoading) return null;
+  if (!flags.crm) return <ModulAus icon={Users} titel={t("crmDisabled")} />;
 
   const columnCount = 6 + (showLeaseColumn ? 1 : 0) + (showShareholderColumn ? 2 : 0);
 

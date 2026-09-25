@@ -167,23 +167,13 @@ const DE_STEPS: TourStep[] = [
       align: "start",
     },
   },
-  // Header: Theme
-  {
-    element: '[data-tour="header-theme-toggle"]',
-    popover: {
-      title: "Design umschalten",
-      description: "Wechseln Sie zwischen hellem und dunklem Design.",
-      side: "bottom",
-      align: "center",
-    },
-  },
   // Header: User Menu
   {
     element: '[data-tour="header-user-menu"]',
     popover: {
       title: "Benutzermenü",
       description:
-        "Hier finden Sie Ihr Profil, persönliche Einstellungen, die Tour-Neustartfunktion und die Abmeldung.",
+        "Hier finden Sie Ihr Profil, helles oder dunkles Design, Sprache, Tabellendichte, Tastenkürzel, den Rundgang und die Abmeldung.",
       side: "bottom",
       align: "end",
     },
@@ -350,20 +340,11 @@ const EN_STEPS: TourStep[] = [
     },
   },
   {
-    element: '[data-tour="header-theme-toggle"]',
-    popover: {
-      title: "Toggle Theme",
-      description: "Switch between light and dark design.",
-      side: "bottom",
-      align: "center",
-    },
-  },
-  {
     element: '[data-tour="header-user-menu"]',
     popover: {
       title: "User Menu",
       description:
-        "Here you find your profile, personal settings, the tour restart function, and sign-out.",
+        "Here you find your profile, light or dark design, language, table density, keyboard shortcuts, the tour and sign-out.",
       side: "bottom",
       align: "end",
     },
@@ -528,20 +509,11 @@ const DE_PERSONAL_STEPS: TourStep[] = [
     },
   },
   {
-    element: '[data-tour="header-theme-toggle"]',
-    popover: {
-      title: "Hell oder Dunkel?",
-      description: "Wechsel zwischen hellem und dunklem Design — ganz wie du magst.",
-      side: "bottom",
-      align: "center",
-    },
-  },
-  {
     element: '[data-tour="header-user-menu"]',
     popover: {
       title: "Dein Menü",
       description:
-        "Hier findest du dein Profil, persönliche Einstellungen und kannst die Tour nochmal starten.",
+        "Hier findest du dein Profil, helles oder dunkles Design, Sprache, Tabellendichte, Tastenkürzel und die Tour.",
       side: "bottom",
       align: "end",
     },

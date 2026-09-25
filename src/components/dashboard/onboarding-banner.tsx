@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Shield, CheckCircle2, Circle, Wind, Building2, Zap, Radio, Users, X } from "lucide-react";
 import Link from "next/link";
+import { onboardingAnzeige } from "@/lib/dashboard/onboarding-anzeige";
 
 interface OnboardingStep {
   key: string;
@@ -50,16 +51,37 @@ export function OnboardingBanner() {
   if (dismissed || !steps) return null;
 
   const completedCount = steps.filter(s => s.completed).length;
-  const allDone = completedCount === steps.length;
   const progressPct = (completedCount / steps.length) * 100;
+  const anzeige = onboardingAnzeige(completedCount, steps.length);
 
   // Hide when all steps are done
-  if (allDone) return null;
+  if (anzeige === "aus") return null;
 
   const handleDismiss = () => {
     setDismissed(true);
     localStorage.setItem("wpm:onboarding-dismissed", "true");
   };
+
+  // Almost done: one line instead of a third of the dashboard.
+  if (anzeige === "kompakt") {
+    const naechster = steps.find((step) => !step.completed);
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm">
+        <Shield className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+        <span className="text-muted-foreground">
+          {t("progress", { completed: completedCount, total: steps.length })}
+        </span>
+        {naechster && (
+          <Link href={naechster.href} className="font-medium text-primary hover:underline">
+            {t("nextStep", { step: naechster.label })}
+          </Link>
+        )}
+        <Button aria-label={t("dismiss")} variant="ghost" size="icon" onClick={handleDismiss} className="ml-auto h-7 w-7 text-muted-foreground">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <Card className="border-primary/20 bg-primary/5">
@@ -76,7 +98,7 @@ export function OnboardingBanner() {
               </p>
             </div>
           </div>
-          <Button aria-label="Entfernen" variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8 text-muted-foreground">
+          <Button aria-label={t("dismiss")} variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8 text-muted-foreground">
             <X className="h-4 w-4" />
           </Button>
         </div>

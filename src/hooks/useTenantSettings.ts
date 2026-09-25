@@ -35,8 +35,6 @@ export interface TenantSettings {
   companyEmail: string;
   companyWebsite: string;
 
-  // Geschaeftsjahr
-  fiscalYearStartMonth: number;
 
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;

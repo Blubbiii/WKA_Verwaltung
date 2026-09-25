@@ -47,7 +47,7 @@ export default function AdminSettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="hgb" className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4" />
-            HGB-Compliance
+            {t("tabCheckRules")}
           </TabsTrigger>
         </TabsList>
 

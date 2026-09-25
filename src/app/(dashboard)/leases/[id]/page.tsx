@@ -11,7 +11,8 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
 import { de, enUS } from "date-fns/locale";
-import { formatCurrency, LOCALE_DE } from "@/lib/format";
+import { formatCurrency, LOCALE_DE, restlaufzeit, restlaufzeitText } from "@/lib/format";
+import { BankverbindungAnzeige } from "@/components/leases/bankverbindung-anzeige";
 import {
   ArrowLeft,
   Pencil,
@@ -415,10 +416,7 @@ export default function LeaseDetailPage({
                 <Separator />
                 <div>
                   <p className="text-sm text-muted-foreground">{t("lessor.bank")}</p>
-                  <p className="font-medium font-mono text-sm">{lease.lessor.bankIban}</p>
-                  {lease.lessor.bankName && (
-                    <p className="text-sm text-muted-foreground">{lease.lessor.bankName}</p>
-                  )}
+                  <BankverbindungAnzeige iban={lease.lessor.bankIban} bankName={lease.lessor.bankName} />
                 </div>
               </>
             )}
@@ -462,7 +460,10 @@ export default function LeaseDetailPage({
                 <div>
                   <p className="text-sm text-muted-foreground">{t("term.remaining")}</p>
                   <p className={`font-medium ${daysUntilEnd <= 90 ? "text-yellow-600" : ""}`}>
-                    {daysUntilEnd > 0 ? t("term.daysRemaining", { days: daysUntilEnd }) : t("term.expired")}
+                    {(() => {
+                      const teile = lease.endDate ? restlaufzeit(new Date(lease.endDate)) : null;
+                      return teile ? restlaufzeitText(teile, (k, v) => t(`term.rest.${k}`, v)) : t("term.expired");
+                    })()}
                   </p>
                 </div>
               )}

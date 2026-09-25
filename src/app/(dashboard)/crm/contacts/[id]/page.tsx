@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { useConfirm } from "@/components/ui/use-confirm";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { ModulAus } from "@/components/ui/modul-aus";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadFromResponse } from "@/lib/download";
 import { Button } from "@/components/ui/button";
@@ -134,7 +135,7 @@ export default function CrmContactDetailPage({
   const [activeTab, setActiveTab] = useTabParam("overview", { allowed: TAB_VALUES });
   const { id } = use(params);
   const router = useRouter();
-  const { flags } = useFeatureFlags();
+  const { flags, loading: flagsLoading } = useFeatureFlags();
   const t = useTranslations("crm.detail");
   const tContacts = useTranslations("crm.contacts");
   const tLabels = useTranslations("crm.labels");
@@ -239,17 +240,9 @@ export default function CrmContactDetailPage({
       : (contact.companyName ?? "—")
     : "";
 
-  if (!flags.crm) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold">{tContacts("crmDisabled")}</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          {tContacts("crmDisabledHint")}
-        </p>
-      </div>
-    );
-  }
+  // Flags still loading: the placeholder says "off" — don't flash the hint.
+  if (flagsLoading) return null;
+  if (!flags.crm) return <ModulAus icon={Users} titel={tContacts("crmDisabled")} />;
 
   if (loading) {
     return (

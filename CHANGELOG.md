@@ -46,6 +46,31 @@ SEPA-Läufe und Bankumsätze nicht mehr ins Leere.
 Bleibt bewusst: der DATEV-Export der Eingangsrechnungen für den Steuerberater,
 die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
 
+**UX-Durchsicht, Welle 1: Stolpersteine**
+
+- **Pachtvertrag anlegen:** Ein ausgefülltes, noch nicht übernommenes
+  Flurstück übernimmt jetzt „Weiter“ selbst. Ein gesperrtes „Weiter“ nennt
+  seinen Grund. Sind alle Flurstücke verpachtet, sagt die Liste das und bietet
+  „Alle Flurstücke anzeigen“ an, statt „Keine Flurstücke gefunden“.
+- **Ausgeschaltete Module:** Statt „Bitte wenden Sie sich an Ihren
+  Administrator“ (auch zum Administrator) erfährt jeder, wer das Modul
+  einschalten kann; der Superadmin bekommt den Link dorthin. Die CRM-Seiten
+  blitzen beim Laden nicht mehr als „ausgeschaltet“ auf.
+- **Dashboard:** „Erste Schritte“ schrumpft ab 80 % auf eine Zeile.
+  „Letzte Aktivitäten“ zeigt Sätze statt Rohcodes („hat den Zugriffsbericht
+  angesehen“ statt „hat ACCESS_REPORT view“).
+- **Pachtvertrag:** Restlaufzeit in Jahren und Monaten statt „8954 Tage“; die
+  Laufzeit in der Liste bricht nicht mehr um. Lässt sich eine Bankverbindung
+  nicht entschlüsseln, steht dort ein Hinweis statt des Chiffretexts.
+- **Kopfzeile:** Mandantenname nur noch in der Seitenleiste. Design, Sprache,
+  Tabellendichte und Tastenkombinationen stehen beschriftet im Benutzermenü.
+- **Rundgang:** wird nur noch auf dem Dashboard angeboten, nicht mehr über
+  jede Seite gelegt.
+- **Einstellungen:** Kleinunternehmer (§19 UStG), USt-Split und
+  Geschäftsjahresbeginn entfernt — ohne Wirkung seit dem Ausbau der
+  Buchhaltung; der Geschäftsjahresbeginn ließ sich nicht einmal speichern.
+  Der Tab „HGB-Compliance“ heißt „Prüfregeln“ und spricht ohne interne Kürzel.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

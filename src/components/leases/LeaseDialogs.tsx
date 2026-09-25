@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { format, differenceInDays } from "date-fns";
 import { de } from "date-fns/locale";
 import { formatCurrency, LOCALE_DE } from "@/lib/format";
+import { BankverbindungAnzeige } from "@/components/leases/bankverbindung-anzeige";
 import {
   MapPin,
   Calendar,
@@ -448,14 +449,10 @@ function LeaseDetailDialog({
                           <p className="text-xs text-muted-foreground">
                             Bankverbindung
                           </p>
-                          <p className="font-mono text-sm">
-                            {leaseDetail.lessor.bankIban}
-                          </p>
-                          {leaseDetail.lessor.bankName && (
-                            <p className="text-xs text-muted-foreground">
-                              {leaseDetail.lessor.bankName}
-                            </p>
-                          )}
+                          <BankverbindungAnzeige
+                            iban={leaseDetail.lessor.bankIban}
+                            bankName={leaseDetail.lessor.bankName}
+                          />
                         </div>
                       )}
                     </div>

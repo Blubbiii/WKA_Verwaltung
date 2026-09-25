@@ -33,6 +33,8 @@ const ROLE_HIERARCHY: Record<string, number> = {
 
 export interface UseOnboardingResult {
   startTour: (tourId?: TourId) => void;
+  /** Decline the offered tour; counts like closing it early. */
+  declineTour: () => void;
   isActive: boolean;
   isLoaded: boolean;
   hasCompletedMainTour: boolean;
@@ -164,6 +166,11 @@ export function useOnboarding(): UseOnboardingResult {
     };
   }, []);
 
+  // Declining the offer counts like closing the tour early.
+  const declineTour = useCallback(() => {
+    saveState({ skippedAt: new Date().toISOString() });
+  }, [saveState]);
+
   const hasCompletedMainTour = onboardingState.completedTours.includes(TOUR_IDS.MAIN);
   const shouldAutoTrigger =
     isLoaded &&
@@ -173,6 +180,7 @@ export function useOnboarding(): UseOnboardingResult {
 
   return {
     startTour,
+    declineTour,
     isActive,
     isLoaded,
     hasCompletedMainTour,

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { useLocale, useTranslations } from "next-intl";
+import { pruefeSchritt } from "@/lib/leases/neuer-pachtvertrag-schritte";
 import {
   ArrowLeft,
   ArrowRight,
@@ -281,30 +282,24 @@ export default function NewLeaseWizardPage() {
     return [...selected, ...newPlots];
   }
 
-  // Validation
+  // Validation — pure rules with reason in lib/leases/neuer-pachtvertrag-schritte
+  function schrittErgebnis() {
+    return pruefeSchritt(currentStep, {
+      lessorMode,
+      selectedLessorId,
+      newLessor,
+      selectedPlotCount: selectedPlotIds.length,
+      newPlotCount: newPlots.length,
+      // Only an open form counts as a draft; a closed one has been reset.
+      entwurfFlurstueck: showNewPlotForm
+        ? currentNewPlot
+        : { cadastralDistrict: "", plotNumber: "", areaSqm: "", municipality: "" },
+      startDate: contractData.startDate,
+    });
+  }
+
   function canProceed(): boolean {
-    switch (currentStep) {
-      case 0: // Lessor
-        if (lessorMode === "select") {
-          return !!selectedLessorId;
-        }
-        if (newLessor.personType === "natural") {
-          return !!newLessor.firstName && !!newLessor.lastName;
-        }
-        return !!newLessor.companyName;
-
-      case 1: // Plots
-        return selectedPlotIds.length > 0 || newPlots.length > 0;
-
-      case 2: // Contract
-        return !!contractData.startDate;
-
-      case 3: // Review
-        return true;
-
-      default:
-        return false;
-    }
+    return schrittErgebnis().weiter;
   }
 
   // Add new plot to list
@@ -842,9 +837,20 @@ export default function NewLeaseWizardPage() {
                   );
                 })}
                 {displayedPlots.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">
-                    {t("plots.noneFound")}
-                  </p>
+                  showOnlyAvailable && !needle && plotsWithActiveLease.length > 0 ? (
+                    // Everything is leased and the default filter hides it —
+                    // "no plots found" read as if there were none at all.
+                    <div className="text-center text-muted-foreground py-4 space-y-2">
+                      <p>{t("plots.allLeased", { count: plotsWithActiveLease.length })}</p>
+                      <Button variant="outline" size="sm" onClick={() => setShowOnlyAvailable(false)}>
+                        {t("plots.showAll")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      {t("plots.noneFound")}
+                    </p>
+                  )
                 )}
               </div>
             </CardContent>
@@ -1705,13 +1711,30 @@ export default function NewLeaseWizardPage() {
         </div>
 
         {currentStep < STEPS.length - 1 ? (
-          <Button
-            onClick={() => setCurrentStep((prev) => prev + 1)}
-            disabled={!canProceed()}
-          >
-            {t("actions.next")}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-3">
+            {(() => {
+              const ergebnis = schrittErgebnis();
+              return ergebnis.weiter ? null : (
+                <p className="text-sm text-muted-foreground" role="status">
+                  {t(`blocked.${ergebnis.grund}`)}
+                </p>
+              );
+            })()}
+            <Button
+              onClick={() => {
+                const ergebnis = schrittErgebnis();
+                if (!ergebnis.weiter) return;
+                // A filled-in plot that was not added yet is taken over here
+                // instead of blocking "Weiter" without a word.
+                if (ergebnis.uebernimmEntwurf) addNewPlot();
+                setCurrentStep((prev) => prev + 1);
+              }}
+              disabled={!canProceed()}
+            >
+              {t("actions.next")}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         ) : (
           <Button onClick={handleSubmit} disabled={loading || !canProceed()}>
             <Save className="mr-2 h-4 w-4" />

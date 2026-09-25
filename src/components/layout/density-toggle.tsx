@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Detailgrad der Tabellen — kompakt oder normal.
+ * Detailgrad der Tabellen — kompakt oder normal. Umgeschaltet wird im
+ * Benutzermenü der Kopfzeile.
  *
  * ## Warum es das gibt
  *
@@ -28,14 +29,15 @@
  */
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { Rows2, Rows3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const SPEICHER_SCHLUESSEL = "wpm.density";
 
-export function DensityToggle() {
-  const t = useTranslations("common.density");
+/**
+ * Applies the stored density on mount and returns the toggle. Called by the
+ * header itself — the toggle lives in the user menu, whose content is only
+ * mounted while open.
+ */
+export function useDichte() {
   const [kompakt, setKompakt] = useState(false);
 
   // Erst nach dem Einhaengen lesen: auf dem Server gibt es keinen
@@ -68,20 +70,5 @@ export function DensityToggle() {
     }
   }
 
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={umschalten}
-      // Der Titel sagt, was PASSIERT, nicht was gerade ist. "Kompakte
-      // Ansicht" an einer eingeschalteten kompakten Ansicht liest sich wie
-      // eine Zustandsanzeige und laesst offen, was ein Klick tut.
-      title={kompakt ? t("toNormal") : t("toCompact")}
-      aria-label={kompakt ? t("toNormal") : t("toCompact")}
-      aria-pressed={kompakt}
-      className="h-9 w-9 text-muted-foreground hover:text-foreground"
-    >
-      {kompakt ? <Rows3 className="h-4 w-4" /> : <Rows2 className="h-4 w-4" />}
-    </Button>
-  );
+  return { kompakt, umschalten };
 }

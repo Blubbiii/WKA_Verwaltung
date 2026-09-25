@@ -53,8 +53,6 @@ export interface TenantSettings {
 
 
 
-  // Geschaeftsjahr
-  fiscalYearStartMonth: number;
 
   // GoBD Aufbewahrung
   gobdRetentionYearsInvoice: number;
@@ -68,10 +66,6 @@ export interface TenantSettings {
   reminderFee2: number;
   reminderFee3: number;
 
-  // P10: §19 UStG Kleinunternehmer-Status
-  kleinunternehmer: boolean;
-  // P11: USt-Split Feature-Flag (default OFF während Shadow-Phase)
-  useTaxSplit: boolean;
   // P13: 4-Augen-Freigabe-Schwelle in EUR (null = immer 4-Augen)
   fourEyesThresholdEur: number | null;
   // Cent-Toleranz für Bank-Match + Voll-bezahlt
@@ -241,9 +235,7 @@ const tenantSettingsSchema = z.object({
     .max(999.99, "Mahngebühr zu hoch")
     .optional(),
 
-  // HGB-Compliance (P10-P19 + Audit B/C)
-  kleinunternehmer: z.boolean().optional(),
-  useTaxSplit: z.boolean().optional(),
+  // Prüfregeln (Vier-Augen, Zahlungsabgleich)
   fourEyesThresholdEur: z
     .number()
     .min(0, "Schwelle darf nicht negativ sein")
