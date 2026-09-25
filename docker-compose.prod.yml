@@ -331,23 +331,16 @@ services:
     volumes:
       - ./scripts/backup-db.sh:/scripts/backup-db.sh:ro
       - ./scripts/restore-db.sh:/scripts/restore-db.sh:ro
+      - ./scripts/backup-scheduler.sh:/scripts/backup-scheduler.sh:ro
       - backup_data:/backups
     networks:
       - wpm-network
+    # Schedule comes from the UI (Administration → System → Backup), read
+    # every 5 minutes; falls back to daily 02:00 without a database.
     entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        chmod +x /scripts/backup-db.sh /scripts/restore-db.sh
-        echo "0 2 * * * /scripts/backup-db.sh daily >> /var/log/backup.log 2>&1" > /etc/crontabs/root
-        echo "0 3 * * 0 /scripts/backup-db.sh weekly >> /var/log/backup.log 2>&1" >> /etc/crontabs/root
-        echo "0 4 1 * * /scripts/backup-db.sh monthly >> /var/log/backup.log 2>&1" >> /etc/crontabs/root
-        touch /var/log/backup.log
-        echo "[$(date)] Backup cron scheduler started"
-        echo "[$(date)] Schedule: daily@02:00, weekly@Sun/03:00, monthly@1st/04:00"
-        crond -f -l 2
+    command: ["/scripts/backup-scheduler.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "pgrep crond || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f backup-scheduler || exit 1"]
       interval: 60s
       timeout: 5s
       retries: 3

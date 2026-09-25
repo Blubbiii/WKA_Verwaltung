@@ -476,7 +476,7 @@ Automatische Invalidierung bei Entity-Aenderungen:
 - **Verschluesselung**: AES-256-GCM fuer sensible Daten, TLS 1.2+ fuer Transport
 - **Passwort-Hashing**: bcryptjs
 - **Audit-Log**: Alle Aenderungen protokolliert (AuditLog-Tabelle)
-- **Backup**: Automatisch (taeglich/woechentlich/monatlich), optional S3-Upload
+- **Backup**: Automatisch (taeglich/woechentlich/monatlich), optional S3-Upload. Zeitplan in der Oberflaeche (Administration → System → Backup), gespeichert in `system_configs` (`backup.schedule.*`); der Container `wpm-backup` liest ihn per `scripts/backup-scheduler.sh` alle 5 Minuten und meldet Status und Lebenszeichen zurueck (`backup.status.*`). Ohne Datenbank: taeglich 02:00.
 - **DSGVO-konform**: Datenexport, Loeschfunktion, Soft-Delete
 - **Aufbewahrungspflicht**: Rechnungen mit Soft-Delete (10 Jahre, AO §147)
 - **GoBD**: SHA-256 Hash-Chain, 10-Jahre Retention, Audit-Export
@@ -697,7 +697,7 @@ services:
   minio:         # MinIO S3 (API :9000, Console :9001)
   minio-init:    # Bucket-Initialisierung (One-Shot)
   traefik:       # Reverse Proxy, SSL, Rate Limiting
-  backup:        # pg_dump Cron (taeglich/woechentlich/monatlich)
+  backup:        # pg_dump nach Zeitplan aus der DB (scripts/backup-scheduler.sh)
 ```
 
 ### Multi-Stage Dockerfile (4 Stages)

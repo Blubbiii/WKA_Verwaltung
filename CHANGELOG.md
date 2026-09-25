@@ -253,6 +253,30 @@ und niemand rief ihn auf. Jetzt ist es ein täglicher Wartungslauf um 6:30
 idempotent, ein vorhandener Entwurf wird übersprungen. Die Route bleibt zum
 Anstoßen von Hand.
 
+**Backup-Zeitplan aus der Oberfläche (E3, behebt F8)**
+
+> **Beim nächsten Deployment in Portainer übernehmen.** Der Dienst `backup`
+> startet jetzt `scripts/backup-scheduler.sh` statt eines festen Crontabs. Im
+> Portainer-Stack muss das Skript als Config `backup_scheduler_script`
+> eingefügt werden (wie `backup_script`, mit `$$` statt `$`), `entrypoint`
+> wird `/bin/sh`, `command` `["/scripts/backup-scheduler.sh"]`, der
+> Healthcheck `pgrep -f backup-scheduler`. Bis dahin zeigt die Oberfläche
+> „Backup-Dienst meldet sich nicht" — zu Recht, denn der alte Dienst meldet
+> nichts zurück. Der alte Portainer-Dienst installierte `cron` per `apt-get`
+> auf einem TimescaleDB-Image; ob der dort je lief, ist ungeprüft. Genau das
+> macht die neue Anzeige sichtbar.
+
+Das Speichern der Backup-Einstellungen scheiterte immer (400): Das Formular
+schickte eine Aktion, die die Route nicht kannte (F8). Jetzt steht der Zeitplan
+in der Datenbank: Rhythmus (täglich, wöchentlich, monatlich), Uhrzeit, wie
+viele Sicherungen je Art bleiben, S3 ja/nein. Der Backup-Container liest ihn
+alle fünf Minuten, holt verpasste Termine nach und meldet zurück. Die
+Oberfläche zeigt das letzte Backup (Zeit, Art, Größe), das nächste geplante
+und das letzte Lebenszeichen. Sie unterscheidet drei Warnungen: Dienst meldet
+sich nicht, letztes Backup fehlgeschlagen, überfällig. Ohne Datenbank fällt
+der Dienst auf den bisherigen Plan zurück (täglich 02:00, sonntags
+wöchentlich, am Ersten monatlich).
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

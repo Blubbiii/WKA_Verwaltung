@@ -25,7 +25,6 @@ import {
   XCircle,
   AlertCircle,
   Plus,
-  Settings,
   FileJson,
   FileSpreadsheet,
 } from "lucide-react";
@@ -49,19 +48,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BACKUP_RETENTION_DAYS } from "@/lib/config/business-thresholds";
+import { BackupZeitplanCard } from "@/components/admin/backup-zeitplan-card";
+import type { BackupStatus, BackupWarnung, BackupZeitplan } from "@/lib/backup-zeitplan";
 import { LOCALE_DE } from "@/lib/format";
 import { useTabParam } from "@/hooks/useTabParam";
 
@@ -89,18 +80,15 @@ interface StorageByCategory {
   sizeBytes: number;
 }
 
-interface BackupSettings {
-  autoBackupEnabled: boolean;
-  backupInterval: "daily" | "weekly" | "monthly";
-  retentionDays: number;
-  backupTime: string;
-}
 
 interface BackupData {
   backups: Backup[];
   storageStats: StorageStats;
   storageByCategory: StorageByCategory[];
-  settings: BackupSettings;
+  zeitplan: BackupZeitplan;
+  backupStatus: BackupStatus;
+  naechsterLauf: string | null;
+  lage: { ok: boolean; warnung: BackupWarnung | null };
 }
 
 function formatBytes(bytes: number): string {
@@ -137,13 +125,6 @@ export default function BackupTab() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [creatingBackup, setCreatingBackup] = useState(false);
   const [deletingBackup, setDeletingBackup] = useState<string | null>(null);
-  const [settings, setSettings] = useState<BackupSettings>({
-    autoBackupEnabled: true,
-    backupInterval: "daily",
-    retentionDays: BACKUP_RETENTION_DAYS,
-    backupTime: "02:00",
-  });
-  const [savingSettings, setSavingSettings] = useState(false);
   const [searchingOrphans, setSearchingOrphans] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [deletingTemp, setDeletingTemp] = useState(false);
@@ -159,7 +140,6 @@ export default function BackupTab() {
       if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || "Fehler beim Laden der Backup-Daten"); }
       const result = await response.json();
       setData(result);
-      if (result.settings) setSettings(result.settings);
       setLastRefresh(new Date());
     } catch (err) { setError(err instanceof Error ? err.message : "Unbekannter Fehler"); } finally { setLoading(false); }
   }, []);
@@ -170,7 +150,6 @@ export default function BackupTab() {
   // toast.error liefert das sofortige Feedback (Admin-Konvention).
   const handleCreateBackup = async () => { try { setCreatingBackup(true); const response = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "create" }) }); if (!response.ok) throw new Error("Fehler beim Erstellen des Backups"); await fetchData(); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Erstellen des Backups"; setError(msg); toast.error(msg); } finally { setCreatingBackup(false); } };
   const handleDeleteBackup = async (backupId: string) => { try { setDeletingBackup(backupId); const response = await fetch(`/api/admin/backup?id=${backupId}`, { method: "DELETE" }); if (!response.ok) throw new Error("Fehler beim Löschen des Backups"); await fetchData(); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Löschen des Backups"; setError(msg); toast.error(msg); } finally { setDeletingBackup(null); } };
-  const handleSaveSettings = async () => { try { setSavingSettings(true); const response = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "updateSettings", settings }) }); if (!response.ok) throw new Error("Fehler beim Speichern der Einstellungen"); await fetchData(); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Speichern der Einstellungen"; setError(msg); toast.error(msg); } finally { setSavingSettings(false); } };
   const handleSearchOrphans = async () => { try { setSearchingOrphans(true); const response = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "searchOrphans" }) }); if (!response.ok) throw new Error("Fehler beim Suchen verwaister Dateien"); const result = await response.json(); toast.info(`Gefundene verwaiste Dateien: ${result.orphanedCount || 0}`); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Suchen verwaister Dateien"; setError(msg); toast.error(msg); } finally { setSearchingOrphans(false); } };
   const handleClearCache = async () => { try { setClearingCache(true); const response = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "clearCache" }) }); if (!response.ok) throw new Error("Fehler beim Leeren des Caches"); toast.success("Cache erfolgreich geleert"); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Leeren des Caches"; setError(msg); toast.error(msg); } finally { setClearingCache(false); } };
   const handleDeleteTemp = async () => { try { setDeletingTemp(true); const response = await fetch("/api/admin/backup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "deleteTemp" }) }); if (!response.ok) throw new Error("Fehler beim Löschen temporärer Dateien"); const result = await response.json(); toast.info(`Gelöschte temporäre Dateien: ${result.deletedCount || 0}`); } catch (err) { const msg = err instanceof Error ? err.message : "Fehler beim Löschen temporärer Dateien"; setError(msg); toast.error(msg); } finally { setDeletingTemp(false); } };
@@ -228,18 +207,16 @@ export default function BackupTab() {
               </CardContent>
             </Card>
 
-            <Card className="md:col-span-2">
-              <CardHeader><CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5" />Backup-Einstellungen</CardTitle><CardDescription>Konfigurieren Sie automatische Backups</CardDescription></CardHeader>
-              <CardContent>
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="flex items-center justify-between rounded-lg border p-4"><div className="space-y-0.5"><Label htmlFor="auto-backup">Automatische Backups</Label><p className="text-sm text-muted-foreground">Erstellt regelmäßig automatische Sicherungen</p></div><Switch id="auto-backup" checked={settings.autoBackupEnabled} onCheckedChange={(checked) => setSettings((prev) => ({ ...prev, autoBackupEnabled: checked }))} /></div>
-                  <div className="space-y-2"><Label htmlFor="backup-interval">Backup-Intervall</Label><Select value={settings.backupInterval} onValueChange={(value: "daily" | "weekly" | "monthly") => setSettings((prev) => ({ ...prev, backupInterval: value }))} disabled={!settings.autoBackupEnabled}><SelectTrigger id="backup-interval"><SelectValue placeholder="Intervall wählen" /></SelectTrigger><SelectContent><SelectItem value="daily">Täglich</SelectItem><SelectItem value="weekly">Wöchentlich</SelectItem><SelectItem value="monthly">Monatlich</SelectItem></SelectContent></Select></div>
-                  <div className="space-y-2"><Label htmlFor="retention">Aufbewahrungsdauer</Label><Select value={String(settings.retentionDays)} onValueChange={(value) => setSettings((prev) => ({ ...prev, retentionDays: Number(value) }))} disabled={!settings.autoBackupEnabled}><SelectTrigger id="retention"><SelectValue placeholder="Dauer wählen" /></SelectTrigger><SelectContent><SelectItem value="7">7 Tage</SelectItem><SelectItem value="30">30 Tage</SelectItem><SelectItem value="90">90 Tage</SelectItem><SelectItem value="365">1 Jahr</SelectItem></SelectContent></Select></div>
-                  <div className="space-y-2"><Label htmlFor="backup-time">Backup-Zeit</Label><Input id="backup-time" type="time" value={settings.backupTime} onChange={(e) => setSettings((prev) => ({ ...prev, backupTime: e.target.value }))} disabled={!settings.autoBackupEnabled} /></div>
-                </div>
-                <div className="mt-6 flex justify-end"><Button onClick={handleSaveSettings} disabled={savingSettings}>{savingSettings ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}Einstellungen speichern</Button></div>
-              </CardContent>
-            </Card>
+            {data?.zeitplan && (
+              <BackupZeitplanCard
+                key={JSON.stringify(data.zeitplan)}
+                zeitplan={data.zeitplan}
+                status={data.backupStatus}
+                naechsterLauf={data.naechsterLauf}
+                lage={data.lage}
+                onGespeichert={fetchData}
+              />
+            )}
           </div>
         </TabsContent>
 

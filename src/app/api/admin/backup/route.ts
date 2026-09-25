@@ -12,14 +12,31 @@ import {
   checkPgDumpAvailable,
 } from "@/lib/backup";
 import { z } from "zod";
+import { backupLage, naechsterLauf } from "@/lib/backup-zeitplan";
+import {
+  ladeBackupStatus,
+  ladeBackupZeitplan,
+  speichereBackupZeitplan,
+} from "@/lib/backup-zeitplan-db";
 import { apiError } from "@/lib/api-errors";
 import { ListObjectsV2Command, type ListObjectsV2CommandOutput } from "@aws-sdk/client-s3";
 import { s3Client, S3_BUCKET } from "@/lib/storage";
 import { cache } from "@/lib/cache";
 import { runTusGarbageCollection } from "@/lib/tus/gc";
 
+const zeitplanSchema = z.object({
+  aktiv: z.boolean(),
+  rhythmus: z.enum(["daily", "weekly", "monthly"]),
+  uhrzeit: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Uhrzeit als HH:MM"),
+  behalteTaeglich: z.number().int().min(1).max(365),
+  behalteWoechentlich: z.number().int().min(1).max(365),
+  behalteMonatlich: z.number().int().min(1).max(365),
+  s3: z.boolean(),
+});
+
 const backupActionSchema = z.object({
-  action: z.enum(["create", "applyRetention", "searchOrphans", "clearCache", "deleteTemp", "export"]),
+  action: z.enum(["create", "applyRetention", "searchOrphans", "clearCache", "deleteTemp", "export", "updateSchedule"]),
+  zeitplan: zeitplanSchema.optional(),
   type: z.enum(["daily", "weekly", "monthly", "manual"]).optional(),
   format: z.string().optional(),
   tables: z.array(z.string().min(1)).optional(),
@@ -90,7 +107,16 @@ export async function GET(request: NextRequest) {
     // Check if pg_dump is available
     const pgDumpAvailable = await checkPgDumpAvailable();
 
+    // Schedule set in the UI and the status the wpm-backup container reports
+    // (it owns the backup volume; this container does not see the files).
+    const [zeitplan, backupStatus] = await Promise.all([ladeBackupZeitplan(), ladeBackupStatus()]);
+    const jetzt = new Date();
+
     const response = {
+      zeitplan,
+      backupStatus,
+      naechsterLauf: naechsterLauf(zeitplan, jetzt)?.toISOString() ?? null,
+      lage: backupLage(zeitplan, backupStatus, jetzt),
       backups: localBackups,
       s3Backups,
       storageStats: {
@@ -394,6 +420,21 @@ export async function POST(request: NextRequest) {
         return apiError("OPERATION_NOT_ALLOWED", 501, {
           message:
             "Datenexport ist noch nicht implementiert — vorgesehen für Roadmap Q3.",
+        });
+      }
+
+      case "updateSchedule": {
+        // F8 (audit 2026-09): the form sent action "updateSettings", which the
+        // route never knew — every save answered 400.
+        if (!parsed.data.zeitplan) {
+          return apiError("MISSING_FIELD", 400, { message: "Zeitplan fehlt" });
+        }
+        await speichereBackupZeitplan(parsed.data.zeitplan);
+        logger.info({ zeitplan: parsed.data.zeitplan, userId: check.userId }, "[BACKUP] Zeitplan gespeichert");
+        return NextResponse.json({
+          success: true,
+          zeitplan: parsed.data.zeitplan,
+          naechsterLauf: naechsterLauf(parsed.data.zeitplan, new Date())?.toISOString() ?? null,
         });
       }
 

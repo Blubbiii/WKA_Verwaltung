@@ -8068,6 +8068,44 @@
       "clearTitle": "Alle Dashboard-Caches leeren?",
       "clearText": "Die Kennzahlen werden beim nächsten Aufruf neu berechnet. Das kann die ersten Seitenaufrufe kurz verlangsamen.",
       "clearError": "Cache konnte nicht geleert werden"
+    },
+    "backupSchedule": {
+      "title": "Automatische Backups",
+      "description": "Zeitplan für die Datenbanksicherung. Der Backup-Dienst liest ihn alle fünf Minuten und meldet hier zurück.",
+      "allGood": "Backups laufen planmäßig.",
+      "off": "Automatische Backups sind ausgeschaltet.",
+      "warnNoHeartbeat": "Der Backup-Dienst meldet sich nicht (letztes Lebenszeichen: {zeit}). Läuft der Container wpm-backup mit dem Zeitplan-Skript? Ohne ihn entstehen keine Backups.",
+      "warnFailed": "Das letzte Backup ist fehlgeschlagen ({zeit}): {fehler}",
+      "warnOverdue": "Das letzte erfolgreiche Backup ist vom {zeit} — überfällig.",
+      "lastBackup": "Letztes Backup",
+      "nextBackup": "Nächstes Backup",
+      "heartbeat": "Letztes Lebenszeichen",
+      "none": "keins geplant",
+      "types": {
+        "daily": "täglich",
+        "weekly": "wöchentlich",
+        "monthly": "monatlich"
+      },
+      "rhythms": {
+        "daily": "Täglich",
+        "weekly": "Wöchentlich (sonntags)",
+        "monthly": "Monatlich (am Ersten)"
+      },
+      "fields": {
+        "aktiv": "Automatische Backups",
+        "aktivHint": "Sichert die Datenbank nach diesem Zeitplan",
+        "s3": "Zusätzlich in S3/MinIO ablegen",
+        "s3Hint": "Kopie außerhalb des Backup-Volumes",
+        "rhythmus": "Rhythmus",
+        "uhrzeit": "Uhrzeit",
+        "behalteTaeglich": "Tägliche behalten",
+        "behalteWoechentlich": "Wöchentliche behalten",
+        "behalteMonatlich": "Monatliche behalten"
+      },
+      "rotationHint": "Bei täglichem Rhythmus entstehen zusätzlich sonntags ein wöchentliches und am Monatsersten ein monatliches Backup, bei wöchentlichem das monatliche. Von jeder Art bleiben so viele wie eingestellt erhalten. Ein verpasster Termin wird nachgeholt, sobald der Dienst wieder läuft.",
+      "save": "Zeitplan speichern",
+      "saved": "Zeitplan gespeichert — der Backup-Dienst übernimmt ihn innerhalb von fünf Minuten.",
+      "saveError": "Zeitplan konnte nicht gespeichert werden"
     }
   },
   "portal": {

@@ -8068,6 +8068,44 @@
       "clearTitle": "Clear all dashboard caches?",
       "clearText": "Figures are recalculated on the next request. The first page loads may be briefly slower.",
       "clearError": "Cache could not be cleared"
+    },
+    "backupSchedule": {
+      "title": "Automatic backups",
+      "description": "Schedule for the database backup. The backup service reads it every five minutes and reports back here.",
+      "allGood": "Backups are running on schedule.",
+      "off": "Automatic backups are switched off.",
+      "warnNoHeartbeat": "The backup service is not reporting (last sign of life: {zeit}). Is the wpm-backup container running with the schedule script? Without it, no backups are made.",
+      "warnFailed": "The last backup failed ({zeit}): {fehler}",
+      "warnOverdue": "The last successful backup is from {zeit} — overdue.",
+      "lastBackup": "Last backup",
+      "nextBackup": "Next backup",
+      "heartbeat": "Last sign of life",
+      "none": "none scheduled",
+      "types": {
+        "daily": "daily",
+        "weekly": "weekly",
+        "monthly": "monthly"
+      },
+      "rhythms": {
+        "daily": "Daily",
+        "weekly": "Weekly (Sundays)",
+        "monthly": "Monthly (on the 1st)"
+      },
+      "fields": {
+        "aktiv": "Automatic backups",
+        "aktivHint": "Backs up the database on this schedule",
+        "s3": "Also store in S3/MinIO",
+        "s3Hint": "Copy outside the backup volume",
+        "rhythmus": "Rhythm",
+        "uhrzeit": "Time",
+        "behalteTaeglich": "Keep daily",
+        "behalteWoechentlich": "Keep weekly",
+        "behalteMonatlich": "Keep monthly"
+      },
+      "rotationHint": "With a daily rhythm there is also a weekly backup on Sundays and a monthly one on the 1st; with a weekly rhythm the monthly one. As many of each kind are kept as set. A missed run is caught up as soon as the service runs again.",
+      "save": "Save schedule",
+      "saved": "Schedule saved — the backup service picks it up within five minutes.",
+      "saveError": "Schedule could not be saved"
     }
   },
   "portal": {
