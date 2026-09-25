@@ -263,7 +263,6 @@
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/energy/reports/generate` | Generate energy report |
 | POST | `/energy/reports/investor-quarterly` | Investor quarterly PDF |
 | GET | `/energy/reports/configs` | Report template configs |
 | GET | `/energy/reports/configs/[id]` | Specific config |
@@ -499,7 +498,6 @@
 | GET | `/reports/monthly` | Monthly report |
 | GET | `/reports/quarterly` | Quarterly report |
 | GET | `/reports/annual` | Annual report |
-| GET | `/reports/park-pl` | Park P&L report |
 | POST | `/reports/custom` | Custom report generation |
 | GET | `/reports/archive` | Archived reports |
 | GET | `/reports/archive/[id]` | Download archived report |
@@ -609,7 +607,6 @@
 | GET | `/admin/system/status` | System status dashboard |
 | GET | `/admin/system/stats` | System statistics |
 | GET | `/admin/monitoring` | Monitoring metrics |
-| GET | `/admin/metrics` | Prometheus metrics |
 | GET | `/admin/version` | Application version |
 | GET | `/admin/onboarding-status` | Onboarding progress |
 | GET | `/admin/cache` | Cache management |
@@ -661,7 +658,6 @@
 | GET | `/admin/recurring-invoices` | Recurring invoices |
 | GET | `/admin/settlement-periods` | Settlement periods |
 | GET | `/admin/energy-monthly-rates` | Energy monthly rates |
-| GET | `/admin/energy-revenue-types` | Energy revenue types |
 | GET | `/admin/scada-codes` | SCADA status codes |
 | POST | `/admin/scada-codes/import` | Import SCADA codes |
 
@@ -681,7 +677,6 @@
 |--------|----------|-------------|
 | GET | `/admin/jobs` | Background jobs |
 | GET | `/admin/jobs/stats` | Job statistics |
-| POST | `/admin/jobs/[id]/retry` | Retry failed job |
 | GET | `/admin/scheduled-reports` | Scheduled reports |
 | POST | `/admin/search/reindex` | Trigger search reindex |
 
@@ -738,7 +733,6 @@
 | POST | `/cost-centers/sync` | Sync cost centers |
 | GET | `/features` | Feature flags (current tenant) |
 | GET | `/sidebar-links` | Sidebar links (current tenant) |
-| GET | `/marketing-config` | Marketing config (public) |
 | GET | `/metrics` | Application metrics |
 | GET | `/persons` | Person records |
 | GET | `/vendors` | Vendor records |
@@ -753,7 +747,6 @@
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/batch/documents` | Batch document operations |
-| POST | `/batch/email` | Batch email send |
 | POST | `/batch/invoices` | Batch invoice operations |
 | POST | `/batch/settlements` | Batch settlement operations |
 

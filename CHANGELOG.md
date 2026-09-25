@@ -179,6 +179,38 @@ Eingaben bleiben.
   ein Feld `name`, das Personen nicht haben), mehrere Auswahlfelder waren auf
   100 Einträge begrenzt.
 
+**Verdrahtungs-Audit: Oberfläche und API passen wieder zusammen**
+
+Geprüft wurde jeder Aufruf aus der Oberfläche gegen die vorhandenen Routen,
+jedes Formularfeld gegen das Schema, das es annimmt, und jeder Schalter auf
+Wirkung. Ein neuer Wächter (`app/api/aufrufe-haben-routen.test.ts`) prüft
+künftig, dass jeder Aufruf eine Route mit genau dieser Methode trifft.
+
+- Briefpapier-Vorschau lief ins Leere — die Route gab es nie. Sie zeigt jetzt
+  eine Musterrechnung mit genau diesem Briefpapier.
+- Dokumente: „Kategorie ändern" für mehrere schickte PATCH an eine PUT-Route.
+- Produktionsdaten: Erlös und Erlösart wurden verworfen. Sie sind jetzt von
+  Hand erfassbar und werden gespeichert — gerechnet wird weiter mit der
+  Netzbetreiber-Abrechnung.
+- Gesellschaften: Die Notiz-Spalte schrieb in ein Feld, das es nicht gibt. Sie
+  zeigt jetzt die letzte CRM-Notiz; eine Eingabe legt eine neue an. Ohne
+  CRM-Modul oder Leserecht bleibt die Spalte weg.
+- Versicherungsschaden: Das Schadensdatum wurde nicht gespeichert.
+- BF-Vertrag: „Gebühr ändern" änderte nichts.
+- Mandanten-Assistent: Angelegte Benutzer bekamen keine Rolle.
+- Abrechnungen-Liste: „Als bezahlt markieren" für mehrere und die Status-Auswahl
+  scheiterten. Bezahlt markieren läuft jetzt über denselben Weg wie in der
+  Einzelansicht; der Status ist in der Liste nur noch Anzeige.
+
+Entfernt, weil nichts sie aufrief und die Funktion anderswo lebt: die
+Verwaltung der Erlösarten unter `/api/admin/energy-revenue-types`,
+Einzelansicht und Wiederholen von Jobs (`/api/admin/jobs/[id]`), die
+JSON-Metriken `/api/admin/metrics` (Prometheus liest weiter `/api/metrics`),
+der Sammel-E-Mail-Versand `/api/batch/email`, `/api/reports/park-pl`, die
+öffentliche `/api/marketing-config` (die Startseite liest serverseitig) und
+`/api/energy/reports/generate` (der Berichts-Baukasten nutzt
+`/api/reports/custom`).
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten
