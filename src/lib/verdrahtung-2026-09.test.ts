@@ -80,3 +80,16 @@ describe("Block B: Routen, die eine Oberfläche bekommen haben, werden aufgerufe
     expect(alles).toContain(aufruf);
   });
 });
+
+describe("Ressourcen-Freigaben bleiben im eigenen Mandanten", () => {
+  const route = lies("app/api/admin/resource-access/route.ts");
+  it("die Liste filtert über den Benutzer auf den Mandanten des Admins", () => {
+    // Before: a tenant admin listed the grants — with user e-mails — of every tenant.
+    expect(route).toMatch(/where\.user\s*=\s*\{\s*tenantId:\s*check\.tenantId/);
+  });
+  it("Gewähren und Entziehen nur für Benutzer des eigenen Mandanten", () => {
+    const treffer = route.match(/prisma\.user\.findFirst\(\{\s*where:\s*\{\s*id:\s*validatedData\.userId,\s*tenantId:\s*check\.tenantId/g) ?? [];
+    expect(treffer.length).toBe(2);
+    expect(route).not.toContain("prisma.user.findUnique");
+  });
+});

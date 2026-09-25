@@ -54,8 +54,11 @@ const check = await requireAdmin();
     const resourceId = searchParams.get("resourceId");
     const includeExpired = searchParams.get("includeExpired") === "true";
 
-    // Baue Where-Clause
+    // Baue Where-Clause. ResourceAccess has no tenantId of its own — the
+    // user carries it. Without this a tenant admin listed every tenant's
+    // grants, user e-mails included (audit 2026-09).
     const where: Prisma.ResourceAccessWhereInput = {};
+    where.user = { tenantId: check.tenantId };
 
     if (userId) {
       where.userId = userId;
@@ -125,9 +128,9 @@ const check = await requireAdmin();
     const body = await request.json();
     const validatedData = resourceAccessCreateSchema.parse(body);
 
-    // Prüfen ob User existiert
-    const user = await prisma.user.findUnique({
-      where: { id: validatedData.userId },
+    // Prüfen ob User existiert — und zum eigenen Mandanten gehört
+    const user = await prisma.user.findFirst({
+      where: { id: validatedData.userId, tenantId: check.tenantId },
       select: { id: true },
     });
 
@@ -194,6 +197,14 @@ const check = await requireAdmin();
 
     const body = await request.json();
     const validatedData = resourceAccessDeleteSchema.parse(body);
+
+    const user = await prisma.user.findFirst({
+      where: { id: validatedData.userId, tenantId: check.tenantId },
+      select: { id: true },
+    });
+    if (!user) {
+      return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
+    }
 
     const revoked = await revokeResourceAccess(
       validatedData.userId,
