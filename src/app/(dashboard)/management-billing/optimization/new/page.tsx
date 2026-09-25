@@ -138,7 +138,7 @@ export default function NewOptimizationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild type="button">
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild type="button">
             <Link href="/management-billing/optimization">
               <ArrowLeft className="h-4 w-4" />
             </Link>

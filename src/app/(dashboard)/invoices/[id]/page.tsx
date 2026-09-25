@@ -7,6 +7,7 @@ import { format } from "date-fns/format";
 import { de } from "date-fns/locale/de";
 import { enUS } from "date-fns/locale/en-US";
 import { useLocale, useTranslations } from "next-intl";
+import { rechnungsAktionen, type RechnungsAktion } from "@/lib/invoices/rechnungs-aktionen";
 import { formatCurrency } from "@/lib/format";
 import { extractFilename } from "@/lib/download-filename";
 import {
@@ -30,6 +31,7 @@ import {
   History,
   Printer,
   Mail,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,7 +63,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   Dialog,
@@ -70,12 +71,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -258,6 +259,7 @@ export default function InvoiceDetailPage({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [showPartialCancelDialog, setShowPartialCancelDialog] = useState(false);
   const [showCorrectionDialog, setShowCorrectionDialog] = useState(false);
@@ -526,21 +528,117 @@ export default function InvoiceDetailPage({
   }
 
   const isInvoice = invoice.invoiceType === "INVOICE";
+  const aktionen = rechnungsAktionen({
+    status: invoice.status,
+    skontoMoeglich: invoice.status === "SENT" && getSkontoStatus(invoice) === "ELIGIBLE",
+  });
+  const skontoBetrag = invoice.grossAmount - Number(invoice.skontoAmount);
+
+  function menuePunkt(a: RechnungsAktion) {
+    const gefahr = "text-destructive focus:text-destructive";
+    switch (a) {
+      case "markPaid":
+        return (
+          <DropdownMenuItem key={a} onClick={() => handleMarkPaid(false)}>
+            <CheckCircle className="mr-2 h-4 w-4" />
+            {aktionen.menue.includes("markPaidWithSkonto") ? t("paidWithoutSkonto") : t("paid")}
+          </DropdownMenuItem>
+        );
+      case "markPaidWithSkonto":
+        return (
+          <DropdownMenuItem key={a} onClick={() => handleMarkPaid(true)}>
+            <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+            {t("paidWithSkonto", { amount: formatCurrency(skontoBetrag) })}
+          </DropdownMenuItem>
+        );
+      case "preview":
+        return (
+          <DropdownMenuItem key={a} onClick={() => setShowPreviewDialog(true)}>
+            <Eye className="mr-2 h-4 w-4" />
+            {t("preview")}
+          </DropdownMenuItem>
+        );
+      case "pdf":
+        return (
+          <DropdownMenuItem key={a} asChild>
+            <a href={`/api/invoices/${id}/pdf`} download>
+              <Download className="mr-2 h-4 w-4" />
+              {t("pdf")}
+            </a>
+          </DropdownMenuItem>
+        );
+      case "duplicate":
+        // Bedienaufwand #9: available for every status - a cancelled invoice
+        // is still a usable template.
+        return (
+          <DropdownMenuItem key={a} asChild>
+            <Link href={`/invoices/new?duplicateFrom=${id}`}>
+              <Copy className="mr-2 h-4 w-4" />
+              {t("duplicate")}
+            </Link>
+          </DropdownMenuItem>
+        );
+      case "xrechnung":
+        return (
+          <DropdownMenuItem key={a} onClick={() => handleDownloadXRechnung("xrechnung")}>
+            <FileCode2 className="mr-2 h-4 w-4" />
+            {t("xrechnungDownloadUBL")}
+          </DropdownMenuItem>
+        );
+      case "zugferd":
+        return (
+          <DropdownMenuItem key={a} onClick={() => handleDownloadXRechnung("zugferd")}>
+            <FileText className="mr-2 h-4 w-4" />
+            {t("zugferdDownloadCII")}
+          </DropdownMenuItem>
+        );
+      case "correction":
+        return (
+          <DropdownMenuItem key={a} onClick={() => setShowCorrectionDialog(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            {t("correction")}
+          </DropdownMenuItem>
+        );
+      case "partialCancel":
+        return (
+          <DropdownMenuItem key={a} className={gefahr} onClick={() => setShowPartialCancelDialog(true)}>
+            <Scissors className="mr-2 h-4 w-4" />
+            {t("partialCancel")}
+          </DropdownMenuItem>
+        );
+      case "fullCancel":
+        return (
+          <DropdownMenuItem key={a} className={gefahr} onClick={() => setShowCancelDialog(true)}>
+            <XCircle className="mr-2 h-4 w-4" />
+            {t("fullCancel")}
+          </DropdownMenuItem>
+        );
+      case "delete":
+        return (
+          <DropdownMenuItem key={a} className={gefahr} onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            {t("delete")}
+          </DropdownMenuItem>
+        );
+      default:
+        return null;
+    }
+  }
   const typeLabel = isInvoice ? t("typeInvoice") : t("typeCreditNote");
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/invoices">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
+              <h1 className="text-2xl font-bold whitespace-nowrap">{invoice.invoiceNumber}</h1>
               <Badge variant="outline">
                 {typeLabel}
               </Badge>
@@ -559,230 +657,117 @@ export default function InvoiceDetailPage({
           </div>
         </div>
 
-        <div className="flex gap-2">
-          {invoice.status === "DRAFT" && (
-            <>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("delete")}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t("deleteDialogDescription")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      {actionLoading === "delete" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="mr-2 h-4 w-4" />
-                      )}
-                      {t("delete")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button variant="outline" asChild>
-                <Link href={`/invoices/${id}/edit`}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  {t("edit")}
-                </Link>
-              </Button>
-              <Button
-                onClick={handleSend}
-                disabled={actionLoading === "send"}
-              >
-                {actionLoading === "send" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                {t("send")}
-              </Button>
-            </>
-          )}
-          {(invoice.status === "SENT" || invoice.status === "PAID" || invoice.status === "PARTIALLY_PAID") && (
-            <>
-              {/* P23 — Teilzahlung + Forderungsausfall */}
-              {(invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID") && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowPaymentDialog(true)}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Zahlung erfassen
-                  </Button>
-                </>
-              )}
-              {invoice.status === "SENT" && (
-                getSkontoStatus(invoice) === "ELIGIBLE" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        disabled={actionLoading === "paid"}
-                      >
-                        {actionLoading === "paid" ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                        )}
-                        {t("paid")}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleMarkPaid(false)}>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        {t("paidWithoutSkonto")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleMarkPaid(true)}>
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                        {t("paidWithSkonto", { amount: formatCurrency(invoice.grossAmount - Number(invoice.skontoAmount)) })}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleMarkPaid(false)}
-                    disabled={actionLoading === "paid"}
-                  >
-                    {actionLoading === "paid" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                    )}
-                    {t("paid")}
-                  </Button>
-                )
-              )}
-              <Button
-                variant="outline"
-                onClick={() => setShowPartialCancelDialog(true)}
-              >
-                <Scissors className="mr-2 h-4 w-4" />
-                {t("partialCancel")}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowCorrectionDialog(true)}
-              >
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {aktionen.sichtbar.includes("edit") && (
+            <Button variant="outline" asChild>
+              <Link href={`/invoices/${id}/edit`}>
                 <Pencil className="mr-2 h-4 w-4" />
-                {t("correction")}
-              </Button>
-              {invoice.status === "SENT" && (
-              <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="destructive">
-                    <XCircle className="mr-2 h-4 w-4" />
-                    {t("fullCancel")}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("cancelDialogTitle")}</DialogTitle>
-                    <DialogDescription>
-                      {t("cancelDialogDescription")}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cancelReason">{t("cancelReasonLabel")}</Label>
-                      <Input
-                        id="cancelReason"
-                        placeholder={t("cancelReasonPlaceholder")}
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-                      {tCommon("cancel")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleCancel}
-                      disabled={actionLoading === "cancel" || !cancelReason.trim()}
-                    >
-                      {actionLoading === "cancel" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <XCircle className="mr-2 h-4 w-4" />
-                      )}
-                      {t("fullCancel")}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                {t("edit")}
+              </Link>
+            </Button>
+          )}
+          {aktionen.sichtbar.includes("preview") && (
+            <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
+              <Eye className="mr-2 h-4 w-4" />
+              {t("preview")}
+            </Button>
+          )}
+          {aktionen.haupt === "send" && (
+            <Button onClick={handleSend} disabled={actionLoading === "send"}>
+              {actionLoading === "send" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
               )}
-            </>
+              {t("send")}
+            </Button>
           )}
-          <Button variant="outline" onClick={() => setShowPreviewDialog(true)}>
-            <Eye className="mr-2 h-4 w-4" />
-            {t("preview")}
-          </Button>
-          <Button variant="outline" asChild>
-            <a href={`/api/invoices/${id}/pdf`} download>
-              <Download className="mr-2 h-4 w-4" />
-              {t("pdf")}
-            </a>
-          </Button>
-          {/* Bedienaufwand #9: "so wie letztes Mal, aber anders".
-              Bewusst für JEDEN Status verfuegbar — auch eine stornierte
-              Rechnung ist eine brauchbare Vorlage. */}
-          <Button variant="outline" asChild>
-            <Link href={`/invoices/new?duplicateFrom=${id}`}>
-              <Copy className="mr-2 h-4 w-4" />
-              {t("duplicate")}
-            </Link>
-          </Button>
-          {/* XRechnung / ZUGFeRD Download */}
-          {invoice.status !== "CANCELLED" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  disabled={actionLoading === "xrechnung"}
-                >
-                  {actionLoading === "xrechnung" ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileCode2 className="mr-2 h-4 w-4" />
-                  )}
-                  {t("xrechnung")}
-                  {invoice.einvoiceFormat && (
-                    <Badge variant="secondary" className="ml-2 text-xs">
-                      {invoice.einvoiceFormat}
-                    </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleDownloadXRechnung("xrechnung")}>
-                  <FileCode2 className="mr-2 h-4 w-4" />
-                  {t("xrechnungDownloadUBL")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDownloadXRechnung("zugferd")}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  {t("zugferdDownloadCII")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {aktionen.haupt === "recordPayment" && (
+            <Button onClick={() => setShowPaymentDialog(true)}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              {t("recordPayment")}
+            </Button>
           )}
+          {/* One primary action per status; everything else lives here,
+              destructive actions last and separated (lib/invoices/rechnungs-aktionen). */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label={t("moreActions")} disabled={!!actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              {aktionen.menue.map((a) => menuePunkt(a))}
+              {aktionen.gefaehrlich.length > 0 && <DropdownMenuSeparator />}
+              {aktionen.gefaehrlich.map((a) => menuePunkt(a))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("deleteDialogDescription")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {actionLoading === "delete" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              {t("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("cancelDialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("cancelDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cancelReason">{t("cancelReasonLabel")}</Label>
+              <Input
+                id="cancelReason"
+                placeholder={t("cancelReasonPlaceholder")}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={actionLoading === "cancel" || !cancelReason.trim()}
+            >
+              {actionLoading === "cancel" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="mr-2 h-4 w-4" />
+              )}
+              {t("fullCancel")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Invoice Preview Dialog */}
       <InvoicePreviewDialog

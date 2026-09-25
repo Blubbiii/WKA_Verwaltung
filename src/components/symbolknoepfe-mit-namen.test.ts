@@ -69,3 +69,46 @@ describe("Symbolknöpfe mit Namen", () => {
     ).toHaveLength(1);
   });
 });
+
+/**
+ * Der Name muss auch stimmen. Die automatische Benennung gab 80 Pfeil-Knöpfen
+ * den Namen "Verknüpfen", weil in ihnen ein <Link> steckt — der Screenreader
+ * las "Verknüpfen" statt "Zurück".
+ */
+const NAME_ZUM_SYMBOL: Array<[string, RegExp]> = [
+  ["ArrowLeft", /zurück/i],
+  ["ArrowRight", /weiter|öffnen|nächste/i],
+  ["ExternalLink", /öffnen/i],
+];
+
+function falscheNamen(quelle: string): string[] {
+  const funde: string[] = [];
+  for (const { attrs, inhalt, start } of [...jsxElemente(quelle, "Button"), ...jsxElemente(quelle, "button")]) {
+    const name = attrs.match(/aria-label="([^"]*)"/)?.[1];
+    if (!name) continue;
+    const icons = [...inhalt.matchAll(/<([A-Z]\w*)\b[^>]*\/>/g)].map((m) => m[1]);
+    if (icons.length !== 1) continue;
+    const regel = NAME_ZUM_SYMBOL.find(([icon]) => icon === icons[0]);
+    if (regel && !regel[1].test(name)) {
+      funde.push(`Zeile ${quelle.slice(0, start).split("\n").length}: ${icons[0]} heißt "${name}"`);
+    }
+  }
+  return funde;
+}
+
+describe("Symbolknöpfe mit passendem Namen", () => {
+  it("Pfeile und Außenlinks heißen, was sie tun", () => {
+    const alle: string[] = [];
+    for (const datei of dateien(SRC)) {
+      for (const fund of falscheNamen(readFileSync(datei, "utf8"))) {
+        alle.push(`${datei.slice(SRC.length + 1).split("\\").join("/")}: ${fund}`);
+      }
+    }
+    expect(alle).toEqual([]);
+  });
+
+  it("erkennt den Fall", () => {
+    expect(falscheNamen(`<Button aria-label="Verknüpfen" size="icon" asChild><Link href="/x"><ArrowLeft className="h-4 w-4" /></Link></Button>`)).toHaveLength(1);
+    expect(falscheNamen(`<Button aria-label="Zurück" size="icon" asChild><Link href="/x"><ArrowLeft className="h-4 w-4" /></Link></Button>`)).toEqual([]);
+  });
+});

@@ -115,7 +115,7 @@ export default function NewFundPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+        <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
           <Link href="/funds">
             <ArrowLeft className="h-4 w-4" />
           </Link>

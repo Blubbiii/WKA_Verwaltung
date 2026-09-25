@@ -9,7 +9,6 @@ import { formatCurrency } from "@/lib/format";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
-  Pencil,
   Wrench,
   Calendar,
   Clock,
@@ -17,11 +16,10 @@ import {
   Building2,
   FileText,
   Plus,
-  Trash2,
   Download,
-  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
 import {
   Card,
   CardContent,
@@ -42,23 +40,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { HTTP_STATUS } from "@/lib/config/http-status";
 
 interface Document {
@@ -127,7 +108,6 @@ export default function ServiceEventDetailPage({
   const [event, setEvent] = useState<ServiceEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -169,7 +149,7 @@ export default function ServiceEventDetailPage({
         // Navigate back to park page after successful deletion
         router.push(`/parks/${event.turbine.park.id}?tab=turbines`);
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({}));
         toast.error(error.error || t("deleteError"));
       }
     } catch {
@@ -215,7 +195,7 @@ export default function ServiceEventDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${event.turbine.park.id}?tab=turbines`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -249,29 +229,12 @@ export default function ServiceEventDetailPage({
             </p>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button aria-label="Weitere Aktionen" variant="outline" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/service-events/${id}/edit`}>
-                <Pencil className="mr-2 h-4 w-4" />
-                {t("edit")}
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => setDeleteDialogOpen(true)}
-              className="text-red-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t("delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DetailAktionen
+          editHref={`/service-events/${id}/edit`}
+          onDelete={handleDelete}
+          deleteItemName={`${translateEventType(event.eventType)} - ${event.turbine.designation}`}
+          disabled={isDeleting}
+        />
       </div>
 
       {/* Stats Cards */}
@@ -473,33 +436,6 @@ export default function ServiceEventDetailPage({
         </Card>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("deleteDialog.title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("deleteDialog.question")}
-              <span className="mt-2 block font-medium text-foreground">
-                {translateEventType(event.eventType)} - {event.turbine.designation}
-              </span>
-              <span className="mt-2 block text-red-600">
-                {t("deleteDialog.warning")}
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>{t("deleteDialog.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? t("deleteDialog.deleting") : t("deleteDialog.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

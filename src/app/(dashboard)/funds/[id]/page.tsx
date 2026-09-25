@@ -97,6 +97,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
 import { cn } from "@/lib/utils";
 import {
   useDistributions,
@@ -291,6 +293,20 @@ export default function FundDetailsPage({
   const { id } = use(params);
   const router = useRouter();
   const t = useTranslations("funds");
+  const { hasPermission } = usePermissions();
+
+  // Delete lived only in the list; the detail page now offers it in the "…"
+  // menu like every other detail page. Throwing keeps the dialog open.
+  async function handleDeleteFund() {
+    const res = await fetch(`/api/funds/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.message ?? err.error ?? t("detail.deleteFundError"));
+      throw new Error("delete failed");
+    }
+    toast.success(t("detail.deleteFundSuccess"));
+    router.push("/funds");
+  }
   const { flags } = useFeatureFlags();
   const [fund, setFund] = useState<Fund | null>(null);
   const [loading, setLoading] = useState(true);
@@ -921,7 +937,7 @@ export default function FundDetailsPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/funds">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -938,12 +954,12 @@ export default function FundDetailsPage({
             )}
           </div>
         </div>
-        <Button asChild>
-          <Link href={`/funds/${id}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" />
-            {t("detail.edit")}
-          </Link>
-        </Button>
+        <DetailAktionen
+          editHref={`/funds/${id}/edit`}
+          onDelete={hasPermission("funds:delete") ? handleDeleteFund : undefined}
+          deleteItemName={fund.name}
+          deleteDescription={t("detail.deleteFundDescription")}
+        />
       </div>
 
       {/* Stats Cards */}

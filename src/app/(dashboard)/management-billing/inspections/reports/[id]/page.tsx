@@ -366,7 +366,7 @@ export default function InspectionReportDetailPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/inspections/reports">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -393,7 +393,7 @@ export default function InspectionReportDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/management-billing/inspections/reports">
               <ArrowLeft className="h-4 w-4" />
             </Link>

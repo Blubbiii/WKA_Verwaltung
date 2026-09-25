@@ -291,7 +291,7 @@ export default function ParkWeatherPage({
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${parkId}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -324,7 +324,7 @@ export default function ParkWeatherPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href={`/parks/${parkId}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>

@@ -10,23 +10,22 @@ import {
   MapPin,
   User,
   Users,
-  Pencil,
   FileText,
   Building2,
   CheckSquare,
   ClipboardList,
   ShieldCheck,
   Loader2,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { useConfirm } from "@/components/ui/use-confirm";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { ModulAus } from "@/components/ui/modul-aus";
 import { usePermissions } from "@/hooks/usePermissions";
 import { downloadFromResponse } from "@/lib/download";
 import { Button } from "@/components/ui/button";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -147,8 +146,6 @@ export default function CrmContactDetailPage({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [exportingData, setExportingData] = useState(false);
   const { hasPermission } = usePermissions();
-  const { confirm, confirmDialog } = useConfirm();
-
   // The API had DELETE, the page had no button. It refuses while leases,
   // contracts, holdings or plot entries still name the person (§ 147 AO) and
   // says which — that message goes to the user as is.
@@ -309,54 +306,34 @@ export default function CrmContactDetailPage({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <DetailAktionen
+          onEdit={() => setShowEditDialog(true)}
+          onDelete={hasPermission("leases:delete") ? async () => { await loeschen.mutateAsync(); } : undefined}
+          deleteDescription={t("deleteDescription", { name: displayName })}
+          disabled={loeschen.isPending}
+          menuItems={
+            /* TF-11: /api/admin/persons/[id]/data-export war vollständig
+               implementiert und hatte keinen UI-Aufrufer — eine
+               Compliance-Pflicht (DSGVO Art. 15) ohne Oberflaeche. Der Endpunkt
+               verlangt admin:audit, deshalb nur für Berechtigte sichtbar. */
+            hasPermission("admin:audit") ? (
+              <DropdownMenuItem onClick={handleDataExport} disabled={exportingData} title={t("dataExportHint")}>
+                {exportingData ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                )}
+                {t("dataExportButton")}
+              </DropdownMenuItem>
+            ) : undefined
+          }
+        >
           <Button variant="outline" onClick={() => setShowEmailDialog(true)}>
             <Mail className="mr-2 h-4 w-4" />
             {t("logEmailButton")}
           </Button>
-          <Button variant="outline" onClick={() => setShowEditDialog(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            {t("editButton")}
-          </Button>
-          {/* TF-11: /api/admin/persons/[id]/data-export war vollständig
-              implementiert und hatte keinen UI-Aufrufer — eine
-              Compliance-Pflicht (DSGVO Art. 15) ohne Oberflaeche. Der Endpunkt
-              verlangt admin:audit, deshalb nur für Berechtigte sichtbar. */}
-          {hasPermission("admin:audit") && (
-            <Button
-              variant="outline"
-              onClick={handleDataExport}
-              disabled={exportingData}
-              title={t("dataExportHint")}
-            >
-              {exportingData ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="mr-2 h-4 w-4" />
-              )}
-              {t("dataExportButton")}
-            </Button>
-          )}
-          {hasPermission("leases:delete") && (
-            <Button
-              variant="destructive"
-              disabled={loeschen.isPending}
-              onClick={async () => {
-                const ok = await confirm({
-                  title: t("deleteTitle"),
-                  description: t("deleteDescription", { name: displayName }),
-                  variant: "destructive",
-                });
-                if (ok) loeschen.mutate();
-              }}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t("deleteButton")}
-            </Button>
-          )}
-        </div>
+        </DetailAktionen>
       </div>
-      {confirmDialog}
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

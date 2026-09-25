@@ -125,7 +125,7 @@ export function ExpiringContractsWidget({ className }: ExpiringContractsWidgetPr
             >
               {contract.daysUntilExpiry} Tage
             </span>
-            <Button aria-label="Verknüpfen" variant="ghost" size="icon" className="h-6 w-6" asChild>
+            <Button aria-label="Öffnen" variant="ghost" size="icon" className="h-6 w-6" asChild>
               <Link href={contract.href ?? `/contracts/${contract.id}`}>
                 <ExternalLink className="h-3 w-3" />
               </Link>

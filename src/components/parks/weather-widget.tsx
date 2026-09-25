@@ -240,7 +240,7 @@ export function WeatherWidget({
                   </Button>
                 )}
                 {showLink && (
-                  <Button aria-label="Verknüpfen" variant="ghost" size="icon" className="h-7 w-7" asChild>
+                  <Button aria-label="Öffnen" variant="ghost" size="icon" className="h-7 w-7" asChild>
                     <Link href={`/parks/${parkId}/weather`}>
                       <ExternalLink className="h-3 w-3" />
                     </Link>

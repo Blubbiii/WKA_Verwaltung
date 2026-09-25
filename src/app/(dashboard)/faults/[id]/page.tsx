@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,7 +51,6 @@ import {
   CLAIMABLE_CAUSES,
   type CauseCategory,
 } from "@/lib/faults/constants";
-import { useConfirm } from "@/components/ui/use-confirm";
 
 interface LostEnergyBasis {
   expectedKwh?: number;
@@ -102,8 +103,6 @@ function alsOrtszeitFeld(iso: string): string {
 export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const t = useTranslations("faults");
-  const { confirm, confirmDialog } = useConfirm();
-  const tc = useTranslations("common.confirmDialog");
   const locale = useLocale();
   const dateLocale = locale === "en" ? enUS : de;
   const router = useRouter();
@@ -121,7 +120,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
    */
   const [manualEnergyRaw, setManualEnergy] = useState<number | null | undefined>(undefined);
 
-  async function patch(payload: Record<string, unknown>) {
+  async function patch(payload: Record<string, unknown>): Promise<boolean> {
     setSaving(true);
     try {
       const res = await fetch(`/api/faults/${id}`, {
@@ -136,11 +135,50 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
       invalidate(["fault", id]);
       invalidate(["faults"]);
       toast.success(t("saved"));
+      return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("saveError"));
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  // Changes are collected here and saved with one button — the page used to
+  // write every field to the database the moment it lost focus.
+  const [entwurf, setEntwurf] = useState<Record<string, unknown>>({});
+  // Bumped on discard so the uncontrolled inputs fall back to the stored values.
+  const [formVersion, setFormVersion] = useState(0);
+  const hatAenderungen = Object.keys(entwurf).length > 0;
+  const { confirmLeave } = useUnsavedChanges({ when: hatAenderungen, message: t("detail.unsavedWarning") });
+
+  function merke(aenderung: Record<string, unknown>) {
+    setEntwurf((vorher) => {
+      const neu = { ...vorher };
+      for (const [feld, wert] of Object.entries(aenderung)) {
+        const gespeichert = (data as unknown as Record<string, unknown> | undefined)?.[feld] ?? null;
+        const gleich =
+          wert === gespeichert ||
+          // datetime-local round trip: same instant, different ISO spelling
+          (typeof wert === "string" && typeof gespeichert === "string" && /T/.test(wert) &&
+            new Date(wert).getTime() === new Date(gespeichert).getTime()) ||
+          // date inputs deliver YYYY-MM-DD, the API returns a full timestamp
+          (typeof wert === "string" && typeof gespeichert === "string" && /^\d{4}-\d{2}-\d{2}$/.test(wert) &&
+            gespeichert.slice(0, 10) === wert);
+        if (gleich) delete neu[feld];
+        else neu[feld] = wert;
+      }
+      return neu;
+    });
+  }
+
+  async function speichern() {
+    if (await patch(entwurf)) setEntwurf({});
+  }
+
+  function verwerfen() {
+    setEntwurf({});
+    setFormVersion((v) => v + 1);
   }
 
   async function valuate() {
@@ -199,8 +237,8 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-4">
-        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
-          <Link href="/faults">
+        <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
+          <Link href="/faults" onClick={(e) => { if (!confirmLeave()) e.preventDefault(); }}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
@@ -212,9 +250,23 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
           </div>
           <p className="text-muted-foreground">{data.title}</p>
         </div>
+        <DetailAktionen
+          onDelete={async () => {
+            const res = await fetch(`/api/faults/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+              const error = await res.json().catch(() => ({}));
+              toast.error(error.message || t("detail.deleteError"));
+              throw new Error("delete failed");
+            }
+            invalidate(["faults"]);
+            router.push("/faults");
+          }}
+          deleteDescription={t("detail.confirmDelete")}
+          disabled={saving}
+        />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div key={formVersion} className="grid gap-6 md:grid-cols-2">
         {/* Anlage und Zeitraum */}
         <Card>
           <CardHeader>
@@ -244,7 +296,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                 maxLength={200}
                 onBlur={(e) => {
                   const title = e.target.value.trim();
-                  if (title && title !== data.title) void patch({ title });
+                  if (title) merke({ title });
                 }}
               />
             </Field>
@@ -255,9 +307,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                   type="datetime-local"
                   defaultValue={alsOrtszeitFeld(data.startAt)}
                   onBlur={(e) => {
-                    if (e.target.value && e.target.value !== alsOrtszeitFeld(data.startAt)) {
-                      void patch({ startAt: new Date(e.target.value).toISOString() });
-                    }
+                    if (e.target.value) merke({ startAt: new Date(e.target.value).toISOString() });
                   }}
                 />
               </Field>
@@ -267,9 +317,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                   type="datetime-local"
                   defaultValue={data.endAt ? alsOrtszeitFeld(data.endAt) : ""}
                   onBlur={(e) => {
-                    const vorher = data.endAt ? alsOrtszeitFeld(data.endAt) : "";
-                    if (e.target.value === vorher) return;
-                    void patch({ endAt: e.target.value ? new Date(e.target.value).toISOString() : null });
+                    merke({ endAt: e.target.value ? new Date(e.target.value).toISOString() : null });
                   }}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -283,8 +331,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                 defaultValue={data.description ?? ""}
                 rows={2}
                 onBlur={(e) => {
-                  const description = e.target.value.trim() || null;
-                  if (description !== (data.description ?? null)) void patch({ description });
+                  merke({ description: e.target.value.trim() || null });
                 }}
               />
             </Field>
@@ -421,9 +468,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                 placeholder={t("detail.manualNotesPlaceholder")}
                 rows={2}
                 onBlur={(e) => {
-                  if (e.target.value !== (data.lostEnergyNotes ?? "")) {
-                    void patch({ lostEnergyNotes: e.target.value || null });
-                  }
+                  merke({ lostEnergyNotes: e.target.value || null });
                 }}
               />
             </div>
@@ -438,8 +483,8 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
           <CardContent className="space-y-3">
             <Field label={t("detail.cause")}>
               <Select
-                value={data.causeCategory}
-                onValueChange={(value) => void patch({ causeCategory: value })}
+                value={(entwurf.causeCategory as string | undefined) ?? data.causeCategory}
+                onValueChange={(value) => merke({ causeCategory: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -454,7 +499,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
               </Select>
             </Field>
             <Field label={t("detail.status")}>
-              <Select value={data.status} onValueChange={(value) => void patch({ status: value })}>
+              <Select value={(entwurf.status as string | undefined) ?? data.status} onValueChange={(value) => merke({ status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -471,7 +516,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
               <Input
                 type="date"
                 defaultValue={data.followUpAt ? data.followUpAt.slice(0, 10) : ""}
-                onBlur={(e) => void patch({ followUpAt: e.target.value || null })}
+                onBlur={(e) => merke({ followUpAt: e.target.value || null })}
               />
             </Field>
           </CardContent>
@@ -490,8 +535,8 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
 
             <Field label={t("detail.claimStatus")}>
               <Select
-                value={data.claimStatus}
-                onValueChange={(value) => void patch({ claimStatus: value })}
+                value={(entwurf.claimStatus as string | undefined) ?? data.claimStatus}
+                onValueChange={(value) => merke({ claimStatus: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -510,7 +555,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
               <Input
                 type="date"
                 defaultValue={data.claimDeadline ? data.claimDeadline.slice(0, 10) : ""}
-                onBlur={(e) => void patch({ claimDeadline: e.target.value || null })}
+                onBlur={(e) => merke({ claimDeadline: e.target.value || null })}
               />
               {/* Die Frist wird bewusst NICHT berechnet: sie hängt vom
                   Vertragstyp ab (§ 195 BGB, § 438 BGB, abweichende
@@ -530,9 +575,7 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
                 defaultValue={data.claimNotes ?? ""}
                 rows={3}
                 onBlur={(e) => {
-                  if (e.target.value !== (data.claimNotes ?? "")) {
-                    void patch({ claimNotes: e.target.value || null });
-                  }
+                  merke({ claimNotes: e.target.value || null });
                 }}
               />
             </Field>
@@ -540,25 +583,20 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
         </Card>
       </div>
 
-      <div className="flex justify-end">
-        <Button
-          variant="destructive"
-          disabled={saving}
-          onClick={async () => {
-            if (!(await confirm({ title: tc("deleteTitle"), description: t("detail.confirmDelete"), variant: "destructive" }))) return;
-            const res = await fetch(`/api/faults/${id}`, { method: "DELETE" });
-            if (!res.ok) {
-              const error = await res.json().catch(() => ({}));
-              toast.error(error.message || t("detail.deleteError"));
-              return;
-            }
-            invalidate(["faults"]);
-            router.push("/faults");
-          }}
-        >
-          {t("detail.delete")}
-        </Button>
-      </div>
+      {hatAenderungen && (
+        <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-3 rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur">
+          <span className="mr-auto text-sm text-muted-foreground">
+            {t("detail.unsavedCount", { count: Object.keys(entwurf).length })}
+          </span>
+          <Button variant="outline" onClick={verwerfen} disabled={saving}>
+            {t("detail.discard")}
+          </Button>
+          <Button onClick={speichern} disabled={saving}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {t("detail.save")}
+          </Button>
+        </div>
+      )}
 
       {data.status === "CLOSED" && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -566,7 +604,6 @@ export default function FaultCaseDetailPage({ params }: { params: Promise<{ id: 
           {t("detail.closed")}
         </p>
       )}
-      {confirmDialog}
     </div>
   );
 }

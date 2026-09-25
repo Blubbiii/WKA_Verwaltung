@@ -35,6 +35,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
 import { PlotPartiesDialog } from "@/components/plots/plot-parties-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -293,6 +295,20 @@ export default function ParkDetailsPage({
   const { id } = use(params);
   const router = useRouter();
   const t = useTranslations("parkDetail");
+  const { hasPermission } = usePermissions();
+
+  // Delete lived only in the park list; the detail page now offers it in the
+  // "…" menu like every other detail page. Throwing keeps the dialog open.
+  async function handleDeletePark() {
+    const res = await fetch(`/api/parks/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast.error(err.message ?? err.error ?? t("deleteParkError"));
+      throw new Error("delete failed");
+    }
+    toast.success(t("deleteParkSuccess"));
+    router.push("/parks");
+  }
   const [park, setPark] = useState<Park | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -899,12 +915,12 @@ export default function ParkDetailsPage({
             )}
           </div>
         </div>
-        <Button asChild>
-          <Link href={`/parks/${id}/edit`}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Bearbeiten
-          </Link>
-        </Button>
+        <DetailAktionen
+          editHref={`/parks/${id}/edit`}
+          onDelete={hasPermission("parks:delete") ? handleDeletePark : undefined}
+          deleteItemName={park.name}
+          deleteDescription={t("deleteParkDescription")}
+        />
       </div>
 
       {/* Stats Cards */}

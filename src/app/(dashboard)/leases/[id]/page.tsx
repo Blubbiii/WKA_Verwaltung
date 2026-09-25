@@ -13,10 +13,9 @@ import { format, differenceInDays } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { formatCurrency, LOCALE_DE, restlaufzeit, restlaufzeitText } from "@/lib/format";
 import { BankverbindungAnzeige } from "@/components/leases/bankverbindung-anzeige";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
 import {
   ArrowLeft,
-  Pencil,
-  Trash2,
   MapPin,
   Calendar,
   Euro,
@@ -41,17 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { CONTRACT_STATUS, getStatusBadge } from "@/lib/status-config";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { HTTP_STATUS } from "@/lib/config/http-status";
@@ -236,7 +224,7 @@ export default function LeaseDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/leases">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -256,36 +244,12 @@ export default function LeaseDetailPage({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/leases/${lease.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {t("edit")}
-            </Link>
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={deleting}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t("delete")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("deleteDialogTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("deleteDialogDescription")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                  {t("delete")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        <DetailAktionen
+          editHref={`/leases/${lease.id}/edit`}
+          onDelete={handleDelete}
+          deleteDescription={t("deleteDialogDescription")}
+          disabled={deleting}
+        />
       </div>
 
       {/* Warning Banner - Vertrag läuft aus */}

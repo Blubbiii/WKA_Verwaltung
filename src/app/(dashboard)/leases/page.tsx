@@ -19,7 +19,6 @@ import {
   Calendar,
   AlertTriangle,
   MoreHorizontal,
-  Eye,
   Pencil,
   Trash2,
   Download,
@@ -45,6 +44,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
@@ -78,7 +78,6 @@ interface Plot {
 
 interface Lease {
   id: string;
-  contractNumber: string | null;
   startDate: string;
   endDate: string | null;
   annualRent: number | null;
@@ -238,7 +237,6 @@ export default function LeasesPage() {
     const header = t("csv.headers");
     const rows = selected.map((l) =>
       [
-        l.contractNumber || "-",
         getLessorName(l.lessor),
         getPlotsLabel(l.plots),
         getParksLabel(l.plots),
@@ -350,7 +348,6 @@ export default function LeasesPage() {
                     <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} aria-label={t("table.selectAllAria")}
                       {...(isSomeSelected ? { "data-state": "indeterminate" } : {})} />
                   </TableHead>
-                  <TableHead>{t("table.contract")}</TableHead>
                   <TableHead>{t("table.lessor")}</TableHead>
                   <TableHead>{t("table.plot")}</TableHead>
                   <TableHead>{t("table.park")}</TableHead>
@@ -358,14 +355,14 @@ export default function LeasesPage() {
                   <TableHead className="text-right">{t("table.annualRent")}</TableHead>
                   <TableHead>{t("table.status")}</TableHead>
                   <TableHead className="max-w-[180px]">Notiz</TableHead>
-                  <TableHead className="w-[120px]"></TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 10 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -374,7 +371,7 @@ export default function LeasesPage() {
                   ))
                 ) : filteredLeases.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                       {t("table.emptyText")}
                     </TableCell>
                   </TableRow>
@@ -394,9 +391,6 @@ export default function LeasesPage() {
                       >
                         <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
                           <Checkbox checked={selectedIds.has(lease.id)} onCheckedChange={() => toggleItem(lease.id)} aria-label={t("table.selectAria")} />
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {lease.contractNumber || "-"}
                         </TableCell>
                         <TableCell>{getLessorName(lease.lessor)}</TableCell>
                         <TableCell className="text-sm">
@@ -453,31 +447,6 @@ export default function LeasesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              aria-label={t("actions.detailsAria")}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedLease(lease);
-                                setIsDetailOpen(true);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              aria-label={t("actions.editAria")}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/leases/${lease.id}/edit`);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("actions.moreAria")}>
@@ -485,6 +454,16 @@ export default function LeasesPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/leases/${lease.id}/edit`);
+                                  }}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  {t("actions.edit")}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -535,7 +514,7 @@ export default function LeasesPage() {
           }
         }}
         title={t("delete.title")}
-        itemName={leaseToDelete?.contractNumber || (leaseToDelete?.lessor ? t("delete.contractWith", { name: getLessorName(leaseToDelete.lessor) }) : t("delete.defaultItemName"))}
+        itemName={leaseToDelete?.lessor ? t("delete.contractWith", { name: getLessorName(leaseToDelete.lessor) }) : t("delete.defaultItemName")}
       />
 
       {/* Batch Action Bar */}

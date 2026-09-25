@@ -232,6 +232,11 @@
       "angebotText": "Two minutes to see the most important places.",
       "starten": "Start tour",
       "nichtJetzt": "Not now"
+    },
+    "detailActions": {
+      "edit": "Edit",
+      "more": "More actions",
+      "delete": "Delete"
     }
   },
   "statusLabels": {
@@ -992,7 +997,10 @@
     "errorRemoving": "Error removing",
     "errorAssigningPlotsCount": "{count} parcels could not be assigned",
     "plotsAssigned": "{count} parcels assigned",
-    "plotsAssignedFromLeases": "{plots} parcels from {leases} contracts assigned"
+    "plotsAssignedFromLeases": "{plots} parcels from {leases} contracts assigned",
+    "deleteParkDescription": "The park is deleted irreversibly with all turbines and assignments. To retire it instead, archive it in the park list.",
+    "deleteParkError": "The park could not be deleted.",
+    "deleteParkSuccess": "Park deleted"
   },
   "invoices": {
     "title": "Invoices",
@@ -1146,7 +1154,9 @@
       "leaseContract": "Lease contract:",
       "openLeaseContract": "Open contract",
       "duplicate": "Duplicate",
-      "openContact": "Open contact"
+      "openContact": "Open contact",
+      "recordPayment": "Record payment",
+      "moreActions": "More actions"
     },
     "new": {
       "titleInvoice": "New invoice",
@@ -1276,8 +1286,6 @@
       "printedAt": "Printed on {date}",
       "emailedAt": "Emailed on {date}",
       "emailedAtTo": "Emailed on {date} to {email}",
-      "viewDetailsAria": "Show details",
-      "editAria": "Edit",
       "moreActionsAria": "More actions",
       "preview": "Preview",
       "downloadPdf": "Download PDF",
@@ -1328,7 +1336,13 @@
       "statsOpenAria": "Go to the list of open documents",
       "filterFrom": "Invoice date from",
       "filterTo": "Invoice date to",
-      "filterClearDates": "Clear date range"
+      "filterClearDates": "Clear date range",
+      "colDispatch": "Dispatch",
+      "dispatchEmail": "Email",
+      "dispatchPrint": "Print",
+      "edit": "Edit",
+      "markPaidSuccess": "Marked as paid",
+      "markPaidError": "Could not mark as paid"
     },
     "bankImport": {
       "noMatch": "No match",
@@ -4294,7 +4308,8 @@
       "created": "Created",
       "updated": "Updated",
       "documents": "Documents",
-      "reminders": "Reminders"
+      "reminders": "Reminders",
+      "deleteError": "The contract could not be deleted."
     },
     "edit": {
       "title": "Edit Contract",
@@ -5166,7 +5181,6 @@
       "table": {
         "selectAllAria": "Select all",
         "selectAria": "Select",
-        "contract": "Contract",
         "lessor": "Lessor",
         "plot": "Parcel",
         "park": "Park",
@@ -5183,14 +5197,13 @@
         "daysRemaining": "{days} days left"
       },
       "actions": {
-        "detailsAria": "Show details",
-        "editAria": "Edit",
         "moreAria": "More actions",
         "delete": "Delete",
-        "csvExport": "CSV Export"
+        "csvExport": "CSV Export",
+        "edit": "Edit"
       },
       "csv": {
-        "headers": "Contract;Lessor;Parcel;Park;Annual Rent;Status",
+        "headers": "Lessor;Parcel;Park;Annual Rent;Status",
         "filePrefix": "leases_export",
         "exportedToast": "{count} leases exported"
       },
@@ -8925,7 +8938,10 @@
       "registerHint": "Without a period, distribution follows the share register as at the distribution date. Entries and exits during the year are ignored.",
       "previewColDays": "Days",
       "previewUndistributed": "Not distributed (retained by the company)",
-      "previewNoShares": "No shareholder has a participation quota on record."
+      "previewNoShares": "No shareholder has a participation quota on record.",
+      "deleteFundDescription": "The company is deleted. This only works while no holdings or invoices refer to it.",
+      "deleteFundError": "The company could not be deleted.",
+      "deleteFundSuccess": "Company deleted"
     },
     "form": {
       "editTitle": "Edit Company",
@@ -9960,7 +9976,11 @@
       "delete": "Delete case",
       "confirmDelete": "Really delete this fault case?",
       "deleteError": "Deletion failed",
-      "closed": "Case closed"
+      "closed": "Case closed",
+      "unsavedWarning": "There are unsaved changes. Leave the page anyway?",
+      "unsavedCount": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+      "discard": "Discard",
+      "save": "Save"
     },
     "new": {
       "title": "New fault case",

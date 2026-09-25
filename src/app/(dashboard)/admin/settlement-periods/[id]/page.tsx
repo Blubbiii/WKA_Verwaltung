@@ -386,7 +386,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+            <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
               <Link href="/admin/settlement-periods">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
@@ -1039,7 +1039,7 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
                         {formatCurrency(invoice.grossAmount)}
                       </TableCell>
                       <TableCell>
-                        <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+                        <Button aria-label="Öffnen" variant="ghost" size="icon" asChild>
                           <Link href={`/invoices/${invoice.id}`}>
                             <ExternalLink className="h-4 w-4" />
                           </Link>

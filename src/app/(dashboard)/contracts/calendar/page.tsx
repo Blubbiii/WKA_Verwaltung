@@ -173,7 +173,7 @@ export default function ContractsCalendarPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/contracts">
               <ArrowLeft className="h-4 w-4" />
             </Link>

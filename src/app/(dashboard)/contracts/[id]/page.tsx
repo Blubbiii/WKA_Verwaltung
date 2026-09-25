@@ -13,8 +13,6 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   ArrowLeft,
-  Pencil,
-  Trash2,
   Calendar,
   Building2,
   User,
@@ -28,7 +26,9 @@ import {
   Info,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DetailAktionen } from "@/components/ui/detail-aktionen";
 import {
   Card,
   CardContent,
@@ -43,17 +43,6 @@ import { LastEditStrip } from "@/components/ui/last-edit-strip";
 import { PresenceIndicator } from "@/components/ui/presence-indicator";
 import { useEntityPresence } from "@/hooks/useEntityPresence";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { ContractDocuments, ReminderSettings } from "@/components/contracts";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { AvailabilityGuaranteeCard } from "@/components/contracts/availability-guarantee-card";
@@ -137,17 +126,16 @@ export default function ContractDetailPage() {
   }, [params.id]);
 
   async function deleteContract() {
-    try {
-      const response = await fetch(`/api/contracts/${params.id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        router.push("/contracts");
-        router.refresh();
-      }
-    } catch {
+    const response = await fetch(`/api/contracts/${params.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      // Used to fail silently; throwing keeps the confirm dialog open.
+      toast.error(t("detail.deleteError"));
+      throw new Error("delete failed");
     }
+    router.push("/contracts");
+    router.refresh();
   }
 
   async function updateStatus(newStatus: string) {
@@ -205,7 +193,7 @@ export default function ContractDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <Button aria-label="Verknüpfen" variant="ghost" size="icon" asChild>
+          <Button aria-label="Zurück" variant="ghost" size="icon" asChild>
             <Link href="/contracts">
               <ArrowLeft className="h-4 w-4" />
             </Link>
@@ -227,34 +215,11 @@ export default function ContractDetailPage() {
             )}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/contracts/${contract.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {t("detail.editButton")}
-            </Link>
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t("detail.deleteButton")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("detail.deleteTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("detail.deleteDescription", { title: contract.title })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("detail.deleteCancel")}</AlertDialogCancel>
-                <AlertDialogAction onClick={deleteContract}>{t("detail.deleteConfirm")}</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        <DetailAktionen
+          editHref={`/contracts/${contract.id}/edit`}
+          onDelete={deleteContract}
+          deleteItemName={contract.title}
+        />
       </div>
 
       {/* Warning Cards */}

@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatsCards } from "@/components/ui/stats-cards";
@@ -250,6 +251,27 @@ export default function InvoicesPage() {
     `/api/invoices?${queryParams}`
   );
 
+  // The menu item used to only stop propagation — it did nothing.
+  const markPaid = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const res = await fetch(`/api/invoices/${invoiceId}/mark-paid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applySkonto: false }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? err.error ?? t("markPaidError"));
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success(t("markPaidSuccess"));
+      refetch();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : t("markPaidError")),
+  });
+
   // Fondsliste für den Filter. Eigener Query, damit die Rechnungsliste nicht
   // darauf wartet.
   const { data: fundsData } = useApiQuery<{ data: Array<{ id: string; name: string }> }>(
@@ -296,6 +318,9 @@ export default function InvoicesPage() {
   // Blöcke `filteredInvoices` und `sortedInvoices` arbeiteten auf dem geladenen
   // Ausschnitt — mit Blaetterung haetten sie nur die sichtbare Seite sortiert.
   const sortedInvoices = invoices;
+  // Hide the sender column when no invoice on this page has one (it read "-" throughout).
+  const zeigeVersender = sortedInvoices.some((i) => i.fund?.name);
+  const spaltenAnzahl = zeigeVersender ? 12 : 11;
 
   // Sort handler
   function handleSort(field: SortField) {
@@ -746,22 +771,23 @@ export default function InvoicesPage() {
                   </TableHead>
                   <SortableHeader field="invoiceNumber" label={t("colNumber")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
                   <SortableHeader field="invoiceType" label={t("colType")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortableHeader field="fund" label={t("colSender")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  {zeigeVersender && (
+                    <SortableHeader field="fund" label={t("colSender")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
+                  )}
                   <SortableHeader field="recipient" label={t("colRecipient")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
                   <SortableHeader field="invoiceDate" label={t("colDate")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
                   <SortableHeader field="netAmount" label={t("colNet")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
                   <SortableHeader field="grossAmount" label={t("colGross")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} className="text-right" />
                   <SortableHeader field="status" label={t("colStatus")} currentField={sortField} currentDirection={sortDirection} onSort={handleSort} />
-                  <TableHead className="w-10 text-center" title={t("colPrinted")}><Printer className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
-                  <TableHead className="w-10 text-center" title={t("colEmail")}><Mail className="h-4 w-4 mx-auto text-muted-foreground" /></TableHead>
-                  <TableHead className="w-[120px]"></TableHead>
+                  <TableHead className="w-24">{t("colDispatch")}</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 12 }).map((_, j) => (
+                      {Array.from({ length: spaltenAnzahl }).map((_, j) => (
                         <TableCell key={j}>
                           <Skeleton className="h-5 w-20" />
                         </TableCell>
@@ -770,7 +796,7 @@ export default function InvoicesPage() {
                   ))
                 ) : sortedInvoices.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={spaltenAnzahl} className="h-32 text-center text-muted-foreground">
                       {t("emptyState")}
                     </TableCell>
                   </TableRow>
@@ -799,9 +825,11 @@ export default function InvoicesPage() {
                           {invoice.invoiceType === "INVOICE" ? t("typeInvoice") : t("typeCreditNote")}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {invoice.fund?.name || "-"}
-                      </TableCell>
+                      {zeigeVersender && (
+                        <TableCell className="text-sm text-muted-foreground">
+                          {invoice.fund?.name || "-"}
+                        </TableCell>
+                      )}
                       <TableCell>{getRecipientName(invoice)}</TableCell>
                       <TableCell>
                         {format(new Date(invoice.invoiceDate), "dd.MM.yyyy", { locale: dateLocale })}
@@ -844,40 +872,30 @@ export default function InvoicesPage() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center" title={invoice.printedAt ? t("printedAt", { date: format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) }) : undefined}>
-                        <Printer className={`h-4 w-4 mx-auto ${invoice.printedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
-                      </TableCell>
-                      <TableCell className="text-center" title={invoice.emailedAt ? (invoice.emailedTo ? t("emailedAtTo", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }), email: invoice.emailedTo }) : t("emailedAt", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })) : undefined}>
-                        <Mail className={`h-4 w-4 mx-auto ${invoice.emailedAt ? "text-green-600" : "text-muted-foreground/30"}`} />
+                      {/* Dispatch: only what actually happened, not two grey icons per row */}
+                      <TableCell className="text-sm">
+                        {invoice.emailedAt ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-green-700 dark:text-green-400"
+                            title={invoice.emailedTo ? t("emailedAtTo", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }), email: invoice.emailedTo }) : t("emailedAt", { date: format(new Date(invoice.emailedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })}
+                          >
+                            <Mail className="h-4 w-4" aria-hidden="true" />
+                            {t("dispatchEmail")}
+                          </span>
+                        ) : invoice.printedAt ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-green-700 dark:text-green-400"
+                            title={t("printedAt", { date: format(new Date(invoice.printedAt), "dd.MM.yyyy HH:mm", { locale: dateLocale }) })}
+                          >
+                            <Printer className="h-4 w-4" aria-hidden="true" />
+                            {t("dispatchPrint")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">–</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            aria-label={t("viewDetailsAria")}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/invoices/${invoice.id}`);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {invoice.status === "DRAFT" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              aria-label={t("editAria")}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/invoices/${invoice.id}/edit`);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("moreActionsAria")}>
@@ -885,6 +903,15 @@ export default function InvoicesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {invoice.status === "DRAFT" && (
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  router.push(`/invoices/${invoice.id}/edit`);
+                                }}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  {t("edit")}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
                                 setPreviewId(invoice.id);
@@ -910,7 +937,10 @@ export default function InvoicesPage() {
                                 </DropdownMenuItem>
                               )}
                               {invoice.status === "SENT" && (
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  markPaid.mutate(invoice.id);
+                                }}>
                                   <CheckCircle className="mr-2 h-4 w-4" />
                                   {t("markPaid")}
                                 </DropdownMenuItem>

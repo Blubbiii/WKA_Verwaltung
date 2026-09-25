@@ -34,6 +34,10 @@ function dateien(dir: string): string[] {
 
 const WIRKT = /\bonClick=|\bonSelect=|\basChild\b|type=["{]?["']?submit|\bform=|\bdisabled\b|\{\.\.\.|\bhref=/;
 
+// A handler that only stops propagation does nothing for the user — the
+// invoice list had "Als bezahlt markieren" wired exactly like that.
+const LEERER_HANDLER = /\bonClick=\{\s*\(\w*\)\s*=>\s*\{?\s*\w+\.stopPropagation\(\);?\s*\}?\s*\}/;
+
 function knoepfeOhneWirkung(quelle: string): string[] {
   const funde: string[] = [];
   // jsxElemente reads the opening tag with braces/quotes — a plain regex stops
@@ -42,7 +46,7 @@ function knoepfeOhneWirkung(quelle: string): string[] {
     jsxElemente(quelle, tag).map((e) => ({ tag, ...e })),
   );
   for (const { tag, attrs, inhalt, start } of elemente) {
-    if (WIRKT.test(attrs)) continue;
+    if (WIRKT.test(attrs.replace(LEERER_HANDLER, ""))) continue;
     // Inside a Trigger/Close with asChild that is still open (FormControl etc. may sit between)
     const davor = quelle.slice(Math.max(0, start - 400), start);
     const trigger = davor.lastIndexOf("asChild");
@@ -71,6 +75,14 @@ describe("Knöpfe ohne Wirkung", () => {
   it("erkennt einen Knopf ohne Handler", () => {
     expect(knoepfeOhneWirkung(`<Button variant="outline">Neu</Button>`)).toHaveLength(1);
     expect(knoepfeOhneWirkung(`<DropdownMenuItem>Bearbeiten</DropdownMenuItem>`)).toHaveLength(1);
+  });
+
+  it("erkennt einen Handler, der nur die Weitergabe stoppt", () => {
+    expect(knoepfeOhneWirkung(`<DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+<CheckCircle />
+{t("markPaid")}
+</DropdownMenuItem>`)).toHaveLength(1);
+    expect(knoepfeOhneWirkung(`<DropdownMenuItem onClick={(e) => { e.stopPropagation(); pay(); }}>{t("markPaid")}</DropdownMenuItem>`)).toEqual([]);
   });
 
   it("lässt Knöpfe mit Wirkung in Ruhe", () => {

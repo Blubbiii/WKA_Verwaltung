@@ -232,6 +232,11 @@
       "angebotText": "In zwei Minuten zeigen wir dir die wichtigsten Stellen.",
       "starten": "Rundgang starten",
       "nichtJetzt": "Nicht jetzt"
+    },
+    "detailActions": {
+      "edit": "Bearbeiten",
+      "more": "Weitere Aktionen",
+      "delete": "Löschen"
     }
   },
   "statusLabels": {
@@ -992,7 +997,10 @@
     "errorRemoving": "Fehler beim Entfernen",
     "errorAssigningPlotsCount": "{count} Flurstücke konnten nicht zugeordnet werden",
     "plotsAssigned": "{count} Flurstücke zugeordnet",
-    "plotsAssignedFromLeases": "{plots} Flurstücke aus {leases} Verträgen zugeordnet"
+    "plotsAssignedFromLeases": "{plots} Flurstücke aus {leases} Verträgen zugeordnet",
+    "deleteParkDescription": "Der Park wird mit allen Anlagen und Zuordnungen unwiderruflich gelöscht. Willst du ihn nur stilllegen, archivier ihn in der Parkliste.",
+    "deleteParkError": "Der Park konnte nicht gelöscht werden.",
+    "deleteParkSuccess": "Park gelöscht"
   },
   "invoices": {
     "title": "Deine Rechnungen",
@@ -1146,7 +1154,9 @@
       "leaseContract": "Pachtvertrag:",
       "openLeaseContract": "Vertrag öffnen",
       "duplicate": "Duplizieren",
-      "openContact": "Kontakt öffnen"
+      "openContact": "Kontakt öffnen",
+      "recordPayment": "Zahlung erfassen",
+      "moreActions": "Weitere Aktionen"
     },
     "new": {
       "titleInvoice": "Neue Rechnung",
@@ -1276,8 +1286,6 @@
       "printedAt": "Gedruckt am {date}",
       "emailedAt": "Gemailt am {date}",
       "emailedAtTo": "Gemailt am {date} an {email}",
-      "viewDetailsAria": "Details anzeigen",
-      "editAria": "Bearbeiten",
       "moreActionsAria": "Weitere Aktionen",
       "preview": "Vorschau",
       "downloadPdf": "PDF herunterladen",
@@ -1328,7 +1336,13 @@
       "statsOpenAria": "Zur Liste der offenen Belege",
       "filterFrom": "Rechnungsdatum von",
       "filterTo": "Rechnungsdatum bis",
-      "filterClearDates": "Zeitraum aufheben"
+      "filterClearDates": "Zeitraum aufheben",
+      "colDispatch": "Versand",
+      "dispatchEmail": "E-Mail",
+      "dispatchPrint": "Druck",
+      "edit": "Bearbeiten",
+      "markPaidSuccess": "Als bezahlt markiert",
+      "markPaidError": "Konnte nicht als bezahlt markiert werden"
     },
     "bankImport": {
       "noMatch": "Kein Treffer",
@@ -4294,7 +4308,8 @@
       "created": "Erstellt",
       "updated": "Aktualisiert",
       "documents": "Dokumente",
-      "reminders": "Erinnerungen"
+      "reminders": "Erinnerungen",
+      "deleteError": "Der Vertrag konnte nicht gelöscht werden."
     },
     "edit": {
       "title": "Vertrag bearbeiten",
@@ -5166,7 +5181,6 @@
       "table": {
         "selectAllAria": "Alle auswählen",
         "selectAria": "Auswählen",
-        "contract": "Vertrag",
         "lessor": "Verpächter",
         "plot": "Flurstück",
         "park": "Park",
@@ -5183,14 +5197,13 @@
         "daysRemaining": "Noch {days} Tage"
       },
       "actions": {
-        "detailsAria": "Details anzeigen",
-        "editAria": "Bearbeiten",
         "moreAria": "Weitere Aktionen",
         "delete": "Löschen",
-        "csvExport": "CSV Export"
+        "csvExport": "CSV Export",
+        "edit": "Bearbeiten"
       },
       "csv": {
-        "headers": "Vertrag;Verpächter;Grundstück;Park;Jahrespacht;Status",
+        "headers": "Verpächter;Grundstück;Park;Jahrespacht;Status",
         "filePrefix": "pachtvertraege_export",
         "exportedToast": "{count} Pachtverträge exportiert"
       },
@@ -8925,7 +8938,10 @@
       "registerHint": "Ohne Zeitraum wird nach dem Stand der Gesellschafterliste am Ausschüttungstag verteilt. Ein- und Austritte im Jahr bleiben unberücksichtigt.",
       "previewColDays": "Tage",
       "previewUndistributed": "Nicht verteilt (bleibt bei der Gesellschaft)",
-      "previewNoShares": "Für keinen Gesellschafter ist eine Beteiligungsquote hinterlegt."
+      "previewNoShares": "Für keinen Gesellschafter ist eine Beteiligungsquote hinterlegt.",
+      "deleteFundDescription": "Die Gesellschaft wird gelöscht. Das geht nur, solange keine Beteiligungen oder Rechnungen an ihr hängen.",
+      "deleteFundError": "Die Gesellschaft konnte nicht gelöscht werden.",
+      "deleteFundSuccess": "Gesellschaft gelöscht"
     },
     "form": {
       "editTitle": "Gesellschaft bearbeiten",
@@ -9960,7 +9976,11 @@
       "delete": "Vorgang löschen",
       "confirmDelete": "Störungsvorgang wirklich löschen?",
       "deleteError": "Löschen fehlgeschlagen",
-      "closed": "Vorgang abgeschlossen"
+      "closed": "Vorgang abgeschlossen",
+      "unsavedWarning": "Du hast ungespeicherte Änderungen. Seite trotzdem verlassen?",
+      "unsavedCount": "{count, plural, one {# ungespeicherte Änderung} other {# ungespeicherte Änderungen}}",
+      "discard": "Verwerfen",
+      "save": "Speichern"
     },
     "new": {
       "title": "Neuer Störungsvorgang",

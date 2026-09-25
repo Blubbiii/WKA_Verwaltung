@@ -71,6 +71,30 @@ die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
   Buchhaltung; der Geschäftsjahresbeginn ließ sich nicht einmal speichern.
   Der Tab „HGB-Compliance“ heißt „Prüfregeln“ und spricht ohne interne Kürzel.
 
+**UX-Durchsicht, Welle 2: Aktionen einheitlich**
+
+- **Ein Muster für Detailseiten:** „Bearbeiten“ sichtbar, weitere Aktionen
+  und „Löschen“ im „…“-Menü oben rechts, Löschen immer mit Rückfrage
+  (`DetailAktionen`). Umgestellt: Park, Gesellschaft, Pachtvertrag, Vertrag,
+  Kontakt, Service-Vorgang, Störung. Park und Gesellschaft lassen sich jetzt
+  auch von der Detailseite aus löschen.
+- **Störung speichert mit Knopf:** Die Seite schrieb jedes Feld beim
+  Verlassen sofort in die Datenbank. Jetzt sammelt sie Änderungen, zeigt
+  „Verwerfen / Speichern“ und warnt beim Verlassen.
+- **Rechnungsdetail:** eine Hauptaktion je Status (Entwurf: Versenden,
+  versendet: Zahlung erfassen), alles andere im „…“-Menü, Stornos abgesetzt
+  in Rot. Vorher bis zu zehn gleichrangige Knöpfe, die rechts aus dem Bild
+  liefen.
+- **Listen:** Eine Zeile öffnet den Datensatz, das Augen-Symbol entfällt,
+  Bearbeiten steht im Menü. Die Pachtliste verliert die Spalte „Vertrag“ (es
+  gibt keine Vertragsnummer am Pachtvertrag); die Rechnungsliste zeigt
+  „Versand“ statt zweier grauer Symbole je Zeile und blendet „Versender“ aus,
+  wenn keine Rechnung einen hat.
+- **Tote und falsch benannte Knöpfe:** „Als bezahlt markieren“ in der
+  Rechnungsliste tat nichts (nur `stopPropagation`) und funktioniert jetzt;
+  80 Zurück-Pfeile hießen für Screenreader „Verknüpfen“. Beides fangen jetzt
+  Wächter-Tests. Löschen eines Vertrags scheiterte bei Fehlern stumm.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten
