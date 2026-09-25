@@ -202,7 +202,7 @@ export const navGroups: NavGroup[] = [
     labelKey: "crm",
     items: [
       {
-        title: "Übersicht",
+        title: "CRM-Übersicht",
         titleKey: "crmOverview",
         href: "/crm",
         icon: Users,
@@ -292,8 +292,11 @@ export const navGroups: NavGroup[] = [
         permission: "faults:read",
       },
       {
-        title: "Energie",
-        titleKey: "energy",
+        // UX-Durchsicht 2026-09: "Energie" had ten entries mixing data,
+        // analysis and one-off setup. Data here, analysis below, setup
+        // (import, SCADA mapping, topology) under Administration.
+        title: "Energiedaten",
+        titleKey: "energyData",
         href: "/energy",
         icon: Zap,
         permission: "energy:read",
@@ -302,14 +305,20 @@ export const navGroups: NavGroup[] = [
           { title: "Produktionsdaten", titleKey: "productionData", href: "/energy/productions", icon: BarChart3 },
           { title: "Netzbetreiber-Daten", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
           { title: "SCADA-Messdaten", titleKey: "scadaMeasurements", href: "/energy/scada/data", icon: Activity },
-          { title: "Turbinen-Import", titleKey: "energyTurbineImport", href: "/energy/turbine-import", icon: Upload },
-          { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
-          { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
-          { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
+        ],
+      },
+      {
+        title: "Auswertung",
+        titleKey: "energyEvaluation",
+        href: "/energy/analytics",
+        icon: TrendingUp,
+        permission: "energy:read",
+        children: [
           { title: "Energie-Analysen", titleKey: "energyAnalytics", href: "/energy/analytics", icon: TrendingUp },
           // A4 (Audit 2026-07): Abregelung war nicht abgebildet — weder die
           // Ausfallarbeit noch die Forderung dagegen.
           { title: "Abregelungen", titleKey: "curtailment", href: "/energy/curtailment", icon: Ban },
+          { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
         ],
       },
       {
@@ -427,7 +436,6 @@ export const navGroups: NavGroup[] = [
           // Rechnung mit diesem Datum mehr dazukommt. Die Seite liegt unter /admin,
           // gehoert fachlich aber hierher — neben den Export, dem sie folgt.
           { title: "Periodensperre", titleKey: "periodLock", href: "/admin/periodensperre", icon: Lock },
-          { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
         ],
       },
       {
@@ -437,6 +445,11 @@ export const navGroups: NavGroup[] = [
         icon: FileText,
         permission: "contracts:read",
         badgeKey: "expiringContracts" as const,
+        children: [
+          { title: "Übersicht", titleKey: "contractsOverview", href: "/contracts", icon: FileText },
+          // A PPA is a contract; it sat under invoices.
+          { title: "PPA-Verträge", titleKey: "ppa", href: "/invoices/ppa", icon: Zap, featureFlag: "ppa-management" },
+        ],
       },
       {
         title: "Beteiligungen",
@@ -480,7 +493,7 @@ export const navGroups: NavGroup[] = [
     labelKey: "communication",
     items: [
       {
-        title: "Übersicht",
+        title: "Serienbriefe",
         titleKey: "mailingsOverview",
         href: "/kommunikation",
         icon: Mail,
@@ -527,11 +540,24 @@ export const navGroups: NavGroup[] = [
     showSeparator: true,
     items: [
       {
-        title: "Einstellungen",
+        title: "Mein Konto",
         titleKey: "settings",
         href: "/settings",
         icon: Settings,
         permission: "settings:read",
+      },
+      {
+        // Setup done once per park — moved out of the energy data menu.
+        title: "Datenanbindung",
+        titleKey: "dataConnection",
+        href: "/energy/turbine-import",
+        icon: Radio,
+        permission: "energy:read",
+        children: [
+          { title: "Turbinen-Import", titleKey: "energyTurbineImport", href: "/energy/turbine-import", icon: Upload },
+          { title: "SCADA-Zuordnung", titleKey: "scadaMapping", href: "/energy/scada", icon: Radio },
+          { title: "Netz-Topologie", titleKey: "networkTopology", href: "/energy/topology", icon: Network },
+        ],
       },
       {
         title: "Rollen & Rechte",
@@ -610,7 +636,7 @@ export const navGroups: NavGroup[] = [
         permission: "system:tenants",
       },
       {
-        title: "Einstellungen",
+        title: "Systemeinstellungen",
         titleKey: "systemSettings",
         href: "/admin/settings",
         icon: Cog,

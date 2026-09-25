@@ -1,17 +1,15 @@
-"use client";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { navGroups } from "@/config/nav-config";
+import { sortierbareGruppen, sortiereGruppen, standardReihenfolge } from "@/lib/sidebar/reihenfolge";
 
-import { useState, useEffect, useCallback } from "react";
-
-const DEFAULT_GROUP_ORDER = [
-  "crm",
-  "inbox",
-  "windparks",
-  "finances",
-  "administration",
-  "communication",
-];
+/**
+ * Saved group order handed over by the dashboard layout (server). `undefined`
+ * means "not provided" — then the hook fetches it; `[]` means "none saved".
+ */
+export const GespeicherteReihenfolgeKontext = createContext<string[] | undefined>(undefined);
 
 export interface UseSidebarOrderResult {
+  /** Effective order of all sortable groups (never incomplete). */
   groupOrder: string[];
   isLoading: boolean;
   isSaving: boolean;
@@ -20,11 +18,15 @@ export interface UseSidebarOrderResult {
   resetOrder: () => Promise<void>;
 }
 
+const SORTIERBAR = sortierbareGruppen(navGroups);
+
 export function useSidebarOrder(): UseSidebarOrderResult {
-  const [groupOrder, setGroupOrder] = useState<string[]>(DEFAULT_GROUP_ORDER);
-  const [isLoading, setIsLoading] = useState(true);
+  const vomServer = useContext(GespeicherteReihenfolgeKontext);
+  const [gespeichert, setGespeichert] = useState<string[]>(vomServer ?? []);
+  const [isLoading, setIsLoading] = useState(vomServer === undefined);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDefault, setIsDefault] = useState(true);
+
+  const groupOrder = useMemo(() => standardReihenfolge(sortiereGruppen(SORTIERBAR, gespeichert)), [gespeichert]);
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -32,11 +34,10 @@ export function useSidebarOrder(): UseSidebarOrderResult {
       const res = await fetch("/api/user/sidebar-order");
       if (res.ok) {
         const data = await res.json();
-        setGroupOrder(data.order ?? DEFAULT_GROUP_ORDER);
-        setIsDefault(data.isDefault ?? true);
+        setGespeichert(Array.isArray(data.order) ? data.order : []);
       }
     } catch {
-      // Use default on error
+      // Keep the config order on error
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +46,7 @@ export function useSidebarOrder(): UseSidebarOrderResult {
   const updateOrder = useCallback(
     async (newOrder: string[]) => {
       // Optimistic update
-      setGroupOrder(newOrder);
-      setIsDefault(false);
+      setGespeichert(newOrder);
       try {
         setIsSaving(true);
         const res = await fetch("/api/user/sidebar-order", {
@@ -66,8 +66,7 @@ export function useSidebarOrder(): UseSidebarOrderResult {
   );
 
   const resetOrder = useCallback(async () => {
-    setGroupOrder(DEFAULT_GROUP_ORDER);
-    setIsDefault(true);
+    setGespeichert([]);
     try {
       setIsSaving(true);
       await fetch("/api/user/sidebar-order", { method: "DELETE" });
@@ -79,8 +78,9 @@ export function useSidebarOrder(): UseSidebarOrderResult {
   }, []);
 
   useEffect(() => {
-    fetchOrder();
-  }, [fetchOrder]);
+    // The layout already delivered it — fetching again would only flicker.
+    if (vomServer === undefined) fetchOrder();
+  }, [fetchOrder, vomServer]);
 
-  return { groupOrder, isLoading, isSaving, isDefault, updateOrder, resetOrder };
+  return { groupOrder, isLoading, isSaving, isDefault: gespeichert.length === 0, updateOrder, resetOrder };
 }

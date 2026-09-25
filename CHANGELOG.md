@@ -95,6 +95,25 @@ die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
   80 Zurück-Pfeile hießen für Screenreader „Verknüpfen“. Beides fangen jetzt
   Wächter-Tests. Löschen eines Vertrags scheiterte bei Fehlern stumm.
 
+**UX-Durchsicht, Welle 3: Navigation**
+
+- **Seitenleiste springt nicht mehr.** Sie baute sich in drei Schritten auf:
+  Die Standardreihenfolge stand doppelt im Code (Hook und API), kannte
+  „Betriebsführung“ und „Grundstücke & Pachten“ nicht und schob sie ans Ende;
+  Rechte, Modul-Schalter, Favoriten und Mandantenname kamen erst per Fetch.
+  Jetzt liefert das Layout alles für das erste Bild mit. „Zuletzt besucht“
+  liegt zusätzlich in einem Cookie (streng geprüft), damit auch sie sofort
+  steht.
+- **Favoriten und Zuletzt besucht** stehen immer an festen Plätzen statt sich
+  abzuwechseln; „Zuletzt besucht“ zeigt drei Seiten und keine Favoriten.
+- **Ein aktiver Eintrag:** Die längste passende Adresse gewinnt. Vorher
+  leuchteten auf jeder Energie-Unterseite „Übersicht“ und der Unterpunkt.
+- **Energie** ist geteilt in „Energiedaten“ und „Auswertung“; Turbinen-Import,
+  SCADA-Zuordnung und Netz-Topologie stehen als „Datenanbindung“ unter
+  Administration. PPA-Verträge stehen bei den Verträgen. „Einstellungen“ gab
+  es zweimal: jetzt „Mein Konto“ und „Systemeinstellungen“. Die
+  Periodensperre bleibt bewusst neben dem Belegexport.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

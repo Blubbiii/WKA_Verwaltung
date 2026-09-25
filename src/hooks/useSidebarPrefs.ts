@@ -16,7 +16,7 @@
  * wüsste warum.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   LEERE_PREFS,
@@ -31,11 +31,17 @@ export interface UseSidebarPrefsResult {
   speichern: (neu: SidebarPrefs) => Promise<void>;
 }
 
+/** Favorites loaded by the dashboard layout; `undefined` = fetch on the client. */
+export const StartFavoritenKontext = createContext<SidebarPrefs | undefined>(undefined);
+
 export function useSidebarPrefs(): UseSidebarPrefsResult {
-  const [prefs, setPrefs] = useState<SidebarPrefs>(LEERE_PREFS);
-  const [isLoading, setIsLoading] = useState(true);
+  const vomServer = useContext(StartFavoritenKontext);
+  const [prefs, setPrefs] = useState<SidebarPrefs>(vomServer ?? LEERE_PREFS);
+  const [isLoading, setIsLoading] = useState(vomServer === undefined);
 
   useEffect(() => {
+    // Already delivered with the page — fetching again would only flicker.
+    if (vomServer !== undefined) return;
     let abgebrochen = false;
     (async () => {
       try {
@@ -54,7 +60,7 @@ export function useSidebarPrefs(): UseSidebarPrefsResult {
     return () => {
       abgebrochen = true;
     };
-  }, []);
+  }, [vomServer]);
 
   const speichern = useCallback(
     async (neu: SidebarPrefs) => {

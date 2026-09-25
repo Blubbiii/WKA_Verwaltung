@@ -22,16 +22,22 @@
  * Aufgenommen werden nur die Seiten, die auch in der Navigation stehen.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  ZULETZT_GESPEICHERT,
+  schreibeZuletztCookie,
+  type BesuchteSeite,
+} from "@/lib/sidebar/zuletzt";
 
 const SPEICHER_SCHLUESSEL = "wpm.recent-pages";
-const WIE_VIELE = 3;
+// More than shown: favorites are filtered out afterwards (lib/sidebar/prefs).
+const WIE_VIELE = ZULETZT_GESPEICHERT;
 
-export interface BesuchteSeite {
-  href: string;
-  label: string;
-}
+/** List read from the cookie by the dashboard layout; `undefined` = not provided. */
+export const StartZuletztKontext = createContext<BesuchteSeite[] | undefined>(undefined);
+
+export type { BesuchteSeite };
 
 /** Sieht der Pfad nach einer Detailseite aus? */
 function istDetailseite(pfad: string): boolean {
@@ -44,19 +50,23 @@ export function useRecentPages(): {
   merken: (href: string, label: string) => void;
 } {
   const pathname = usePathname();
-  const [seiten, setSeiten] = useState<BesuchteSeite[]>([]);
+  const vomServer = useContext(StartZuletztKontext);
+  const [seiten, setSeiten] = useState<BesuchteSeite[]>(vomServer ?? []);
 
   // Erst nach dem Einhängen lesen — auf dem Server gibt es keinen
   // localStorage, und ein Unterschied zwischen Server- und Client-Ausgabe
   // führt zu einem Hydrierungsfehler.
+  // The cookie (read on the server) wins; localStorage is the fallback for
+  // lists saved before the cookie existed.
   useEffect(() => {
+    if (vomServer && vomServer.length > 0) return;
     try {
       const roh = window.localStorage.getItem(SPEICHER_SCHLUESSEL);
       if (roh) setSeiten(JSON.parse(roh) as BesuchteSeite[]);
     } catch {
       // Kaputter oder gesperrter Speicher — dann eben ohne.
     }
-  }, []);
+  }, [vomServer]);
 
   const merken = useCallback(
     (href: string, label: string) => {
@@ -72,6 +82,7 @@ export function useRecentPages(): {
 
         try {
           window.localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(neu));
+          document.cookie = schreibeZuletztCookie(neu);
         } catch {
           // Speicher voll oder gesperrt — die Liste gilt dann nur für diese
           // Sitzung. Kein Grund, etwas anzuzeigen.

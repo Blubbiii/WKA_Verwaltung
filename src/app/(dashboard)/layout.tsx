@@ -13,6 +13,8 @@ import { OfflineIndicator } from "@/components/providers/offline-indicator";
 import { PageTransition } from "@/components/providers/page-transition";
 import { AppVersionMonitor } from "@/components/providers/app-version-monitor";
 import { CommandPalette } from "@/components/global/command-palette";
+import { SeitenleisteStart } from "@/components/layout/seitenleiste-start";
+import { ladeSeitenleisteStart } from "@/lib/sidebar/start-daten";
 
 export default async function DashboardLayout({
   children,
@@ -20,7 +22,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const t = await getTranslations("layout.skipLink");
+  // Order, permissions and flags for the sidebar's first paint — without them
+  // it rebuilt itself three times while loading.
+  const seitenleiste = await ladeSeitenleisteStart();
   return (
+    <SeitenleisteStart daten={seitenleiste}>
     <KeyboardProvider>
       <OnboardingProvider>
         {/* Skip link — first focusable element for keyboard/screen-reader users (WCAG 2.4.1, BFSG) */}
@@ -69,5 +75,6 @@ export default async function DashboardLayout({
         </SidebarPrefsProvider>
       </OnboardingProvider>
     </KeyboardProvider>
+    </SeitenleisteStart>
   );
 }

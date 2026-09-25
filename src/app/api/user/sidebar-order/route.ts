@@ -13,14 +13,9 @@ import { requireAuth } from "@/lib/auth/withPermission";
 import type { UserSettings } from "@/types/dashboard";
 import { apiLogger as logger } from "@/lib/logger";
 
-const DEFAULT_GROUP_ORDER = [
-  "crm",
-  "inbox",
-  "windparks",
-  "finances",
-  "administration",
-  "communication",
-];
+// No default list here: without a saved order the client uses the config
+// order (lib/sidebar/reihenfolge). A second copy of the default had drifted —
+// it knew neither "managementBilling" nor "groundLeases".
 
 const updateSchema = z.object({
   order: z.array(z.string().min(1)).min(1).max(20),
@@ -42,7 +37,7 @@ export async function GET() {
 
     const settings = (user?.settings as UserSettings) || {};
     return NextResponse.json({
-      order: settings.sidebarGroupOrder ?? DEFAULT_GROUP_ORDER,
+      order: settings.sidebarGroupOrder ?? [],
       isDefault: !settings.sidebarGroupOrder,
     });
   } catch (error) {
@@ -121,7 +116,7 @@ export async function DELETE() {
     });
 
     return NextResponse.json({
-      order: DEFAULT_GROUP_ORDER,
+      order: [],
       isDefault: true,
     });
   } catch (error) {

@@ -61,6 +61,10 @@ import { Button } from "@/components/ui/button";
 import { useState, useCallback, useEffect, useMemo, useId } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useSidebarOrder } from "@/hooks/useSidebarOrder";
+import { FESTE_GRUPPEN_UNTEN, sortiereGruppen } from "@/lib/sidebar/reihenfolge";
+import { zuletztBesuchtAnzeige } from "@/lib/sidebar/prefs";
+import { aktivesZiel } from "@/lib/sidebar/aktiv";
+import { useStartMandant } from "@/components/layout/seitenleiste-start";
 import { useSidebarLinks } from "@/hooks/useSidebarLinks";
 import { usePendingApprovalsCount } from "@/hooks/usePendingApprovalsCount";
 import { useSidebarCounts } from "@/hooks/useSidebarCounts";
@@ -139,9 +143,10 @@ function SidebarBadge({
 // Group pinning: top (Dashboard) and bottom (Admin, System) are fixed
 // ---------------------------------------------------------------------------
 
-const PINNED_BOTTOM_KEYS = new Set(["admin", "system"]);
+const ALLE_NAV_HREFS = navGroups.flatMap((g) =>
+  g.items.flatMap((i) => [i.href, ...(i.children ?? []).map((c) => c.href)]),
+);
 
-/** Partition navGroups into pinned-top, reorderable middle, pinned-bottom */
 function partitionGroups(groups: NavGroup[]) {
   const pinnedTop: NavGroup[] = [];
   const middle: NavGroup[] = [];
@@ -149,21 +154,11 @@ function partitionGroups(groups: NavGroup[]) {
 
   for (const g of groups) {
     if (g.label === null) pinnedTop.push(g);
-    else if (g.labelKey && PINNED_BOTTOM_KEYS.has(g.labelKey)) pinnedBottom.push(g);
+    else if (g.labelKey && FESTE_GRUPPEN_UNTEN.has(g.labelKey)) pinnedBottom.push(g);
     else middle.push(g);
   }
 
   return { pinnedTop, middle, pinnedBottom };
-}
-
-/** Sort groups by the saved order array */
-function sortGroupsByOrder(groups: NavGroup[], order: string[]): NavGroup[] {
-  const orderMap = new Map(order.map((key, idx) => [key, idx]));
-  return [...groups].sort((a, b) => {
-    const idxA = orderMap.get(a.labelKey ?? "") ?? Infinity;
-    const idxB = orderMap.get(b.labelKey ?? "") ?? Infinity;
-    return idxA - idxB;
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -185,7 +180,8 @@ export function Sidebar() {
   const sidebarCounts = useSidebarCounts();
 
   const tenantLogoUrl = session?.user?.tenantLogoUrl;
-  const tenantName = session?.user?.tenantName;
+  const startMandant = useStartMandant();
+  const tenantName = session?.user?.tenantName ?? startMandant;
 
   const dndId = useId();
   const [collapsed, setCollapsed] = useState(false);
@@ -206,6 +202,9 @@ export function Sidebar() {
    */
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const { seiten: zuletztBesucht, merken: merkeSeite } = useRecentPages();
+  // One active entry: the longest matching href (lib/sidebar/aktiv) — prefix
+  // matching lit up "/energy" and "/energy/productions" at the same time.
+  const ziel = useMemo(() => aktivesZiel(pathname, ALLE_NAV_HREFS), [pathname]);
   const { prefs: favPrefs } = useSidebarPrefsContext();
 
   // Eine Stelle für alle Beschriftungen — siehe lib/sidebar/labels.ts.
@@ -215,6 +214,7 @@ export function Sidebar() {
     [beschriftungen],
   );
 
+  const zuletzt = zuletztBesuchtAnzeige(zuletztBesucht, favPrefs);
   const hatFavoriten =
     favPrefs.lose.length > 0 || favPrefs.gruppen.some((g) => g.hrefs.length > 0);
 
@@ -224,7 +224,7 @@ export function Sidebar() {
     []
   );
   const sortedMiddle = useMemo(
-    () => sortGroupsByOrder(middle, groupOrder),
+    () => sortiereGruppen(middle, groupOrder),
     [middle, groupOrder]
   );
 
@@ -269,7 +269,7 @@ export function Sidebar() {
     if (!item.children) return false;
     return item.children.some(
       (child) =>
-        pathname === child.href || pathname.startsWith(child.href + "/")
+        child.href === ziel
     );
   };
 
@@ -334,11 +334,10 @@ export function Sidebar() {
       if (!group.label) return true;
       // If current page is inside this group, always expand
       const hasActiveItem = items.some((item) => {
-        if (pathname === item.href || pathname.startsWith(item.href + "/"))
-          return true;
+        if (item.href === ziel) return true;
         if (item.children)
           return item.children.some(
-            (c) => pathname === c.href || pathname.startsWith(c.href + "/")
+            (c) => c.href === ziel
           );
         return false;
       });
@@ -348,7 +347,7 @@ export function Sidebar() {
       // ueberraschend.
       return expandedGroups.has(group.label);
     },
-    [pathname, expandedGroups]
+    [ziel, expandedGroups]
   );
 
   // -----------------------------------------------------------------------
@@ -397,7 +396,7 @@ export function Sidebar() {
     const itemExpanded = hasChildren && isExpanded(item);
     const isActive = hasChildren
       ? isChildActive(item)
-      : pathname === item.href || pathname.startsWith(item.href + "/");
+      : item.href === ziel;
     const itemTitle = getTitle(item);
 
     return (
@@ -437,9 +436,7 @@ export function Sidebar() {
                 {item.children!
                   .filter((child) => !child.featureFlag || isFeatureEnabled(child.featureFlag))
                   .map((child) => {
-                  const isChildItemActive =
-                    pathname === child.href ||
-                    pathname.startsWith(child.href + "/");
+                  const isChildItemActive = child.href === ziel;
                   const ChildIcon = child.icon;
                   const childTitle = getTitle(child);
                   return (
@@ -790,14 +787,16 @@ export function Sidebar() {
           </div>
         )}
 
-        {!collapsed && !hatFavoriten && zuletztBesucht.length > 0 && (
+        {/* Fixed place under the favorites — the two used to take turns in
+            the same spot and shifted everything below. */}
+        {!collapsed && zuletzt.length > 0 && (
           <div className="mb-4">
             <div className="px-4 mb-1.5">
               <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {t("sidebar.recent")}
               </span>
             </div>
-            {zuletztBesucht.map((seite) => (
+            {zuletzt.map((seite) => (
               <Link
                 key={seite.href}
                 href={seite.href}

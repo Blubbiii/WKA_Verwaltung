@@ -78,6 +78,19 @@ export function alleFavoriten(prefs: SidebarPrefs): string[] {
   return [...prefs.lose, ...prefs.gruppen.flatMap((g) => g.hrefs)];
 }
 
+
+/** How many recently visited pages the sidebar shows. */
+export const MAX_ZULETZT = 3;
+
+/**
+ * Recently visited pages as shown under the favorites: short, and without
+ * pages that already are favorites (they stand right above).
+ */
+export function zuletztBesuchtAnzeige<S extends { href: string }>(seiten: S[], prefs: SidebarPrefs): S[] {
+  const favoriten = new Set(alleFavoriten(prefs));
+  return seiten.filter((s) => !favoriten.has(s.href)).slice(0, MAX_ZULETZT);
+}
+
 /**
  * Fügt ein Ziel hinzu oder entfernt es.
  *

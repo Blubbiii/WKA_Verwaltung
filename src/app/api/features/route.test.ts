@@ -24,9 +24,10 @@ function dateien(dir: string): string[] {
 
 describe("/api/features", () => {
   it("liefert jeden Schalter, den Seitenleiste oder Seiten abfragen", () => {
-    const route = readFileSync(join(SRC, "app", "api", "features", "route.ts"), "utf8");
+    // The route delivers what ladeFeatureFlags returns (shared with the layout).
+    const quelle = readFileSync(join(SRC, "lib", "features", "tenant-flags.ts"), "utf8");
     const ausgeliefert = new Set(
-      [...route.slice(route.indexOf("return NextResponse.json({")).matchAll(/"([\w-]+)":/g)].map((m) => m[1]),
+      [...quelle.slice(quelle.indexOf("return {")).matchAll(/"([\w-]+)":/g)].map((m) => m[1]),
     );
     const abgefragt = new Set<string>();
     for (const datei of dateien(SRC)) {

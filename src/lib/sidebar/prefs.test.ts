@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  zuletztBesuchtAnzeige,
   LEERE_PREFS,
   MAX_FAVORITEN,
   alleFavoriten,
@@ -141,5 +142,27 @@ describe("lesePrefs", () => {
     expect(p.gruppen).toHaveLength(1);
     expect(p.gruppen[0].id).toBe("g1");
     expect(p.lose).toEqual(["/b"]);
+  });
+});
+
+describe("zuletztBesuchtAnzeige", () => {
+  // "Favoriten" und "Zuletzt besucht" wechselten sich an derselben Stelle ab —
+  // wer einen Favoriten setzte, verlor die Liste darunter. Jetzt stehen beide
+  // immer da; die zuletzt besuchten sind kurz und doppeln keinen Favoriten.
+  const seiten = [
+    { href: "/invoices", label: "Rechnungen" },
+    { href: "/parks", label: "Parks" },
+    { href: "/leases", label: "Pachtverträge" },
+    { href: "/funds", label: "Gesellschaften" },
+    { href: "/crm", label: "CRM" },
+  ];
+
+  it("höchstens drei", () => {
+    expect(zuletztBesuchtAnzeige(seiten, LEERE_PREFS).map((s) => s.href)).toEqual(["/invoices", "/parks", "/leases"]);
+  });
+
+  it("ohne Favoriten, auch aus Gruppen", () => {
+    const prefs = { ...LEERE_PREFS, lose: ["/parks"], gruppen: [{ id: "g", name: "Pacht", hrefs: ["/leases"] }] };
+    expect(zuletztBesuchtAnzeige(seiten, prefs).map((s) => s.href)).toEqual(["/invoices", "/funds", "/crm"]);
   });
 });
