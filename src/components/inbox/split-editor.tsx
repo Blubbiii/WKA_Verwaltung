@@ -146,7 +146,7 @@ export function SplitEditor({
                 disabled={disabled || hasOutgoing}
               >
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Fonds auswählen..." />
+                  <SelectValue placeholder="Gesellschaft auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
                   {funds.map((f) => (

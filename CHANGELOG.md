@@ -132,6 +132,30 @@ die DATEV-Konten je Rechnungsposition und die Enum-Werte `SEPA_RUN`/`JOURNAL_*`.
 - **Gesellschaft:** öffnet mit „Übersicht“ als erstem Reiter; die Kennzahl
   „Gesellschaften“ heißt „Verbundene Gesellschaften“.
 
+**UX-Durchsicht, Welle 5: Begriffe**
+
+Je Sache ein Wort, festgelegt mit dem Fachbereich:
+
+| Begriff | Bedeutung |
+|---|---|
+| Abrechnungen | Menü und Seite `/invoices` — Rechnungen und Gutschriften. Abgerechnet werden die WEA; eine Rechnung stellt man jemandem. |
+| Netzbetreiber-Abrechnung | was „Stromabrechnung“ und „Netzbetreiber-Daten“ hieß |
+| Produktionsdaten, SCADA-Messdaten | „Ertragsdaten“ war ein dritter Name |
+| Gesellschaft | was „Fonds“ und „Beteiligungen“ hieß; „Beteiligung“ nur für den Anteil einer Person |
+| BF-Abrechnungen, Abrechnungseinstellungen | die übrigen „Abrechnung“-Einträge im Menü |
+
+- Umgesetzt in Menü, Brotkrumen, Seiten, Meldungen der API, Audit-Filter und
+  Rechtekatalog (`energy:*` heißt „Energiedaten …“, weil es alle
+  Energiedaten betrifft). Der Audit-Filter nannte Produktionsdaten
+  „Netzbetreiber-Daten“, die Brotkrume für `/energy` „Stromabrechnung“.
+- 108 ausgeschriebene Umlaute je deutscher Sprachdatei korrigiert — der
+  Durchgang im Bugtest hatte nur `.tsx` erfasst.
+- **Seed repariert:** `prisma/seed.ts` ließ sich seit dem Ausbau der
+  Buchhaltung nicht mehr übersetzen (Reste von `seedLedgerAccounts`, Import
+  entfernter Enums). Ein neuer Test übersetzt den Seed gegen den
+  Prisma-Client.
+- Wächter-Tests für Glossar und Umlaute.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

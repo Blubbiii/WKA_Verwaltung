@@ -1539,11 +1539,11 @@ export default function ParkDetailsPage({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5" />
-                  Stromabrechnung (DULDUNG)
+                  Netzbetreiber-Abrechnung (DULDUNG)
                   <InfoTooltip text="Abrechnung der Stromerzeugung für Pachtflächen mit Duldungsvertrag." />
                 </CardTitle>
                 <CardDescription>
-                  Verteilungsmodus für die Erlösverteilung bei der Stromabrechnung
+                  Verteilungsmodus für die Erlösverteilung bei der Netzbetreiber-Abrechnung
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

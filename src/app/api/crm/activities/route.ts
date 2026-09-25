@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         where: { id: data.fundId, tenantId: check.tenantId! },
         select: { id: true },
       });
-      if (!f) return apiError("VALIDATION_FAILED", 400, { message: "Fonds nicht im Mandanten" });
+      if (!f) return apiError("VALIDATION_FAILED", 400, { message: "Gesellschaft nicht im Mandanten" });
     }
     if (data.leaseId) {
       const l = await prisma.lease.findFirst({

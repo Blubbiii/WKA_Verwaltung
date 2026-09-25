@@ -1061,7 +1061,7 @@ export default function ProductionDataImportPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Netzbetreiber-Daten importieren</h1>
+          <h1 className="text-2xl font-bold">Netzbetreiber-Abrechnungen importieren</h1>
           <p className="text-muted-foreground">
             Importieren Sie Abrechnungsdaten von Netzbetreibern und Direktvermarktern
           </p>

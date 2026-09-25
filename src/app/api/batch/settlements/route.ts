@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       const canFinalize = await hasPermission(check.userId!, "energy:settlements:finalize");
       if (!canFinalize) {
         return apiError("FORBIDDEN", 403, {
-          message: "Zum Freigeben von Stromabrechnungen fehlt die Berechtigung energy:settlements:finalize",
+          message: "Zum Freigeben von Netzbetreiber-Abrechnungen fehlt die Berechtigung energy:settlements:finalize",
         });
       }
     }

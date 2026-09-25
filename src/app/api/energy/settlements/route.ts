@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlements");
-    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Stromabrechnungen" });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Netzbetreiber-Abrechnungen" });
   }
 }
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       const periodLabel = validatedData.month
         ? `${validatedData.month}/${validatedData.year}`
         : `Jahr ${validatedData.year}`;
-      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Park ${park.name} existiert bereits eine Stromabrechnung für ${periodLabel}` });
+      return apiError("ALREADY_EXISTS", undefined, { message: "Duplikat erkannt", details: `Für Park ${park.name} existiert bereits eine Netzbetreiber-Abrechnung für ${periodLabel}` });
     }
 
     // Park-Defaults verwenden, wenn nicht explizit angegeben
@@ -260,6 +260,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(settlement, { status: 201 });
   } catch (error) {
-    return handleApiError(error, "Fehler beim Erstellen der Stromabrechnung");
+    return handleApiError(error, "Fehler beim Erstellen der Netzbetreiber-Abrechnung");
   }
 }

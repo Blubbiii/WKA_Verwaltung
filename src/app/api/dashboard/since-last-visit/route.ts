@@ -29,7 +29,7 @@ const ENTITY_LABELS: Record<string, string> = {
   IncomingInvoice: "Eingangsrechnung",
   User: "Benutzer",
   Plot: "Flurstück",
-  Fund: "Fonds",
+  Fund: "Gesellschaft",
   Settlement: "Abrechnung",
   Contract: "Vertrag",
   ServiceEvent: "Service-Vorgang",

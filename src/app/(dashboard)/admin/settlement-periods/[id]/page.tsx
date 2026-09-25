@@ -949,15 +949,15 @@ export default function SettlementPeriodDetailPage({ params }: PageProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5" />
-              Verknuepfte Stromabrechnung
+              Verknüpfte Netzbetreiber-Abrechnung
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
               <div>
-                <p className="font-medium">Stromabrechnung {period.year}</p>
+                <p className="font-medium">Netzbetreiber-Abrechnung {period.year}</p>
                 <p className="text-sm text-muted-foreground">
-                  Die Erlösdaten werden aus dieser Stromabrechnung übernommen
+                  Die Erlösdaten werden aus dieser Netzbetreiber-Abrechnung übernommen
                 </p>
               </div>
               <Button variant="outline" asChild>

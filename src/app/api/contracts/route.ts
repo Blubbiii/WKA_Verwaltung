@@ -292,7 +292,7 @@ async function postHandler(request: NextRequest) {
         select: { id: true },
       });
       if (!fund) {
-        return apiError("BAD_REQUEST", undefined, { message: "Fonds nicht gefunden oder keine Berechtigung" });
+        return apiError("BAD_REQUEST", undefined, { message: "Gesellschaft nicht gefunden oder keine Berechtigung" });
       }
     }
     if (validatedData.turbineId) {

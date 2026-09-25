@@ -314,7 +314,7 @@ export async function GET(
       return apiError("VALIDATION_FAILED", 422, {
         message:
           `Der Export umfasst mehr als ${EXPORT_GRENZE.toLocaleString("de-DE")} Einträge. ` +
-          `Bitte mit Filtern (Fonds, Park, Status, Zeitraum) eingrenzen.`,
+          `Bitte mit Filtern (Gesellschaft, Park, Status, Zeitraum) eingrenzen.`,
       });
     }
 

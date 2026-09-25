@@ -309,7 +309,7 @@ export async function DELETE(
     // und die Settlement-Items ohne Turbinenbezug zurücklassen.
     if (existingTurbine._count.energySettlementItems > 0) {
       return apiError("OPERATION_NOT_ALLOWED", 400, {
-        message: "Anlage ist Bestandteil von Stromabrechnungen und kann nicht gelöscht werden",
+        message: "Anlage ist Bestandteil von Netzbetreiber-Abrechnungen und kann nicht gelöscht werden",
         details: `${existingTurbine._count.energySettlementItems} Abrechnungspositionen verweisen auf diese Anlage. Setze die Anlage stattdessen auf einen inaktiven Status.`,
       });
     }

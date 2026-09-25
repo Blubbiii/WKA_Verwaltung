@@ -100,13 +100,13 @@ export async function GET(
     });
 
     if (!settlement) {
-      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
+      return apiError("NOT_FOUND", undefined, { message: "Netzbetreiber-Abrechnung nicht gefunden" });
     }
 
     return NextResponse.json(settlement);
   } catch (error) {
     logger.error({ err: error }, "Error fetching settlement");
-    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Stromabrechnung" });
+    return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Netzbetreiber-Abrechnung" });
   }
 }
 
@@ -139,7 +139,7 @@ export async function PATCH(
     });
 
     if (!existing) {
-      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
+      return apiError("NOT_FOUND", undefined, { message: "Netzbetreiber-Abrechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
@@ -262,7 +262,7 @@ export async function PATCH(
 
     return NextResponse.json(settlement);
   } catch (error) {
-    return handleApiError(error, "Fehler beim Aktualisieren der Stromabrechnung");
+    return handleApiError(error, "Fehler beim Aktualisieren der Netzbetreiber-Abrechnung");
   }
 }
 
@@ -281,7 +281,7 @@ export async function DELETE(
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
     if (hierarchy < 80) {
-      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren duerfen Stromabrechnungen löschen" });
+      return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren duerfen Netzbetreiber-Abrechnungen löschen" });
     }
 
     const { id } = await params;
@@ -304,7 +304,7 @@ export async function DELETE(
     });
 
     if (!existing) {
-      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
+      return apiError("NOT_FOUND", undefined, { message: "Netzbetreiber-Abrechnung nicht gefunden" });
     }
 
     if (existing.tenantId !== check.tenantId!) {
@@ -339,6 +339,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting settlement");
-    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Stromabrechnung" });
+    return apiError("DELETE_FAILED", undefined, { message: "Fehler beim Löschen der Netzbetreiber-Abrechnung" });
   }
 }

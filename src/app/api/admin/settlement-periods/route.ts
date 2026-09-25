@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!energySettlement) {
-        return apiError("NOT_FOUND", undefined, { message: "Verknuepfte Stromabrechnung nicht gefunden" });
+        return apiError("NOT_FOUND", undefined, { message: "Verknüpfte Netzbetreiber-Abrechnung nicht gefunden" });
       }
     }
 

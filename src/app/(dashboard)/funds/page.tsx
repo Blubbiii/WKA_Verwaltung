@@ -30,9 +30,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Table,
@@ -299,12 +296,9 @@ export default function FundsPage() {
       />
 
       {/* Filters & Table */}
+      {/* No card header: it repeated the page title ("Gesellschaften"). */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t("list.tableTitle")}</CardTitle>
-          <CardDescription>{t("list.tableDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <SearchFilter
             search={search}
             onSearchChange={setSearch}

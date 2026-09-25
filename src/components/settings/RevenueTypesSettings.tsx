@@ -450,7 +450,7 @@ export function RevenueTypesSettings() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleDelete}
         title="Vergütungsart löschen"
-        description={`Möchten Sie die Vergütungsart "${itemToDelete?.name}" wirklich löschen? Falls Netzbetreiber-Daten diese verwenden, wird sie nur deaktiviert.`}
+        description={`Möchten Sie die Vergütungsart "${itemToDelete?.name}" wirklich löschen? Falls Netzbetreiber-Abrechnungen diese verwenden, wird sie nur deaktiviert.`}
       />
     </div>
   );

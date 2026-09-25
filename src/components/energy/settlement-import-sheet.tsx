@@ -1175,7 +1175,7 @@ export function SettlementImportSheet({
         className="w-[600px] sm:w-[800px] sm:max-w-none flex flex-col"
       >
         <SheetHeader className="flex-shrink-0">
-          <SheetTitle>Netzbetreiber-Daten importieren</SheetTitle>
+          <SheetTitle>Netzbetreiber-Abrechnungen importieren</SheetTitle>
           <SheetDescription>
             CSV- oder Excel-Datei mit Abrechnungsdaten vom Netzbetreiber importieren
           </SheetDescription>

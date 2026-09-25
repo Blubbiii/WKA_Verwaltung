@@ -90,7 +90,7 @@ export async function POST(
     });
 
     if (!settlement) {
-      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
+      return apiError("NOT_FOUND", undefined, { message: "Netzbetreiber-Abrechnung nicht gefunden" });
     }
 
     // Tenant-Check
@@ -399,7 +399,7 @@ export async function POST(
             grossAmount: new Decimal(totalGross.toFixed(2)),
             currency: "EUR",
             status: "DRAFT",
-            notes: `Automatisch erstellt aus Stromabrechnung ${settlement.id}`,
+            notes: `Automatisch erstellt aus Netzbetreiber-Abrechnung ${settlement.id}`,
             calculationDetails: settlementDetails ? (settlementDetails as unknown as Record<string, unknown>) : undefined,
             tenantId: check.tenantId!,
             createdById: check.userId,

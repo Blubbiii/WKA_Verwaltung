@@ -80,7 +80,7 @@ export async function POST(
     });
 
     if (!settlement) {
-      return apiError("NOT_FOUND", undefined, { message: "Stromabrechnung nicht gefunden" });
+      return apiError("NOT_FOUND", undefined, { message: "Netzbetreiber-Abrechnung nicht gefunden" });
     }
 
     // Tenant-Check
@@ -505,6 +505,6 @@ export async function POST(
     });
   } catch (error) {
     logger.error({ err: error }, "Error calculating settlement");
-    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Berechnung der Stromabrechnung" });
+    return apiError("PROCESS_FAILED", undefined, { message: "Fehler bei der Berechnung der Netzbetreiber-Abrechnung" });
   }
 }

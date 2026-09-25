@@ -303,7 +303,7 @@ export const navGroups: NavGroup[] = [
         children: [
           { title: "Übersicht", titleKey: "energyOverview", href: "/energy", icon: LayoutDashboard },
           { title: "Produktionsdaten", titleKey: "productionData", href: "/energy/productions", icon: BarChart3 },
-          { title: "Netzbetreiber-Daten", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
+          { title: "Netzbetreiber-Abrechnungen", titleKey: "gridOperatorData", href: "/energy/settlements", icon: FileBarChart },
           { title: "SCADA-Messdaten", titleKey: "scadaMeasurements", href: "/energy/scada/data", icon: Activity },
         ],
       },
@@ -678,7 +678,7 @@ export const navGroups: NavGroup[] = [
         permission: "system:config",
       },
       {
-        title: "Fonds-Zugriff",
+        title: "Gesellschafts-Zugriff",
         titleKey: "fundAccess",
         href: "/admin/fund-access",
         icon: KeyRound,

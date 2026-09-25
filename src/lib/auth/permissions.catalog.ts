@@ -165,11 +165,11 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "service-events:export", module: "service-events", action: "export", displayName: "Service-Events exportieren", sortOrder: 104, unenforcedReason: "no-endpoint" },
 
   // ── Energy ─────────────────────────────────────────────────────────────
-  { name: "energy:read",   module: "energy", action: "read",   displayName: "Stromabrechnungen anzeigen",    sortOrder: 105 },
-  { name: "energy:create", module: "energy", action: "create", displayName: "Stromabrechnungen erstellen",   sortOrder: 106 },
-  { name: "energy:update", module: "energy", action: "update", displayName: "Stromabrechnungen bearbeiten",  sortOrder: 107 },
-  { name: "energy:delete", module: "energy", action: "delete", displayName: "Stromabrechnungen löschen",    sortOrder: 108 },
-  { name: "energy:export", module: "energy", action: "export", displayName: "Stromabrechnungen exportieren", sortOrder: 109, unenforcedReason: "no-endpoint" },
+  { name: "energy:read",   module: "energy", action: "read",   displayName: "Energiedaten anzeigen",    sortOrder: 105 },
+  { name: "energy:create", module: "energy", action: "create", displayName: "Energiedaten erstellen",   sortOrder: 106 },
+  { name: "energy:update", module: "energy", action: "update", displayName: "Energiedaten bearbeiten",  sortOrder: 107 },
+  { name: "energy:delete", module: "energy", action: "delete", displayName: "Energiedaten löschen",    sortOrder: 108 },
+  { name: "energy:export", module: "energy", action: "export", displayName: "Energiedaten exportieren", sortOrder: 109, unenforcedReason: "no-endpoint" },
 
   // ── Reports ────────────────────────────────────────────────────────────
   { name: "reports:read",   module: "reports", action: "read",   displayName: "Berichte anzeigen",    sortOrder: 110 },
@@ -235,7 +235,7 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "system:revenue-types",        module: "system", action: "revenue-types",        displayName: "Vergütungsarten verwalten",  sortOrder: 227 },
   { name: "system:fund-categories",      module: "system", action: "fund-categories",      displayName: "Gesellschaftstypen verwalten", sortOrder: 228 },
   { name: "system:settings:write",       module: "system", action: "settings-write",       displayName: "System-Einstellungen ändern", description: "Gesetzliche Werte (GWG/GewSt/Verzugszinsen) pflegen", sortOrder: 260, unenforcedReason: "superadmin-only" },
-  { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien fuer alle Mandanten",    sortOrder: 261, unenforcedReason: "superadmin-only" },
+  { name: "system:tax-templates:write",  module: "system", action: "tax-templates-write",  displayName: "Steuer-Templates pflegen",   description: "Globale Steuer-Kategorien für alle Mandanten",    sortOrder: 261, unenforcedReason: "superadmin-only" },
 
   // ── Zahlungen und Mahnwesen ─────────────────────────────────────────────
   // Die Namen `accounting:*` stammen aus der Zeit der Buchhaltung. Sie bleiben,
@@ -245,15 +245,15 @@ export const PERMISSION_CATALOG: readonly PermissionDef[] = [
   { name: "accounting:create",                     module: "zahlungen", action: "create",                 displayName: "Mahnlauf starten",                  sortOrder: 231 },
 
   // ── Management Billing (Betriebsführung) ───────────────────────────────
-  { name: "management-billing:read",      module: "management-billing", action: "read",      displayName: "BF-Abrechnungen anzeigen", description: "Betriebsfuehrungsvertraege und Abrechnungen einsehen", sortOrder: 240 },
-  { name: "management-billing:create",    module: "management-billing", action: "create",    displayName: "BF-Verträge erstellen",   description: "Neue Betriebsfuehrungsvertraege anlegen",              sortOrder: 241 },
-  { name: "management-billing:update",    module: "management-billing", action: "update",    displayName: "BF-Verträge bearbeiten",  description: "Betriebsfuehrungsvertraege aendern",                   sortOrder: 242 },
-  { name: "management-billing:delete",    module: "management-billing", action: "delete",    displayName: "BF-Verträge löschen",    description: "Betriebsfuehrungsvertraege entfernen",                 sortOrder: 243 },
-  { name: "management-billing:calculate", module: "management-billing", action: "calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen fuer Betriebsfuehrung kalkulieren",      sortOrder: 244 },
+  { name: "management-billing:read",      module: "management-billing", action: "read",      displayName: "BF-Abrechnungen anzeigen", description: "Betriebsführungsverträge und Abrechnungen einsehen", sortOrder: 240 },
+  { name: "management-billing:create",    module: "management-billing", action: "create",    displayName: "BF-Verträge erstellen",   description: "Neue Betriebsführungsverträge anlegen",              sortOrder: 241 },
+  { name: "management-billing:update",    module: "management-billing", action: "update",    displayName: "BF-Verträge bearbeiten",  description: "Betriebsführungsverträge ändern",                   sortOrder: 242 },
+  { name: "management-billing:delete",    module: "management-billing", action: "delete",    displayName: "BF-Verträge löschen",    description: "Betriebsführungsverträge entfernen",                 sortOrder: 243 },
+  { name: "management-billing:calculate", module: "management-billing", action: "calculate", displayName: "BF-Abrechnungen berechnen", description: "Abrechnungen für Betriebsführung kalkulieren",      sortOrder: 244 },
   { name: "management-billing:invoice",   module: "management-billing", action: "invoice",   displayName: "BF-Rechnungen generieren", description: "Rechnungen aus BF-Abrechnungen erstellen",             sortOrder: 245 },
 
   // ── Stoerungsvorgaenge (A1, Audit 2026-07) ─────────────────────────────
-  { name: "faults:read",    module: "faults", action: "read",    displayName: "Störungsvorgänge anzeigen",  description: "Stoerungen mit bewertetem Ertragsausfall einsehen",       sortOrder: 246 },
+  { name: "faults:read",    module: "faults", action: "read",    displayName: "Störungsvorgänge anzeigen",  description: "Störungen mit bewertetem Ertragsausfall einsehen",       sortOrder: 246 },
   { name: "faults:create",  module: "faults", action: "create",  displayName: "Störungsvorgang anlegen",     description: "Neuen Stoerungsvorgang erfassen",                          sortOrder: 247 },
   { name: "faults:update",  module: "faults", action: "update",  displayName: "Störungsvorgang bearbeiten",  description: "Ursache, Ausfall und Anspruch pflegen",                     sortOrder: 248 },
   { name: "faults:delete",  module: "faults", action: "delete",  displayName: "Störungsvorgang löschen",    description: "Stoerungsvorgang entfernen",                               sortOrder: 249 },
