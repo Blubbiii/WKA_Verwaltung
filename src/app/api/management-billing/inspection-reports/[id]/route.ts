@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -42,13 +42,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const report = await prisma.inspectionReport.findUnique({
+    const report = await db.inspectionReport.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -102,6 +103,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -114,7 +116,7 @@ export async function PUT(
     }
     const { inspectionDate, inspector, result, summary, parkId, turbineId } = parsed.data;
 
-    const existing = await prisma.inspectionReport.findUnique({
+    const existing = await db.inspectionReport.findUnique({
       where: { id },
     });
 
@@ -127,7 +129,7 @@ export async function PUT(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    const updated = await prisma.inspectionReport.update({
+    const updated = await db.inspectionReport.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         ...(inspectionDate !== undefined && { inspectionDate: new Date(inspectionDate) }),
@@ -162,13 +164,14 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const existing = await prisma.inspectionReport.findUnique({
+    const existing = await db.inspectionReport.findUnique({
       where: { id },
       include: {
         _count: { select: { defects: true } },
@@ -189,7 +192,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 409, { message: `Begehungsbericht kann nicht geloescht werden, da ${existing._count.defects} Maengel zugeordnet sind` });
     }
 
-    await prisma.inspectionReport.delete({
+    await db.inspectionReport.delete({
       where: { id, tenantId: check.tenantId!},
     });
 

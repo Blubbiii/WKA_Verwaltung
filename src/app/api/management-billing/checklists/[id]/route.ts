@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -48,13 +48,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const checklist = await prisma.operationalChecklist.findUnique({
+    const checklist = await db.operationalChecklist.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -89,6 +90,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -96,7 +98,7 @@ export async function PUT(
     const { id } = await params;
 
     // Verify checklist exists and belongs to tenant
-    const existing = await prisma.operationalChecklist.findUnique({
+    const existing = await db.operationalChecklist.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
     });
@@ -127,7 +129,7 @@ export async function PUT(
     if (parkId !== undefined) data.parkId = parkId || null;
     if (isActive !== undefined) data.isActive = isActive;
 
-    const checklist = await prisma.operationalChecklist.update({
+    const checklist = await db.operationalChecklist.update({
       where: { id, tenantId: check.tenantId!},
       data,
       include: {
@@ -159,6 +161,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -166,7 +169,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Verify checklist exists and belongs to tenant
-    const existing = await prisma.operationalChecklist.findUnique({
+    const existing = await db.operationalChecklist.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
 
@@ -181,7 +184,7 @@ export async function DELETE(
     }
 
     // Check if any tasks reference this checklist
-    const taskCount = await prisma.operationalTask.count({
+    const taskCount = await db.operationalTask.count({
       where: { checklistId: id },
     });
 
@@ -189,7 +192,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 409, { message: `Checkliste kann nicht geloescht werden, da ${taskCount} Aufgabe(n) sie referenzieren` });
     }
 
-    await prisma.operationalChecklist.delete({ where: { id, tenantId: check.tenantId!} });
+    await db.operationalChecklist.delete({ where: { id, tenantId: check.tenantId!} });
 
     logger.info(
       { checklistId: id, tenantId: check.tenantId },

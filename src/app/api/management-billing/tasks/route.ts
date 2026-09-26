@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("FORBIDDEN", 403, { message: "Mandanten-Kontext erforderlich" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const status = enumParam(searchParams.get("status"), TASK_STATUSES);
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [tasks, total] = await Promise.all([
-      prisma.operationalTask.findMany({
+      db.operationalTask.findMany({
         where,
         include: {
           park: { select: { id: true, name: true } },
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.operationalTask.count({ where }),
+      db.operationalTask.count({ where }),
     ]);
 
     const enriched = tasks.map((t) => ({
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("FORBIDDEN", 403, { message: "Mandanten-Kontext erforderlich" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = taskCreateSchema.safeParse(body);
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
     const { title, description, status, priority, taskType, category, dueDate, notes, checklistData, parkId, turbineId, checklistId, assignedToId, costEstimateEur, actualCostEur, benefitNotes } = parsed.data;
 
-    const task = await prisma.operationalTask.create({
+    const task = await db.operationalTask.create({
       data: {
         tenantId: check.tenantId,
         title: title.trim(),

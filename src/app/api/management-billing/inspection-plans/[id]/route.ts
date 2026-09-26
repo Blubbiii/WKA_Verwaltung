@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -43,13 +43,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const plan = await prisma.inspectionPlan.findUnique({
+    const plan = await db.inspectionPlan.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -91,6 +92,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -103,7 +105,7 @@ export async function PUT(
     }
     const { title, description, recurrence, nextDueDate, parkId, turbineId, isActive } = parsed.data;
 
-    const existing = await prisma.inspectionPlan.findUnique({
+    const existing = await db.inspectionPlan.findUnique({
       where: { id },
     });
 
@@ -116,7 +118,7 @@ export async function PUT(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    const updated = await prisma.inspectionPlan.update({
+    const updated = await db.inspectionPlan.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         ...(title !== undefined && { title }),
@@ -152,13 +154,14 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const existing = await prisma.inspectionPlan.findUnique({
+    const existing = await db.inspectionPlan.findUnique({
       where: { id },
     });
 
@@ -171,7 +174,7 @@ export async function DELETE(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    await prisma.inspectionPlan.delete({
+    await db.inspectionPlan.delete({
       where: { id, tenantId: check.tenantId!},
     });
 

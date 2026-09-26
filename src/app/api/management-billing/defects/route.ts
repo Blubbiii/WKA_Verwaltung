@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, DefectSeverity, OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status as OperationalTaskStatus;
     if (inspectionReportId) where.inspectionReportId = inspectionReportId;
 
-    const defects = await prisma.defect.findMany({
+    const defects = await db.defect.findMany({
       where,
       include: {
         park: { select: { id: true, name: true } },
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", 400, { message: "Mandant konnte nicht ermittelt werden" });
     }
 
-    const defect = await prisma.defect.create({
+    const defect = await db.defect.create({
       data: {
         tenantId,
         title,

@@ -1,3 +1,4 @@
+// mandantenübergreifend: Betriebsführung — Abrechnungen und Stakeholder gehören über ParkStakeholder zwei Mandanten (Dienstleister und Kunde); die Route prüft stakeholderTenantId selbst.
 /**
  * Management Billing API - List and Calculate
  *

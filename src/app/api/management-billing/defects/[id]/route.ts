@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { OperationalTaskStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -47,13 +47,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const defect = await prisma.defect.findUnique({
+    const defect = await db.defect.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -107,6 +108,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -119,7 +121,7 @@ export async function PUT(
     }
     const { title, description, severity, status, dueDate, resolutionNotes, costEstimateEur, actualCostEur, parkId, turbineId } = parsed.data;
 
-    const existing = await prisma.defect.findUnique({
+    const existing = await db.defect.findUnique({
       where: { id },
     });
 
@@ -141,7 +143,7 @@ export async function PUT(
       resolvedAt = null;
     }
 
-    const updated = await prisma.defect.update({
+    const updated = await db.defect.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         ...(title !== undefined && { title }),
@@ -187,13 +189,14 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const existing = await prisma.defect.findUnique({
+    const existing = await db.defect.findUnique({
       where: { id },
       include: {
         _count: { select: { insuranceClaims: true } },
@@ -214,7 +217,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 409, { message: `Mangel kann nicht geloescht werden, da ${existing._count.insuranceClaims} Versicherungsmeldungen zugeordnet sind` });
     }
 
-    await prisma.defect.delete({
+    await db.defect.delete({
       where: { id, tenantId: check.tenantId!},
     });
 

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
@@ -34,13 +34,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const task = await prisma.operationalTask.findUnique({
+    const task = await db.operationalTask.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -84,6 +85,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -91,7 +93,7 @@ export async function PUT(
     const { id } = await params;
 
     // Verify task exists and belongs to tenant
-    const existing = await prisma.operationalTask.findUnique({
+    const existing = await db.operationalTask.findUnique({
       where: { id },
       select: { id: true, tenantId: true, status: true },
     });
@@ -143,7 +145,7 @@ export async function PUT(
       data.completedAt = null;
     }
 
-    const task = await prisma.operationalTask.update({
+    const task = await db.operationalTask.update({
       where: { id, tenantId: check.tenantId!},
       data,
       include: {
@@ -184,6 +186,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -191,7 +194,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Verify task exists and belongs to tenant
-    const existing = await prisma.operationalTask.findUnique({
+    const existing = await db.operationalTask.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
     });
@@ -204,7 +207,7 @@ export async function DELETE(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    await prisma.operationalTask.delete({ where: { id, tenantId: check.tenantId!} });
+    await db.operationalTask.delete({ where: { id, tenantId: check.tenantId!} });
 
     logger.info(
       { taskId: id, tenantId: check.tenantId },

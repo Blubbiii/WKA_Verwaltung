@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
       if (dateTo) where.inspectionDate.lte = new Date(dateTo);
     }
 
-    const reports = await prisma.inspectionReport.findMany({
+    const reports = await db.inspectionReport.findMany({
       where,
       include: {
         park: { select: { id: true, name: true } },
@@ -103,6 +104,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", 400, { message: "Mandant konnte nicht ermittelt werden" });
     }
 
-    const report = await prisma.inspectionReport.create({
+    const report = await db.inspectionReport.create({
       data: {
         tenantId,
         inspectionDate: new Date(inspectionDate),
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     // If linked to an inspection plan, update lastExecuted
     if (inspectionPlanId) {
-      await prisma.inspectionPlan.update({
+      await db.inspectionPlan.update({
         where: { id: inspectionPlanId, tenantId: check.tenantId!},
         data: { lastExecuted: new Date(inspectionDate) },
       });

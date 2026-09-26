@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
     if (recurrence) where.recurrence = recurrence;
 
-    const plans = await prisma.inspectionPlan.findMany({
+    const plans = await db.inspectionPlan.findMany({
       where,
       include: {
         park: { select: { id: true, name: true } },
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", 400, { message: "Mandant konnte nicht ermittelt werden" });
     }
 
-    const plan = await prisma.inspectionPlan.create({
+    const plan = await db.inspectionPlan.create({
       data: {
         tenantId,
         title,

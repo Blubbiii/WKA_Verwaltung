@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getConfigBoolean } from "@/lib/config";
 import { ClaimStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -54,13 +54,14 @@ export async function GET(
   try {
     const check = await requirePermission("management-billing:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const claim = await prisma.insuranceClaim.findUnique({
+    const claim = await db.insuranceClaim.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true } },
@@ -136,6 +137,7 @@ export async function PUT(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
@@ -148,7 +150,7 @@ export async function PUT(
     }
     const { title, claimNumber, description, status, claimType, estimatedCostEur, actualCostEur, reimbursedEur, resolutionNotes, contractId, vendorId, defectId, parkId, turbineId, incidentDate } = parsed.data;
 
-    const existing = await prisma.insuranceClaim.findUnique({
+    const existing = await db.insuranceClaim.findUnique({
       where: { id },
     });
 
@@ -170,7 +172,7 @@ export async function PUT(
       resolvedAt = null;
     }
 
-    const updated = await prisma.insuranceClaim.update({
+    const updated = await db.insuranceClaim.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         ...(incidentDate && { incidentDate: new Date(incidentDate) }),
@@ -222,13 +224,14 @@ export async function DELETE(
   try {
     const check = await requirePermission("management-billing:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const featureCheck = await checkFeatureEnabled(check.tenantId);
     if (featureCheck) return featureCheck;
 
     const { id } = await params;
 
-    const existing = await prisma.insuranceClaim.findUnique({
+    const existing = await db.insuranceClaim.findUnique({
       where: { id },
     });
 
@@ -241,7 +244,7 @@ export async function DELETE(
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
-    await prisma.insuranceClaim.delete({
+    await db.insuranceClaim.delete({
       where: { id, tenantId: check.tenantId!},
     });
 
