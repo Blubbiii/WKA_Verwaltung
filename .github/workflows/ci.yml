@@ -349,8 +349,11 @@ jobs:
           cat /tmp/wpm-server.log
           exit 1
 
+      # `github` zusätzlich zu `list`: jeder fehlgeschlagene Test erscheint als
+      # Annotation in der Zusammenfassung des Laufs — ohne ihn stand dort nur
+      # "exit code 1", und die Ursache war nur im Protokoll zu finden.
       - name: Ablauf-Tests
-        run: npx playwright test e2e/journeys --project=chromium --reporter=list
+        run: npx playwright test e2e/journeys --project=chromium --reporter=list,github
 
       # Bei einem Fehlschlag sind Spur, Bildschirmfoto und Video das, womit
       # sich die Ursache ohne lokales Nachstellen finden laesst.
