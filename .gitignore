@@ -32,7 +32,10 @@ letsencrypt/
 Thumbs.db
 
 # Logs
-logs/
+# Only the top-level folder: a bare `logs/` also hid
+# src/app/api/energy/scada/auto-import/logs/ — that route never reached the
+# repository, and production answered 404 (found by aufrufe-haben-routen.test).
+/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*

@@ -45,6 +45,54 @@ async function zeitraumSetzen(page: Page, von: string, bis: string): Promise<voi
   }).toPass({ timeout: 20_000 });
 }
 
+interface Stammdaten {
+  id: string;
+  taxId: string | null;
+  vatId: string | null;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+}
+
+/**
+ * Sending checks § 14 UStG: the own tax number and full address are
+ * mandatory. A freshly seeded tenant has neither — the test sets what is
+ * missing (and only that) and restores it afterwards. Before sending it
+ * makes sure again, because the setup-wizard journey edits the same tenant
+ * in a parallel worker and resets it when done.
+ */
+async function pflichtangabenSicherstellen(page: Page): Promise<(() => Promise<void>) | null> {
+  const stand = await page.request.get("/api/admin/onboarding-status");
+  expect(stand.ok(), `Einrichtungsstand nicht lesbar: HTTP ${stand.status()}`).toBe(true);
+  const t = (await stand.json()).tenant as Stammdaten;
+  const ohneSteuer = !t.taxId?.trim() && !t.vatId?.trim();
+  const ohneAnschrift = !(t.street?.trim() && t.postalCode?.trim() && t.city?.trim());
+  if (!ohneSteuer && !ohneAnschrift) return null;
+
+  const gesetzt = await page.request.patch(`/api/admin/tenants/${t.id}`, {
+    data: {
+      ...(ohneSteuer && { taxId: "E2E 111/222/33333" }),
+      ...(ohneAnschrift && { street: "Belegweg 1", postalCode: "12345", city: "Teststadt" }),
+    },
+  });
+  expect(gesetzt.ok(), `Pflichtangaben setzen fehlgeschlagen: HTTP ${gesetzt.status()}`).toBe(true);
+  return async () => {
+    await page.request.patch(`/api/admin/tenants/${t.id}`, {
+      data: {
+        ...(ohneSteuer && { taxId: t.taxId ?? "" }),
+        ...(ohneAnschrift && { street: t.street ?? "", postalCode: t.postalCode ?? "", city: t.city ?? "" }),
+      },
+    });
+  };
+}
+
+let zuruecksetzen: Array<() => Promise<void>> = [];
+
+test.afterEach(async () => {
+  for (const f of zuruecksetzen.reverse()) await f();
+  zuruecksetzen = [];
+});
+
 test.describe("Belegexport", () => {
   test("eine versendete Rechnung landet als PDF und im Verzeichnis im ZIP", async ({
     page,
@@ -74,6 +122,8 @@ test.describe("Belegexport", () => {
     const neu = (await angelegt.json()) as { id: string };
     api.track({ collection: "invoices", id: neu.id, name: empfaenger });
 
+    const zurueck = await pflichtangabenSicherstellen(page);
+    if (zurueck) zuruecksetzen.push(zurueck);
     const versendet = await page.request.post(`/api/invoices/${neu.id}/send`);
     expect(
       versendet.ok(),
