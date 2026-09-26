@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -23,9 +23,10 @@ export async function GET() {
     if (!tenantId) {
       return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(tenantId);
 
     // Fetch tenant settings to check if energyReports section is enabled
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: tenantId },
       select: { settings: true },
     });
@@ -46,7 +47,7 @@ export async function GET() {
     }
 
     // Fetch only portal-visible configs for this tenant
-    const configs = await prisma.energyReportConfig.findMany({
+    const configs = await db.energyReportConfig.findMany({
       where: {
         tenantId,
         portalVisible: true,

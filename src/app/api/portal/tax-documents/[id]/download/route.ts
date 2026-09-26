@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getSignedUrl } from "@/lib/storage";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
@@ -31,6 +31,7 @@ export async function GET(
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
     const tenantId = session.user.tenantId;
     if (!tenantId) {
       return apiError("FORBIDDEN", 401, { message: "Mandant nicht gesetzt" });
@@ -43,21 +44,21 @@ export async function GET(
     const expiresIn = expiresInParam ? parseInt(expiresInParam, 10) : 3600;
     const validExpiresIn = Math.min(Math.max(expiresIn, 60), 604800);
 
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: { userId: session.user.id, fund: { tenantId } },
     });
     if (!shareholder) {
       return apiError("FORBIDDEN", undefined, { message: "Kein Gesellschafter-Zugang" });
     }
 
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: { personId: shareholder.personId, fund: { tenantId } },
       select: { id: true, fundId: true },
     });
     const fundIds = shareholders.map((s) => s.fundId);
     const shareholderIds = shareholders.map((s) => s.id);
 
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         tenantId,

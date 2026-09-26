@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -512,11 +513,12 @@ export async function POST(
     if (!tenantId) {
       return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(tenantId);
 
     const { configId } = await params;
 
     // Check tenant portal settings for energyReports visibility
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: tenantId },
       select: { settings: true },
     });
@@ -533,7 +535,7 @@ export async function POST(
     }
 
     // Load the config - must be portal-visible and belong to tenant
-    const config = await prisma.energyReportConfig.findFirst({
+    const config = await db.energyReportConfig.findFirst({
       where: {
         id: configId,
         tenantId,
@@ -577,7 +579,7 @@ export async function POST(
     if (config.parkId) turbineWhere.parkId = config.parkId;
     if (config.turbineId) turbineWhere.id = config.turbineId;
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: {
         id: true,

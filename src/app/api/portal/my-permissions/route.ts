@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -15,9 +15,10 @@ export async function GET() {
     if (!session?.user?.id) {
       return apiError("UNAUTHORIZED", undefined, { message: "Nicht authentifiziert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     // Get all permissions through user's role assignments
-    const assignments = await prisma.userRoleAssignment.findMany({
+    const assignments = await db.userRoleAssignment.findMany({
       where: { userId: session.user.id },
       include: {
         role: {

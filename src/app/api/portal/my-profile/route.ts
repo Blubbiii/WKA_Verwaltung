@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -42,9 +42,10 @@ export async function GET(_request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
       include: {
         person: true,
@@ -102,9 +103,10 @@ export async function PATCH(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
       include: {
         person: true,
@@ -159,7 +161,7 @@ export async function PATCH(request: NextRequest) {
 
     let pendingBankUpdateCreated = false;
     if (hasBankChange) {
-      await prisma.pendingBankUpdate.create({
+      await db.pendingBankUpdate.create({
         data: {
           personId: shareholder.personId,
           tenantId: session.user.tenantId!,
@@ -180,7 +182,7 @@ export async function PATCH(request: NextRequest) {
         .then(({ createNotification }) => {
           // Notify all tenant admins via in-app notification.
           // Email-Versand kann hier ergänzt werden, siehe TODO unten.
-          return prisma.user
+          return db.user
             .findMany({
               where: { tenantId: session.user.tenantId, status: "ACTIVE" },
               select: { id: true },
@@ -209,7 +211,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updatedPerson = Object.keys(updateData).length > 0
-      ? await prisma.person.update({
+      ? await db.person.update({
           where: { id: shareholder.personId, tenantId: session.user.tenantId },
           data: updateData,
         })

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import {
   fetchPerformanceKpis,
   fetchYearOverYear,
@@ -28,9 +28,10 @@ export async function GET(request: NextRequest) {
     if (!tenantId) {
       return apiError("FORBIDDEN", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(tenantId);
 
     // Check tenant portal settings
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: tenantId },
       select: { settings: true },
     });

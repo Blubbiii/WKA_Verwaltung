@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -15,6 +15,7 @@ export async function DELETE(
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { id: proxyId } = await params;
 
@@ -23,7 +24,7 @@ export async function DELETE(
     }
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -32,7 +33,7 @@ export async function DELETE(
     }
 
     // Find all shareholders for the same person
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         status: { not: "ARCHIVED" },
@@ -44,7 +45,7 @@ export async function DELETE(
 
     // Find the proxy — scope by grantor to prevent ID-enumeration attacks.
     // Attackers guessing IDs must not distinguish "not found" from "not yours".
-    const proxy = await prisma.voteProxy.findFirst({
+    const proxy = await db.voteProxy.findFirst({
       where: {
         id: proxyId,
         grantorId: { in: shareholderIds },
@@ -65,7 +66,7 @@ export async function DELETE(
     // proxy's audit trail (issued for period X, revoked before end).
     // TODO(schema): add `revokedAt DateTime?` to VoteProxy to record the
     // exact revocation time. For now, use updatedAt if added later.
-    const revokedProxy = await prisma.voteProxy.update({
+    const revokedProxy = await db.voteProxy.update({
       where: { id: proxyId },
       data: {
         isActive: false,
@@ -98,6 +99,7 @@ export async function GET(
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { id: proxyId } = await params;
 
@@ -106,7 +108,7 @@ export async function GET(
     }
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -115,7 +117,7 @@ export async function GET(
     }
 
     // Find all shareholders for the same person
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         status: { not: "ARCHIVED" },
@@ -126,7 +128,7 @@ export async function GET(
     const shareholderIds = shareholders.map((sh) => sh.id);
 
     // Find the proxy
-    const proxy = await prisma.voteProxy.findUnique({
+    const proxy = await db.voteProxy.findUnique({
       where: { id: proxyId },
       include: {
         grantor: {

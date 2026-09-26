@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const body = await request.json();
     const parsed = deleteSchema.safeParse(body);
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
 
     // Prevent admin from deleting themselves
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: { email: true, tenantId: true },
     });
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       return apiError("FORBIDDEN", undefined, { message: "Administratoren koennen ihr Konto nicht selbst loeschen. Bitte kontaktieren Sie einen anderen Administrator." });
     }
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Find linked shareholder + person
       const shareholder = await tx.shareholder.findUnique({
         where: { userId },

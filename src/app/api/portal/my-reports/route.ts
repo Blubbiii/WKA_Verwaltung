@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import type { Prisma, DocumentCategory } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -23,13 +23,14 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
     const typeParam = searchParams.get("type");
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find all shareholders for the same person (user might have multiple participations)
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
       },
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch reports
-    const documents = await prisma.document.findMany({
+    const documents = await db.document.findMany({
       where: whereClause,
       include: {
         fund: {

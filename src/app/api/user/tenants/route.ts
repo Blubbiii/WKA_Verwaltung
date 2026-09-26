@@ -1,3 +1,4 @@
+// mandantenübergreifend: listet die Mitgliedschaften des Benutzers in allen Mandanten.
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requireAuth } from "@/lib/auth/withPermission";

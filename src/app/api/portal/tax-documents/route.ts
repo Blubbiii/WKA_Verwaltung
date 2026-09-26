@@ -12,7 +12,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
     const tenantId = session.user.tenantId;
     if (!tenantId) {
       return apiError("FORBIDDEN", 401, { message: "Mandant nicht gesetzt" });
@@ -43,13 +44,13 @@ export async function GET(request: NextRequest) {
     const year = yearParam ? parseInt(yearParam, 10) : null;
 
     // Find shareholder + linked funds (tenant-scoped)
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: { userId: session.user.id, fund: { tenantId } },
     });
     if (!shareholder) {
       return NextResponse.json({ data: [], years: [] });
     }
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: { personId: shareholder.personId, fund: { tenantId } },
       select: { id: true, fundId: true },
     });
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
-    const documents = await prisma.document.findMany({
+    const documents = await db.document.findMany({
       where: {
         tenantId,
         approvalStatus: "PUBLISHED",
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Determine available years (Distinct createdAt-Years für alle Tax-Docs)
-    const yearDocs = await prisma.document.findMany({
+    const yearDocs = await db.document.findMany({
       where: {
         tenantId,
         approvalStatus: "PUBLISHED",

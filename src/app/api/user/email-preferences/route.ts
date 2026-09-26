@@ -1,3 +1,4 @@
+// mandantenübergreifend: das eigene Benutzerkonto — nach einem Mandantenwechsel liegt es im Heimat-Mandanten, nicht im aktiven; die Route sucht per userId.
 /**
  * User Email Preferences API
  *

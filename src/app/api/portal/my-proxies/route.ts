@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // Validation schema for creating a proxy
@@ -51,9 +52,10 @@ export async function GET() {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -84,7 +86,7 @@ export async function GET() {
     }
 
     // Find all shareholders for the same person (user might have multiple fund participations)
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         status: { not: "ARCHIVED" },
@@ -95,7 +97,7 @@ export async function GET() {
     const shareholderIds = shareholders.map((sh) => sh.id);
 
     // Fetch proxies granted by the user (where user is grantor)
-    const grantedProxies = await prisma.voteProxy.findMany({
+    const grantedProxies = await db.voteProxy.findMany({
       where: {
         grantorId: { in: shareholderIds },
       },
@@ -141,7 +143,7 @@ export async function GET() {
     });
 
     // Fetch proxies received by the user (where user is grantee)
-    const receivedProxies = await prisma.voteProxy.findMany({
+    const receivedProxies = await db.voteProxy.findMany({
       where: {
         granteeId: { in: shareholderIds },
       },
@@ -236,6 +238,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const body = await request.json();
 
@@ -248,7 +251,7 @@ export async function POST(request: NextRequest) {
     const { granteeId, type, voteId } = parsed.data;
 
     // Find the shareholder linked to this user (grantor)
-    const grantorShareholder = await prisma.shareholder.findUnique({
+    const grantorShareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
       include: {
         fund: true,
@@ -265,7 +268,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the grantee shareholder
-    const granteeShareholder = await prisma.shareholder.findUnique({
+    const granteeShareholder = await db.shareholder.findUnique({
       where: { id: granteeId },
       include: {
         fund: true,
@@ -295,7 +298,7 @@ export async function POST(request: NextRequest) {
     // If SINGLE proxy, validate the vote
     let vote = null;
     if (type === "SINGLE" && voteId) {
-      vote = await prisma.vote.findUnique({
+      vote = await db.vote.findUnique({
         where: { id: voteId },
       });
 
@@ -315,7 +318,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for existing active proxy (same grantor -> grantee, same type)
-    const existingProxy = await prisma.voteProxy.findFirst({
+    const existingProxy = await db.voteProxy.findFirst({
       where: {
         grantorId: grantorShareholder.id,
         granteeId: granteeId,
@@ -333,7 +336,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the proxy
-    const proxy = await prisma.voteProxy.create({
+    const proxy = await db.voteProxy.create({
       data: {
         grantorId: grantorShareholder.id,
         granteeId: granteeId,

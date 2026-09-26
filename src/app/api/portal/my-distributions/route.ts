@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -12,6 +12,7 @@ export async function GET(_request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const tenantId = session.user.tenantId;
     if (!tenantId) {
@@ -20,7 +21,7 @@ export async function GET(_request: NextRequest) {
 
     // Find the shareholder linked to this user (tenant-scoped via fund)
     // Shareholder hat kein direktes tenantId — Filter über fund.tenantId.
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: { userId: session.user.id, fund: { tenantId } },
     });
 
@@ -33,7 +34,7 @@ export async function GET(_request: NextRequest) {
 
     // Find all shareholders for the same person — STRICTLY within this tenant
     // (a Person can theoretically exist across tenants; never leak others)
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         fund: { tenantId },
@@ -51,7 +52,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // Find all invoices (credit notes = Gutschriften = distributions) for these shareholders
-    const distributions = await prisma.invoice.findMany({
+    const distributions = await db.invoice.findMany({
       where: {
         tenantId,
         shareholderId: { in: shareholderIds },

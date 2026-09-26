@@ -1,3 +1,4 @@
+// mandantenübergreifend: der Wechsel prüft Mitgliedschaften in allen Mandanten des Benutzers.
 import crypto from "crypto";
 import { apiError } from "@/lib/api-errors";
 import { NextRequest, NextResponse } from "next/server";

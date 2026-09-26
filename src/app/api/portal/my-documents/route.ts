@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { DocumentCategory } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find the shareholder linked to this user (tenant-scoped via fund)
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: { userId: session.user.id, fund: { tenantId } },
     });
 
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find all shareholders for the same person — STRICT tenant-scope via fund
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         fund: { tenantId },
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     const shareholderCategories = ["REPORT", "PROTOCOL", "CORRESPONDENCE", "OTHER"];
 
     // Portal only shows PUBLISHED documents (tenant-scoped)
-    const documents = await prisma.document.findMany({
+    const documents = await db.document.findMany({
       where: {
         tenantId,
         approvalStatus: "PUBLISHED",
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get distinct categories for filtering (portal: only PUBLISHED, tenant-scoped)
-    const allDocs = await prisma.document.findMany({
+    const allDocs = await db.document.findMany({
       where: {
         tenantId,
         approvalStatus: "PUBLISHED",

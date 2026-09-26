@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getSignedUrl } from "@/lib/storage";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
@@ -27,6 +27,7 @@ export async function GET(
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -42,7 +43,7 @@ export async function GET(
     const validExpiresIn = Math.min(Math.max(expiresIn, MIN_EXPIRES), MAX_EXPIRES);
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -51,7 +52,7 @@ export async function GET(
     }
 
     // Find all shareholders for the same person
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
       },
@@ -65,7 +66,7 @@ export async function GET(
     const shareholderIds = shareholders.map((sh) => sh.id);
 
     // Fetch the document and verify access
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         isArchived: false,

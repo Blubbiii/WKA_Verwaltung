@@ -1,3 +1,4 @@
+// mandantenübergreifend: Benachrichtigungen folgen dem Benutzer (userId) über alle seine Mandanten; mandantDb würde nach einem Wechsel die übrigen ausblenden.
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";

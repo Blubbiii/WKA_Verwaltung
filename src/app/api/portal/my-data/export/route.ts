@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -13,11 +13,12 @@ export async function GET() {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const userId = session.user.id;
 
     // Fetch user account data
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -34,7 +35,7 @@ export async function GET() {
     }
 
     // Fetch shareholder + person data
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId },
       include: {
         person: {
@@ -64,7 +65,7 @@ export async function GET() {
 
     // Fetch distribution items for this shareholder
     const distributionItems = shareholder
-      ? await prisma.distributionItem.findMany({
+      ? await db.distributionItem.findMany({
           where: { shareholderId: shareholder.id },
           select: {
             id: true,
@@ -87,7 +88,7 @@ export async function GET() {
 
     // Fetch votes cast by this shareholder
     const votes = shareholder
-      ? await prisma.voteResponse.findMany({
+      ? await db.voteResponse.findMany({
           where: { shareholderId: shareholder.id },
           select: {
             id: true,
@@ -107,7 +108,7 @@ export async function GET() {
 
     // Fetch documents shared with user
     const documents = shareholder
-      ? await prisma.document.findMany({
+      ? await db.document.findMany({
           where: {
             OR: [
               { uploadedById: userId },
@@ -130,7 +131,7 @@ export async function GET() {
     // Kontext ab, aeltere Events sind bereits durch das Retention-Cleaning
     // geloescht (siehe retention-service). Bei User-seitigem Wunsch auf
     // vollstaendige Historie: manueller Export via Admin (audit_logs Table).
-    const auditLogs = await prisma.auditLog.findMany({
+    const auditLogs = await db.auditLog.findMany({
       where: { userId },
       select: {
         id: true,

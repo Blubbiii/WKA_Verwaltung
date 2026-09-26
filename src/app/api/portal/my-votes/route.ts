@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { VoteStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -237,12 +238,13 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
     // Find the shareholder linked to this user
-    const shareholder = await prisma.shareholder.findUnique({
+    const shareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -251,7 +253,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find all shareholders for the same person
-    const shareholders = await prisma.shareholder.findMany({
+    const shareholders = await db.shareholder.findMany({
       where: {
         personId: shareholder.personId,
         status: { not: "ARCHIVED" },
@@ -272,7 +274,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find votes for the funds the user is invested in
-    const votes = await prisma.vote.findMany({
+    const votes = await db.vote.findMany({
       where: {
         fundId: { in: fundIds },
         status: { not: "DRAFT" },
@@ -399,6 +401,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return apiError("FORBIDDEN", 401, { message: "Nicht autorisiert" });
     }
+    const db = mandantDb(session.user.tenantId);
 
     const body = await request.json();
     const parsed = voteSubmitSchema.safeParse(body);
@@ -416,7 +419,7 @@ export async function POST(request: NextRequest) {
     const selectedOption = optionMapping[decision] || decision;
 
     // Find the shareholder linked to this user
-    const userShareholder = await prisma.shareholder.findUnique({
+    const userShareholder = await db.shareholder.findUnique({
       where: { userId: session.user.id },
     });
 
@@ -425,7 +428,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the vote
-    const vote = await prisma.vote.findUnique({
+    const vote = await db.vote.findUnique({
       where: { id: voteId },
     });
 
@@ -439,7 +442,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the shareholder for this fund (same person)
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         personId: userShareholder.personId,
         fundId: vote.fundId,
@@ -452,7 +455,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already voted
-    const existingResponse = await prisma.voteResponse.findUnique({
+    const existingResponse = await db.voteResponse.findUnique({
       where: {
         voteId_shareholderId: {
           voteId: vote.id,
@@ -466,7 +469,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the vote response
-    const response = await prisma.voteResponse.create({
+    const response = await db.voteResponse.create({
       data: {
         voteId: vote.id,
         shareholderId: shareholder.id,
