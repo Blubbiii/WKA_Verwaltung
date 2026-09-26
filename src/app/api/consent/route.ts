@@ -14,7 +14,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
-import { rateLimit, getClientIp, getRateLimitResponse, AUTH_RATE_LIMIT } from "@/lib/rate-limit";
+import { rateLimit, getClientIp, getRateLimitResponse, CONSENT_RATE_LIMIT } from "@/lib/rate-limit";
 import { auth } from "@/lib/auth";
 
 const consentSchema = z.object({
@@ -31,9 +31,9 @@ const consentSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Rate limit per IP (5 consent writes / 15 min — mehr als realistisch nötig)
+    // Rate limit per IP (see CONSENT_RATE_LIMIT — an office shares one IP)
     const ip = getClientIp(req);
-    const rl = await rateLimit(`consent:${ip}`, AUTH_RATE_LIMIT);
+    const rl = await rateLimit(`consent:${ip}`, CONSENT_RATE_LIMIT);
     if (!rl.success) return getRateLimitResponse(rl);
 
     const parsed = consentSchema.safeParse(await req.json());

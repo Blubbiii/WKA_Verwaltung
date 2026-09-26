@@ -351,3 +351,16 @@ describe("Ratengrenzen aus der Umgebung", () => {
     warn.mockRestore();
   });
 });
+
+describe("Einwilligungen haben ein eigenes Limit", () => {
+  it("ein Büro hinter einer gemeinsamen IP kann bestätigen, ohne dass Nachweise verloren gehen", async () => {
+    const { CONSENT_RATE_LIMIT } = await import("./rate-limit");
+    // Before: the login limit (5 per 15 minutes per IP) — the 6th employee
+    // behind a shared office IP lost their consent record (Art. 7 GDPR).
+    expect(CONSENT_RATE_LIMIT.limit).toBeGreaterThanOrEqual(50);
+    expect(CONSENT_RATE_LIMIT.windowMs).toBe(15 * 60 * 1000);
+    const route = (await import("node:fs")).readFileSync("src/app/api/consent/route.ts", "utf8");
+    expect(route).toContain("CONSENT_RATE_LIMIT");
+    expect(route).not.toContain("AUTH_RATE_LIMIT");
+  });
+});

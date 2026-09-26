@@ -363,6 +363,16 @@ Dabei behoben: Ein Kunden-Admin konnte über `/api/admin/users` einen
 Benutzer in einem **fremden Mandanten** anlegen. Die Mandanten-ID kam
 ungeprüft aus dem Request. Jetzt darf das nur der Superadmin.
 
+**Einwilligungen gingen im Büro verloren**
+
+`/api/consent` nutzte das Login-Limit (5 pro 15 Minuten und IP). Hinter
+einer gemeinsamen Büro-IP verlor so der sechste Mitarbeiter, der in 15
+Minuten das Cookie-Banner bestätigte, seinen Einwilligungs-Nachweis (Art. 7
+DSGVO). Der Aufruf läuft absichtlich still im Hintergrund, deshalb fiel das
+niemandem auf. Die Ablauf-Tests fanden es: Sie bestätigen das Banner in
+jedem Kontext. Einwilligungen haben jetzt ein eigenes Limit von 60 pro 15
+Minuten (`CONSENT_RATE_LIMIT`).
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

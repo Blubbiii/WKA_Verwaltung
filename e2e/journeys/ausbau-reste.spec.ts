@@ -23,6 +23,11 @@ test.describe("Reste des Buchhaltungsausbaus", () => {
       if (m.type() === "error") konsole.push(m.text());
     });
     page.on("pageerror", (e) => konsole.push(e.message));
+    // The browser console only says "Failed to load resource: 429" — the
+    // address of the refused request is what tells which limit struck.
+    page.on("response", (r) => {
+      if (r.status() >= 400) konsole.push(`HTTP ${r.status()} ${new URL(r.url()).pathname}`);
+    });
 
     await page.goto("/invoices");
     await ready(page);

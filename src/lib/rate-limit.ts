@@ -99,6 +99,17 @@ export const AUTH_RATE_LIMIT: RateLimitConfig = {
   windowMs: 15 * 60 * 1000,
 };
 
+/**
+ * 60 per 15 minutes per IP -- cookie consent records (Art. 7 GDPR).
+ * Its own limit, not the login one: behind a shared office IP the 6th
+ * employee confirming within 15 minutes lost their consent record, because
+ * the banner sends it fire-and-forget. Still stops a flood.
+ */
+export const CONSENT_RATE_LIMIT: RateLimitConfig = {
+  limit: readLimit("CONSENT_RATE_LIMIT", 60),
+  windowMs: 15 * 60 * 1000,
+};
+
 /** 20 requests per minute -- for file upload endpoints. */
 export const UPLOAD_RATE_LIMIT: RateLimitConfig = {
   limit: readLimit("UPLOAD_RATE_LIMIT", 20),
