@@ -6648,7 +6648,7 @@
       "tabUsers": "Benutzer",
       "tabRoles": "Rollen & Rechte",
       "tabFeatures": "Feature-Flags",
-      "tabLimits": "Limits"
+      "tabLimits": "Lizenzen"
     },
     "marketing": {
       "title": "Marketing-Einstellungen",
@@ -8155,6 +8155,81 @@
       "recalculated": "Neu berechnet: {used} belegt",
       "recalcError": "Neuberechnung fehlgeschlagen",
       "hint": "Der Zähler steigt bei jedem Upload, beim Löschen sinkt er nicht mit. „Neu berechnen“ zählt alle noch gespeicherten Dokumente neu zusammen."
+    },
+    "tarife": {
+      "title": "Tarife",
+      "description": "Was Kunden buchen können. Sichtbare Tarife erscheinen auf der Startseite; die Grenzen gelten als Lizenz der Kunden, die den Tarif gebucht haben.",
+      "add": "Tarif anlegen",
+      "empty": "Noch kein Tarif angelegt. Ohne Tarif sind Kunden unbegrenzt.",
+      "superadminOnly": "Tarife gehören zur Plattform und können nur vom Plattform-Betreiber (Superadmin) gepflegt werden.",
+      "unlimited": "unbegrenzt",
+      "onRequest": "auf Anfrage",
+      "perMonth": "{preis} / Monat",
+      "hidden": "nicht auf der Startseite",
+      "booked": "{count, plural, =0 {nicht gebucht} one {1× gebucht} other {#× gebucht}}",
+      "highlighted": "hervorgehoben",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleteTitle": "Tarif „{name}“ löschen?",
+      "saved": "Tarif gespeichert",
+      "saveError": "Tarif konnte nicht gespeichert werden",
+      "deleted": "Tarif gelöscht",
+      "deleteError": "Tarif konnte nicht gelöscht werden",
+      "editTitle": "Tarif bearbeiten",
+      "addTitle": "Tarif anlegen",
+      "dialogDescription": "Name, Preis und Umfang stehen so auf der Startseite. Die Grenzen werden bei jedem Kunden mit diesem Tarif durchgesetzt.",
+      "fields": {
+        "name": "Name",
+        "key": "Kürzel",
+        "preisMonatEur": "Preis pro Monat (EUR)",
+        "preisHinweis": "Hinweis zum Preis",
+        "maxFirmen": "Firmen",
+        "maxUmspannwerke": "Umspannwerke",
+        "maxWea": "WEA",
+        "maxBenutzer": "Benutzer",
+        "maxSpeicherMb": "Speicher (MB)",
+        "sortierung": "Reihenfolge",
+        "beschreibung": "Kurzbeschreibung",
+        "leistungen": "Enthaltene Leistungen",
+        "sichtbar": "Auf der Startseite zeigen",
+        "hervorgehoben": "Hervorheben"
+      },
+      "leistungenPlaceholder": "Eine Leistung pro Zeile, z. B.\nPachtabrechnung\nSCADA-Import\nGesellschafterportal",
+      "limitsHint": "Leere Grenze = unbegrenzt. Nur aktiv verwaltete Gesellschaften zählen als Firma bzw. Umspannwerk; nur beteiligte und Portal-Zugänge der Gesellschafter zählen nicht.",
+      "cancel": "Abbrechen",
+      "save": "Speichern"
+    },
+    "kundenLizenzen": {
+      "title": "Lizenzen",
+      "description": "Gebuchter Tarif, Verbrauch und Lizenzstand je Kunde — nur Zahlen, keine Inhalte.",
+      "search": "Kunde suchen",
+      "empty": "Keine Kunden",
+      "customer": "Kunde",
+      "tariff": "Tarif",
+      "unlimited": "ohne Tarif",
+      "counters": {
+        "firmen": "Firmen",
+        "umspannwerke": "Umspannwerke",
+        "wea": "WEA",
+        "benutzer": "Benutzer",
+        "speicherMb": "Speicher (MB)"
+      },
+      "state": "Stand",
+      "stateLocked": "gesperrt",
+      "stateGrace": "überschritten, Frist bis {datum}",
+      "stateOk": "im Rahmen",
+      "stateNoTariff": "unbegrenzt",
+      "edit": "Lizenz",
+      "editTitle": "Lizenz von {name}",
+      "editDescription": "Tarif buchen und bei Bedarf einzelne Grenzen abweichend festlegen. Eine Herabstufung startet sofort die 30-Tage-Frist.",
+      "noTariff": "Kein Tarif (unbegrenzt)",
+      "exception": "Sonderregel (optional)",
+      "fromTariff": "wie Tarif",
+      "exceptionHint": "Leer = Wert aus dem Tarif, „-“ = unbegrenzt, Zahl = abweichende Grenze nur für diesen Kunden.",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "saved": "Lizenz gespeichert",
+      "saveError": "Lizenz konnte nicht gespeichert werden"
     }
   },
   "portal": {
@@ -9170,7 +9245,9 @@
       "notFound": "Gesellschaft nicht gefunden",
       "loadError": "Fehler beim Laden der Gesellschaft",
       "loadErrorGeneric": "Fehler beim Laden",
-      "backToList": "Zurück zur Übersicht"
+      "backToList": "Zurück zur Übersicht",
+      "verwaltung": "Verwaltung",
+      "verwaltungHint": "„Nur beteiligt“: eine Gesellschaft, an der Sie lediglich einen Anteil halten (z. B. 20 % an einem fremden Umspannwerk). Sie zählt nicht zur Lizenz."
     },
     "onboarding": {
       "title": "Neuer Gesellschafter",
@@ -9210,6 +9287,10 @@
         "description": "Prüfen Sie alle Angaben bevor Sie den Gesellschafter anlegen.",
         "edit": "Bearbeiten"
       }
+    },
+    "verwaltung": {
+      "AKTIV": "Aktiv verwaltet",
+      "BETEILIGUNG": "Nur beteiligt"
     }
   },
   "gis": {
@@ -10956,5 +11037,24 @@
       "unknown": "unbekannt",
       "total": "Summe Marktprämie: {sum}"
     }
+  },
+  "lizenz": {
+    "title": "Lizenz & Verbrauch",
+    "booked": "Gebuchter Tarif: {tarif}",
+    "noTariff": "Kein Tarif gebucht — ohne Begrenzung.",
+    "counters": {
+      "firmen": "Firmen",
+      "umspannwerke": "Umspannwerke",
+      "wea": "WEA",
+      "benutzer": "Benutzer",
+      "speicherMb": "Speicher (MB)"
+    },
+    "usedUnlimited": "{used} (unbegrenzt)",
+    "usedOf": "{used} von {limit}",
+    "notCounted": "Nur beteiligte Gesellschaften und Portal-Zugänge der Gesellschafter zählen nicht.",
+    "bannerGrace": "Ihre Lizenz ist überschritten ({was}). Bitte buchen Sie bis {datum} eine größere Stufe — danach sind Anlegen und Bearbeiten gesperrt.",
+    "bannerLocked": "Ihre Lizenz ist überschritten ({was}). Anlegen und Bearbeiten sind gesperrt, bis Sie eine größere Stufe buchen. Lesen, Export und Abrechnungen gehen weiter.",
+    "details": "Details",
+    "tab": "Lizenz"
   }
 }

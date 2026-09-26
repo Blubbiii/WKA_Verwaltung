@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/header";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { DashboardFooter } from "@/components/layout/dashboard-footer";
 import { MaintenanceBanner } from "@/components/layout/maintenance-banner";
+import { LizenzHinweis } from "@/components/lizenz/lizenz-anzeige";
 import { TabTitleSync } from "@/components/layout/tab-title-sync";
 import { KeyboardProvider } from "@/components/providers/keyboard-provider";
 import { OnboardingProvider } from "@/components/providers/onboarding-provider";
@@ -56,6 +57,7 @@ export default async function DashboardLayout({
           <MobileSidebar />
           <div className="flex flex-1 flex-col overflow-hidden">
             <MaintenanceBanner />
+            <LizenzHinweis />
             <Header />
             <main
               id="main-content"

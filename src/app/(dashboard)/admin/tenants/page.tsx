@@ -8,7 +8,7 @@ import { TenantManagement } from "@/components/admin/TenantManagement";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { FeatureFlagsTab } from "@/components/admin/feature-flags-tab";
-import { TenantLimitsTab } from "@/components/admin/tenant-limits-tab";
+import { KundenLizenzenTab } from "@/components/admin/kunden-lizenzen-tab";
 import {
   AlertTriangle,
   Building2,
@@ -84,7 +84,7 @@ export default function AdminTenantsPage() {
         </TabsContent>
 
         <TabsContent value="limits">
-          <TenantLimitsTab />
+          <KundenLizenzenTab />
         </TabsContent>
       </Tabs>
     </div>

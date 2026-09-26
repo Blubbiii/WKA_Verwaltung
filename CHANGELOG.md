@@ -329,6 +329,40 @@ und nicht zwischengespeichert.
   „Neu berechnen“. Der Zähler steigt bei jedem Upload, sinkt beim Löschen
   aber nicht. Die Neuberechnung zählt alles Gespeicherte neu zusammen.
 
+**Lizenzmodell: Tarife, Grenzen je Kunde, Kundenübersicht**
+
+> Beim Deployment legt `db push` die Tabelle `tarife` und neue Spalten an
+> (`tenants.tarifId`, `lizenzAbweichung`, `lizenzUeberschrittenSeit`,
+> `funds.verwaltung`). Nur Ergänzungen, keine Daten gehen verloren. Kunden
+> ohne Tarif bleiben unbegrenzt, es ändert sich also nichts, bis ein Tarif
+> zugewiesen wird.
+
+- **Tarife** pflegt der Plattform-Betreiber unter Marketing → Tarife: Name,
+  Preis, Grenzen für Firmen, Umspannwerke, WEA, Benutzer und Speicher sowie
+  die enthaltenen Leistungen. Sichtbare Tarife stehen auf der Startseite und
+  ersetzen dort den Preisrechner. Dieselben Datensätze sind die Lizenz der
+  Kunden: Was beworben wird, ist genau das, was gebucht wird.
+- **Gezählt** werden aktiv verwaltete Gesellschaften (Firmen) und
+  Umspannwerk-Gesellschaften getrennt, WEA (ohne NVP und Parkrechner) und
+  aktive Benutzer. **Nicht gezählt** werden Gesellschaften, an denen der
+  Kunde nur beteiligt ist (neuer Schalter „aktiv verwaltet / nur beteiligt“
+  an der Gesellschaft), und Portal-Zugänge der Gesellschafter.
+- **Überschritten:** Anlegen ist sofort gesperrt, mit der Meldung „Ihr Tarif …
+  umfasst … Bitte buchen Sie eine größere Stufe.“ Nach 30 Tagen ist auch das
+  Bearbeiten von Stammdaten gesperrt. Lesen, Export, Löschen und alle
+  Abrechnungen bleiben immer möglich. Ein täglicher Wartungslauf (5:30)
+  schreibt den Stand fort.
+- **Kundenübersicht** (Administration → Mandanten → Lizenzen): Tarif,
+  Verbrauch gegen Grenze, Stand und Sonderregel je Kunde. Nur Zahlen, keine
+  Inhalte. Sie ersetzt die bisherigen Mandanten-Limits, die gespeichert,
+  aber nie durchgesetzt wurden.
+- **Kunde:** Einstellungen → Lizenz zeigt Tarif und Verbrauch. Solange die
+  Lizenz überschritten ist, erscheint ein Hinweisbalken mit Frist.
+
+Dabei behoben: Ein Kunden-Admin konnte über `/api/admin/users` einen
+Benutzer in einem **fremden Mandanten** anlegen. Die Mandanten-ID kam
+ungeprüft aus dem Request. Jetzt darf das nur der Superadmin.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

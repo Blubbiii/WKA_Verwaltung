@@ -47,6 +47,7 @@ export const MAINTENANCE_JOBS = {
   DEADLINE_CHECK: "check-deadlines",
   BUNDESBANK_RATES: "bundesbank-rates",
   CONTRACT_AUTO_RENEW: "contract-auto-renew",
+  LIZENZ_PRUEFUNG: "lizenz-pruefung",
 } as const;
 
 export type MaintenanceJobName =
@@ -58,7 +59,8 @@ export type MaintenanceJobData = Record<string, never>;
 export type MaintenanceJobResult =
   | DeadlineCheckResult
   | BundesbankFetchResult
-  | AutoRenewalResult;
+  | AutoRenewalResult
+  | { geprueft: number; ueberschritten: number };
 
 const defaultJobOptions = getJobOptions("background");
 
@@ -96,6 +98,11 @@ const SCHEDULES: { name: MaintenanceJobName; pattern: string; label: string }[] 
     name: MAINTENANCE_JOBS.CONTRACT_AUTO_RENEW,
     pattern: CRON_SCHEDULES.CONTRACT_AUTO_RENEW,
     label: "Automatische Vertragsverlängerung",
+  },
+  {
+    name: MAINTENANCE_JOBS.LIZENZ_PRUEFUNG,
+    pattern: CRON_SCHEDULES.LIZENZ_PRUEFUNG,
+    label: "Lizenzprüfung",
   },
 ];
 

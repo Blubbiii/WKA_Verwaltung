@@ -13,6 +13,7 @@ import { auth } from "./index";
 import { apiLogger } from "@/lib/logger";
 import { rateLimit, API_RATE_LIMIT, getRateLimitResponse } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-errors";
+import { sperrtNachKarenz } from "@/lib/lizenz/lizenz";
 import {
   hasPermission,
   hasAllPermissions,
@@ -154,11 +155,36 @@ export async function requirePermission(
     };
   }
 
+  const sperre = await lizenzSperre(permission, tenantId);
+  if (sperre) return { authorized: false, error: sperre };
+
   return {
     authorized: true,
     userId,
     tenantId,
   };
+}
+
+/**
+ * Licence lock after the grace period (2026-09): creating and editing
+ * master data is refused while a customer stays above the booked tariff.
+ * Reading, export, delete and billing are never affected (sperrtNachKarenz).
+ * Only asked when the permission is lockable, so ordinary reads cost
+ * nothing; the state itself is cached per tenant (lib/lizenz/lizenz-db).
+ */
+async function lizenzSperre(
+  permission: string | string[],
+  tenantId: string | undefined,
+): Promise<NextResponse | null> {
+  if (!tenantId) return null;
+  const rechte = Array.isArray(permission) ? permission : [permission];
+  if (!rechte.every(sperrtNachKarenz)) return null;
+  const { bearbeitungGesperrt } = await import("@/lib/lizenz/lizenz-db");
+  if (!(await bearbeitungGesperrt(tenantId))) return null;
+  return apiError("QUOTA_EXCEEDED", 402, {
+    message:
+      "Ihre Lizenz ist seit über 30 Tagen überschritten. Anlegen und Bearbeiten sind gesperrt, bis Sie eine größere Stufe buchen oder wieder im Rahmen sind. Lesen, Export und Abrechnungen sind weiter möglich.",
+  });
 }
 
 /**
@@ -224,6 +250,9 @@ export async function requirePermissionWithResources(
       error: apiError("FORBIDDEN", 403, { message: "Keine Berechtigung für diese Aktion" }),
     };
   }
+
+  const sperre = await lizenzSperre(permission, tenantId);
+  if (sperre) return { authorized: false, error: sperre };
 
   return {
     authorized: true,

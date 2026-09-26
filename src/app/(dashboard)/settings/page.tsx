@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import { LizenzIcon, LizenzKarte } from "@/components/lizenz/lizenz-anzeige";
 import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1085,7 +1087,7 @@ interface PaperlessAvailableKey {
 }
 
 /** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
-const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features"] as const;
+const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features", "lizenz"] as const;
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useTabParam("profile", { allowed: TAB_VALUES });
@@ -1093,8 +1095,11 @@ export default function SettingsPage() {
   const [_isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { hasPermission, roleHierarchy } = usePermissions();
+  const tLizenz = useTranslations("lizenz");
   const { flags } = useFeatureFlags();
   const canManageFeatures = roleHierarchy >= 100 || hasPermission("settings:update");
+  // Licence & usage for the customer's admins (the /admin area is the platform operator's).
+  const canSeeLicence = roleHierarchy >= 100 || hasPermission("settings:read");
   const canManagePaperless = (roleHierarchy >= 100 || hasPermission("admin:manage")) && flags.paperless;
 
   // Paperless config state
@@ -1220,7 +1225,19 @@ export default function SettingsPage() {
               Module
             </TabsTrigger>
           )}
+          {canSeeLicence && (
+            <TabsTrigger value="lizenz" className="flex items-center gap-2">
+              <LizenzIcon className="h-4 w-4" />
+              {tLizenz("tab")}
+            </TabsTrigger>
+          )}
         </TabsList>
+
+        {canSeeLicence && (
+          <TabsContent value="lizenz">
+            <LizenzKarte />
+          </TabsContent>
+        )}
 
         {/* Profile Tab */}
         <TabsContent value="profile">

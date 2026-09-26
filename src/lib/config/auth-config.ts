@@ -37,10 +37,3 @@ export const AUTH_CONFIG = {
   /** Password reset token validity in hours (default: 24h — gives users time to find the email) */
   passwordResetTokenExpiryHours: envInt("PASSWORD_RESET_TOKEN_EXPIRY_HOURS", 24),
 } as const;
-
-/** Default tenant limits (env-overridable) */
-export const DEFAULT_TENANT_LIMITS = {
-  maxUsers: envInt("DEFAULT_TENANT_MAX_USERS", 50),
-  maxStorageMb: envInt("DEFAULT_TENANT_MAX_STORAGE_MB", 5000),
-  maxParks: envInt("DEFAULT_TENANT_MAX_PARKS", 20),
-} as const;

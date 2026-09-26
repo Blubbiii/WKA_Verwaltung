@@ -27,7 +27,7 @@ export const SECTION_LABELS: Record<SectionId, string> = {
   stats: "Statistiken",
   workflow: "Workflow (So funktioniert es)",
   modules: "Module & Addons",
-  pricing: "Preisrechner",
+  pricing: "Tarife",
   testimonials: "Kundenstimmen",
   cta: "Call-to-Action",
 };
@@ -132,16 +132,6 @@ export const marketingConfigSchema = z.object({
     items: z.array(moduleSchema).max(12),
   }),
 
-  // Pricing
-  pricing: z.object({
-    basePrice: z.number().min(0).max(10000),
-    turbinePrice: z.number().min(0).max(1000),
-    userPrice: z.number().min(0).max(1000),
-    annualDiscountPercent: z.number().min(0).max(100),
-    maxTurbines: z.number().int().min(1).max(500),
-    maxUsers: z.number().int().min(1).max(500),
-  }),
-
   // Testimonials
   testimonials: z.object({
     title: z.string().max(200),
@@ -179,5 +169,21 @@ export type ModuleConfig = z.infer<typeof moduleSchema>;
 export type ShowcaseTabConfig = z.infer<typeof showcaseTabSchema>;
 export type SectionOrder = z.infer<typeof sectionOrderSchema>;
 
-/** Standalone pricing config type for the PriceCalculator component */
-export type PricingConfig = MarketingConfig["pricing"];
+/**
+ * A tariff as the landing page shows it (2026-09). The pricing section no
+ * longer has its own calculator settings: it shows the platform's tariffs,
+ * the same records the licence check enforces.
+ */
+export interface OeffentlicherTarif {
+  id: string;
+  name: string;
+  beschreibung: string | null;
+  preisMonatEur: number | null;
+  preisHinweis: string | null;
+  maxFirmen: number | null;
+  maxUmspannwerke: number | null;
+  maxWea: number | null;
+  maxBenutzer: number | null;
+  leistungen: string[];
+  hervorgehoben: boolean;
+}

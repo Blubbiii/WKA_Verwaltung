@@ -6648,7 +6648,7 @@
       "tabUsers": "Users",
       "tabRoles": "Roles & permissions",
       "tabFeatures": "Feature flags",
-      "tabLimits": "Limits"
+      "tabLimits": "Licences"
     },
     "marketing": {
       "title": "Marketing settings",
@@ -8155,6 +8155,81 @@
       "recalculated": "Recalculated: {used} used",
       "recalcError": "Recalculation failed",
       "hint": "The counter rises with every upload but does not fall on delete. “Recalculate” adds up all documents still stored."
+    },
+    "tarife": {
+      "title": "Tariffs",
+      "description": "What customers can book. Visible tariffs appear on the landing page; the limits apply as the licence of every customer who booked the tariff.",
+      "add": "Add tariff",
+      "empty": "No tariff yet. Without a tariff customers are unlimited.",
+      "superadminOnly": "Tariffs belong to the platform and can only be maintained by the platform operator (superadmin).",
+      "unlimited": "unlimited",
+      "onRequest": "on request",
+      "perMonth": "{preis} / month",
+      "hidden": "not on the landing page",
+      "booked": "{count, plural, =0 {not booked} one {booked once} other {booked # times}}",
+      "highlighted": "highlighted",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete tariff “{name}”?",
+      "saved": "Tariff saved",
+      "saveError": "Tariff could not be saved",
+      "deleted": "Tariff deleted",
+      "deleteError": "Tariff could not be deleted",
+      "editTitle": "Edit tariff",
+      "addTitle": "Add tariff",
+      "dialogDescription": "Name, price and scope appear like this on the landing page. The limits are enforced for every customer with this tariff.",
+      "fields": {
+        "name": "Name",
+        "key": "Key",
+        "preisMonatEur": "Price per month (EUR)",
+        "preisHinweis": "Price note",
+        "maxFirmen": "Companies",
+        "maxUmspannwerke": "Substations",
+        "maxWea": "Turbines",
+        "maxBenutzer": "Users",
+        "maxSpeicherMb": "Storage (MB)",
+        "sortierung": "Order",
+        "beschreibung": "Short description",
+        "leistungen": "Included services",
+        "sichtbar": "Show on landing page",
+        "hervorgehoben": "Highlight"
+      },
+      "leistungenPlaceholder": "One service per line, e.g.\nLease settlement\nSCADA import\nShareholder portal",
+      "limitsHint": "Empty limit = unlimited. Only actively managed companies count as company or substation; stakes only and shareholder portal access do not count.",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "kundenLizenzen": {
+      "title": "Licences",
+      "description": "Booked tariff, usage and licence state per customer — counts only, no content.",
+      "search": "Search customer",
+      "empty": "No customers",
+      "customer": "Customer",
+      "tariff": "Tariff",
+      "unlimited": "no tariff",
+      "counters": {
+        "firmen": "Companies",
+        "umspannwerke": "Substations",
+        "wea": "Turbines",
+        "benutzer": "Users",
+        "speicherMb": "Storage (MB)"
+      },
+      "state": "State",
+      "stateLocked": "locked",
+      "stateGrace": "exceeded, grace until {datum}",
+      "stateOk": "within limits",
+      "stateNoTariff": "unlimited",
+      "edit": "Licence",
+      "editTitle": "Licence of {name}",
+      "editDescription": "Book a tariff and, if needed, set single limits differently. A downgrade starts the 30-day grace period at once.",
+      "noTariff": "No tariff (unlimited)",
+      "exception": "Exception (optional)",
+      "fromTariff": "as tariff",
+      "exceptionHint": "Empty = value from the tariff, “-” = unlimited, number = different limit for this customer only.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Licence saved",
+      "saveError": "Licence could not be saved"
     }
   },
   "portal": {
@@ -9170,7 +9245,9 @@
       "notFound": "Company not found",
       "loadError": "Error loading company",
       "loadErrorGeneric": "Error loading",
-      "backToList": "Back to overview"
+      "backToList": "Back to overview",
+      "verwaltung": "Management",
+      "verwaltungHint": "“Stake only”: a company in which you only hold a share (e.g. 20 % of a third-party substation). It does not count towards the licence."
     },
     "onboarding": {
       "title": "New Shareholder",
@@ -9210,6 +9287,10 @@
         "description": "Check all information before creating the shareholder.",
         "edit": "Edit"
       }
+    },
+    "verwaltung": {
+      "AKTIV": "Actively managed",
+      "BETEILIGUNG": "Stake only"
     }
   },
   "gis": {
@@ -10956,5 +11037,24 @@
       "unknown": "unknown",
       "total": "Total market premium: {sum}"
     }
+  },
+  "lizenz": {
+    "title": "Licence & usage",
+    "booked": "Booked tariff: {tarif}",
+    "noTariff": "No tariff booked — unlimited.",
+    "counters": {
+      "firmen": "Companies",
+      "umspannwerke": "Substations",
+      "wea": "Turbines",
+      "benutzer": "Users",
+      "speicherMb": "Storage (MB)"
+    },
+    "usedUnlimited": "{used} (unlimited)",
+    "usedOf": "{used} of {limit}",
+    "notCounted": "Stakes only and shareholder portal access do not count.",
+    "bannerGrace": "Your licence is exceeded ({was}). Please book a larger tier by {datum} — after that, creating and editing are locked.",
+    "bannerLocked": "Your licence is exceeded ({was}). Creating and editing are locked until you book a larger tier. Reading, export and billing continue.",
+    "details": "Details",
+    "tab": "Licence"
   }
 }

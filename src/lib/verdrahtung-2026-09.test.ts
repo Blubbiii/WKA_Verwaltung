@@ -117,3 +117,14 @@ describe("Dashboard-Zahlen: eingeschränkte Sicht landet nicht im Mandanten-Cach
     expect(zweig).toBeLessThan(route.indexOf("dashboardCache.cacheTenantStats"));
   });
 });
+
+describe("Benutzer anlegen bleibt im eigenen Mandanten", () => {
+  it("nur ein Superadmin darf einen fremden Mandanten angeben", () => {
+    const route = lies("app/api/admin/users/route.ts");
+    const post = route.slice(route.indexOf("export async function POST"));
+    // Before: the tenant came from the request body unchecked — a customer
+    // admin could create a user (with a known password) in another tenant.
+    expect(post).toMatch(/validatedData\.tenantId !== check\.tenantId/);
+    expect(post).toContain("requireSuperadminCheck()");
+  });
+});

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
+import { zaehlerFuerFirma } from "@/lib/lizenz/lizenz";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
@@ -38,6 +40,8 @@ const fundCreateSchema = z.object({
     bankName: z.string().optional(),
   }).optional().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
+  /** Actively managed (counts towards the licence) or only a stake held. */
+  verwaltung: z.enum(["AKTIV", "BETEILIGUNG"]).default("AKTIV"),
 });
 
 // GET /api/funds - Liste aller Gesellschaften
@@ -201,19 +205,32 @@ export async function POST(request: NextRequest) {
 
     // FIX 12 (SECURITY): fundCategoryId muss zum eigenen Tenant gehören —
     // sonst kann ein Nutzer einen Fund unter fremder Kategorie einreihen.
+    let kategorieCode: string | null = null;
     if (validatedData.fundCategoryId) {
       const cat = await prisma.fundCategory.findFirst({
         where: {
           id: validatedData.fundCategoryId,
           tenantId: check.tenantId!,
         },
-        select: { id: true },
+        select: { id: true, code: true },
       });
       if (!cat) {
         return apiError("VALIDATION_FAILED", 400, {
           message: "Fund-Category gehört nicht zu diesem Mandanten",
         });
       }
+      kategorieCode = cat.code;
+    }
+
+    // Licence: an actively managed company counts as company or substation.
+    const zaehler = zaehlerFuerFirma({
+      verwaltung: validatedData.verwaltung,
+      status: validatedData.status,
+      kategorieCode,
+    });
+    if (zaehler) {
+      const lizenz = await lizenzPruefen(check.tenantId!, zaehler);
+      if (lizenz) return lizenz;
     }
 
     const fund = await prisma.fund.create({

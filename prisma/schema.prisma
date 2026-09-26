@@ -31,6 +31,13 @@ model Tenant {
   emailFromName             String?
   storageUsedBytes          BigInt                      @default(0)
   storageLimit              BigInt                      @default(5368709120)
+  // Licence (2026-09): booked tariff, per-customer exception and since when
+  // a limit is exceeded (start of the 30-day grace period). No tariff =
+  // unlimited, so existing customers are not affected.
+  tarifId                   String?
+  tarif                     Tarif?                      @relation(fields: [tarifId], references: [id], onDelete: SetNull)
+  lizenzAbweichung          Json?
+  lizenzUeberschrittenSeit  DateTime?
   city                      String?
   houseNumber               String?
   postalCode                String?
@@ -572,6 +579,9 @@ model Fund {
   address                                               String?
   bankDetails                                           Json                             @default("{}")
   status                                                EntityStatus                     @default(ACTIVE)
+  /// Actively managed (full scope, counts towards the licence) or only a
+  /// stake held by the customer (e.g. 20 % of a third-party substation).
+  verwaltung                                            FundVerwaltung                   @default(AKTIV)
   createdAt                                             DateTime                         @default(now())
   updatedAt                                             DateTime                         @updatedAt
   deletedAt                                             DateTime?
@@ -6728,4 +6738,36 @@ model MunicipalityBenefit {
   @@index([turbineId])
   @@index([municipalityId])
   @@map("municipality_benefits")
+}
+
+enum FundVerwaltung {
+  AKTIV
+  BETEILIGUNG
+}
+
+/// Tariff of the platform (2026-09): what a customer books. Maintained by
+/// the platform operator in the marketing settings; the landing page shows
+/// the visible ones, the licence check enforces the limits. null = unlimited.
+model Tarif {
+  id             String   @id @default(uuid())
+  key            String   @unique @db.VarChar(40)
+  name           String   @db.VarChar(80)
+  beschreibung   String?  @db.Text
+  preisMonatEur  Decimal? @db.Decimal(10, 2)
+  preisHinweis   String?  @db.VarChar(120)
+  maxFirmen      Int?
+  maxUmspannwerke Int?
+  maxWea         Int?
+  maxBenutzer    Int?
+  maxSpeicherMb  Int?
+  /// What is included — bullet points on the landing page.
+  leistungen     String[]
+  hervorgehoben  Boolean  @default(false)
+  sichtbar       Boolean  @default(true)
+  sortierung     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  tenants        Tenant[]
+
+  @@map("tarife")
 }

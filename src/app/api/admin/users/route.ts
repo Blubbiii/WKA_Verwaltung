@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -105,6 +106,16 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const validatedData = userCreateSchema.parse(body);
+
+    // Only the platform operator may create users in another tenant. Before
+    // (audit 2026-09) the tenant came from the body unchecked.
+    if (validatedData.tenantId !== check.tenantId && !(await requireSuperadminCheck())) {
+      return apiError("FORBIDDEN", 403, { message: "Benutzer nur im eigenen Mandanten anlegen" });
+    }
+
+    // Licence: every active staff user counts (portal users are created elsewhere).
+    const lizenz = await lizenzPruefen(validatedData.tenantId, "benutzer");
+    if (lizenz) return lizenz;
 
     // Prüfen ob E-Mail bereits existiert
     const existingUser = await prisma.user.findUnique({

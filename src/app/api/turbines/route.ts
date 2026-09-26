@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -161,6 +162,10 @@ export async function POST(request: NextRequest) {
     if (!park) {
       return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden" });
     }
+
+    // Licence: every turbine created here is of type WEA (schema default).
+    const lizenz = await lizenzPruefen(check.tenantId!, "wea");
+    if (lizenz) return lizenz;
 
     // FIX: cross-tenant Fund-IDs verhindern — netzgesellschaftFundId und operatorFundId
     // müssen zum gleichen Mandanten wie der Park gehören.

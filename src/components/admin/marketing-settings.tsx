@@ -85,6 +85,7 @@ import type {
 import { SECTION_LABELS } from "@/lib/marketing/types";
 import { DEFAULT_MARKETING_CONFIG, DEFAULT_SECTION_ORDER } from "@/lib/marketing/defaults";
 import { MarketingVideoCard } from "@/components/admin/marketing-video-card";
+import { TarifeEditor } from "@/components/admin/tarife-editor";
 
 // ---------------------------------------------------------------------------
 // Icon options for features
@@ -192,7 +193,6 @@ export function MarketingSettings() {
           stats: data.stats ?? DEFAULT_MARKETING_CONFIG.stats,
           workflow: data.workflow ?? DEFAULT_MARKETING_CONFIG.workflow,
           modules: data.modules ?? DEFAULT_MARKETING_CONFIG.modules,
-          pricing: data.pricing ?? DEFAULT_MARKETING_CONFIG.pricing,
           testimonials: data.testimonials ?? DEFAULT_MARKETING_CONFIG.testimonials,
           cta: data.cta ?? DEFAULT_MARKETING_CONFIG.cta,
         });
@@ -585,7 +585,7 @@ export function MarketingSettings() {
         </TabsTrigger>
         <TabsTrigger value="pricing" className="flex items-center gap-2">
           <Calculator className="h-4 w-4" />
-          Preisrechner
+          Tarife
         </TabsTrigger>
         <TabsTrigger value="cta" className="flex items-center gap-2">
           <Megaphone className="h-4 w-4" />
@@ -1234,98 +1234,9 @@ export function MarketingSettings() {
       {/* Tab: Preisrechner                                                */}
       {/* ================================================================ */}
       <TabsContent value="pricing" className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-              Preisrechner-Konfiguration
-            </CardTitle>
-            <CardDescription>Parameter für den Preiskalkulator auf der Landingpage</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="pricing-base">Basispreis (EUR/Monat)</Label>
-                <Input
-                  id="pricing-base" type="number" min={0} step={0.01}
-                  value={config.pricing.basePrice || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, basePrice: parseFloat(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pricing-turbine">Preis pro Turbine (EUR/Monat)</Label>
-                <Input
-                  id="pricing-turbine" type="number" min={0} step={0.01}
-                  value={config.pricing.turbinePrice || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, turbinePrice: parseFloat(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pricing-user">Preis pro Benutzer (EUR/Monat)</Label>
-                <Input
-                  id="pricing-user" type="number" min={0} step={0.01}
-                  value={config.pricing.userPrice || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, userPrice: parseFloat(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pricing-discount">Jahresrabatt (%)</Label>
-                <Input
-                  id="pricing-discount" type="number" min={0} max={100} step={1}
-                  value={config.pricing.annualDiscountPercent || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, annualDiscountPercent: parseFloat(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pricing-max-turbines">Max. Turbinen (Slider)</Label>
-                <Input
-                  id="pricing-max-turbines" type="number" min={1} step={1}
-                  value={config.pricing.maxTurbines || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, maxTurbines: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="pricing-max-users">Max. Benutzer (Slider)</Label>
-                <Input
-                  id="pricing-max-users" type="number" min={1} step={1}
-                  value={config.pricing.maxUsers || ""}
-                  onChange={(e) =>
-                    setConfig((prev) => ({
-                      ...prev,
-                      pricing: { ...prev.pricing, maxUsers: parseInt(e.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <SaveButton />
-          </CardContent>
-        </Card>
+        {/* Tariffs are platform records (licence + landing page), not part of
+            this tenant's marketing config — see TarifeEditor. */}
+        <TarifeEditor />
       </TabsContent>
 
       {/* ================================================================ */}

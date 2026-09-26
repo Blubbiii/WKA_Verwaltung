@@ -22,6 +22,7 @@
  * sie landen als Job-Ergebnis in Redis.
  */
 
+import { ladeLizenz } from "@/lib/lizenz/lizenz-db";
 import { processAutoRenewals } from "@/lib/contracts/auto-renewal";
 import { prisma } from "@/lib/prisma";
 import { jobLogger } from "@/lib/logger";
@@ -109,6 +110,29 @@ export async function runContractAutoRenewal() {
     "[Maintenance] Vertragsverlaengerung abgeschlossen",
   );
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// Lizenzpruefung
+// ---------------------------------------------------------------------------
+
+/**
+ * Lizenzstand aller Kunden mit Tarif fortschreiben (ladeLizenz setzt bzw.
+ * loescht "ueberschritten seit"). Ein Fehler bei einem Kunden bricht die
+ * uebrigen nicht ab.
+ */
+export async function runLizenzPruefung() {
+  const kunden = await prisma.tenant.findMany({ where: { tarifId: { not: null } }, select: { id: true } });
+  let ueberschritten = 0;
+  for (const kunde of kunden) {
+    try {
+      if ((await ladeLizenz(kunde.id)).lage.ueberschritten.length > 0) ueberschritten++;
+    } catch (err) {
+      logger.error({ tenantId: kunde.id, err }, "[Maintenance] Lizenzpruefung fuer Kunde fehlgeschlagen");
+    }
+  }
+  logger.info({ geprueft: kunden.length, ueberschritten }, "[Maintenance] Lizenzpruefung abgeschlossen");
+  return { geprueft: kunden.length, ueberschritten };
 }
 
 // ---------------------------------------------------------------------------

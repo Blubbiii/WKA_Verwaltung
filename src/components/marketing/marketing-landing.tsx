@@ -1,4 +1,4 @@
-import type { MarketingConfig, SectionId } from "@/lib/marketing/types";
+import type { MarketingConfig, OeffentlicherTarif, SectionId } from "@/lib/marketing/types";
 import { DEFAULT_SECTION_ORDER } from "@/lib/marketing/defaults";
 import { HeroSection } from "@/components/marketing/sections/hero-section";
 import { TrustBar } from "@/components/marketing/sections/trust-bar";
@@ -14,9 +14,11 @@ import { ScrollReveal } from "@/components/marketing/ui/scroll-reveal";
 
 interface MarketingLandingProps {
   config?: MarketingConfig;
+  /** Visible tariffs; without any the pricing section is left out. */
+  tarife?: OeffentlicherTarif[];
 }
 
-export function MarketingLanding({ config }: MarketingLandingProps) {
+export function MarketingLanding({ config, tarife = [] }: MarketingLandingProps) {
   const sections = config?.sections ?? DEFAULT_SECTION_ORDER;
 
   const renderSection = (id: SectionId) => {
@@ -64,11 +66,11 @@ export function MarketingLanding({ config }: MarketingLandingProps) {
           </ScrollReveal>
         );
       case "pricing":
-        return (
+        return tarife.length > 0 ? (
           <ScrollReveal>
-            <PricingSection pricingConfig={config?.pricing} />
+            <PricingSection tarife={tarife} />
           </ScrollReveal>
-        );
+        ) : null;
       case "testimonials":
         return (
           <ScrollReveal>

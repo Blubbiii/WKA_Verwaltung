@@ -1,12 +1,5 @@
 import type { MarketingConfig, LegalPages, SectionId } from "./types";
 
-function envInt(key: string, fallback: number): number {
-  const v = process.env[key];
-  if (!v) return fallback;
-  const n = parseInt(v, 10);
-  return isNaN(n) ? fallback : n;
-}
-
 // =============================================================================
 // DEFAULT SECTION ORDER (all enabled)
 // =============================================================================
@@ -122,15 +115,6 @@ export const DEFAULT_MARKETING_CONFIG: MarketingConfig = {
       { id: "wirtschaftsplan", title: "Wirtschaftsplan", description: "Budget-Planung, Kostenstellenmanagement und Soll-Ist-Vergleiche.", icon: "file-bar-chart" },
       { id: "management-billing", title: "Betriebsf\u00fchrung", description: "Abrechnungsregeln, Betriebsf\u00fchrungsgeb\u00fchren und Leistungserfassung.", icon: "briefcase" },
     ],
-  },
-
-  pricing: {
-    basePrice: envInt("PRICING_BASE_PRICE", 50),
-    turbinePrice: envInt("PRICING_TURBINE_PRICE", 10),
-    userPrice: envInt("PRICING_USER_PRICE", 5),
-    annualDiscountPercent: envInt("PRICING_ANNUAL_DISCOUNT_PERCENT", 10),
-    maxTurbines: envInt("PRICING_MAX_TURBINES", 100),
-    maxUsers: envInt("PRICING_MAX_USERS", 50),
   },
 
   testimonials: {

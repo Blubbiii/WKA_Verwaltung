@@ -58,6 +58,7 @@ interface Fund {
     bankName?: string;
   } | null;
   status: "ACTIVE" | "INACTIVE" | "ARCHIVED";
+  verwaltung?: "AKTIV" | "BETEILIGUNG";
 }
 
 export default function EditFundPage({
@@ -88,6 +89,7 @@ export default function EditFundPage({
     bankBic: z.string().optional(),
     bankName: z.string().optional(),
     status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).default("ACTIVE"),
+    verwaltung: z.enum(["AKTIV", "BETEILIGUNG"]).default("AKTIV"),
     // Fund-specific email settings
     emailFromName: z.string().max(100).optional(),
     emailFromAddress: z.string().max(200).optional(),
@@ -119,6 +121,7 @@ export default function EditFundPage({
       bankBic: "",
       bankName: "",
       status: "ACTIVE",
+      verwaltung: "AKTIV",
     },
   });
 
@@ -157,6 +160,7 @@ export default function EditFundPage({
         bankBic: fund.bankDetails?.bic || "",
         bankName: fund.bankDetails?.bankName || "",
         status: fund.status,
+        verwaltung: fund.verwaltung ?? "AKTIV",
       });
     } catch {
       setError(t("form.loadError"));
@@ -455,6 +459,28 @@ export default function EditFundPage({
                         <SelectItem value="ARCHIVED">{t("status.archived")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="verwaltung"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("form.verwaltung")}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="AKTIV">{t("verwaltung.AKTIV")}</SelectItem>
+                        <SelectItem value="BETEILIGUNG">{t("verwaltung.BETEILIGUNG")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">{t("form.verwaltungHint")}</p>
                     <FormMessage />
                   </FormItem>
                 )}

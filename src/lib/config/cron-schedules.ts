@@ -52,6 +52,13 @@ export const CRON_SCHEDULES = {
    */
   CONTRACT_AUTO_RENEW: envCron("CRON_CONTRACT_AUTO_RENEW", "30 6 * * *"),
   /**
+   * Täglich 5:30 Uhr — Lizenzstand aller Kunden mit Tarif. Setzt „überschritten
+   * seit" (Beginn der 30-Tage-Frist) auch dann, wenn niemand etwas anlegt,
+   * etwa nach einer Herabstufung, und löscht es, sobald der Kunde wieder im
+   * Rahmen ist.
+   */
+  LIZENZ_PRUEFUNG: envCron("CRON_LIZENZ_PRUEFUNG", "30 5 * * *"),
+  /**
    * Täglich 6:00 Uhr — Zustand der Bankverbindungen.
    *
    * Vor dem Mahnlauf um 8:00, damit eine seit Tagen stumme Verbindung auffällt,

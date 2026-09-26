@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
+import { neuGezaehlt } from "@/lib/lizenz/lizenz";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
@@ -32,6 +34,8 @@ const fundUpdateSchema = z.object({
     bankName: z.string().optional(),
   }).optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "ARCHIVED"]).optional(),
+  /** Actively managed (counts towards the licence) or only a stake held. */
+  verwaltung: z.enum(["AKTIV", "BETEILIGUNG"]).optional(),
   // Fund-specific email settings
   emailFromAddress: z.string().max(200).optional().nullable(),
   emailFromName: z.string().max(100).optional().nullable(),
@@ -265,6 +269,37 @@ export async function PUT(
 
     const body = await request.json();
     const validatedData = fundUpdateSchema.parse(body);
+
+    // Licence: switching to "actively managed", to a substation category or
+    // back from the archive makes the company count — check before saving.
+    const kategorieCodeVon = async (kategorieId: string | null | undefined) =>
+      kategorieId
+        ? ((
+            await prisma.fundCategory.findFirst({
+              where: { id: kategorieId, tenantId: check.tenantId! },
+              select: { code: true },
+            })
+          )?.code ?? null)
+        : null;
+    const neuerZaehler = neuGezaehlt(
+      {
+        verwaltung: existingFund.verwaltung,
+        status: existingFund.status,
+        kategorieCode: await kategorieCodeVon(existingFund.fundCategoryId),
+      },
+      {
+        verwaltung: validatedData.verwaltung ?? existingFund.verwaltung,
+        status: validatedData.status ?? existingFund.status,
+        kategorieCode:
+          validatedData.fundCategoryId !== undefined
+            ? await kategorieCodeVon(validatedData.fundCategoryId)
+            : await kategorieCodeVon(existingFund.fundCategoryId),
+      },
+    );
+    if (neuerZaehler) {
+      const lizenz = await lizenzPruefen(check.tenantId!, neuerZaehler);
+      if (lizenz) return lizenz;
+    }
 
     // F1-Compliance: SMTP-Password wird ONLY überschrieben wenn ein nicht-leerer
     // Wert übergeben wird. Empty String bedeutet "Feld nicht geändert" (Form-Reset

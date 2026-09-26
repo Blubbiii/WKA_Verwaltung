@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -163,6 +164,17 @@ export async function PUT(
 
     const body = await request.json();
     const validatedData = turbineUpdateSchema.parse(body);
+
+    // Licence: a WEA taken back from the archive counts again.
+    if (
+      existingTurbine.deviceType === "WEA" &&
+      existingTurbine.status === "ARCHIVED" &&
+      validatedData.status &&
+      validatedData.status !== "ARCHIVED"
+    ) {
+      const lizenz = await lizenzPruefen(check.tenantId!, "wea");
+      if (lizenz) return lizenz;
+    }
 
     // Extract operatorFundId before passing to prisma (not a Turbine field)
     const { operatorFundId, ...turbineData } = validatedData;

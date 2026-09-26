@@ -6,6 +6,7 @@ import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { oeffentlicheEinstellungen } from "@/lib/marketing/oeffentlicher-mandant";
 import type { MarketingConfig } from "@/lib/marketing/types";
 import { videoQuelle } from "@/lib/marketing/video-quelle";
+import { oeffentlicheTarife } from "@/lib/marketing/oeffentliche-tarife";
 
 export default async function Home() {
   const session = await auth();
@@ -30,7 +31,7 @@ export default async function Home() {
     <>
       <MarketingHeader />
       <main className="flex-1">
-        <MarketingLanding config={marketingConfig} />
+        <MarketingLanding config={marketingConfig} tarife={await oeffentlicheTarife()} />
       </main>
       <MarketingFooter />
     </>

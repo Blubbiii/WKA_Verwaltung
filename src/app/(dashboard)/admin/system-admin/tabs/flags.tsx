@@ -7,7 +7,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FeatureFlagsTab } from "@/components/admin/feature-flags-tab";
-import { TenantLimitsTab } from "@/components/admin/tenant-limits-tab";
+import { KundenLizenzenTab } from "@/components/admin/kunden-lizenzen-tab";
 import { MaintenanceModeTab } from "@/components/admin/maintenance-mode-tab";
 import { ToggleLeft, Gauge, Wrench } from "lucide-react";
 import { useTabParam } from "@/hooks/useTabParam";
@@ -27,7 +27,7 @@ export default function FlagsTab() {
           </TabsTrigger>
           <TabsTrigger value="tenant-limits" className="flex items-center gap-2">
             <Gauge className="h-4 w-4" />
-            Mandanten-Limits
+            Lizenzen
           </TabsTrigger>
           <TabsTrigger value="maintenance" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
@@ -40,7 +40,7 @@ export default function FlagsTab() {
         </TabsContent>
 
         <TabsContent value="tenant-limits" className="space-y-4">
-          <TenantLimitsTab />
+          <KundenLizenzenTab />
         </TabsContent>
 
         <TabsContent value="maintenance" className="space-y-4">

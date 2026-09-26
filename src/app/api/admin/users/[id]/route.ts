@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 import { invalidateUser } from "@/lib/auth/permissionCache";
@@ -114,6 +115,12 @@ export async function PATCH(
 
     const body = await request.json();
     const validatedData = userUpdateSchema.parse(body);
+
+    // Licence: reactivating a user makes them count again.
+    if (validatedData.status === "ACTIVE" && existingUser.status !== "ACTIVE") {
+      const lizenz = await lizenzPruefen(existingUser.tenantId, "benutzer");
+      if (lizenz) return lizenz;
+    }
 
     // FIX 2 (SECURITY) + FIX 14: Memberships validieren.
     //  - Whitelist: Non-Superadmins dürfen nur Memberships zum eigenen Tenant setzen.

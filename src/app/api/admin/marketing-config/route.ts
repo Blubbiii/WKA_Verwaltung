@@ -62,10 +62,6 @@ export async function GET(_request: NextRequest) {
         ...DEFAULT_MARKETING_CONFIG.modules,
         ...(stored.modules as Record<string, unknown> || {}),
       },
-      pricing: {
-        ...DEFAULT_MARKETING_CONFIG.pricing,
-        ...(stored.pricing as Record<string, unknown> || {}),
-      },
       testimonials: {
         ...DEFAULT_MARKETING_CONFIG.testimonials,
         ...(stored.testimonials as Record<string, unknown> || {}),
