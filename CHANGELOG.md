@@ -373,6 +373,20 @@ niemandem auf. Die Ablauf-Tests fanden es: Sie bestätigen das Banner in
 jedem Kontext. Einwilligungen haben jetzt ein eigenes Limit von 60 pro 15
 Minuten (`CONSENT_RATE_LIMIT`).
 
+**Mandantentrennung: geprüfter Datenbankzugriff (Etappe 1 und 2)**
+
+Bisher setzten 1.587 Datenbankaufrufe in den API-Routen den Mandanten von
+Hand; ein vergessener zeigte einem Kunden die Daten eines anderen. Neu:
+`mandantDb(check.tenantId)` hängt den Mandanten an jede Abfrage an, auch
+beim Ändern und Löschen per ID, und setzt ihn beim Anlegen. Ein fremder
+Mandant beim Anlegen ist ein Fehler. Das gilt für 104 Tabellen mit eigener
+Mandanten-ID und für Anlagen, Service-Einsätze, Gesellschafter,
+Rechnungspositionen und Abrechnungspositionen über ihre übergeordnete
+Tabelle. Der normale Client meldet im Log jede Abfrage auf eine
+Mandanten-Tabelle ohne Mandanten-Bedingung (Beobachtungsmodus, ändert
+nichts). Neue Routen nutzen den geprüften Zugriff; ein Wächter sorgt dafür,
+dass die Zahl der Routen mit direktem Zugriff (heute 434) nur sinkt.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

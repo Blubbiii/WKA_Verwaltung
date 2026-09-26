@@ -111,6 +111,16 @@ Das native Feld ist tastaturfreundlich, kennt keine Zeitzonen-Fallstricke und br
 
 **Nicht mischen** innerhalb einer Ansicht. Und: `Calendar` aus `lucide-react` ist das Symbol, `Calendar` aus `@/components/ui/calendar` die Komponente — beim Suchen leicht zu verwechseln.
 
+## 🔒 Datenbankzugriff: mandantDb, nicht prisma
+
+**Status Quo (2026-09):** 444 API-Dateien nutzen `prisma` direkt und setzen `tenantId` in jeder Abfrage von Hand — ein vergessenes Feld zeigt einem Kunden die Daten eines anderen.
+
+**Regel ab jetzt:**
+- **Neue** Routen: `const db = mandantDb(check.tenantId!)` aus `@/lib/mandant/mandant-db` — hängt den Mandanten an jede Abfrage (auch Ändern/Löschen per ID) und setzt ihn beim Anlegen.
+- **Bestehende**: umstellen, wenn du eh in der Datei arbeitest; danach `OBERGRENZE` in `src/lib/mandant/sperrklinke.test.ts` senken.
+- `prisma` direkt nur für bewusst mandantenübergreifende Arbeit (Superadmin, Worker, Cron, Login).
+- Rohes SQL (`$queryRaw`) filtert `mandantDb` nicht — dort den Mandanten selbst als Parameter führen.
+
 ## Weitere verbindliche Konventionen
 
 - **API-Routes:** IMMER `apiError("CODE", status, { message?, details? })` aus `@/lib/api-errors`. NIEMALS `NextResponse.json({ error })` direkt.
@@ -134,3 +144,13 @@ Next.js 16 App-Router · React 19 · TypeScript 6 · Prisma 7 · PostgreSQL/Time
 - Ausführliche Architektur & Runbooks: `docs/`
 - Roadmap: `docs/ROADMAP.md` + `CHANGELOG.md`
 - Wenn `graphify-out/graph.json` existiert: bei Fragen zur Codebase erst dort suchen statt Files einzeln lesen.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

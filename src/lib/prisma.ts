@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { withEncryption } from "@/lib/encryption-middleware";
 import { logger } from "@/lib/logger";
 import { env } from "@/lib/env";
+import { beobachteMandant } from "@/lib/mandant/beobachtung";
 
 // Make BigInt JSON-serializable globally (Prisma returns BigInt for BigInt columns)
  
@@ -128,9 +129,33 @@ function createPrismaClient() {
   return withEncryption(clientWithSoftDelete as unknown as PrismaClient);
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+const prismaBasis = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prismaBasis;
+
+/**
+ * The client without the tenant observation — only for mandantDb
+ * (lib/mandant/mandant-db), which scopes every query itself.
+ */
+export { prismaBasis };
+
+/**
+ * The shared client. On top: the observation of lib/mandant/beobachtung,
+ * which reports queries on tenant tables without any tenant condition and
+ * leaves them unchanged. Prisma runs query extensions in the order they
+ * were added, so this one sees the query as it goes to the database.
+ */
+export const prisma = prismaBasis.$extends({
+  name: "mandant-beobachtung",
+  query: {
+    $allModels: {
+      async $allOperations({ model, operation, args, query }) {
+        beobachteMandant(model, operation, args);
+        return query(args);
+      },
+    },
+  },
+});
 
 // Type-safe dynamic model accessor
 // Replaces `prisma as any` patterns for dynamic model access by name.
