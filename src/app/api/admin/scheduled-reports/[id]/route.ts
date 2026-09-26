@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -51,10 +51,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.SETTINGS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const scheduledReport = await prisma.scheduledReport.findFirst({
+    const scheduledReport = await db.scheduledReport.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -103,13 +104,14 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.SETTINGS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateScheduledReportSchema.parse(body);
 
     // Check if the scheduled report exists and belongs to this tenant
-    const existingReport = await prisma.scheduledReport.findFirst({
+    const existingReport = await db.scheduledReport.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -122,7 +124,7 @@ export async function PATCH(
 
     // If parkId is being updated, verify it belongs to the tenant
     if (validatedData.config?.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: validatedData.config.parkId,
           tenantId: check.tenantId!,
@@ -136,7 +138,7 @@ export async function PATCH(
 
     // If fundId is being updated, verify it belongs to the tenant
     if (validatedData.config?.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: {
           id: validatedData.config.fundId,
           tenantId: check.tenantId!,
@@ -177,7 +179,7 @@ export async function PATCH(
       }),
     };
 
-    const updatedReport = await prisma.scheduledReport.update({
+    const updatedReport = await db.scheduledReport.update({
       where: { id },
       data: updateData,
       include: {
@@ -219,11 +221,12 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.SETTINGS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Check if the scheduled report exists and belongs to this tenant
-    const existingReport = await prisma.scheduledReport.findFirst({
+    const existingReport = await db.scheduledReport.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -235,7 +238,7 @@ export async function DELETE(
     }
 
     // Hard delete - scheduled reports don't have execution history to preserve
-    await prisma.scheduledReport.delete({
+    await db.scheduledReport.delete({
       where: { id },
     });
 

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const updateSchema = z.object({
@@ -25,10 +26,11 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const template = await prisma.invoiceItemTemplate.findFirst({
+    const template = await db.invoiceItemTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -51,10 +53,11 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.invoiceItemTemplate.findFirst({
+    const existing = await db.invoiceItemTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -69,7 +72,7 @@ export async function PATCH(
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const template = await prisma.invoiceItemTemplate.update({
+    const template = await db.invoiceItemTemplate.update({
       where: { id },
       data: parsed.data,
     });
@@ -89,10 +92,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.invoiceItemTemplate.findFirst({
+    const existing = await db.invoiceItemTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -100,7 +104,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Vorlage nicht gefunden" });
     }
 
-    await prisma.invoiceItemTemplate.update({
+    await db.invoiceItemTemplate.update({
       where: { id },
       data: { isActive: false },
     });

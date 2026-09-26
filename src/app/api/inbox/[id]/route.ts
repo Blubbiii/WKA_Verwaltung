@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
-import { headers } from "next/headers";
+import { headers } from "next/headers";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const updateSchema = z.object({
@@ -45,11 +46,12 @@ export async function GET(
   try {
     const check = await requirePermission("inbox:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const invoice = await prisma.incomingInvoice.findFirst({
+    const invoice = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         vendor: { select: { id: true, name: true, iban: true, bic: true, email: true } },
@@ -85,11 +87,12 @@ export async function PUT(
   try {
     const check = await requirePermission("inbox:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const existing = await prisma.incomingInvoice.findFirst({
+    const existing = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
@@ -180,11 +183,12 @@ export async function DELETE(
   try {
     const check = await requirePermission("inbox:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const existing = await prisma.incomingInvoice.findFirst({
+    const existing = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
@@ -195,7 +199,7 @@ export async function DELETE(
       return apiError("CONFLICT", 409, { message: "Nur Rechnungen im Status INBOX oder REVIEW können gelöscht werden" });
     }
 
-    await prisma.incomingInvoice.update({
+    await db.incomingInvoice.update({
       where: { id },
       data: { deletedAt: new Date() },
     });

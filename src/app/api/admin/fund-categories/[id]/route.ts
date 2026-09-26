@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -57,12 +57,13 @@ export async function GET(
     // Auth-Check: Nur Admins duerfen zugreifen
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
 
     // Gesellschaftstyp abrufen mit Tenant-Filter
-    const fundCategory = await prisma.fundCategory.findUnique({
+    const fundCategory = await db.fundCategory.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -116,6 +117,7 @@ export async function PATCH(
     // Auth-Check: Nur Admins duerfen zugreifen
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
@@ -125,7 +127,7 @@ export async function PATCH(
     const validatedData = updateFundCategorySchema.parse(body);
 
     // Prüfen ob Gesellschaftstyp existiert
-    const existingCategory = await prisma.fundCategory.findUnique({
+    const existingCategory = await db.fundCategory.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -138,7 +140,7 @@ export async function PATCH(
 
     // Bei Code-Änderung: Prüfen ob neuer Code bereits existiert
     if (validatedData.code && validatedData.code !== existingCategory.code) {
-      const codeExists = await prisma.fundCategory.findFirst({
+      const codeExists = await db.fundCategory.findFirst({
         where: {
           code: validatedData.code,
           tenantId: check.tenantId!,
@@ -174,7 +176,7 @@ export async function PATCH(
     }
 
     // Gesellschaftstyp aktualisieren
-    const updatedCategory = await prisma.fundCategory.update({
+    const updatedCategory = await db.fundCategory.update({
       where: { id },
       data: updateData,
       include: {
@@ -221,12 +223,13 @@ export async function DELETE(
     // Auth-Check: Nur Admins duerfen zugreifen
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // ID aus URL-Parametern extrahieren
     const { id } = await params;
 
     // Prüfen ob Gesellschaftstyp existiert
-    const existingCategory = await prisma.fundCategory.findUnique({
+    const existingCategory = await db.fundCategory.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -238,7 +241,7 @@ export async function DELETE(
     }
 
     // Prüfen ob Gesellschaften diesem Typ zugeordnet sind
-    const fundsCount = await prisma.fund.count({
+    const fundsCount = await db.fund.count({
       where: { fundCategoryId: id },
     });
 
@@ -251,7 +254,7 @@ export async function DELETE(
     }
 
     // Gesellschaftstyp löschen
-    await prisma.fundCategory.delete({
+    await db.fundCategory.delete({
       where: { id },
     });
 

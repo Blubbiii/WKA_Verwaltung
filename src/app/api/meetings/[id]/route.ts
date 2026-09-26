@@ -19,7 +19,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -81,6 +81,7 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const parsed = patchSchema.safeParse(await request.json());
@@ -92,7 +93,7 @@ export async function PATCH(
     }
     const data = parsed.data;
 
-    const meeting = await prisma.shareholderMeeting.findFirst({
+    const meeting = await db.shareholderMeeting.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: { attendance: true, agendaItems: true },
     });
@@ -116,7 +117,7 @@ export async function PATCH(
 
     const warnings: string[] = [];
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await db.$transaction(async (tx) => {
       // --- Anwesenheit --------------------------------------------------
       if (data.attendance) {
         const known = new Set(meeting.attendance.map((entry) => entry.shareholderId));
@@ -249,7 +250,7 @@ export async function PATCH(
     });
 
     // Der Zustand nach der Änderung — er trägt die Sätze fürs Protokoll.
-    const rows = await prisma.meetingAttendance.findMany({ where: { meetingId: id } });
+    const rows = await db.meetingAttendance.findMany({ where: { meetingId: id } });
     const summary = summarizeAttendance(
       rows.map<AttendanceRow>((row) => ({
         shareholderId: row.shareholderId,

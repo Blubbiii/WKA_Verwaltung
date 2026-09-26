@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -30,10 +30,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const vote = await prisma.vote.findFirst({
+    const vote = await db.vote.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -76,7 +77,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     }
 
     // Get all eligible shareholders for this fund
-    const eligibleShareholders = await prisma.shareholder.findMany({
+    const eligibleShareholders = await db.shareholder.findMany({
       where: {
         fundId: vote.fundId,
         status: "ACTIVE",
@@ -222,10 +223,11 @@ export async function PUT(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingVote = await prisma.vote.findFirst({
+    const existingVote = await db.vote.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -249,7 +251,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_UPDATE);
       }
     }
 
-    const vote = await prisma.vote.update({
+    const vote = await db.vote.update({
       where: { id },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
@@ -300,10 +302,11 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingVote = await prisma.vote.findFirst({
+    const existingVote = await db.vote.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -315,7 +318,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_DELETE);
     }
 
     // Hard-delete + audit log atomar in einer Transaktion
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Abstimmung unwiderruflich löschen (inkl. aller Responses durch Cascade)
       await tx.vote.delete({
         where: { id },

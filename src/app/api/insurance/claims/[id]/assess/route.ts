@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -40,6 +40,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.INSURANCE_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
@@ -51,7 +52,7 @@ export async function POST(
       });
     }
 
-    const claim = await prisma.insuranceClaim.findFirst({
+    const claim = await db.insuranceClaim.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         policy: { include: { insuredObjects: true } },
@@ -66,7 +67,7 @@ export async function POST(
 
     let policy = claim.policy;
     if (parsed.data.policyId && parsed.data.policyId !== claim.policyId) {
-      policy = await prisma.insurancePolicy.findFirst({
+      policy = await db.insurancePolicy.findFirst({
         where: { id: parsed.data.policyId, tenantId: check.tenantId! },
         include: { insuredObjects: true },
       });
@@ -83,7 +84,7 @@ export async function POST(
     let coverage = claim.coverage?.policyId === policy.id ? claim.coverage : null;
     if (parsed.data.coverageId !== undefined) {
       coverage = parsed.data.coverageId
-        ? await prisma.insuranceCoverage.findFirst({
+        ? await db.insuranceCoverage.findFirst({
             where: { id: parsed.data.coverageId, policyId: policy.id },
           })
         : null;
@@ -97,7 +98,7 @@ export async function POST(
     // Keep the assignment even if the assessment below stops for a missing
     // amount — the user chose it, and it is needed for the next attempt.
     if (policy.id !== claim.policyId || (coverage?.id ?? null) !== claim.coverageId) {
-      await prisma.insuranceClaim.update({
+      await db.insuranceClaim.update({
         where: { id },
         data: { policyId: policy.id, coverageId: coverage?.id ?? null },
       });
@@ -181,7 +182,7 @@ export async function POST(
 
     const result = computeReimbursement({ lossEur, terms });
 
-    const updated = await prisma.insuranceClaim.update({
+    const updated = await db.insuranceClaim.update({
       where: { id },
       data: {
         policyId: policy.id,

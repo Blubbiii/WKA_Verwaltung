@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { Prisma } from "@prisma/client";
@@ -66,12 +66,13 @@ export async function POST(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade Settlement (Park-Turbinen werden nach Bestimmung des Stichtags separat geladen,
     // weil der Betreiber-Filter vom Abrechnungszeitraum abhängt).
-    const settlement = await prisma.energySettlement.findUnique({
+    const settlement = await db.energySettlement.findUnique({
       where: { id },
       include: {
         park: { select: { id: true, name: true, shortName: true } },
@@ -134,7 +135,7 @@ export async function POST(
       productionWhere.month = settlement.month;
     }
 
-    const productions = await prisma.turbineProduction.findMany({
+    const productions = await db.turbineProduction.findMany({
       where: productionWhere,
       include: {
         turbine: {
@@ -421,7 +422,7 @@ export async function POST(
     };
 
     // Transaktion: Alte Items löschen, neue erstellen, Status aktualisieren
-    const updatedSettlement = await prisma.$transaction(async (tx) => {
+    const updatedSettlement = await db.$transaction(async (tx) => {
       // Loesche alte Items
       await tx.energySettlementItem.deleteMany({
         where: { energySettlementId: id },

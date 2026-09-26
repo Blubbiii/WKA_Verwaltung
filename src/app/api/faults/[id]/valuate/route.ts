@@ -18,7 +18,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -33,10 +33,11 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_VALUATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const faultCase = await prisma.faultCase.findFirst({
+    const faultCase = await db.faultCase.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, caseNumber: true, turbineId: true, startAt: true, endAt: true },
     });
@@ -80,7 +81,7 @@ export async function POST(
 
     const energy = outcome.energy;
 
-    const updated = await prisma.faultCase.update({
+    const updated = await db.faultCase.update({
       where: { id },
       data: {
         lostEnergyKwh: energy.lostKwh,

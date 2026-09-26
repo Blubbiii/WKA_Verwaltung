@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendEmailSync } from "@/lib/email";
@@ -29,11 +29,12 @@ export async function POST(_req: NextRequest, context: RouteContext) {
   // Katalog und wurde nirgends geprueft.
   const check = await requirePermission(PERMISSIONS.MAILINGS_SEND);
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
     // Load mailing with template
-    const mailing = await prisma.mailing.findFirst({
+    const mailing = await db.mailing.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         template: true,
@@ -57,7 +58,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     }
 
     // Get tenant name for email wrapper
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: { name: true },
     });
@@ -94,7 +95,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     //   DSGVO-Nachweis unabhängig von Person-Löschungen möglich ist.
     //   Schema-Feld existiert aktuell noch nicht — muss zuerst als
     //   `recipientSnapshot Json?` in `Mailing` ergänzt werden.
-    await prisma.mailing.update({
+    await db.mailing.update({
       where: { id },
       data: {
         status: "SENDING",
@@ -163,7 +164,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
       }
 
       // Create recipient record
-      const recipient = await prisma.mailingRecipient.create({
+      const recipient = await db.mailingRecipient.create({
         data: {
           mailingId: id,
           shareholderId: sh.id,
@@ -196,20 +197,20 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 
           if (result.success) {
             sentCount++;
-            await prisma.mailingRecipient.update({
+            await db.mailingRecipient.update({
               where: { id: recipient.id },
               data: { status: deliveryMethod === "BOTH" ? "SENT_EMAIL" : "SENT", sentAt: new Date() },
             });
           } else {
             failedCount++;
-            await prisma.mailingRecipient.update({
+            await db.mailingRecipient.update({
               where: { id: recipient.id },
               data: { status: "FAILED", error: result.error ?? "Unknown error" },
             });
           }
         } catch (sendError) {
           failedCount++;
-          await prisma.mailingRecipient.update({
+          await db.mailingRecipient.update({
             where: { id: recipient.id },
             data: {
               status: "FAILED",
@@ -229,7 +230,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     const finalStatus =
       timedOut || failedCount > 0 ? "PARTIALLY_FAILED" : "SENT";
 
-    await prisma.mailing.update({
+    await db.mailing.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         status: finalStatus,
@@ -252,7 +253,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
     logger.error({ err: error }, "[Mailing Send] Failed");
 
     try {
-      await prisma.mailing.update({
+      await db.mailing.update({
         where: { id, tenantId: check.tenantId!},
         data: { status: "PARTIALLY_FAILED" },
       });
@@ -308,7 +309,7 @@ async function getShareholdersWithDeliveryInfo(
     // "ALL" - no additional filters
   }
 
-  return prisma.shareholder.findMany({
+  return mandantDb(tenantId).shareholder.findMany({
     where: baseWhere,
     include: {
       person: {

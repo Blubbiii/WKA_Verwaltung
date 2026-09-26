@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -34,10 +34,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.AVAILABILITY_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const settlement = await prisma.availabilitySettlement.findFirst({
+    const settlement = await db.availabilitySettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         guarantee: {
@@ -93,8 +94,9 @@ export async function PATCH(
       wantsConfirm ? PERMISSIONS.AVAILABILITY_CONFIRM : PERMISSIONS.AVAILABILITY_SETTLE,
     );
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const existing = await prisma.availabilitySettlement.findFirst({
+    const existing = await db.availabilitySettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -128,7 +130,7 @@ export async function PATCH(
     }
 
     if (data.invoiceId) {
-      const invoice = await prisma.invoice.findFirst({
+      const invoice = await db.invoice.findFirst({
         where: { id: data.invoiceId, tenantId: check.tenantId!, deletedAt: null },
         select: { id: true },
       });
@@ -137,7 +139,7 @@ export async function PATCH(
       }
     }
 
-    const updated = await prisma.availabilitySettlement.update({
+    const updated = await db.availabilitySettlement.update({
       where: { id },
       data: {
         ...(data.vendorReportedPct !== undefined && { vendorReportedPct: data.vendorReportedPct }),

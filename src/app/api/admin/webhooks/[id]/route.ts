@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
@@ -43,10 +43,11 @@ export async function GET(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const webhook = await prisma.webhook.findUnique({
+    const webhook = await db.webhook.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -123,6 +124,7 @@ export async function PUT(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -133,7 +135,7 @@ export async function PUT(
     }
 
     // Verify webhook belongs to tenant
-    const existing = await prisma.webhook.findUnique({
+    const existing = await db.webhook.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -146,7 +148,7 @@ export async function PUT(
 
     const { url, events, description, isActive } = parsed.data;
 
-    const updated = await prisma.webhook.update({
+    const updated = await db.webhook.update({
       where: { id },
       data: {
         ...(url !== undefined && { url }),
@@ -186,11 +188,12 @@ export async function DELETE(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify webhook belongs to tenant
-    const existing = await prisma.webhook.findUnique({
+    const existing = await db.webhook.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -202,7 +205,7 @@ export async function DELETE(
     }
 
     // Hard delete - WebhookDelivery cascades via onDelete: Cascade
-    await prisma.webhook.delete({
+    await db.webhook.delete({
       where: { id },
     });
 

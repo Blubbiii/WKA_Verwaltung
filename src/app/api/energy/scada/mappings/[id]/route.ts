@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
@@ -16,10 +16,11 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const mapping = await prisma.scadaTurbineMapping.findFirst({
+    const mapping = await db.scadaTurbineMapping.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -56,11 +57,12 @@ export async function PATCH(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Existenz- und Tenant-Prüfung
-    const existing = await prisma.scadaTurbineMapping.findFirst({
+    const existing = await db.scadaTurbineMapping.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -99,7 +101,7 @@ export async function PATCH(
         return apiError("BAD_REQUEST", undefined, { message: "parkId muss ein String sein" });
       }
       // Validierung: Park gehoert zum Tenant
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: parkId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -115,7 +117,7 @@ export async function PATCH(
       }
       // Validierung: Turbine gehoert zum richtigen Park
       const targetParkId = (parkId as string) || existing.parkId;
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: {
           id: turbineId,
           parkId: targetParkId,
@@ -145,7 +147,7 @@ export async function PATCH(
       const checkCode = (updateData.locationCode as string) || existing.locationCode;
       const checkPlantNo = (updateData.plantNo as number) || existing.plantNo;
 
-      const duplicate = await prisma.scadaTurbineMapping.findFirst({
+      const duplicate = await db.scadaTurbineMapping.findFirst({
         where: {
           tenantId: check.tenantId!,
           locationCode: checkCode,
@@ -159,7 +161,7 @@ export async function PATCH(
       }
     }
 
-    const updated = await prisma.scadaTurbineMapping.update({
+    const updated = await db.scadaTurbineMapping.update({
       where: { id },
       data: updateData,
       include: {
@@ -191,11 +193,12 @@ export async function DELETE(
   try {
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Existenz- und Tenant-Prüfung
-    const existing = await prisma.scadaTurbineMapping.findFirst({
+    const existing = await db.scadaTurbineMapping.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -207,7 +210,7 @@ export async function DELETE(
     }
 
     // Soft-Delete: Status auf INACTIVE setzen
-    const deactivated = await prisma.scadaTurbineMapping.update({
+    const deactivated = await db.scadaTurbineMapping.update({
       where: { id },
       data: { status: "INACTIVE" },
       include: {

@@ -164,7 +164,7 @@ describe("Bewertungsroute", () => {
   });
 
   it("Menge, Herleitung, Satz und Betrag werden gemeinsam geschrieben", () => {
-    const update = route.slice(route.indexOf("prisma.faultCase.update"));
+    const update = route.slice(route.search(/\b(prisma|db)\.faultCase\.update/));
     expect(update).toContain("lostEnergyKwh:");
     expect(update).toContain("lostEnergyBasis:");
     expect(update).toContain("lostEnergyComputedAt:");

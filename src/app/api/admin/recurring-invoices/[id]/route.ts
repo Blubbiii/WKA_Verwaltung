@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import {
@@ -64,10 +64,11 @@ async function getHandler(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await context.params;
 
-    const recurringInvoice = await prisma.recurringInvoice.findFirst({
+    const recurringInvoice = await db.recurringInvoice.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -85,7 +86,7 @@ async function getHandler(
 
     // Fetch recently generated invoices (last 10)
     const generatedInvoices = recurringInvoice.lastInvoiceId
-      ? await prisma.invoice.findMany({
+      ? await db.invoice.findMany({
           where: {
             tenantId: check.tenantId!,
             internalReference: {
@@ -163,13 +164,14 @@ async function patchHandler(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await context.params;
     const body = await request.json();
     const validatedData = updateRecurringInvoiceSchema.parse(body);
 
     // Verify recurring invoice exists and belongs to tenant
-    const existing = await prisma.recurringInvoice.findFirst({
+    const existing = await db.recurringInvoice.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -248,7 +250,7 @@ async function patchHandler(
       return apiError("BAD_REQUEST", undefined, { message: "Enddatum muss nach dem Startdatum liegen" });
     }
 
-    const updated = await prisma.recurringInvoice.update({
+    const updated = await db.recurringInvoice.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -296,11 +298,12 @@ async function deleteHandler(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await context.params;
 
     // Verify recurring invoice exists and belongs to tenant
-    const existing = await prisma.recurringInvoice.findFirst({
+    const existing = await db.recurringInvoice.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -313,7 +316,7 @@ async function deleteHandler(
 
     // Soft-delete: disable the recurring invoice
     // We keep the record for audit trail / history
-    await prisma.recurringInvoice.update({
+    await db.recurringInvoice.update({
       where: { id },
       data: { enabled: false },
     });

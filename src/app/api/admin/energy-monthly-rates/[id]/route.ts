@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { updateMonthlyRateSchema } from "@/lib/energy/monatssatz-schemas";
@@ -46,11 +46,12 @@ export async function GET(
     // Auth-Check: Nur ADMIN oder SUPERADMIN
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade den Vergütungssatz mit Tenant-Filter
-    const rate = await prisma.energyMonthlyRate.findUnique({
+    const rate = await db.energyMonthlyRate.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -117,6 +118,7 @@ export async function PATCH(
     // Auth-Check: Nur ADMIN oder SUPERADMIN
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -125,7 +127,7 @@ export async function PATCH(
     const validatedData = updateMonthlyRateSchema.parse(body);
 
     // Pruefe ob der Vergütungssatz existiert und zum Tenant gehoert
-    const existingRate = await prisma.energyMonthlyRate.findUnique({
+    const existingRate = await db.energyMonthlyRate.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -160,7 +162,7 @@ export async function PATCH(
     }
 
     // Fuehre das Update durch
-    const updatedRate = await prisma.energyMonthlyRate.update({
+    const updatedRate = await db.energyMonthlyRate.update({
       where: { id },
       data: updateData,
       include: {
@@ -215,11 +217,12 @@ export async function DELETE(
     // Auth-Check: Nur ADMIN oder SUPERADMIN
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Pruefe ob der Vergütungssatz existiert und zum Tenant gehoert
-    const existingRate = await prisma.energyMonthlyRate.findUnique({
+    const existingRate = await db.energyMonthlyRate.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -236,7 +239,7 @@ export async function DELETE(
     }
 
     // Loesche den Vergütungssatz
-    await prisma.energyMonthlyRate.delete({
+    await db.energyMonthlyRate.delete({
       where: { id },
     });
 

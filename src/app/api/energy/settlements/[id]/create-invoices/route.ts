@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumbersInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { Decimal } from "@prisma/client-runtime-utils";
@@ -46,11 +46,12 @@ export async function POST(
   try {
     const check = await requirePermission("energy:settlements:finalize");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade Settlement mit Items und verknuepften Daten
-    const settlement = await prisma.energySettlement.findUnique({
+    const settlement = await db.energySettlement.findUnique({
       where: { id },
       include: {
         park: {
@@ -147,7 +148,7 @@ export async function POST(
     let dvTaxType: TaxType = "EXEMPT";
 
     if (hasEegDvSplit) {
-      const revenueTypes = await prisma.energyRevenueType.findMany({
+      const revenueTypes = await db.energyRevenueType.findMany({
         where: {
           tenantId,
           isActive: true,
@@ -184,7 +185,7 @@ export async function POST(
     // P10: Item-Link-Updates sammeln fuer batched Promise.all am TX-Ende.
     const itemLinkUpdates: { itemId: string; invoiceId: string }[] = [];
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Batch-Nummerngenerierung IN der Outer-TX (GoBD-konform via
       // getNextInvoiceNumbersInTx — Sequence-Increment rollt bei Fehler
       // zurueck, keine verbrannten Nummern).
@@ -504,7 +505,7 @@ export async function POST(
     });
 
     // Lade aktualisiertes Settlement
-    const updatedSettlement = await prisma.energySettlement.findUnique({
+    const updatedSettlement = await db.energySettlement.findUnique({
       where: { id },
       include: {
         park: {

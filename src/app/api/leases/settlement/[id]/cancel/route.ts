@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -23,6 +23,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -30,7 +31,7 @@ export async function POST(
     const { reason } = cancelSchema.parse(body);
 
     // Load settlement and verify tenant ownership
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: {
         id,
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -57,7 +58,7 @@ export async function POST(
       (settlement.calculationDetails as Record<string, unknown> | null) ?? {};
 
     // Update status to CANCELLED, preserve calculation details for audit trail
-    const updated = await prisma.leaseRevenueSettlement.update({
+    const updated = await db.leaseRevenueSettlement.update({
       where: { id },
       data: {
         status: "CANCELLED",

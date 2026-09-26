@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -24,10 +24,11 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const template = await prisma.invoiceTemplate.findFirst({
+    const template = await db.invoiceTemplate.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -53,13 +54,14 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updateTemplateSchema.parse(body);
 
     // Verify template exists and belongs to tenant
-    const existing = await prisma.invoiceTemplate.findFirst({
+    const existing = await db.invoiceTemplate.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -72,7 +74,7 @@ export async function PATCH(
 
     // If setting as default, unset other defaults
     if (data.isDefault) {
-      await prisma.invoiceTemplate.updateMany({
+      await db.invoiceTemplate.updateMany({
         where: {
           tenantId: check.tenantId!,
           isDefault: true,
@@ -82,7 +84,7 @@ export async function PATCH(
       });
     }
 
-    const template = await prisma.invoiceTemplate.update({
+    const template = await db.invoiceTemplate.update({
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
@@ -109,11 +111,12 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify template exists and belongs to tenant
-    const existing = await prisma.invoiceTemplate.findFirst({
+    const existing = await db.invoiceTemplate.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -129,7 +132,7 @@ export async function DELETE(
       return apiError("OPERATION_NOT_ALLOWED", 400, { message: "Die Standard-Vorlage kann nicht gelöscht werden. Setzen Sie zuerst eine andere Vorlage als Standard." });
     }
 
-    await prisma.invoiceTemplate.delete({
+    await db.invoiceTemplate.delete({
       where: { id },
     });
 

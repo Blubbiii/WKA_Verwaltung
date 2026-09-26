@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -72,11 +72,12 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { id } = await params;
 
-    const config = await prisma.energyReportConfig.findFirst({
+    const config = await db.energyReportConfig.findFirst({
       where: { id, tenantId },
       include: {
         park: {
@@ -115,12 +116,13 @@ export async function PATCH(
     // FIX: PATCH braucht update-Recht, nicht create-Recht.
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { id } = await params;
 
     // Verify config exists and belongs to tenant
-    const existing = await prisma.energyReportConfig.findFirst({
+    const existing = await db.energyReportConfig.findFirst({
       where: { id, tenantId },
     });
 
@@ -139,7 +141,7 @@ export async function PATCH(
 
     // Validate parkId belongs to tenant if provided
     if (data.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: data.parkId, tenantId },
       });
       if (!park) {
@@ -149,7 +151,7 @@ export async function PATCH(
 
     // Validate turbineId belongs to tenant if provided
     if (data.turbineId) {
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: {
           id: data.turbineId,
           park: { tenantId },
@@ -178,7 +180,7 @@ export async function PATCH(
     if (data.portalLabel !== undefined) updateData.portalLabel = data.portalLabel;
     if (data.isTemplate !== undefined) updateData.isTemplate = data.isTemplate;
 
-    const config = await prisma.energyReportConfig.update({
+    const config = await db.energyReportConfig.update({
       where: { id },
       data: updateData,
       include: {
@@ -214,12 +216,13 @@ export async function DELETE(
     // FIX: DELETE braucht delete-Recht, nicht create-Recht.
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { id } = await params;
 
     // Verify config exists and belongs to tenant
-    const existing = await prisma.energyReportConfig.findFirst({
+    const existing = await db.energyReportConfig.findFirst({
       where: { id, tenantId },
     });
 
@@ -227,7 +230,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Berichts-Konfiguration nicht gefunden" });
     }
 
-    await prisma.energyReportConfig.delete({
+    await db.energyReportConfig.delete({
       where: { id },
     });
 

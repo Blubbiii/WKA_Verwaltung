@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -53,10 +53,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.CURTAILMENT_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const event = await prisma.curtailmentEvent.findFirst({
+    const event = await db.curtailmentEvent.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         park: { select: { id: true, name: true, shortName: true } },
@@ -83,6 +84,7 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.CURTAILMENT_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -95,7 +97,7 @@ export async function PATCH(
     }
     const data = parsed.data;
 
-    const existing = await prisma.curtailmentEvent.findFirst({
+    const existing = await db.curtailmentEvent.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -131,7 +133,7 @@ export async function PATCH(
       }
     }
 
-    const updated = await prisma.curtailmentEvent.update({
+    const updated = await db.curtailmentEvent.update({
       where: { id },
       data: {
         ...(data.endAt !== undefined && { endAt: data.endAt ? new Date(data.endAt) : null }),
@@ -192,10 +194,11 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.CURTAILMENT_COMPUTE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.curtailmentEvent.findFirst({
+    const existing = await db.curtailmentEvent.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, eventNumber: true, claimStatus: true },
     });
@@ -220,7 +223,7 @@ export async function POST(
       return NextResponse.json({ computed: false, reason: result.reason }, { status: 200 });
     }
 
-    const updated = await prisma.curtailmentEvent.update({
+    const updated = await db.curtailmentEvent.update({
       where: { id },
       data: {
         lostWorkKwh: result.lostWorkKwh,

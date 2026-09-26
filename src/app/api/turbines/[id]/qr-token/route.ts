@@ -10,7 +10,7 @@ import { apiError } from "@/lib/api-errors";
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -19,11 +19,12 @@ export async function POST(_req: NextRequest, context: RouteContext) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await context.params;
 
     // Verify turbine belongs to tenant
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id, park: { tenantId: check.tenantId! } },
       select: { id: true },
     });
@@ -34,7 +35,7 @@ export async function POST(_req: NextRequest, context: RouteContext) {
 
     const qrToken = crypto.randomBytes(24).toString("base64url");
 
-    await prisma.turbine.update({
+    await db.turbine.update({
       where: { id },
       data: { qrToken },
     });
@@ -50,10 +51,11 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await context.params;
 
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id, park: { tenantId: check.tenantId! } },
       select: { id: true },
     });
@@ -62,7 +64,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
-    await prisma.turbine.update({
+    await db.turbine.update({
       where: { id },
       data: { qrToken: null },
     });

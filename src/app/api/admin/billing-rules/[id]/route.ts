@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -34,10 +34,11 @@ export async function GET(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const rule = await prisma.billingRule.findUnique({
+    const rule = await db.billingRule.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -105,13 +106,14 @@ export async function PATCH(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateRuleSchema.parse(body);
 
     // Pruefe ob Regel existiert
-    const existingRule = await prisma.billingRule.findUnique({
+    const existingRule = await db.billingRule.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -156,7 +158,7 @@ export async function PATCH(
     }
 
     // Update Regel
-    const updatedRule = await prisma.billingRule.update({
+    const updatedRule = await db.billingRule.update({
       where: { id },
       data: {
         ...(validatedData.name !== undefined && { name: validatedData.name }),
@@ -200,11 +202,12 @@ export async function DELETE(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Pruefe ob Regel existiert
-    const existingRule = await prisma.billingRule.findUnique({
+    const existingRule = await db.billingRule.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -216,7 +219,7 @@ export async function DELETE(
     }
 
     // Soft-Delete: Setze isActive auf false
-    await prisma.billingRule.update({
+    await db.billingRule.update({
       where: { id },
       data: { isActive: false },
     });

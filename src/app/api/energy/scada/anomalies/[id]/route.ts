@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -22,13 +22,14 @@ export async function PATCH(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const userId = check.userId!;
     const { id } = await params;
 
     // Verify anomaly belongs to this tenant
-    const existing = await prisma.scadaAnomaly.findFirst({
+    const existing = await db.scadaAnomaly.findFirst({
       where: {
         id,
         tenantId,
@@ -73,7 +74,7 @@ export async function PATCH(
       return apiError("BAD_REQUEST", undefined, { message: "Keine Änderungen angegeben" });
     }
 
-    const updated = await prisma.scadaAnomaly.update({
+    const updated = await db.scadaAnomaly.update({
       where: { id },
       data: updateData,
       include: {
@@ -117,11 +118,12 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { id } = await params;
 
-    const anomaly = await prisma.scadaAnomaly.findFirst({
+    const anomaly = await db.scadaAnomaly.findFirst({
       where: {
         id,
         tenantId,

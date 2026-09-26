@@ -3,7 +3,7 @@ import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { logDeletion } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
@@ -52,10 +52,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: {
         id,
         park: {
@@ -145,11 +146,12 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Prüfe ob Anlage existiert und zum Tenant gehört
-    const existingTurbine = await prisma.turbine.findFirst({
+    const existingTurbine = await db.turbine.findFirst({
       where: {
         id,
         park: {
@@ -180,7 +182,7 @@ export async function PUT(
     const { operatorFundId, ...turbineData } = validatedData;
 
     // Turbine update + Operator-Historie-Änderungen atomar in einer Transaktion
-    const turbine = await prisma.$transaction(async (tx) => {
+    const turbine = await db.$transaction(async (tx) => {
       const updatedTurbine = await tx.turbine.update({
         where: { id },
         data: {
@@ -271,11 +273,12 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Prüfe ob Anlage existiert und zum Tenant gehört
-    const existingTurbine = await prisma.turbine.findFirst({
+    const existingTurbine = await db.turbine.findFirst({
       where: {
         id,
         park: {
@@ -345,7 +348,7 @@ export async function DELETE(
     // FIX: tenant-scoped delete via deleteMany. `delete` erlaubt nur einen unique-Where,
     // deshalb deleteMany + Count-Check. Verhindert cross-tenant delete falls ein Angreifer
     // eine fremde UUID errät.
-    const deleted = await prisma.turbine.deleteMany({
+    const deleted = await db.turbine.deleteMany({
       where: {
         id,
         park: { tenantId: check.tenantId! },

@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -39,6 +39,7 @@ export async function DELETE(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -59,7 +60,7 @@ export async function DELETE(
       });
     }
 
-    const lock = await prisma.accountingPeriodLock.findFirst({
+    const lock = await db.accountingPeriodLock.findFirst({
       where: { id, tenantId: check.tenantId },
       select: {
         id: true,
@@ -86,7 +87,7 @@ export async function DELETE(
     // Audit-Trail sowohl Lock-Grund als auch Unlock-Grund enthält.
     const mergedReason = `${lock.reason ?? ""}\n[Unlock: ${bodyParsed.data.reason}]`.slice(0, 500);
 
-    const updated = await prisma.accountingPeriodLock.update({
+    const updated = await db.accountingPeriodLock.update({
       where: { id },
       data: {
         unlockedAt: new Date(),
