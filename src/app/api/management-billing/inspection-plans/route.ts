@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { mandantDb } from "@/lib/mandant/mandant-db";
+import { verweisePruefen } from "@/lib/management-billing/verweise";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -105,6 +106,8 @@ export async function POST(request: NextRequest) {
       return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, recurrence, nextDueDate, description, parkId, turbineId } = parsed.data;
+    const verweisFehler = await verweisePruefen(check.tenantId!, { parkId, turbineId });
+    if (verweisFehler) return verweisFehler;
 
     // Determine tenant
     const tenantId = check.tenantId;

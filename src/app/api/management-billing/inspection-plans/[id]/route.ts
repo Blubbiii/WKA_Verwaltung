@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { mandantDb } from "@/lib/mandant/mandant-db";
+import { verweisePruefen } from "@/lib/management-billing/verweise";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -104,6 +105,8 @@ export async function PUT(
       return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, description, recurrence, nextDueDate, parkId, turbineId, isActive } = parsed.data;
+    const verweisFehler = await verweisePruefen(check.tenantId!, { parkId, turbineId });
+    if (verweisFehler) return verweisFehler;
 
     const existing = await db.inspectionPlan.findUnique({
       where: { id },

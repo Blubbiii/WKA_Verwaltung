@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { mandantDb } from "@/lib/mandant/mandant-db";
+import { verweisePruefen } from "@/lib/management-billing/verweise";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
@@ -112,6 +113,8 @@ export async function PUT(
       return apiError("VALIDATION_FAILED", 400, { message: "Ungültige Eingabe", details: parsed.error.flatten().fieldErrors });
     }
     const { title, description, status, priority, taskType, category, dueDate, notes, checklistData, parkId, turbineId, checklistId, assignedToId, costEstimateEur, actualCostEur, benefitNotes } = parsed.data;
+    const verweisFehler = await verweisePruefen(check.tenantId!, { parkId, turbineId, assignedToId, checklistId });
+    if (verweisFehler) return verweisFehler;
 
     // Build update data - only include provided fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

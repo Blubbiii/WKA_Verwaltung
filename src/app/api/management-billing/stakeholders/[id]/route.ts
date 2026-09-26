@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { isSuperadmin } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -74,7 +75,7 @@ export async function GET(
     }
 
     // Access control: non-superadmin can only see their own tenant's entries
-    if (check.tenantId && stakeholder.stakeholderTenantId !== check.tenantId) {
+    if (stakeholder.stakeholderTenantId !== check.tenantId && !(await isSuperadmin(check.userId!))) {
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 
@@ -92,7 +93,7 @@ export async function GET(
     let visibleFundNames: string[] = [];
     if (stakeholder.visibleFundIds.length > 0) {
       const visibleFunds = await prisma.fund.findMany({
-        where: { id: { in: stakeholder.visibleFundIds } },
+        where: { id: { in: stakeholder.visibleFundIds }, tenantId: stakeholder.parkTenantId },
         select: { name: true },
         orderBy: { name: "asc" },
       });
@@ -161,8 +162,17 @@ export async function PUT(
     }
 
     // Access control
-    if (check.tenantId && existing.stakeholderTenantId !== check.tenantId) {
+    if (existing.stakeholderTenantId !== check.tenantId && !(await isSuperadmin(check.userId!))) {
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
+    }
+
+    // Visible funds are the park tenant's (see the create route).
+    if (visibleFundIds?.length) {
+      const ids = [...new Set(visibleFundIds)];
+      const vorhanden = await prisma.fund.count({ where: { id: { in: ids }, tenantId: existing.parkTenantId } });
+      if (vorhanden !== ids.length) {
+        return apiError("VALIDATION_FAILED", 400, { message: "Sichtbare Gesellschaften müssen zum Mandanten des Parks gehören" });
+      }
     }
 
     // If fee percentage changed, create a history entry
@@ -249,7 +259,7 @@ export async function DELETE(
     }
 
     // Access control
-    if (check.tenantId && existing.stakeholderTenantId !== check.tenantId) {
+    if (existing.stakeholderTenantId !== check.tenantId && !(await isSuperadmin(check.userId!))) {
       return apiError("FORBIDDEN", 403, { message: "Keine Berechtigung" });
     }
 

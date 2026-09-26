@@ -9,6 +9,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
+import { isSuperadmin } from "@/lib/auth/permissions";
+import { verweisePruefen } from "@/lib/management-billing/verweise";
 import { prisma } from "@/lib/prisma";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, ParkStakeholderRole } from "@prisma/client";
@@ -140,6 +142,18 @@ export async function POST(request: NextRequest) {
     }
     const { stakeholderTenantId, parkTenantId, parkId, role, visibleFundIds, billingEnabled, feePercentage, taxType, sepaMandate, creditorId, validFrom, validTo, notes } = parsed.data;
 
+    // A stakeholder entry opens the park tenant's settlements to the
+    // stakeholder tenant. A customer admin may only add its own tenant, and
+    // only to a park it already reaches; the first link between two tenants
+    // is the platform operator's.
+    if (!(await isSuperadmin(check.userId!))) {
+      if (stakeholderTenantId !== check.tenantId) {
+        return apiError("FORBIDDEN", 403, { message: "Stakeholder kann nur der eigene Mandant sein" });
+      }
+      const verweisFehler = await verweisePruefen(check.tenantId!, { parkId });
+      if (verweisFehler) return verweisFehler;
+    }
+
     // Verify stakeholder tenant exists
     const stakeholderTenant = await prisma.tenant.findUnique({
       where: { id: stakeholderTenantId },
@@ -154,6 +168,16 @@ export async function POST(request: NextRequest) {
     });
     if (!park) {
       return apiError("NOT_FOUND", 404, { message: "Park nicht gefunden im angegebenen Mandanten" });
+    }
+
+    // Visible funds are the park tenant's — any other id would show a
+    // foreign fund's name on the stakeholder page.
+    if (visibleFundIds?.length) {
+      const ids = [...new Set(visibleFundIds)];
+      const vorhanden = await prisma.fund.count({ where: { id: { in: ids }, tenantId: parkTenantId } });
+      if (vorhanden !== ids.length) {
+        return apiError("VALIDATION_FAILED", 400, { message: "Sichtbare Gesellschaften müssen zum Mandanten des Parks gehören" });
+      }
     }
 
     // Check for duplicate
