@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import { erlaubteParks } from "@/lib/auth/park-access";
+import { istErlaubt } from "@/lib/auth/erlaubte-ids";
 import { requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -69,7 +71,8 @@ export async function GET(
     const { id } = await params;
 
     // Resource-level check: deny access if user is restricted and park not in allowed list
-    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+    // Role restriction and park access per user (E4).
+    if (!istErlaubt(await erlaubteParks(check), id)) {
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
@@ -242,7 +245,8 @@ export async function PUT(
     const { id } = await params;
 
     // Resource-level check
-    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+    // Role restriction and park access per user (E4).
+    if (!istErlaubt(await erlaubteParks(check), id)) {
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
@@ -317,7 +321,8 @@ export async function DELETE(
     const { id } = await params;
 
     // Resource-level check
-    if (check.resourceRestricted && check.allowedResourceIds?.length && !check.allowedResourceIds.includes(id)) {
+    // Role restriction and park access per user (E4).
+    if (!istErlaubt(await erlaubteParks(check), id)) {
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 

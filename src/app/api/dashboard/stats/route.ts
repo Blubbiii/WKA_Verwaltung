@@ -3,6 +3,9 @@ import { apiError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getAllAccessibleIds } from "@/lib/auth/resourceFilter";
+import { getAllowedParkIds } from "@/lib/auth/park-access";
+import { getAllowedFundIds } from "@/lib/auth/fund-access";
+import { erlaubteIds } from "@/lib/auth/erlaubte-ids";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { cache } from "@/lib/cache";
 import { dashboardCache } from "@/lib/cache/dashboard";
@@ -44,15 +47,34 @@ async function buildIdFilter(
  * Applies resource-level filtering for parks and funds based on the user's
  * role assignments and direct resource access grants.
  */
-async function fetchTenantStats(
-  tenantId: string,
-  userId: string
-): Promise<TenantDashboardStats> {
-  // Determine which parks/funds this user can see
-  const [parkIdFilter, fundIdFilter] = await Promise.all([
+interface SichtFilter {
+  parkIdFilter?: { in: string[] };
+  fundIdFilter?: { in: string[] };
+}
+
+/**
+ * Which parks/funds this user can see: the role restriction intersected with
+ * the per-user whitelists of the park and fund access pages (E4) — the
+ * figures must not count what the lists hide.
+ */
+async function sichtFilter(tenantId: string, userId: string): Promise<SichtFilter> {
+  const [rolleParks, rolleFunds, benutzerParks, benutzerFunds] = await Promise.all([
     buildIdFilter(userId, "PARK", PERMISSIONS.PARKS_READ),
     buildIdFilter(userId, "FUND", PERMISSIONS.FUNDS_READ),
+    getAllowedParkIds(userId),
+    getAllowedFundIds(userId, tenantId),
   ]);
+  const alsFilter = (ids: string[] | null) => (ids ? { in: ids } : undefined);
+  return {
+    parkIdFilter: alsFilter(erlaubteIds(benutzerParks, rolleParks?.in ?? null)),
+    fundIdFilter: alsFilter(erlaubteIds(benutzerFunds, rolleFunds?.in ?? null)),
+  };
+}
+
+async function fetchTenantStats(
+  tenantId: string,
+  { parkIdFilter, fundIdFilter }: SichtFilter,
+): Promise<TenantDashboardStats> {
 
   // F17-Compliance: Alle Aggregate excluden Soft-Deleted-Rows (Park, Fund,
   // Lease, Document, Invoice haben `deletedAt`). Ohne den Filter zählen KPIs
@@ -210,12 +232,19 @@ const check = await requireAuth();
     let stats: TenantDashboardStats;
     let fromCache = false;
 
-    // Use userId+tenantId composite cache key for resource-filtered results
     const userId = check.userId!;
+    const filter = await sichtFilter(tenantId, userId);
+    // The cache key is the tenant only. Restricted figures must neither be
+    // read from nor written to it — otherwise one user's view leaks to the
+    // others (audit 2026-09; the comment here promised a per-user key that
+    // the code never had).
+    const eingeschraenkt = !!(filter.parkIdFilter || filter.fundIdFilter);
 
-    if (bypassCache) {
+    if (eingeschraenkt) {
+      stats = await fetchTenantStats(tenantId, filter);
+    } else if (bypassCache) {
       // Fetch fresh data and update cache
-      stats = await fetchTenantStats(tenantId, userId);
+      stats = await fetchTenantStats(tenantId, filter);
       await dashboardCache.cacheTenantStats(tenantId, stats);
     } else {
       // Try to get from cache, otherwise fetch fresh
@@ -225,7 +254,7 @@ const check = await requireAuth();
         stats = cachedStats;
         fromCache = true;
       } else {
-        stats = await fetchTenantStats(tenantId, userId);
+        stats = await fetchTenantStats(tenantId, filter);
         // Cache the result asynchronously
         dashboardCache.cacheTenantStats(tenantId, stats).catch((err) => {
           logger.warn({ err: err }, "[Dashboard] Failed to cache tenant stats");

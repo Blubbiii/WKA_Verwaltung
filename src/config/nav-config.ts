@@ -688,6 +688,14 @@ export const navGroups: NavGroup[] = [
         permission: "system:settings",
       },
       {
+        // E4 (2026-09): the park counterpart, enforced in park routes and dashboard.
+        title: "Park-Zugriff",
+        titleKey: "parkAccess",
+        href: "/admin/park-access",
+        icon: KeyRound,
+        permission: "system:settings",
+      },
+      {
         title: "HGB-Einstellungen",
         titleKey: "hgbSystemSettings",
         href: "/admin/hgb-system-settings",

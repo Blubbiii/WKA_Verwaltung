@@ -11,6 +11,7 @@ import { invalidate } from "@/lib/cache/invalidation";
 import { createAuditLog } from "@/lib/audit";
 import { apiError } from "@/lib/api-errors";
 import { getAllowedFundIds } from "@/lib/auth/fund-access";
+import { erlaubteIds } from "@/lib/auth/erlaubte-ids";
 
 const fundCreateSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
@@ -62,18 +63,10 @@ export async function GET(request: NextRequest) {
     const abacAllowed = check.userId
       ? await getAllowedFundIds(check.userId, check.tenantId ?? undefined)
       : null;
-    const roleAllowed =
-      check.resourceRestricted && check.allowedResourceIds?.length
-        ? check.allowedResourceIds
-        : null;
-    let combinedAllowed: string[] | null = null;
-    if (abacAllowed && roleAllowed) {
-      combinedAllowed = abacAllowed.filter((id) => roleAllowed.includes(id));
-    } else if (abacAllowed) {
-      combinedAllowed = abacAllowed;
-    } else if (roleAllowed) {
-      combinedAllowed = roleAllowed;
-    }
+    const combinedAllowed = erlaubteIds(
+      abacAllowed,
+      check.resourceRestricted ? (check.allowedResourceIds ?? null) : null,
+    );
 
     const where = {
       tenantId: check.tenantId!,

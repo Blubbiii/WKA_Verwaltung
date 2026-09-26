@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { erlaubteParks } from "@/lib/auth/park-access";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
@@ -77,12 +78,13 @@ async function getHandler(request: NextRequest) {
       maxLimit: 1000,
     });
 
+    // Park access per user (E4) intersected with the role restriction.
+    const erlaubt = await erlaubteParks(check);
+
     const where = {
       tenantId: check.tenantId!,
       // Resource-level filtering: only show parks the user has access to
-      ...(check.resourceRestricted && check.allowedResourceIds?.length && {
-        id: { in: check.allowedResourceIds },
-      }),
+      ...(erlaubt && { id: { in: erlaubt } }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },
