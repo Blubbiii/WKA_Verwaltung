@@ -3,7 +3,7 @@ import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [turbines, total] = await Promise.all([
-      prisma.turbine.findMany({
+      db.turbine.findMany({
         where,
         include: {
           park: {
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.turbine.count({ where }),
+      db.turbine.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = turbineCreateSchema.parse(body);
@@ -152,7 +154,7 @@ export async function POST(request: NextRequest) {
     const { operatorFundId, ...turbineData } = validatedData;
 
     // Prüfe ob Park zum Tenant gehört
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: turbineData.parkId,
         tenantId: check.tenantId!,
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
     ];
     for (const [field, fundId] of fundIdsToVerify) {
       if (!fundId) continue;
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: { id: fundId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
     // FIX: Turbine + TurbineOperator atomar per Transaction erstellen — vorher
     // konnte die Turbine ohne Operator-Record existieren, wenn der zweite
     // create fehlschlug.
-    const turbine = await prisma.$transaction(async (tx) => {
+    const turbine = await db.$transaction(async (tx) => {
       const created = await tx.turbine.create({
         data: {
           ...turbineData,

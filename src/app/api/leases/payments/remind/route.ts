@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email";
 import { format } from "date-fns";
@@ -186,6 +186,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
 
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
       parsed.data;
 
     // Fetch lease with lessor to get email address
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: {
         id: leaseId,
         tenantId: check.tenantId,
@@ -227,7 +228,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get tenant details for bank info and branding
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId },
       select: {
         name: true,

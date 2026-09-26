@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
@@ -64,10 +64,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -185,11 +186,12 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify contract exists and belongs to tenant
-    const existing = await prisma.contract.findFirst({
+    const existing = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -282,7 +284,7 @@ export async function PUT(
       updateData.partnerId = validatedData.partnerId;
     }
 
-    const contract = await prisma.contract.update({
+    const contract = await db.contract.update({
       where: { id, tenantId: check.tenantId! },
       data: updateData,
       include: {
@@ -326,11 +328,12 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Before delete, get the full data for audit log
-    const contractToDelete = await prisma.contract.findFirst({
+    const contractToDelete = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -347,7 +350,7 @@ export async function DELETE(
     // (6 Jahre) verlangt dass Verträge nicht sofort aus der DB verschwinden.
     // Der `retention`-Cron / gobd-archive kümmert sich um den finalen Purge nach Ablauf.
     // Scope tenantId gegen TOCTOU (analog zum ursprünglichen delete).
-    await prisma.contract.update({
+    await db.contract.update({
       where: { id, tenantId: check.tenantId! },
       data: { deletedAt: new Date() },
     });

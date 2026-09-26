@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -27,7 +28,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     const isActive = searchParams.get("isActive");
 
     // Build where clause - proxies are linked to shareholders which are linked to funds
-    const proxies = await prisma.voteProxy.findMany({
+    const proxies = await db.voteProxy.findMany({
       where: {
         ...(voteId && { voteId }),
         ...(isActive === "true" && { isActive: true }),
@@ -127,12 +128,13 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = proxyCreateSchema.parse(body);
 
     // Verify grantor and grantee exist and belong to same fund in tenant
-    const grantor = await prisma.shareholder.findFirst({
+    const grantor = await db.shareholder.findFirst({
       where: {
         id: validatedData.grantorId,
         fund: { tenantId: check.tenantId },
@@ -143,7 +145,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       return apiError("NOT_FOUND", 404, { message: "Vollmachtgeber nicht gefunden" });
     }
 
-    const grantee = await prisma.shareholder.findFirst({
+    const grantee = await db.shareholder.findFirst({
       where: {
         id: validatedData.granteeId,
         fundId: grantor.fundId, // Must be same fund
@@ -160,7 +162,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
 
     // If vote-specific, verify vote exists
     if (validatedData.voteId) {
-      const vote = await prisma.vote.findFirst({
+      const vote = await db.vote.findFirst({
         where: {
           id: validatedData.voteId,
           fundId: grantor.fundId,
@@ -174,7 +176,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     }
 
     // Check if there's already an active proxy for this grantor (for same vote or general)
-    const existingProxy = await prisma.voteProxy.findFirst({
+    const existingProxy = await db.voteProxy.findFirst({
       where: {
         grantorId: validatedData.grantorId,
         isActive: true,
@@ -190,7 +192,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
             : "Es existiert bereits eine aktive Generalvollmacht" });
     }
 
-    const proxy = await prisma.voteProxy.create({
+    const proxy = await db.voteProxy.create({
       data: {
         grantorId: validatedData.grantorId,
         granteeId: validatedData.granteeId,

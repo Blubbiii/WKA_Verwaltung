@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { getTaxRate } from "@/lib/tax/tax-rates";
@@ -56,11 +57,12 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Prüfe ob Rechnung existiert und zugänglich ist
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await db.invoice.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
     });
@@ -73,7 +75,7 @@ export async function GET(
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung" });
     }
 
-    const items = await prisma.invoiceItem.findMany({
+    const items = await db.invoiceItem.findMany({
       where: { invoiceId: id },
       orderBy: { position: "asc" },
     });
@@ -93,6 +95,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -101,7 +104,7 @@ export async function POST(
     // Prüfe ob Rechnung existiert und DRAFT ist. `invoiceDate` wird
     // gebraucht, um den korrekten (datums-abhängigen) Steuersatz aus
     // TaxRateConfig zu ermitteln.
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await db.invoice.findUnique({
       where: { id },
       select: { id: true, tenantId: true, status: true, invoiceDate: true },
     });
@@ -119,7 +122,7 @@ export async function POST(
     }
 
     // Nächste Position ermitteln
-    const lastItem = await prisma.invoiceItem.findFirst({
+    const lastItem = await db.invoiceItem.findFirst({
       where: { invoiceId: id },
       orderBy: { position: "desc" },
       select: { position: true },
@@ -140,7 +143,7 @@ export async function POST(
     );
 
     // Item erstellen + Rechnung-Summen aktualisieren atomar in einer Transaktion
-    const item = await prisma.$transaction(async (tx) => {
+    const item = await db.$transaction(async (tx) => {
       const createdItem = await tx.invoiceItem.create({
         data: {
           invoiceId: id,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateInvoicePdf } from "@/lib/pdf";
@@ -9,7 +9,8 @@ import { renderEmail, getBaseTemplateProps } from "@/lib/email/renderer";
 import { getTenantSettings } from "@/lib/tenant-settings";
 import { dispatchWebhook } from "@/lib/webhooks";
 import { formatDate, LOCALE_DE } from "@/lib/format";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // ============================================================================
@@ -49,6 +50,7 @@ export async function POST(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -68,7 +70,7 @@ export async function POST(
     const { reminderLevel, overrideEmail } = body;
 
     // Load invoice
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, tenantId: check.tenantId, deletedAt: null },
       include: {
         fund: { select: { id: true, name: true } },
@@ -112,7 +114,7 @@ export async function POST(
     // Invoice.reminderLevel und den Mahnlauf über DunningItem.level. Sie
     // kannten einander nicht, dieselbe Stufe konnte also zweimal rausgehen.
     // dunning.ts liest inzwischen beide Quellen; hier fehlte die Gegenrichtung.
-    const highestDunningItem = await prisma.dunningItem.findFirst({
+    const highestDunningItem = await db.dunningItem.findFirst({
       where: { invoiceId: invoice.id },
       orderBy: { level: "desc" },
       select: { level: true },
@@ -224,7 +226,7 @@ export async function POST(
     }
 
     // Update invoice
-    await prisma.invoice.update({
+    await db.invoice.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         reminderLevel,

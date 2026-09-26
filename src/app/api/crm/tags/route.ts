@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // Hex-Farbe (6-stellig). Alles andere könnte via inline-Style
@@ -23,10 +24,11 @@ export async function GET() {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
-    const tags = await prisma.personTag.findMany({
+    const tags = await db.personTag.findMany({
       where: { tenantId: check.tenantId! },
       include: { _count: { select: { persons: true } } },
       orderBy: { name: "asc" },
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -53,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const tag = await prisma.personTag.create({
+      const tag = await db.personTag.create({
         data: {
           tenantId: check.tenantId!,
           name: parsed.data.name.trim(),

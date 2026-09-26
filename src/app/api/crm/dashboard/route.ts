@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -11,6 +11,7 @@ export async function GET(_req: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
@@ -28,20 +29,20 @@ export async function GET(_req: NextRequest) {
       inactiveContacts,
     ] = await Promise.all([
       // Total persons with at least one activity
-      prisma.person.count({ where: { tenantId } }),
+      db.person.count({ where: { tenantId } }),
 
       // Open tasks (PENDING, not deleted)
-      prisma.crmActivity.count({
+      db.crmActivity.count({
         where: { tenantId, type: "TASK", status: "PENDING", deletedAt: null },
       }),
 
       // Activities this month
-      prisma.crmActivity.count({
+      db.crmActivity.count({
         where: { tenantId, deletedAt: null, createdAt: { gte: startOfMonth } },
       }),
 
       // Recent activities (last 10)
-      prisma.crmActivity.findMany({
+      db.crmActivity.findMany({
         where: { tenantId, deletedAt: null },
         include: {
           createdBy: { select: { id: true, firstName: true, lastName: true } },
@@ -55,7 +56,7 @@ export async function GET(_req: NextRequest) {
       }),
 
       // Upcoming/overdue tasks (PENDING, sorted by dueDate)
-      prisma.crmActivity.findMany({
+      db.crmActivity.findMany({
         where: { tenantId, type: "TASK", status: "PENDING", deletedAt: null },
         include: {
           assignedTo: { select: { id: true, firstName: true, lastName: true } },
@@ -67,7 +68,7 @@ export async function GET(_req: NextRequest) {
       }),
 
       // Contacts without activity in >90 days (or never)
-      prisma.person.findMany({
+      db.person.findMany({
         where: {
           tenantId,
           OR: [

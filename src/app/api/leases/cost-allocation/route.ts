@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { Prisma, ParkCostAllocationStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [allocations, total] = await Promise.all([
-      prisma.parkCostAllocation.findMany({
+      db.parkCostAllocation.findMany({
         where,
         include: {
           leaseRevenueSettlement: {
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.parkCostAllocation.count({ where }),
+      db.parkCostAllocation.count({ where }),
     ]);
 
     return NextResponse.json(
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createCostAllocationSchema.parse(body);
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Load the created allocation with full details for the response
-    const created = await prisma.parkCostAllocation.findUnique({
+    const created = await db.parkCostAllocation.findUnique({
       where: { id: allocation.id },
       include: {
         leaseRevenueSettlement: {

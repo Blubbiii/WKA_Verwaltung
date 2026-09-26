@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -121,7 +123,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     };
 
     const [shareholders, total] = await Promise.all([
-      prisma.shareholder.findMany({
+      db.shareholder.findMany({
         where,
         include: {
           person: {
@@ -151,7 +153,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
         skip,
         take: limit,
       }),
-      prisma.shareholder.count({ where }),
+      db.shareholder.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -174,19 +176,20 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = shareholderCreateSchema.parse(body);
 
     // Prüfe ob Gesellschaft und Person zum Tenant gehören
     const [fund, person] = await Promise.all([
-      prisma.fund.findFirst({
+      db.fund.findFirst({
         where: {
           id: validatedData.fundId,
           tenantId: check.tenantId,
         },
       }),
-      prisma.person.findFirst({
+      db.person.findFirst({
         where: {
           id: validatedData.personId,
           tenantId: check.tenantId,
@@ -203,7 +206,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     }
 
     // Prüfe ob Kombination bereits existiert
-    const existing = await prisma.shareholder.findFirst({
+    const existing = await db.shareholder.findFirst({
       where: {
         fundId: validatedData.fundId,
         personId: validatedData.personId,
@@ -215,7 +218,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     }
 
     // Create shareholder + recalculate fund shares atomar in einer Transaktion
-    const updatedShareholder = await prisma.$transaction(async (tx) => {
+    const updatedShareholder = await db.$transaction(async (tx) => {
       const shareholder = await tx.shareholder.create({
         data: {
           ...validatedData,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,13 +25,14 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const { action, notes } = reviewActionSchema.parse(body);
 
     // Load settlement and verify tenant ownership
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: {
         id,
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -97,7 +98,7 @@ export async function POST(
       }
     }
 
-    const updated = await prisma.leaseRevenueSettlement.update({
+    const updated = await db.leaseRevenueSettlement.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {

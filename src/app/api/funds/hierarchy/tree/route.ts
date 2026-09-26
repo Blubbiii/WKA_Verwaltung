@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -204,6 +204,7 @@ export async function GET(request: NextRequest) {
     // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // URL-Parameter
     const { searchParams } = new URL(request.url);
@@ -212,7 +213,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = searchParams.get("activeOnly") !== "false"; // Default: true
 
     // Lade alle Funds des Tenants
-    const allFunds = await prisma.fund.findMany({
+    const allFunds = await db.fund.findMany({
       where: {
         tenantId: check.tenantId!,
         status: "ACTIVE",
@@ -235,7 +236,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Lade alle aktiven Hierarchien
-    const hierarchies = await prisma.fundHierarchy.findMany({
+    const hierarchies = await db.fundHierarchy.findMany({
       where: {
         parentFund: {
           tenantId: check.tenantId!,

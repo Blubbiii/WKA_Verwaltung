@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getSignedUrl } from "@/lib/storage";
 import { API_LIMITS } from "@/lib/config/api-limits";
 import { createAuditLog } from "@/lib/audit";
@@ -27,6 +27,7 @@ export async function GET(
     // Berechtigungsprüfung
     const check = await requirePermission([PERMISSIONS.DOCUMENTS_DOWNLOAD, PERMISSIONS.DOCUMENTS_READ]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -40,7 +41,7 @@ export async function GET(
     const validExpiresIn = Math.min(Math.max(expiresIn, API_LIMITS.signedUrlMinExpires), API_LIMITS.signedUrlMaxExpires);
 
     // Hole Dokument aus der Datenbank
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
@@ -52,11 +52,12 @@ export async function GET(
   try {
     const check = await requirePermission("funds:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Prüfen ob Gesellschaft existiert und zum Mandanten gehoert
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -65,7 +66,7 @@ export async function GET(
       return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
-    const distributions = await prisma.distribution.findMany({
+    const distributions = await db.distribution.findMany({
       where: { fundId: id },
       include: {
         items: {
@@ -117,6 +118,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -128,7 +130,7 @@ export async function POST(
     // Fehlers. Wer im Zeitraum ausgetreten ist, steht auf INACTIVE und hat
     // trotzdem Anspruch auf seinen Zeitanteil — sein Anteil wurde stattdessen
     // auf die übrigen hochnormalisiert und damit verschenkt.
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         shareholders: {
@@ -205,7 +207,7 @@ export async function POST(
 
     // Eindeutige Ausschuettungsnummer generieren
     const year = new Date(data.distributionDate).getFullYear();
-    const existingCount = await prisma.distribution.count({
+    const existingCount = await db.distribution.count({
       where: {
         tenantId: check.tenantId!,
         distributionNumber: { startsWith: `AS-${year}-` },
@@ -214,7 +216,7 @@ export async function POST(
     const distributionNumber = `AS-${year}-${String(existingCount + 1).padStart(3, "0")}`;
 
     // Distribution mit Items erstellen (in Transaction)
-    const distribution = await prisma.$transaction(async (tx) => {
+    const distribution = await db.$transaction(async (tx) => {
       // Distribution erstellen
       const dist = await tx.distribution.create({
         data: {
@@ -256,7 +258,7 @@ export async function POST(
     });
 
     // Distribution mit Items laden
-    const result = await prisma.distribution.findUnique({
+    const result = await db.distribution.findUnique({
       where: { id: distribution.id },
       include: {
         items: {

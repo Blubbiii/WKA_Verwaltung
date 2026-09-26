@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
@@ -47,7 +48,7 @@ async function recalculateInvoiceTotals(invoiceId: string, txClient?: Parameters
 
 // Helper: Prüfe Zugriff auf Rechnung
 async function checkInvoiceAccess(invoiceId: string, tenantId: string) {
-  const invoice = await prisma.invoice.findUnique({
+  const invoice = await mandantDb(tenantId).invoice.findUnique({
     where: { id: invoiceId },
     select: { id: true, tenantId: true, status: true },
   });
@@ -75,6 +76,7 @@ export async function PATCH(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id, itemId } = await params;
     const body = await request.json();
@@ -93,7 +95,7 @@ export async function PATCH(
     }
 
     // Prüfe ob Item existiert
-    const existingItem = await prisma.invoiceItem.findUnique({
+    const existingItem = await db.invoiceItem.findUnique({
       where: { id: itemId },
       select: { id: true, invoiceId: true, quantity: true, unitPrice: true, taxType: true },
     });
@@ -111,7 +113,7 @@ export async function PATCH(
     const { taxRate, taxAmount, grossAmount } = calculateTaxAmounts(netAmount, taxType);
 
     // Item aktualisieren + Rechnung-Summen aktualisieren atomar in einer Transaktion
-    const item = await prisma.$transaction(async (tx) => {
+    const item = await db.$transaction(async (tx) => {
       const updatedItem = await tx.invoiceItem.update({
         where: { id: itemId },
         data: {
@@ -154,6 +156,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id, itemId } = await params;
 
@@ -170,7 +173,7 @@ export async function DELETE(
     }
 
     // Prüfe ob Item existiert
-    const existingItem = await prisma.invoiceItem.findUnique({
+    const existingItem = await db.invoiceItem.findUnique({
       where: { id: itemId },
       select: { id: true, invoiceId: true },
     });
@@ -180,7 +183,7 @@ export async function DELETE(
     }
 
     // Delete + Summen aktualisieren + Positionen neu nummerieren atomar in einer Transaktion
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Item löschen
       await tx.invoiceItem.delete({ where: { id: itemId } });
 

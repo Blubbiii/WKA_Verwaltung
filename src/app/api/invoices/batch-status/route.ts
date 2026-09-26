@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { API_LIMITS } from "@/lib/config/api-limits";
@@ -16,6 +16,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Parse and validate request body
     let body: unknown;
@@ -40,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     );
 
     // Update only invoices that are currently DRAFT and belong to the tenant
-    const result = await prisma.invoice.updateMany({
+    const result = await db.invoice.updateMany({
       where: {
         id: { in: uniqueIds },
         status: "DRAFT",

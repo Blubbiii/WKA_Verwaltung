@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { importHistoricalSettlementSchema } from "@/types/billing";
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       parsed.data;
 
     // Check park exists and belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check no existing settlement for same park+year
-    const existing = await prisma.leaseRevenueSettlement.findFirst({
+    const existing = await db.leaseRevenueSettlement.findFirst({
       where: {
         parkId,
         year,
@@ -64,11 +65,11 @@ export async function POST(request: NextRequest) {
     const lessorIds = [...new Set(items.map((it) => it.lessorPersonId))];
 
     const [validLeases, validLessors] = await Promise.all([
-      prisma.lease.findMany({
+      db.lease.findMany({
         where: { id: { in: leaseIds }, tenantId: check.tenantId! },
         select: { id: true },
       }),
-      prisma.person.findMany({
+      db.person.findMany({
         where: { id: { in: lessorIds }, tenantId: check.tenantId! },
         select: { id: true },
       }),
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create settlement + items in a transaction
-    const settlement = await prisma.$transaction(async (tx) => {
+    const settlement = await db.$transaction(async (tx) => {
       // Create the settlement with status CLOSED (historical import)
       const created = await tx.leaseRevenueSettlement.create({
         data: {

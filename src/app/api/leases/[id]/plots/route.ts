@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -23,10 +23,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -68,11 +69,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify lease exists and belongs to tenant
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -87,7 +89,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     const { plotIds } = addPlotsSchema.parse(body);
 
     // Verify all plots belong to tenant
-    const plots = await prisma.plot.findMany({
+    const plots = await db.plot.findMany({
       where: {
         id: { in: plotIds },
         tenantId: check.tenantId,
@@ -99,7 +101,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     }
 
     // Check which plots are already assigned
-    const existingRelations = await prisma.leasePlot.findMany({
+    const existingRelations = await db.leasePlot.findMany({
       where: {
         leaseId: id,
         plotId: { in: plotIds },
@@ -114,7 +116,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     }
 
     // Add new plot relations
-    await prisma.leasePlot.createMany({
+    await db.leasePlot.createMany({
       data: newPlotIds.map((plotId) => ({
         leaseId: id,
         plotId,
@@ -122,7 +124,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     // Fetch updated plots
-    const updatedLease = await prisma.lease.findUnique({
+    const updatedLease = await db.lease.findUnique({
       where: { id },
       include: {
         leasePlots: {
@@ -157,11 +159,12 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify lease exists and belongs to tenant
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -187,7 +190,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     }
 
     // Remove plot relations
-    const result = await prisma.leasePlot.deleteMany({
+    const result = await db.leasePlot.deleteMany({
       where: {
         leaseId: id,
         plotId: { in: plotIds },
@@ -195,7 +198,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     });
 
     // Fetch updated plots
-    const updatedLease = await prisma.lease.findUnique({
+    const updatedLease = await db.lease.findUnique({
       where: { id },
       include: {
         leasePlots: {

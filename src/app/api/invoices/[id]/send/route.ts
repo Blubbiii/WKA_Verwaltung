@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { dispatchWebhook } from "@/lib/webhooks";
@@ -14,11 +14,12 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Load invoice + items + tenant data for §14 UStG validation
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         items: { select: { description: true, netAmount: true } },
@@ -33,7 +34,7 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: `Rechnung kann nicht versendet werden (Status: ${invoice.status})` });
     }
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: { name: true, taxId: true, vatId: true, address: true, city: true, postalCode: true, street: true },
     });
@@ -59,7 +60,7 @@ export async function POST(
     // sonst DRAFT→SENT auf einer bereits SENT-Rechnung machen und
     // sentAt sowie sofort folgendes auto-posting/webhook doppelt feuern.
     // `updateMany` gibt count zurück — 0 heißt: schon versendet.
-    const updateResult = await prisma.invoice.updateMany({
+    const updateResult = await db.invoice.updateMany({
       where: { id, tenantId: check.tenantId!, status: "DRAFT" },
       data: {
         status: "SENT",
@@ -75,7 +76,7 @@ export async function POST(
       });
     }
 
-    const updated = await prisma.invoice.findFirst({
+    const updated = await db.invoice.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         items: { orderBy: { position: "asc" } },

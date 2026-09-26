@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Decimal } from "@prisma/client-runtime-utils";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { getAllTaxRates } from "@/lib/tax/tax-rates";
@@ -23,6 +23,7 @@ async function getHandler(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const invoiceType = searchParams.get("invoiceType");
@@ -124,7 +125,7 @@ async function getHandler(request: NextRequest) {
     const orderBy = (ORDER_BY[sortField] ?? ORDER_BY.invoiceDate)(sortDir);
 
     const [invoices, total] = await Promise.all([
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where,
         include: {
           fund: {
@@ -160,7 +161,7 @@ async function getHandler(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.invoice.count({ where }),
+      db.invoice.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -180,6 +181,7 @@ async function postHandler(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = invoiceCreateSchema.parse(body);
@@ -237,7 +239,7 @@ async function postHandler(request: NextRequest) {
     // Rechnung an einen Kontakt eines fremden Mandanten haengen — und die
     // 360-Grad-Sicht des fremden Mandanten zeigte sie dann an.
     if (validatedData.recipientPersonId) {
-      const person = await prisma.person.findFirst({
+      const person = await db.person.findFirst({
         where: { id: validatedData.recipientPersonId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -274,7 +276,7 @@ async function postHandler(request: NextRequest) {
     // GoBD-konform: Nummerngenerierung UND Invoice-Insert in EINER
     // Transaktion. Wenn der Insert failt, wird auch der Sequence-Increment
     // zurückgerollt → keine Lücken in der lückenlosen Nummerierung.
-    const invoice = await prisma.$transaction(async (tx) => {
+    const invoice = await db.$transaction(async (tx) => {
       const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
         tx,
         check.tenantId!,

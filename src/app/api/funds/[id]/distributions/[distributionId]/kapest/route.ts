@@ -23,7 +23,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import {
   computeKapESt,
   buildKapEStLeaflet,
@@ -41,6 +41,7 @@ export async function GET(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id: fundId, distributionId } = await params;
     const { searchParams } = new URL(request.url);
@@ -61,7 +62,7 @@ export async function GET(
       parseFloat(searchParams.get("freibetragPerShareholder") ?? "1000") || 0,
     );
 
-    const distribution = await prisma.distribution.findFirst({
+    const distribution = await db.distribution.findFirst({
       where: {
         id: distributionId,
         fundId,

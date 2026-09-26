@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const plotId = searchParams.get("plotId");
@@ -187,7 +188,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [leases, total] = await Promise.all([
-      prisma.lease.findMany({
+      db.lease.findMany({
         where,
         include: {
           leasePlots: {
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.lease.count({ where }),
+      db.lease.count({ where }),
     ]);
 
     // Transform to include plots array for easier frontend consumption
@@ -253,6 +254,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = leaseCreateSchema.parse(body);
@@ -266,7 +268,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prüfe ob alle Plots zum Tenant gehören
-    const plots = await prisma.plot.findMany({
+    const plots = await db.plot.findMany({
       where: {
         id: { in: validatedData.plotIds },
         tenantId: check.tenantId,
@@ -280,7 +282,7 @@ export async function POST(request: NextRequest) {
     // Prüfe ob Lessor zum Tenant gehört — nur wenn ein bestehender referenziert
     // wird. Ein neu anzulegender existiert naturgemaess noch nicht.
     if (validatedData.lessorId) {
-      const lessor = await prisma.person.findFirst({
+      const lessor = await db.person.findFirst({
         where: {
           id: validatedData.lessorId,
           tenantId: check.tenantId,
@@ -296,7 +298,7 @@ export async function POST(request: NextRequest) {
     // startet — dieselbe Pruefung macht die Plot-Route.
     const newPlotParkIds = [...new Set(validatedData.newPlots.map((p) => p.parkId).filter(Boolean))] as string[];
     if (newPlotParkIds.length > 0) {
-      const parks = await prisma.park.findMany({
+      const parks = await db.park.findMany({
         where: { id: { in: newPlotParkIds }, tenantId: check.tenantId },
         select: { id: true },
       });
@@ -307,7 +309,7 @@ export async function POST(request: NextRequest) {
 
     // Alles in EINER Transaktion: Verpaechter, Flurstuecke, Vertrag. Faellt
     // etwas um, faellt alles um — genau das fehlte in #21.
-    const lease = await prisma.$transaction(async (tx) => {
+    const lease = await db.$transaction(async (tx) => {
       let lessorId = validatedData.lessorId;
 
       if (validatedData.newLessor) {

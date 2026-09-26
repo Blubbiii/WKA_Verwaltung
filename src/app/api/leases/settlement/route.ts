@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     // Parallel queries: data + total count
     const [settlements, total] = await Promise.all([
-      prisma.leaseRevenueSettlement.findMany({
+      db.leaseRevenueSettlement.findMany({
         where,
         include: {
           park: {
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.leaseRevenueSettlement.count({ where }),
+      db.leaseRevenueSettlement.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createLeaseRevenueSettlementSchema.parse(body);
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validatedData.parkId,
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -155,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check unique constraint: [tenantId, parkId, year, periodType, month]
-    const existing = await prisma.leaseRevenueSettlement.findFirst({
+    const existing = await db.leaseRevenueSettlement.findFirst({
       where: {
         tenantId: check.tenantId!,
         parkId: validatedData.parkId,
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
       // If not yet finalized (OPEN or CALCULATED), reuse the existing settlement
       if (existing.status === "OPEN" || existing.status === "CALCULATED") {
         // Update mutable fields if provided
-        const updated = await prisma.leaseRevenueSettlement.update({
+        const updated = await db.leaseRevenueSettlement.update({
           where: { id: existing.id },
           data: {
             advanceInterval: validatedData.advanceInterval ?? existing.advanceInterval,
@@ -204,7 +206,7 @@ export async function POST(request: NextRequest) {
       // gelöscht sind, würde das Zurücksetzen der Links echte Buchhaltungs-
       // belege verwaisen. Erst die Rechnungen stornieren, dann reaktivieren.
       if (existing.status === "CANCELLED" || existing.status === "SETTLED") {
-        const activeInvoices = await prisma.leaseRevenueSettlementItem.findMany({
+        const activeInvoices = await db.leaseRevenueSettlementItem.findMany({
           where: {
             settlementId: existing.id,
             OR: [
@@ -224,7 +226,7 @@ export async function POST(request: NextRequest) {
           .filter((id): id is string => id !== null);
 
         if (linkedInvoiceIds.length > 0) {
-          const activeInvoiceRecords = await prisma.invoice.findMany({
+          const activeInvoiceRecords = await db.invoice.findMany({
             where: {
               id: { in: linkedInvoiceIds },
               tenantId: check.tenantId!,
@@ -250,7 +252,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Reset settlement items: clear invoice links and advance data
-        await prisma.leaseRevenueSettlementItem.updateMany({
+        await db.leaseRevenueSettlementItem.updateMany({
           where: { settlementId: existing.id },
           data: {
             settlementInvoiceId: null,
@@ -260,7 +262,7 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const reactivated = await prisma.leaseRevenueSettlement.update({
+        const reactivated = await db.leaseRevenueSettlement.update({
           where: { id: existing.id, tenantId: check.tenantId!},
           data: {
             status: "OPEN",
@@ -303,7 +305,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create settlement with status OPEN
-    const settlement = await prisma.leaseRevenueSettlement.create({
+    const settlement = await db.leaseRevenueSettlement.create({
       data: {
         tenantId: check.tenantId!,
         parkId: validatedData.parkId,

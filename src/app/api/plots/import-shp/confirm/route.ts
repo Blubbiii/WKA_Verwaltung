@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {
@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       { requireAll: true },
     );
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
 
     // -- Verify park belongs to tenant (only if parkId was provided) --
     if (parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: parkId, tenantId },
       });
       if (!park) {
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
     >;
 
     // -- Execute import in a transaction --
-    const result = await prisma.$transaction(
+    const result = await db.$transaction(
       async (tx) => {
         const skipped: SkippedFeature[] = [];
         const errors: string[] = [];

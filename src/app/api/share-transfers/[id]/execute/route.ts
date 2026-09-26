@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -38,12 +38,13 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_TRANSFER);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const raw = await request.json().catch(() => ({}));
     const body = bodySchema.parse(raw);
 
-    const transfer = await prisma.shareTransfer.findFirst({
+    const transfer = await db.shareTransfer.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         fund: {
@@ -84,7 +85,7 @@ export async function POST(
 
     // Reihenfolge: eine ältere Übertragung nachträglich einzuschieben würde
     // die Fortschreibung der bereits vollzogenen falsch machen.
-    const later = await prisma.shareTransfer.findFirst({
+    const later = await db.shareTransfer.findFirst({
       where: {
         fundId: transfer.fundId,
         status: "EXECUTED",
@@ -138,7 +139,7 @@ export async function POST(
       });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       if (consentGrantedAt !== transfer.consentGrantedAt || body.registerFiledAt) {
         await tx.shareTransfer.update({
           where: { id: transfer.id },

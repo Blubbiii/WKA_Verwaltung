@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import {
   requireAdmin,
   requirePermission,
@@ -32,15 +32,16 @@ export async function GET() {
   try {
     const check = await requirePermission("accounting:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Auto-Seed beim ersten Aufruf.
-    const count = await prisma.baseInterestRate.count();
+    const count = await db.baseInterestRate.count();
     if (count === 0) {
       const seeded = await seedBundesbankRates();
       logger.info({ seeded }, "Auto-seeded base interest rates (Bundesbank)");
     }
 
-    const rates = await prisma.baseInterestRate.findMany({
+    const rates = await db.baseInterestRate.findMany({
       orderBy: { validFrom: "desc" },
     });
 
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const created = await prisma.baseInterestRate.create({
+      const created = await db.baseInterestRate.create({
         data: {
           validFrom: new Date(parsed.data.validFrom),
           validTo: parsed.data.validTo ? new Date(parsed.data.validTo) : null,

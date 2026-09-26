@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -20,11 +20,12 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { parkId } = await params;
 
     // Load park with lease-settlement-relevant configuration
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -251,13 +252,14 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { parkId } = await params;
     const body = await request.json();
     const validatedData = parkLeaseSettlementSetupSchema.parse(body);
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -267,7 +269,7 @@ export async function PUT(
     }
 
     // Run updates in a transaction
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Update park settlement mode
       await tx.park.update({
         where: { id: parkId },

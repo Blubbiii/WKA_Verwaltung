@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -12,10 +12,11 @@ export async function GET(
   try {
     const check = await requirePermission("funds:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id, distributionId } = await params;
 
-    const distribution = await prisma.distribution.findFirst({
+    const distribution = await db.distribution.findFirst({
       where: {
         id: distributionId,
         fundId: id,
@@ -84,10 +85,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("invoices:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id, distributionId } = await params;
 
-    const distribution = await prisma.distribution.findFirst({
+    const distribution = await db.distribution.findFirst({
       where: {
         id: distributionId,
         fundId: id,
@@ -103,7 +105,7 @@ export async function DELETE(
       return apiError("BAD_REQUEST", undefined, { message: "Nur Entwuerfe können gelöscht werden" });
     }
 
-    await prisma.distribution.delete({
+    await db.distribution.delete({
       where: { id: distributionId },
     });
 

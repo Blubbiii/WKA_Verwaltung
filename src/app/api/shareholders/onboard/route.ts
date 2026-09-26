@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
@@ -87,6 +88,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = onboardingSchema.parse(body);
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
     const { personalData, participation, portalAccess } = validatedData;
 
     // Verify the fund exists and belongs to this tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: participation.fundId,
         tenantId: check.tenantId,
@@ -107,6 +109,7 @@ export async function POST(request: NextRequest) {
 
     // Check if a user with this email already exists (if portal access requested)
     if (portalAccess.createPortalAccess) {
+      // Global on purpose: e-mail addresses are unique across all tenants.
       const existingUser = await prisma.user.findUnique({
         where: { email: personalData.email },
         select: { id: true },
@@ -127,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Execute everything in a single transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // 1. Create the Person
       const person = await tx.person.create({
         data: {

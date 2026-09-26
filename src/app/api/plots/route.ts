@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -121,7 +122,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     };
 
     const [plots, total] = await Promise.all([
-      prisma.plot.findMany({
+      db.plot.findMany({
         where,
         include: includeObject,
         orderBy: [
@@ -134,7 +135,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
         skip,
         take: limit,
       }),
-      prisma.plot.count({ where }),
+      db.plot.count({ where }),
     ]);
 
     // Type for leasePlot with lease relation (when includeLeases is true)
@@ -237,13 +238,14 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = plotCreateSchema.parse(body);
 
     // Verify park belongs to tenant if parkId provided
     if (validatedData.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: validatedData.parkId,
           tenantId: check.tenantId,
@@ -256,7 +258,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     }
 
     // Check for duplicate (unique constraint: tenantId + cadastralDistrict + fieldNumber + plotNumber)
-    const existing = await prisma.plot.findFirst({
+    const existing = await db.plot.findFirst({
       where: {
         tenantId: check.tenantId,
         cadastralDistrict: validatedData.cadastralDistrict,
@@ -272,7 +274,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     // Extract plotAreas before spreading into Prisma data (not a direct field)
     const { plotAreas: plotAreasInput, ...plotData } = validatedData;
 
-    const plot = await prisma.$transaction(async (tx) => {
+    const plot = await db.$transaction(async (tx) => {
       const newPlot = await tx.plot.create({
         data: {
           ...plotData,

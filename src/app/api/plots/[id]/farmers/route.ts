@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -40,12 +40,13 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Ueber das Flurstueck mandantengeprueft — plot_owners traegt selbst
     // keine tenantId, sie haengt am Flurstueck.
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -53,7 +54,7 @@ export async function GET(
       return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
-    const bewirtschafter = await prisma.plotFarmer.findMany({
+    const bewirtschafter = await db.plotFarmer.findMany({
       where: { plotId: id },
       include: {
         person: {
@@ -94,6 +95,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const parsed = bewirtschafterSchema.safeParse(await request.json());
@@ -121,7 +123,7 @@ export async function POST(
       );
     }
 
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -132,7 +134,7 @@ export async function POST(
     // Die Person muss demselben Mandanten gehoeren. Ohne diese Pruefung
     // liesse sich ueber eine fremde Kennung eine Person eines anderen
     // Mandanten an das eigene Flurstueck haengen.
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: { id: daten.personId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -140,7 +142,7 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Person nicht gefunden" });
     }
 
-    const angelegt = await prisma.plotFarmer.create({
+    const angelegt = await db.plotFarmer.create({
       data: {
         plotId: id,
         personId: daten.personId,

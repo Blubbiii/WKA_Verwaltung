@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -24,11 +24,12 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Finde das Original-Dokument (oder die aktuelle Version)
-    const currentDocument = await prisma.document.findFirst({
+    const currentDocument = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -62,7 +63,7 @@ export async function POST(
     // oder das Original (parentId == null)
     const rootDocumentId = currentDocument.parentId || currentDocument.id;
 
-    const latestVersion = await prisma.document.findFirst({
+    const latestVersion = await db.document.findFirst({
       where: {
         OR: [
           { id: rootDocumentId },
@@ -77,7 +78,7 @@ export async function POST(
     const nextVersion = (latestVersion?.version || 1) + 1;
 
     // Erstelle die neue Version + Storage-Tracking atomar in einer Transaktion.
-    const newVersion = await prisma.$transaction(async (tx) => {
+    const newVersion = await db.$transaction(async (tx) => {
       const created = await tx.document.create({
         data: {
           // Kopiere Metadaten vom aktuellen Dokument
@@ -140,10 +141,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -162,7 +164,7 @@ export async function GET(
     const rootDocumentId = document.parentId || document.id;
 
     // Hole alle Versionen
-    const versions = await prisma.document.findMany({
+    const versions = await db.document.findMany({
       where: {
         OR: [
           { id: rootDocumentId },

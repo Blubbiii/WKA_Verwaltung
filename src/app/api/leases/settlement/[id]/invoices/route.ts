@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -28,6 +29,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -40,7 +42,7 @@ export async function POST(
     const initialStatus: "DRAFT" | "SENT" = rumpf.daten.initialStatus;
 
     // Load settlement to determine period type and verify ownership + status
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: {
         id,
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -76,7 +78,7 @@ export async function POST(
 
       // Load created invoices for wizard display
       const invoices = result.invoiceIds.length > 0
-        ? await prisma.invoice.findMany({
+        ? await db.invoice.findMany({
             where: { id: { in: result.invoiceIds } },
             select: { id: true, invoiceNumber: true, invoiceType: true, recipientName: true, grossAmount: true, status: true },
           })
@@ -112,7 +114,7 @@ export async function POST(
 
       // Load created invoices for wizard display
       const invoices = result.invoiceIds.length > 0
-        ? await prisma.invoice.findMany({
+        ? await db.invoice.findMany({
             where: { id: { in: result.invoiceIds } },
             select: { id: true, invoiceNumber: true, invoiceType: true, recipientName: true, grossAmount: true, status: true },
           })

@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma, CrmActivityType } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 import { PAGE_SIZE_LARGE } from "@/lib/config/pagination";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 // ============================================================================
 // Validation
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    const activities = await prisma.crmActivity.findMany({
+    const activities = await db.crmActivity.findMany({
       where,
       include: {
         createdBy: { select: { id: true, firstName: true, lastName: true } },
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
 
@@ -121,42 +124,42 @@ export async function POST(request: NextRequest) {
     // the caller's tenant before creating. Without this a valid UUID from
     // another tenant would leak names/details on subsequent GET.
     if (data.personId) {
-      const p = await prisma.person.findFirst({
+      const p = await db.person.findFirst({
         where: { id: data.personId, tenantId: check.tenantId! },
         select: { id: true },
       });
       if (!p) return apiError("VALIDATION_FAILED", 400, { message: "Person nicht im Mandanten" });
     }
     if (data.fundId) {
-      const f = await prisma.fund.findFirst({
+      const f = await db.fund.findFirst({
         where: { id: data.fundId, tenantId: check.tenantId! },
         select: { id: true },
       });
       if (!f) return apiError("VALIDATION_FAILED", 400, { message: "Gesellschaft nicht im Mandanten" });
     }
     if (data.leaseId) {
-      const l = await prisma.lease.findFirst({
+      const l = await db.lease.findFirst({
         where: { id: data.leaseId, tenantId: check.tenantId! },
         select: { id: true },
       });
       if (!l) return apiError("VALIDATION_FAILED", 400, { message: "Pacht nicht im Mandanten" });
     }
     if (data.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: data.parkId, tenantId: check.tenantId! },
         select: { id: true },
       });
       if (!park) return apiError("VALIDATION_FAILED", 400, { message: "Windpark nicht im Mandanten" });
     }
     if (data.assignedToId) {
-      const u = await prisma.user.findFirst({
+      const u = await db.user.findFirst({
         where: { id: data.assignedToId, tenantId: check.tenantId! },
         select: { id: true },
       });
       if (!u) return apiError("VALIDATION_FAILED", 400, { message: "Zuweisung: User nicht im Mandanten" });
     }
 
-    const activity = await prisma.crmActivity.create({
+    const activity = await db.crmActivity.create({
       data: {
         tenantId: check.tenantId!,
         createdById: check.userId!,
@@ -187,13 +190,13 @@ export async function POST(request: NextRequest) {
     // Update lastActivityAt on linked entity
     const now = new Date();
     if (data.personId) {
-      await prisma.person.update({ where: { id: data.personId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
+      await db.person.update({ where: { id: data.personId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
     if (data.fundId) {
-      await prisma.fund.update({ where: { id: data.fundId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
+      await db.fund.update({ where: { id: data.fundId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
     if (data.leaseId) {
-      await prisma.lease.update({ where: { id: data.leaseId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
+      await db.lease.update({ where: { id: data.leaseId, tenantId: check.tenantId!}, data: { lastActivityAt: now } });
     }
 
     logger.info({ tenantId: check.tenantId, activityId: activity.id }, "CRM activity created");

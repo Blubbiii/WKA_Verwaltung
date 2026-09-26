@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Parse and validate request body
     let body: unknown;
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Bis dahin: sync — akzeptabel bis ~20 Invoices, danach Response-Timeout-Risiko.
 
     // Fetch invoice numbers upfront (single DB query)
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await db.invoice.findMany({
       where: {
         id: { in: uniqueIds },
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),

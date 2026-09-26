@@ -6,7 +6,7 @@ import {
   hasPermission,
   ROLE_HIERARCHY,
 } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -46,6 +46,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     if (!check.tenantId || !check.userId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant oder Benutzer zugeordnet" });
@@ -56,7 +57,7 @@ export async function POST(
     const action = approvalActionSchema.parse(body);
 
     // Fetch the document
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -159,7 +160,7 @@ export async function POST(
     }
 
     // Update the document
-    const updatedDocument = await prisma.document.update({
+    const updatedDocument = await db.document.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -211,7 +212,7 @@ export async function POST(
 
     // Log the action in audit trail
     try {
-      await prisma.auditLog.create({
+      await db.auditLog.create({
         data: {
           action: "UPDATE",
           entityType: "Document",

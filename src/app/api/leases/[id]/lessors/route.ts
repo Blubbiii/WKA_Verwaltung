@@ -17,7 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -61,10 +61,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -117,11 +118,12 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const data = putSchema.parse(await request.json());
 
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, lessorId: true, _count: { select: { lessorShares: true } } },
     });
@@ -149,7 +151,7 @@ export async function PUT(
       }
 
       const personIds = [...new Set(shares.map((s) => s.personId))];
-      const found = await prisma.person.count({
+      const found = await db.person.count({
         where: { id: { in: personIds }, tenantId: check.tenantId! },
       });
       if (found !== personIds.length) {
@@ -159,7 +161,7 @@ export async function PUT(
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Ersetzen statt abgleichen: der Satz wird als Ganzes geprüft und als
       // Ganzes gespeichert. Ein Teilabgleich könnte einen Zwischenstand
       // erzeugen, der die 100-%-Regel verletzt.

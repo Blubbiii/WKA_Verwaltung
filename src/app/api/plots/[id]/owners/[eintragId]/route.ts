@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -39,7 +39,7 @@ async function gehoertZumMandanten(
   plotId: string,
   tenantId: string,
 ): Promise<boolean> {
-  const eintrag = await prisma.plotOwner.findFirst({
+  const eintrag = await mandantDb(tenantId).plotOwner.findFirst({
     where: { id: eintragId, plotId, plot: { tenantId } },
     select: { id: true },
   });
@@ -53,6 +53,7 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id, eintragId } = await params;
 
@@ -78,7 +79,7 @@ export async function PATCH(
     // Nur ausdruecklich mitgeschickte Felder anfassen. Ein fehlendes Feld
     // heisst "nicht aendern", ein null heisst "leeren" — deshalb `.nullish()`
     // im Schema und hier die Unterscheidung ueber `undefined`.
-    await prisma.plotOwner.update({
+    await db.plotOwner.update({
       where: { id: eintragId },
       data: {
         ...(daten.sharePercent !== undefined && {
@@ -110,6 +111,7 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id, eintragId } = await params;
 
@@ -117,7 +119,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Eintrag nicht gefunden" });
     }
 
-    await prisma.plotOwner.delete({ where: { id: eintragId } });
+    await db.plotOwner.delete({ where: { id: eintragId } });
 
     return NextResponse.json({ data: { id: eintragId } });
   } catch (error) {

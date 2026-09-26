@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { z } from "zod";
@@ -97,7 +97,7 @@ async function checkCircularReference(
   // Relevant ist jede Kante, die zum Stichtag nicht bereits abgelaufen ist
   // (`validTo IS NULL OR validTo > asOf`). Kanten mit zukuenftigem validFrom
   // werden bewusst MITgezaehlt: sie werden aktiv, bevor der Zyklus auffiele.
-  const cycleRows = await prisma.$queryRaw<Array<{ path: string[] }>>`
+  const cycleRows = await mandantDb(tenantId).$queryRaw<Array<{ path: string[] }>>`
     WITH RECURSIVE ancestors AS (
       SELECT
         h."parentFundId" AS ancestor_id,
@@ -131,7 +131,7 @@ async function checkCircularReference(
   // Path aus dem CTE enthaelt Fund-IDs — fuer die Fehlermeldung uebersetzen
   // wir sie in Fund-Namen.
   const pathIds = cycleRows[0].path;
-  const funds = await prisma.fund.findMany({
+  const funds = await mandantDb(tenantId).fund.findMany({
     where: { id: { in: pathIds } },
     select: { id: true, name: true },
   });
@@ -150,6 +150,7 @@ export async function GET(request: NextRequest) {
     // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // URL-Parameter extrahieren
     const { searchParams } = new URL(request.url);
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
 
     // Parallele Abfragen: Daten + Gesamtanzahl
     const [hierarchies, total] = await Promise.all([
-      prisma.fundHierarchy.findMany({
+      db.fundHierarchy.findMany({
         where,
         include: {
           parentFund: {
@@ -214,7 +215,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.fundHierarchy.count({ where }),
+      db.fundHierarchy.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -242,12 +243,13 @@ export async function POST(request: NextRequest) {
     // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:create", "funds:update"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData: FundHierarchyCreateInput = fundHierarchyCreateSchema.parse(body);
 
     // Validierung: Parent Fund existiert und gehoert zum Tenant
-    const parentFund = await prisma.fund.findFirst({
+    const parentFund = await db.fund.findFirst({
       where: {
         id: validatedData.parentFundId,
         tenantId: check.tenantId!,
@@ -264,7 +266,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validierung: Child Fund existiert und gehoert zum Tenant
-    const childFund = await prisma.fund.findFirst({
+    const childFund = await db.fund.findFirst({
       where: {
         id: validatedData.childFundId,
         tenantId: check.tenantId!,
@@ -291,7 +293,7 @@ export async function POST(request: NextRequest) {
 
     let hierarchy;
     try {
-      hierarchy = await prisma.$transaction(
+      hierarchy = await db.$transaction(
         async (tx) => {
           // Zyklus-Check (nutzt weiterhin die Helfer-Fkt., die auf prisma
           // zugreift — akzeptabel, da innerhalb der TX Serializable die

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -117,7 +118,7 @@ export async function GET(request: NextRequest) {
     let nextCursor: string | null = null;
 
     if (useCursor) {
-      const rows = await prisma.document.findMany({
+      const rows = await db.document.findMany({
         where: whereConditions,
         include,
         orderBy,
@@ -130,14 +131,14 @@ export async function GET(request: NextRequest) {
       nextCursor = hasMore ? documents[documents.length - 1].id : null;
     } else {
       const [docs, count] = await Promise.all([
-        prisma.document.findMany({
+        db.document.findMany({
           where: whereConditions,
           include,
           orderBy,
           skip: offset,
           take: limit,
         }),
-        prisma.document.count({ where: whereConditions }),
+        db.document.count({ where: whereConditions }),
       ]);
       documents = docs;
       total = count;

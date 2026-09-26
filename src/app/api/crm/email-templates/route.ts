@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -43,10 +43,11 @@ export async function GET() {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
-    const templates = await prisma.emailTemplate.findMany({
+    const templates = await db.emailTemplate.findMany({
       where: { tenantId: check.tenantId!, category: "CRM" },
       orderBy: { name: "asc" },
     });
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const template = await prisma.emailTemplate.create({
+    const template = await db.emailTemplate.create({
       data: {
         tenantId: check.tenantId!,
         name: parsed.data.name,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
@@ -17,6 +17,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -30,7 +31,7 @@ export async function POST(
     const body = rumpf.daten;
 
     // Rechnung laden mit allen Relationen für PDF und E-Mail-Ermittlung
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, ...(check.tenantId ? { tenantId: check.tenantId } : {}) },
       include: {
         items: { orderBy: { position: "asc" } },
@@ -101,7 +102,7 @@ export async function POST(
     }
 
     // Rechnung aktualisieren: E-Mail-Tracking + ggf. Status auf SENT setzen
-    await prisma.invoice.update({
+    await db.invoice.update({
       where: { id, tenantId: check.tenantId!},
       data: {
         emailedAt: new Date(),

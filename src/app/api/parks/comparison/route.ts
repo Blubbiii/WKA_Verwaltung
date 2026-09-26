@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkIdsParam = searchParams.get("parkIds") ?? "";
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Parks (mit Tenant-Filter) laden
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: {
         id: { in: parkIds },
         tenantId: check.tenantId,
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     // groupBy mit Filter über Relation gibt's nicht direkt — wir bauen pro Park.
     const result = await Promise.all(
       parks.map(async (park) => {
-        const grouped = await prisma.turbineProduction.groupBy({
+        const grouped = await db.turbineProduction.groupBy({
           by: ["month"],
           where: {
             tenantId: check.tenantId!,

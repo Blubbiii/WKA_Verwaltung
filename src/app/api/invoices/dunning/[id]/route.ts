@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 // GET /api/invoices/dunning/[id] — Get dunning run with items
 export async function GET(
@@ -12,10 +12,11 @@ export async function GET(
   try {
     const check = await requirePermission("accounting:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const run = await prisma.dunningRun.findFirst({
+    const run = await db.dunningRun.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         createdBy: { select: { firstName: true, lastName: true } },

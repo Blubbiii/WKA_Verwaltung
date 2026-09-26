@@ -120,6 +120,7 @@ Das native Feld ist tastaturfreundlich, kennt keine Zeitzonen-Fallstricke und br
 - **Bestehende**: umstellen, wenn du eh in der Datei arbeitest; danach `OBERGRENZE` in `src/lib/mandant/sperrklinke.test.ts` senken.
 - `prisma` direkt nur für bewusst mandantenübergreifende Arbeit (Superadmin, Worker, Cron, Login).
 - Rohes SQL (`$queryRaw`) filtert `mandantDb` nicht — dort den Mandanten selbst als Parameter führen.
+- Fremdschlüssel beim Anlegen (`parkId`, `fundId` …) prüft `mandantDb` nicht — den Zieldatensatz vorher mit `db.park.findFirst({ where: { id } })` laden, sonst zeigt ein neuer Datensatz auf einen fremden Mandanten.
 
 ## Weitere verbindliche Konventionen
 

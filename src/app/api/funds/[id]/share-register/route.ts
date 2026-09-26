@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -30,6 +30,7 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -45,7 +46,7 @@ export async function GET(
       ? new Date(`${dateParam}T00:00:00.000Z`)
       : new Date(heuteKalendertag() + "T00:00:00.000Z");
 
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,

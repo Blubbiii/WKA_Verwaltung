@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -20,13 +20,14 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
     // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
     // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -39,7 +40,7 @@ export async function GET(
     }
 
     // Hole alle Dokumente die mit diesem Vertrag verknuepft sind
-    const documents = await prisma.document.findMany({
+    const documents = await db.document.findMany({
       where: {
         contractId: id,
         tenantId: check.tenantId,
@@ -93,13 +94,14 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
     // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
     // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -115,7 +117,7 @@ export async function POST(
     const { documentId } = linkDocumentSchema.parse(body);
 
     // Pruefe ob das Dokument existiert und zum selben Tenant gehoert
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id: documentId,
         tenantId: check.tenantId,
@@ -132,7 +134,7 @@ export async function POST(
     }
 
     // Verknuepfe das Dokument mit dem Vertrag
-    const updatedDocument = await prisma.document.update({
+    const updatedDocument = await db.document.update({
       where: { id: documentId },
       data: { contractId: id },
       select: {
@@ -181,6 +183,7 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -195,7 +198,7 @@ export async function DELETE(
     // Pruefe ob der Vertrag existiert und zum Tenant gehoert
     // F3: soft-deleted Verträge sind hier nicht mehr sichtbar (Verknuepfung erfordert
     // aktiven Vertrag; Aufbewahrung passiert weiter via deletedAt).
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -208,7 +211,7 @@ export async function DELETE(
     }
 
     // Pruefe ob das Dokument mit diesem Vertrag verknuepft ist
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id: documentId,
         contractId: id,
@@ -221,7 +224,7 @@ export async function DELETE(
     }
 
     // Entferne die Verknuepfung (setze contractId auf null)
-    await prisma.document.update({
+    await db.document.update({
       where: { id: documentId },
       data: { contractId: null },
     });

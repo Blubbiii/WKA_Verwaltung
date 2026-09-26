@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
-import { serializePrisma } from "@/lib/serialize";
+import { serializePrisma } from "@/lib/serialize";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
@@ -36,6 +37,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("vendors:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
 
@@ -57,7 +59,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [vendors, total] = await Promise.all([
-      prisma.vendor.findMany({
+      db.vendor.findMany({
         where,
         include: {
           person: { select: { id: true, firstName: true, lastName: true, companyName: true } },
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.vendor.count({ where }),
+      db.vendor.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -84,6 +86,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("vendors:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
 
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     const d = parsed.data;
-    const vendor = await prisma.vendor.create({
+    const vendor = await db.vendor.create({
       data: {
         tenantId: check.tenantId!,
         name: d.name,

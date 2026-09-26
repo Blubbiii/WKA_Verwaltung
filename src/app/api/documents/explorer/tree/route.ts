@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
 import type { FolderNode, YearNode, CategoryNode } from "@/types/document-explorer";
@@ -12,20 +12,21 @@ export async function GET() {
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
     // Load all data in parallel
     const [documents, invoices, parks] = await Promise.all([
-      prisma.document.findMany({
+      db.document.findMany({
         where: { tenantId },
         select: { id: true, parkId: true, category: true, createdAt: true },
       }),
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: { tenantId, pdfUrl: { not: null } },
         select: { id: true, parkId: true, invoiceDate: true },
       }),
-      prisma.park.findMany({
+      db.park.findMany({
         where: { tenantId },
         select: { id: true, name: true, shortName: true },
       }),

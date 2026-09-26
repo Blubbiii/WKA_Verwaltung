@@ -3,7 +3,7 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { findDunningCandidates, executeDunningRun } from "@/lib/mahnwesen/dunning";
 import { z } from "zod";
 
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("accounting:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const mode = searchParams.get("mode"); // "candidates" or default (list runs)
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: candidates });
     }
 
-    const runs = await prisma.dunningRun.findMany({
+    const runs = await db.dunningRun.findMany({
       where: { tenantId: check.tenantId! },
       orderBy: { runDate: "desc" },
       take: 50,

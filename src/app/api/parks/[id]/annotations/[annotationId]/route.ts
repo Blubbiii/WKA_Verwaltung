@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -24,6 +24,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: parkId, annotationId } = await params;
     const body = await request.json();
@@ -33,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
     const { name, type, geometry, style, description } = parsed.data;
 
-    const existing = await prisma.mapAnnotation.findFirst({
+    const existing = await db.mapAnnotation.findFirst({
       where: { id: annotationId, tenantId: check.tenantId!, parkId },
     });
 
@@ -49,7 +50,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (style !== undefined) updateData.style = style;
     if (description !== undefined) updateData.description = description?.trim() || null;
 
-    const updated = await prisma.mapAnnotation.update({
+    const updated = await db.mapAnnotation.update({
       where: { id: annotationId, tenantId: check.tenantId! },
       data: updateData,
     });
@@ -69,10 +70,11 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: parkId, annotationId } = await params;
 
-    const existing = await prisma.mapAnnotation.findFirst({
+    const existing = await db.mapAnnotation.findFirst({
       where: { id: annotationId, tenantId: check.tenantId!, parkId },
     });
 
@@ -80,7 +82,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       return apiError("NOT_FOUND", undefined, { message: "Annotation nicht gefunden" });
     }
 
-    await prisma.mapAnnotation.delete({ where: { id: annotationId, tenantId: check.tenantId! } });
+    await db.mapAnnotation.delete({ where: { id: annotationId, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma, ContactRole } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     if (entityType) where.entityType = entityType;
     if (entityId) where.entityId = entityId;
 
-    const links = await prisma.contactLink.findMany({
+    const links = await db.contactLink.findMany({
       where,
       include: {
         person: {
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -90,7 +92,7 @@ export async function POST(request: NextRequest) {
     const d = parsed.data;
 
     // Verify person belongs to tenant
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: { id: d.personId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const link = await prisma.contactLink.create({
+      const link = await db.contactLink.create({
         data: {
           tenantId: check.tenantId!,
           personId: d.personId,
@@ -148,30 +150,31 @@ async function verifyEntity(
   entityId: string,
   tenantId: string,
 ): Promise<boolean> {
+  const db = mandantDb(tenantId);
   switch (entityType) {
     case "PARK": {
-      const r = await prisma.park.findFirst({
+      const r = await db.park.findFirst({
         where: { id: entityId, tenantId },
         select: { id: true },
       });
       return !!r;
     }
     case "FUND": {
-      const r = await prisma.fund.findFirst({
+      const r = await db.fund.findFirst({
         where: { id: entityId, tenantId },
         select: { id: true },
       });
       return !!r;
     }
     case "LEASE": {
-      const r = await prisma.lease.findFirst({
+      const r = await db.lease.findFirst({
         where: { id: entityId, tenantId, deletedAt: null },
         select: { id: true },
       });
       return !!r;
     }
     case "CONTRACT": {
-      const r = await prisma.contract.findFirst({
+      const r = await db.contract.findFirst({
         where: { id: entityId, tenantId, deletedAt: null },
         select: { id: true },
       });

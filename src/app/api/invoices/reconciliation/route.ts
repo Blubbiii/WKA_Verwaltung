@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
     // Permission check: user needs invoices:read or leases:read
     const check = await requirePermission(["invoices:read", "leases:read"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
       ...(parkId && { parkId }),
     };
 
-    const leaseRevenueSettlements = await prisma.leaseRevenueSettlement.findMany({
+    const leaseRevenueSettlements = await db.leaseRevenueSettlement.findMany({
       where: leaseSettlementWhere,
       include: {
         park: {
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
       ...(parkId && { parkId }),
     };
 
-    const settlementPeriods = await prisma.leaseSettlementPeriod.findMany({
+    const settlementPeriods = await db.leaseSettlementPeriod.findMany({
       where: periodWhere,
       include: {
         park: { select: { id: true, name: true } },
@@ -190,7 +191,7 @@ export async function GET(request: NextRequest) {
       ...(parkId && { parkId }),
     };
 
-    const allInvoices = await prisma.invoice.findMany({
+    const allInvoices = await db.invoice.findMany({
       where: invoiceWhere,
       select: {
         id: true,

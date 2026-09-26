@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateSettlementInvoices } from "@/lib/lease-revenue/invoice-generator";
@@ -18,11 +18,12 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Load settlement and verify ownership + status
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         items: true,

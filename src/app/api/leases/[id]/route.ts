@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { logDeletion } from "@/lib/audit";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { z } from "zod";
@@ -45,10 +45,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const lease = await prisma.lease.findFirst({
+    const lease = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -110,11 +111,12 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify lease exists and belongs to tenant
-    const existingLease = await prisma.lease.findFirst({
+    const existingLease = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -226,7 +228,7 @@ export async function PATCH(
     }
 
     // Response: aktuellen Zustand inkl. Relations laden (nach dem TX).
-    const lease = await prisma.lease.findUnique({
+    const lease = await db.lease.findUnique({
       where: { id },
       include: {
         leasePlots: {
@@ -278,11 +280,12 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Before delete, get the full data for audit log
-    const leaseToDelete = await prisma.lease.findFirst({
+    const leaseToDelete = await db.lease.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -298,7 +301,7 @@ export async function DELETE(
     // F4-Compliance: Soft-Delete statt Hard-Delete. Pachtverträge unterliegen
     // §147 AO Aufbewahrungspflicht — Datensatz bleibt in der DB, wird aber aus
     // aktiven Views durch deletedAt-Filter ausgeblendet.
-    await prisma.lease.update({
+    await db.lease.update({
       where: { id, tenantId: check.tenantId! },
       data: { deletedAt: new Date() },
     });

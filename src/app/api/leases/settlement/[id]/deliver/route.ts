@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { sendEmailSync } from "@/lib/email/sender";
@@ -41,6 +42,7 @@ export async function POST(
     if (!check.tenantId) {
       return apiError("MISSING_FIELD", 403, { message: "Tenant-Kontext fehlt" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -52,7 +54,7 @@ export async function POST(
     const { method, invoiceIds } = parsed.data;
 
     // Load settlement with all items that have invoices
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: { id, tenantId: check.tenantId },
       include: {
         items: {

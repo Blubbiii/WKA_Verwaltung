@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiError } from "@/lib/api-errors";
@@ -29,12 +29,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = bulkSchema.parse(body);
 
     // Verify all plots belong to tenant
-    const plotCount = await prisma.plot.count({
+    const plotCount = await db.plot.count({
       where: {
         id: { in: parsed.plotIds },
         tenantId: check.tenantId,
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     if (parsed.action === "assignLease") {
       // Verify lease exists and belongs to tenant
-      const lease = await prisma.lease.findFirst({
+      const lease = await db.lease.findFirst({
         where: { id: parsed.data.leaseId, tenantId: check.tenantId },
       });
       if (!lease) {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Batch: fetch existing relations, create only missing ones
-      await prisma.$transaction(async (tx) => {
+      await db.$transaction(async (tx) => {
         const existing = await tx.leasePlot.findMany({
           where: {
             leaseId: parsed.data.leaseId,
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (parsed.action === "updateAreaType") {
       // Batch: fetch existing, split into create/update
-      await prisma.$transaction(async (tx) => {
+      await db.$transaction(async (tx) => {
         const existing = await tx.plotArea.findMany({
           where: {
             plotId: { in: parsed.plotIds },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
@@ -62,7 +63,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     };
 
     const [persons, total] = await Promise.all([
-      prisma.person.findMany({
+      db.person.findMany({
         where,
         include: {
           _count: {
@@ -77,7 +78,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
         skip,
         take: limit,
       }),
-      prisma.person.count({ where }),
+      db.person.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -100,6 +101,7 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = personCreateSchema.parse(body);
@@ -115,7 +117,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
       }
     }
 
-    const person = await prisma.person.create({
+    const person = await db.person.create({
       data: {
         ...validatedData,
         email: validatedData.email || null,

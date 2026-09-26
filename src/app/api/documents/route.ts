@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { DocumentCategory, DocumentApprovalStatus } from "@prisma/client";
 import { uploadFile, ensureBucket } from "@/lib/storage";
 import {
@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [documents, total] = await Promise.all([
-      prisma.document.findMany({
+      db.document.findMany({
         where,
         include: {
           park: {
@@ -155,11 +156,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.document.count({ where }),
+      db.document.count({ where }),
     ]);
 
     // Get category counts
-    const categoryCounts = await prisma.document.groupBy({
+    const categoryCounts = await db.document.groupBy({
       by: ["category"],
       where: {
         tenantId: check.tenantId,
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get approval status counts
-    const approvalStatusCounts = await prisma.document.groupBy({
+    const approvalStatusCounts = await db.document.groupBy({
       by: ["approvalStatus"],
       where: {
         tenantId: check.tenantId,
@@ -292,6 +293,7 @@ async function handleFileUpload(
   tenantId: string,
   userId: string | undefined
 ) {
+  const db = mandantDb(tenantId);
   // Stelle sicher dass der Bucket existiert
   try {
     await ensureBucket();
@@ -383,7 +385,7 @@ async function handleFileUpload(
   if (parentEntityType && parentEntityId) {
     if (parentEntityType === "Contract") {
       // Verify the contract exists and belongs to this tenant
-      const contract = await prisma.contract.findFirst({
+      const contract = await db.contract.findFirst({
         where: { id: parentEntityId, tenantId },
         select: { id: true },
       });
@@ -398,7 +400,7 @@ async function handleFileUpload(
     if (parentEntityType === "Lease") {
       // Verify the lease exists and belongs to this tenant to prevent
       // cross-tenant tag injection.
-      const lease = await prisma.lease.findFirst({
+      const lease = await db.lease.findFirst({
         where: { id: parentEntityId, tenantId },
         select: { id: true },
       });
@@ -457,7 +459,7 @@ async function handleFileUpload(
   // Bestimme Versionsnummer
   let version = 1;
   if (parentId) {
-    const latestVersion = await prisma.document.findFirst({
+    const latestVersion = await db.document.findFirst({
       where: {
         OR: [
           { id: parentId },
@@ -481,7 +483,7 @@ async function handleFileUpload(
   }
 
   // Erstelle Datenbank-Eintrag + Storage-Tracking atomar in einer Transaktion
-  const document = await prisma.$transaction(async (tx) => {
+  const document = await db.$transaction(async (tx) => {
     const doc = await tx.document.create({
       data: {
         title,
@@ -547,18 +549,19 @@ async function handleJsonCreate(
   tenantId: string,
   userId: string | undefined
 ) {
+  const db = mandantDb(tenantId);
   const body = await request.json();
   const validatedData = documentCreateSchema.parse(body);
 
   // If this is a new version, get the current latest version number
   let version = 1;
   if (validatedData.parentId) {
-    const parent = await prisma.document.findUnique({
+    const parent = await db.document.findUnique({
       where: { id: validatedData.parentId },
     });
     if (parent) {
       // Get the highest version in this document's version chain
-      const latestVersion = await prisma.document.findFirst({
+      const latestVersion = await db.document.findFirst({
         where: {
           OR: [
             { id: validatedData.parentId },
@@ -583,7 +586,7 @@ async function handleJsonCreate(
   }
 
   // Erstelle Dokument + Storage-Tracking atomar in einer Transaktion
-  const document = await prisma.$transaction(async (tx) => {
+  const document = await db.$transaction(async (tx) => {
     const doc = await tx.document.create({
       data: {
         title: validatedData.title,

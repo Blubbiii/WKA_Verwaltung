@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -47,7 +48,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
     };
 
     const [votes, total] = await Promise.all([
-      prisma.vote.findMany({
+      db.vote.findMany({
         where,
         include: {
           fund: {
@@ -70,12 +71,12 @@ const check = await requirePermission(PERMISSIONS.VOTES_READ);
         skip,
         take: limit,
       }),
-      prisma.vote.count({ where }),
+      db.vote.count({ where }),
     ]);
 
     // Batch-fetch eligible voter counts for all fund IDs at once (avoids N+1)
     const uniqueFundIds = [...new Set(votes.map((v) => v.fundId))];
-    const eligibleVoterCounts = await prisma.shareholder.groupBy({
+    const eligibleVoterCounts = await db.shareholder.groupBy({
       by: ["fundId"],
       where: {
         fundId: { in: uniqueFundIds },
@@ -140,12 +141,13 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = voteCreateSchema.parse(body);
 
     // Verify fund belongs to tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: validatedData.fundId,
         tenantId: check.tenantId,
@@ -156,7 +158,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_CREATE);
       return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
-    const vote = await prisma.vote.create({
+    const vote = await db.vote.create({
       data: {
         title: validatedData.title,
         description: validatedData.description,

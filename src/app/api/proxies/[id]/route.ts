@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -20,10 +20,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const proxy = await prisma.voteProxy.findFirst({
+    const proxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -97,10 +98,11 @@ export async function PUT(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingProxy = await prisma.voteProxy.findFirst({
+    const existingProxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -122,7 +124,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     }
     const { isActive, validUntil, documentUrl } = parsed.data;
 
-    const proxy = await prisma.voteProxy.update({
+    const proxy = await db.voteProxy.update({
       where: { id },
       data: {
         ...(isActive !== undefined && { isActive }),
@@ -148,10 +150,11 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingProxy = await prisma.voteProxy.findFirst({
+    const existingProxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -166,7 +169,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
       return apiError("NOT_FOUND", 404, { message: "Vollmacht nicht gefunden" });
     }
 
-    await prisma.voteProxy.delete({
+    await db.voteProxy.delete({
       where: { id },
     });
 

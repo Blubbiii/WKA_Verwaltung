@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { isSkontoValid } from "@/lib/invoices/skonto";
 import { z } from "zod";
@@ -37,6 +37,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -72,7 +73,7 @@ export async function POST(
       request,
       check.tenantId!,
       async () => {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await db.invoice.findUnique({
       where: { id },
       select: {
         id: true,
@@ -164,7 +165,7 @@ export async function POST(
       });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await db.$transaction(async (tx) => {
       await recordPayment(tx, {
         tenantId: check.tenantId!,
         invoiceId: id,

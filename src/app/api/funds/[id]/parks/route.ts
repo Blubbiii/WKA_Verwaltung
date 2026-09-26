@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -21,11 +21,12 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.FUNDS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id: fundId } = await params;
 
     // Verify fund belongs to tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: fundId,
         tenantId: check.tenantId,
@@ -36,7 +37,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_READ);
       return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
-    const fundParks = await prisma.fundPark.findMany({
+    const fundParks = await db.fundPark.findMany({
       where: { fundId },
       include: {
         park: {
@@ -66,11 +67,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id: fundId } = await params;
 
     // Verify fund belongs to tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: fundId,
         tenantId: check.tenantId,
@@ -85,7 +87,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     const validatedData = fundParkSchema.parse(body);
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validatedData.parkId,
         tenantId: check.tenantId,
@@ -97,7 +99,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     }
 
     // Check if already linked
-    const existing = await prisma.fundPark.findUnique({
+    const existing = await db.fundPark.findUnique({
       where: {
         fundId_parkId: {
           fundId,
@@ -110,7 +112,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
       return apiError("BAD_REQUEST", undefined, { message: "Park ist bereits dieser Gesellschaft zugeordnet" });
     }
 
-    const fundPark = await prisma.fundPark.create({
+    const fundPark = await db.fundPark.create({
       data: {
         fundId,
         parkId: validatedData.parkId,
@@ -143,6 +145,7 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id: fundId } = await params;
     const { searchParams } = new URL(request.url);
@@ -153,7 +156,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     }
 
     // Verify fund belongs to tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: fundId,
         tenantId: check.tenantId,
@@ -164,7 +167,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
       return apiError("NOT_FOUND", undefined, { message: "Gesellschaft nicht gefunden" });
     }
 
-    await prisma.fundPark.delete({
+    await db.fundPark.delete({
       where: {
         fundId_parkId: {
           fundId,

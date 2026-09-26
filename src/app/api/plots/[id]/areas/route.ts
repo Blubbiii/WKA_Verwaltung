@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -27,11 +27,12 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify plot belongs to tenant via park
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: {
         id,
         park: {
@@ -44,7 +45,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_READ);
       return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
-    const areas = await prisma.plotArea.findMany({
+    const areas = await db.plotArea.findMany({
       where: { plotId: id },
       orderBy: { areaType: "asc" },
     });
@@ -64,11 +65,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify plot belongs to tenant
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: {
         id,
         park: {
@@ -84,7 +86,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     const body = await request.json();
     const validatedData = plotAreaSchema.parse(body);
 
-    const area = await prisma.plotArea.create({
+    const area = await db.plotArea.create({
       data: {
         ...validatedData,
         plotId: id,
@@ -105,11 +107,12 @@ export async function PUT(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify plot belongs to tenant
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: {
         id,
         park: {
@@ -126,7 +129,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     const validatedAreas = plotAreasArraySchema.parse(body);
 
     // Replace all areas in a transaction
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await tx.plotArea.deleteMany({
         where: { plotId: id },
       });
@@ -141,7 +144,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
       }
     });
 
-    const areas = await prisma.plotArea.findMany({
+    const areas = await db.plotArea.findMany({
       where: { plotId: id },
       orderBy: { areaType: "asc" },
     });

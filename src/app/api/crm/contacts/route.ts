@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [persons, total] = await Promise.all([
-      prisma.person.findMany({
+      db.person.findMany({
         where,
         select: {
           id: true,
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.person.count({ where }),
+      db.person.count({ where }),
     ]);
 
     // Enrich with label bundle (derived + custom + context numbers)
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("crm:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const person = await prisma.person.create({
+    const person = await db.person.create({
       data: {
         tenantId: check.tenantId!,
         personType: d.personType,

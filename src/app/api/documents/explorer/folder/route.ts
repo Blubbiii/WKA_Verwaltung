@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
 import { CATEGORY_LABELS } from "@/types/document-explorer";
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId") || null;
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     // Get park name for folder path
     let parkName = "Ohne Zuordnung";
     if (parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: parkId, tenantId: check.tenantId },
         select: { name: true, shortName: true },
       });
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
       };
 
       const [invoices, count] = await Promise.all([
-        prisma.invoice.findMany({
+        db.invoice.findMany({
           where,
           select: {
             id: true,
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
           skip,
           take: limit,
         }),
-        prisma.invoice.count({ where }),
+        db.invoice.count({ where }),
       ]);
 
       data = invoices.map((inv) => ({
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
       };
 
       const [documents, count] = await Promise.all([
-        prisma.document.findMany({
+        db.document.findMany({
           where,
           select: {
             id: true,
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
           skip,
           take: limit,
         }),
-        prisma.document.count({ where }),
+        db.document.count({ where }),
       ]);
 
       data = documents.map((doc) => ({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import {
   generateXRechnungXml,
@@ -32,6 +32,7 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -45,7 +46,7 @@ export async function GET(
     }
 
     // Load invoice with all relations needed for XML generation
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, deletedAt: null },
       include: {
         items: {
@@ -155,7 +156,7 @@ export async function GET(
 
     // Cache the generated XML in the database
     try {
-      await prisma.invoice.update({
+      await db.invoice.update({
         where: { id, tenantId: check.tenantId!},
         data: {
           einvoiceXml: xml,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import {
   startOfYear,
@@ -152,6 +152,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const year = parseInt(searchParams.get("year") || new Date().getFullYear().toString(), 10);
@@ -165,7 +166,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_READ);
     const today = new Date();
 
     // Fetch all active leases with their plots and invoices
-    const leases = await prisma.lease.findMany({
+    const leases = await db.lease.findMany({
       where: {
         tenantId: check.tenantId,
         ...(leaseId ? { id: leaseId } : {}),

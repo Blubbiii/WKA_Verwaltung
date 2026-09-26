@@ -135,7 +135,7 @@ describe("Pacht-Assistent legt alles in einer Transaktion an (#21)", () => {
   it("alles laeuft in EINER Transaktion", () => {
     // Person, Flurstuecke und Vertrag im selben $transaction-Block — faellt
     // etwas um, faellt alles um.
-    const tx = route.slice(route.indexOf("await prisma.$transaction(async (tx)"));
+    const tx = route.slice(route.search(/await (prisma|db)\.\$transaction\(async \(tx\)/));
     expect(tx).toContain("tx.person.create(");
     expect(tx).toContain("tx.plot.create(");
     expect(tx).toContain("tx.lease.create(");

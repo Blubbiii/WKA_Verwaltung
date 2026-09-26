@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
@@ -28,10 +29,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -98,11 +100,12 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Load shareholder with person and fund relations
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -143,7 +146,8 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: "Die Kontaktperson hat keine E-Mail-Adresse. Bitte zuerst eine E-Mail-Adresse hinterlegen." });
     }
 
-    // Check if a user with this email already exists
+    // Check if a user with this email already exists — globally on purpose:
+    // e-mail addresses are unique across all tenants.
     const existingUser = await prisma.user.findUnique({
       where: { email: shareholder.person.email },
       select: { id: true },
@@ -154,7 +158,7 @@ export async function POST(
     }
 
     // Find the Portal-Benutzer system role
-    const portalRole = await prisma.role.findFirst({
+    const portalRole = await db.role.findFirst({
       where: {
         name: "Portal-Benutzer",
         isSystem: true,
@@ -188,7 +192,7 @@ export async function POST(
       "Portal-Benutzer";
 
     // Execute everything in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // 1. Create the user account
       const newUser = await tx.user.create({
         data: {
@@ -319,10 +323,11 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -350,7 +355,7 @@ export async function DELETE(
     const userId = shareholder.userId;
 
     // Find the Portal-Benutzer role to remove its assignment
-    const portalRole = await prisma.role.findFirst({
+    const portalRole = await db.role.findFirst({
       where: {
         name: "Portal-Benutzer",
         isSystem: true,
@@ -358,7 +363,7 @@ export async function DELETE(
     });
 
     // Execute in a transaction
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Unlink shareholder from user
       await tx.shareholder.update({
         where: { id: shareholder.id },

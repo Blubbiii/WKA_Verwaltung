@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { erlaubteParks } from "@/lib/auth/park-access";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { parsePaginationParams, parseSortParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { withMonitoring } from "@/lib/monitoring";
@@ -60,6 +60,7 @@ async function getHandler(request: NextRequest) {
   try {
     const check = await requirePermissionWithResources(PERMISSIONS.PARKS_READ, "Park");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
@@ -103,7 +104,7 @@ async function getHandler(request: NextRequest) {
     // es 93 waren — die Zahl war exakt die Seitengroesse. Wer die Kennzahl
     // liest, glaubt seinen Bestand zu sehen; er sieht seine Seitengroesse.
     const [parks, total, gesamtAnlagen, gesamtLeistung, gesamtAktiv] = await Promise.all([
-      prisma.park.findMany({
+      db.park.findMany({
         where,
         include: {
           turbines: {
@@ -125,17 +126,17 @@ async function getHandler(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.park.count({ where }),
+      db.park.count({ where }),
       // Nur echte Anlagen (WEA). Virtuelle Geraete sind Geraete, keine
       // Anlagen — siehe lib/turbines/real-turbines.ts.
-      prisma.turbine.count({
+      db.turbine.count({
         where: { park: where, deviceType: "WEA" },
       }),
-      prisma.turbine.aggregate({
+      db.turbine.aggregate({
         where: { park: where, deviceType: "WEA", status: "ACTIVE" },
         _sum: { ratedPowerKw: true },
       }),
-      prisma.park.count({ where: { ...where, status: "ACTIVE" } }),
+      db.park.count({ where: { ...where, status: "ACTIVE" } }),
     ]);
 
     // Berechne aggregierte Werte
@@ -195,6 +196,7 @@ async function postHandler(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.PARKS_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = parkCreateSchema.parse(body);
@@ -208,7 +210,7 @@ async function postHandler(request: NextRequest) {
     ];
     for (const [field, fundId] of fundIdsToVerify) {
       if (!fundId) continue;
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: { id: fundId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -220,7 +222,7 @@ async function postHandler(request: NextRequest) {
     }
 
     // Create park and virtual infrastructure turbines atomically
-    const park = await prisma.$transaction(async (tx) => {
+    const park = await db.$transaction(async (tx) => {
       const newPark = await tx.park.create({
         data: {
           ...validatedData,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
 import { getFileBuffer } from "@/lib/storage";
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const data = downloadSchema.parse(body);
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     // Get park name helper
     const getParkName = async (parkId: string | null): Promise<string> => {
       if (!parkId) return "Ohne Zuordnung";
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: parkId, tenantId },
         select: { shortName: true, name: true },
       });
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (data.documentIds?.length || data.invoiceIds?.length) {
       // Option A: Specific files by ID
       if (data.documentIds?.length) {
-        const docs = await prisma.document.findMany({
+        const docs = await db.document.findMany({
           where: { id: { in: data.documentIds }, tenantId },
           select: { fileName: true, fileUrl: true, category: true, createdAt: true, park: { select: { shortName: true, name: true } } },
         });
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
         }
       }
       if (data.invoiceIds?.length) {
-        const invs = await prisma.invoice.findMany({
+        const invs = await db.invoice.findMany({
           where: { id: { in: data.invoiceIds }, tenantId, pdfUrl: { not: null } },
           select: { invoiceNumber: true, pdfUrl: true, invoiceDate: true, park: { select: { shortName: true, name: true } } },
         });
@@ -88,7 +89,7 @@ export async function POST(request: NextRequest) {
       const parkFilter = parkId ? { parkId } : {};
 
       if (!category || category !== "INVOICE_PDF") {
-        const docs = await prisma.document.findMany({
+        const docs = await db.document.findMany({
           where: {
             tenantId,
             ...parkFilter,
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!category || category === "INVOICE_PDF") {
-        const invs = await prisma.invoice.findMany({
+        const invs = await db.invoice.findMany({
           where: { tenantId, ...parkFilter, pdfUrl: { not: null }, invoiceDate: { gte: yearStart, lt: yearEnd } },
           select: { invoiceNumber: true, pdfUrl: true },
           take: MAX_FILES,
@@ -122,12 +123,12 @@ export async function POST(request: NextRequest) {
       const yearEnd = new Date(year + 1, 0, 1);
 
       const [docs, invs] = await Promise.all([
-        prisma.document.findMany({
+        db.document.findMany({
           where: { tenantId, parkId, createdAt: { gte: yearStart, lt: yearEnd } },
           select: { fileName: true, fileUrl: true, category: true },
           take: MAX_FILES,
         }),
-        prisma.invoice.findMany({
+        db.invoice.findMany({
           where: { tenantId, parkId, pdfUrl: { not: null }, invoiceDate: { gte: yearStart, lt: yearEnd } },
           select: { invoiceNumber: true, pdfUrl: true, invoiceType: true },
           take: MAX_FILES,

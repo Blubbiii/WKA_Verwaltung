@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Parse and validate request body
     let body: unknown;
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Batch-load all invoices upfront (single DB query instead of N queries)
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await db.invoice.findMany({
       where: {
         id: { in: uniqueIds },
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update invoice: email tracking + set status to SENT if DRAFT
-        await prisma.invoice.update({
+        await db.invoice.update({
           where: { id: invoiceId, tenantId: check.tenantId!},
           data: {
             emailedAt: new Date(),

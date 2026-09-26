@@ -4,7 +4,7 @@ import { zaehlerFuerFirma } from "@/lib/lizenz/lizenz";
 import { requirePermission, requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS, hasPermission } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermissionWithResources(PERMISSIONS.FUNDS_READ, "Fund");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       (await hasPermission(check.userId!, "crm:read"));
 
     const [funds, total, gesamtGesellschafter, gesamtKapital] = await Promise.all([
-      prisma.fund.findMany({
+      db.fund.findMany({
         where,
         include: {
           fundCategory: {
@@ -132,13 +133,13 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.fund.count({ where }),
+      db.fund.count({ where }),
       // Gesamtsummen ueber ALLE Gesellschaften des Filters, nicht ueber die
       // geladene Seite — siehe api/parks/route.ts, dort stand derselbe Fehler.
-      prisma.shareholder.count({
+      db.shareholder.count({
         where: { fund: where, status: "ACTIVE" },
       }),
-      prisma.shareholder.aggregate({
+      db.shareholder.aggregate({
         where: { fund: where, status: "ACTIVE" },
         _sum: { capitalContribution: true },
       }),
@@ -199,6 +200,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.FUNDS_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = fundCreateSchema.parse(body);
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
     // sonst kann ein Nutzer einen Fund unter fremder Kategorie einreihen.
     let kategorieCode: string | null = null;
     if (validatedData.fundCategoryId) {
-      const cat = await prisma.fundCategory.findFirst({
+      const cat = await db.fundCategory.findFirst({
         where: {
           id: validatedData.fundCategoryId,
           tenantId: check.tenantId!,
@@ -233,7 +235,7 @@ export async function POST(request: NextRequest) {
       if (lizenz) return lizenz;
     }
 
-    const fund = await prisma.fund.create({
+    const fund = await db.fund.create({
       data: {
         ...validatedData,
         foundingDate: validatedData.foundingDate

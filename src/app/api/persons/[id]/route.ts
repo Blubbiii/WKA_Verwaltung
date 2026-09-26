@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { createAuditLog, logDeletion } from "@/lib/audit";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
 import { handleApiError } from "@/lib/api-utils";
@@ -41,10 +41,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -114,10 +115,11 @@ export async function PATCH(
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingPerson = await prisma.person.findFirst({
+    const existingPerson = await db.person.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -203,10 +205,11 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingPerson = await prisma.person.findFirst({
+    const existingPerson = await db.person.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -276,7 +279,7 @@ const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     // (totalReferences > 0) verhindert das Löschen wenn Verträge/Leases/Shareholder
     // noch existieren — dort greift dann die jeweilige Aufbewahrung. Bei Bedarf
     // (Datenschutz-Wunsch nach Person-Löschung) muss das Schema erweitert werden.
-    await prisma.person.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.person.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail (deferred: runs after response is sent)
     const personSnapshot = existingPerson;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion, createAuditLog } from "@/lib/audit";
@@ -46,11 +46,12 @@ export async function GET(
     // Berechtigungsprüfung
     const check = await requirePermission(["funds:read"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Fund-Hierarchie mit allen Relationen laden
-    const hierarchy = await prisma.fundHierarchy.findUnique({
+    const hierarchy = await db.fundHierarchy.findUnique({
       where: { id },
       include: {
         parentFund: {
@@ -119,7 +120,7 @@ export async function GET(
     }
 
     // Lade auch historische Einträge für diese Beziehung
-    const historyEntries = await prisma.fundHierarchy.findMany({
+    const historyEntries = await db.fundHierarchy.findMany({
       where: {
         parentFundId: hierarchy.parentFundId,
         childFundId: hierarchy.childFundId,
@@ -161,13 +162,14 @@ export async function PATCH(
     // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:update"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = fundHierarchyUpdateSchema.parse(body);
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.fundHierarchy.findUnique({
+    const existing = await db.fundHierarchy.findUnique({
       where: { id },
       include: {
         parentFund: {
@@ -223,7 +225,7 @@ export async function PATCH(
       let isCircular = isDirectSelfReference;
 
       if (!isCircular) {
-        const cycleRows = await prisma.$queryRaw<Array<{ ancestor_id: string }>>`
+        const cycleRows = await db.$queryRaw<Array<{ ancestor_id: string }>>`
           WITH RECURSIVE ancestors AS (
             SELECT h."parentFundId" AS ancestor_id, 1 AS depth
             FROM fund_hierarchies h
@@ -258,7 +260,7 @@ export async function PATCH(
 
     // Prüfung: Gesamtanteil am Parent Fund darf nicht > 100% sein (bei Änderung des Anteils)
     if (validatedData.ownershipPercentage !== undefined) {
-      const otherHierarchies = await prisma.fundHierarchy.findMany({
+      const otherHierarchies = await db.fundHierarchy.findMany({
         where: {
           parentFundId: existing.parentFundId,
           validTo: null,
@@ -287,7 +289,7 @@ export async function PATCH(
     };
 
     // Update durchfuehren
-    const hierarchy = await prisma.fundHierarchy.update({
+    const hierarchy = await db.fundHierarchy.update({
       where: { id },
       data: {
         ...(validatedData.ownershipPercentage !== undefined && {
@@ -359,6 +361,7 @@ export async function DELETE(
     // Berechtigungsprüfung: MANAGER+ für Funds-Modul
     const check = await requirePermission(["funds:delete"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -369,7 +372,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.fundHierarchy.findUnique({
+    const existing = await db.fundHierarchy.findUnique({
       where: { id },
       include: {
         parentFund: {
@@ -394,7 +397,7 @@ export async function DELETE(
     }
 
     // Löschen
-    await prisma.fundHierarchy.delete({ where: { id } });
+    await db.fundHierarchy.delete({ where: { id } });
 
     // Audit Log (deferred: runs after response is sent)
     const deletionData = {

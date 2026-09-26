@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -75,6 +75,7 @@ async function getHandler(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const { page, limit, skip } = parsePaginationParams(searchParams, {
@@ -161,7 +162,7 @@ async function getHandler(request: NextRequest) {
     }
 
     const [contracts, total] = await Promise.all([
-      prisma.contract.findMany({
+      db.contract.findMany({
         where,
         include: {
           park: {
@@ -184,11 +185,11 @@ async function getHandler(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.contract.count({ where }),
+      db.contract.count({ where }),
     ]);
 
     // Get statistics
-    const stats = await prisma.contract.groupBy({
+    const stats = await db.contract.groupBy({
       by: ["status"],
       where: { tenantId: check.tenantId, deletedAt: null },
       _count: true,
@@ -198,7 +199,7 @@ async function getHandler(request: NextRequest) {
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + CONTRACT_WARNING_DAYS);
 
-    const expiringCount = await prisma.contract.count({
+    const expiringCount = await db.contract.count({
       where: {
         tenantId: check.tenantId,
         deletedAt: null,
@@ -271,6 +272,7 @@ async function postHandler(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = contractCreateSchema.parse(body);
@@ -278,7 +280,7 @@ async function postHandler(request: NextRequest) {
     // Cross-tenant FK protection: verify each referenced entity belongs to this tenant.
     const tenantId = check.tenantId!;
     if (validatedData.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: validatedData.parkId, tenantId },
         select: { id: true },
       });
@@ -287,7 +289,7 @@ async function postHandler(request: NextRequest) {
       }
     }
     if (validatedData.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: { id: validatedData.fundId, tenantId },
         select: { id: true },
       });
@@ -297,7 +299,7 @@ async function postHandler(request: NextRequest) {
     }
     if (validatedData.turbineId) {
       // Turbine hat kein direktes tenantId — Zugehörigkeit über park.tenantId
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: { id: validatedData.turbineId, park: { tenantId } },
         select: { id: true },
       });
@@ -306,7 +308,7 @@ async function postHandler(request: NextRequest) {
       }
     }
     if (validatedData.partnerId) {
-      const partner = await prisma.person.findFirst({
+      const partner = await db.person.findFirst({
         where: { id: validatedData.partnerId, tenantId },
         select: { id: true },
       });
@@ -328,7 +330,7 @@ async function postHandler(request: NextRequest) {
       );
     }
 
-    const contract = await prisma.contract.create({
+    const contract = await db.contract.create({
       data: {
         contractType: validatedData.contractType,
         contractNumber: validatedData.contractNumber,

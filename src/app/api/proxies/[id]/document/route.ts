@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { uploadFile, getSignedUrl, deleteFile } from "@/lib/storage";
 import { apiLogger as logger } from "@/lib/logger";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
@@ -24,11 +24,12 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade Proxy mit Tenant-Prüfung
-    const proxy = await prisma.voteProxy.findFirst({
+    const proxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -83,11 +84,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade Proxy mit Tenant-Prüfung
-    const proxy = await prisma.voteProxy.findFirst({
+    const proxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -169,7 +171,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     );
 
     // VoteProxy mit documentUrl aktualisieren
-    const updatedProxy = await prisma.voteProxy.update({
+    const updatedProxy = await db.voteProxy.update({
       where: { id },
       data: {
         documentUrl: key,
@@ -204,11 +206,12 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Lade Proxy mit Tenant-Prüfung
-    const proxy = await prisma.voteProxy.findFirst({
+    const proxy = await db.voteProxy.findFirst({
       where: {
         id,
         grantor: {
@@ -252,7 +255,7 @@ const check = await requirePermission(PERMISSIONS.VOTES_MANAGE);
     }
 
     // documentUrl auf null setzen
-    await prisma.voteProxy.update({
+    await db.voteProxy.update({
       where: { id },
       data: {
         documentUrl: null,

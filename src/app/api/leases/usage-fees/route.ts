@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { Prisma, LeaseRevenueSettlementStatus } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Parallel queries: data + total count
     const [settlements, total] = await Promise.all([
-      prisma.leaseRevenueSettlement.findMany({
+      db.leaseRevenueSettlement.findMany({
         where,
         include: {
           park: {
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.leaseRevenueSettlement.count({ where }),
+      db.leaseRevenueSettlement.count({ where }),
     ]);
 
     return NextResponse.json(
@@ -96,12 +97,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createLeaseRevenueSettlementSchema.parse(body);
 
     // Validate park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validatedData.parkId,
         tenantId: check.tenantId!,
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
     const periodType = validatedData.periodType || "FINAL";
     const monthForKey =
       validatedData.month === undefined ? null : validatedData.month;
-    const existing = await prisma.leaseRevenueSettlement.findFirst({
+    const existing = await db.leaseRevenueSettlement.findFirst({
       where: {
         tenantId: check.tenantId!,
         parkId: validatedData.parkId,
@@ -137,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create settlement with status OPEN
-    const settlement = await prisma.leaseRevenueSettlement.create({
+    const settlement = await db.leaseRevenueSettlement.create({
       data: {
         tenantId: check.tenantId!,
         parkId: validatedData.parkId,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
@@ -20,10 +20,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const settlement = await prisma.leaseRevenueSettlement.findFirst({
+    const settlement = await db.leaseRevenueSettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         park: {
@@ -151,13 +152,14 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = updateLeaseRevenueSettlementSchema.parse(body);
 
     // Check settlement exists and belongs to tenant
-    const existing = await prisma.leaseRevenueSettlement.findFirst({
+    const existing = await db.leaseRevenueSettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -197,7 +199,7 @@ export async function PUT(
       updateData.notes = validatedData.notes;
     }
 
-    const settlement = await prisma.leaseRevenueSettlement.update({
+    const settlement = await db.leaseRevenueSettlement.update({
       where: { id, tenantId: check.tenantId! },
       data: updateData,
       include: {
@@ -230,10 +232,11 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.leaseRevenueSettlement.findFirst({
+    const existing = await db.leaseRevenueSettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -256,7 +259,7 @@ export async function DELETE(
     }
 
     // Delete settlement (items cascade via onDelete: Cascade in schema)
-    await prisma.leaseRevenueSettlement.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.leaseRevenueSettlement.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail (deferred: runs after response is sent)
     const leaseSettlementDeletionData = {

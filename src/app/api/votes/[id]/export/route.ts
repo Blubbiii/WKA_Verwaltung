@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { generateVoteResultPdf } from "@/lib/pdf/generators/voteResultPdf";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -14,11 +14,12 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.VOTES_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Vote laden und prüfen
-    const vote = await prisma.vote.findFirst({
+    const vote = await db.vote.findFirst({
       where: {
         id,
         tenantId: check.tenantId,

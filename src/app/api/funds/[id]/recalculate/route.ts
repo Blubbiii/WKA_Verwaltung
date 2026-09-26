@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -14,11 +14,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id: fundId } = await params;
 
     // Verify fund belongs to tenant
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id: fundId,
         tenantId: check.tenantId,
@@ -30,7 +31,7 @@ const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     }
 
     // Atomic recalculation: read + update all shareholders in single transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const shareholders = await tx.shareholder.findMany({
         where: {
           fundId,

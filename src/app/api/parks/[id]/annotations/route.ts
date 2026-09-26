@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -25,10 +25,11 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: parkId } = await params;
 
-    const annotations = await prisma.mapAnnotation.findMany({
+    const annotations = await db.mapAnnotation.findMany({
       where: {
         tenantId: check.tenantId!,
         parkId,
@@ -62,6 +63,7 @@ export async function POST(
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: parkId } = await params;
     const body = await request.json();
@@ -71,7 +73,13 @@ export async function POST(
     }
     const { name, type, geometry, style, description } = parsed.data;
 
-    const annotation = await prisma.mapAnnotation.create({
+    // mandantDb scopes the annotation, not the park it points to.
+    const park = await db.park.findFirst({ where: { id: parkId }, select: { id: true } });
+    if (!park) {
+      return apiError("NOT_FOUND", undefined, { message: "Windpark nicht gefunden" });
+    }
+
+    const annotation = await db.mapAnnotation.create({
       data: {
         tenantId: check.tenantId!,
         parkId,

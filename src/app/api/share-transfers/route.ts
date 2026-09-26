@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -51,13 +51,14 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
     const status = searchParams.get("status");
     const limit = Math.min(Number(searchParams.get("limit")) || PAGE_SIZE_DEFAULT, 200);
 
-    const transfers = await prisma.shareTransfer.findMany({
+    const transfers = await db.shareTransfer.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(fundId ? { fundId } : {}),
@@ -85,11 +86,12 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_TRANSFER);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const data = createSchema.parse(await request.json());
     const effectiveDate = new Date(`${data.effectiveDate}T00:00:00.000Z`);
 
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id: data.fundId, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
     const consentGrantedAt = data.consentGrantedAt ? new Date(data.consentGrantedAt) : null;
     const transferNumber = await nextTransferNumber(check.tenantId!, effectiveDate);
 
-    const transfer = await prisma.shareTransfer.create({
+    const transfer = await db.shareTransfer.create({
       data: {
         transferNumber,
         fundId: data.fundId,
@@ -231,10 +233,11 @@ const PERSON_SELECT = {
  * Folge, der Unique-Index fängt die Kollision ab.
  */
 async function nextTransferNumber(tenantId: string, reference: Date): Promise<string> {
+  const db = mandantDb(tenantId);
   const year = reference.getUTCFullYear();
   const prefix = `${PREFIX}-${year}-`;
 
-  const latest = await prisma.shareTransfer.findFirst({
+  const latest = await db.shareTransfer.findFirst({
     where: { tenantId, transferNumber: { startsWith: prefix } },
     orderBy: { transferNumber: "desc" },
     select: { transferNumber: true },

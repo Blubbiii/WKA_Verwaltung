@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,11 +25,12 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.PARKS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -40,7 +41,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
       return apiError("NOT_FOUND", undefined, { message: "Park nicht gefunden" });
     }
 
-    const phases = await prisma.parkRevenuePhase.findMany({
+    const phases = await db.parkRevenuePhase.findMany({
       where: { parkId: id },
       orderBy: { phaseNumber: "asc" },
     });
@@ -60,11 +61,12 @@ export async function POST(
   try {
 const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -79,7 +81,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     const validatedPhases = revenuePhasesArraySchema.parse(body);
 
     // Delete existing phases and create new ones in a transaction
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Delete existing phases
       await tx.parkRevenuePhase.deleteMany({
         where: { parkId: id },
@@ -97,7 +99,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_UPDATE);
     });
 
     // Return updated phases
-    const phases = await prisma.parkRevenuePhase.findMany({
+    const phases = await db.parkRevenuePhase.findMany({
       where: { parkId: id },
       orderBy: { phaseNumber: "asc" },
     });

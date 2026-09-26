@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 import { getNextInvoiceNumbers } from "@/lib/invoices/numberGenerator";
 import { getTenantSettings } from "@/lib/tenant-settings";
@@ -43,11 +43,12 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id, distributionId } = await params;
 
     // Distribution mit allen Daten laden
-    const distribution = await prisma.distribution.findFirst({
+    const distribution = await db.distribution.findFirst({
       where: {
         id: distributionId,
         fundId: id,
@@ -87,7 +88,7 @@ export async function POST(
     );
 
     // Alle Gutschriften in einer Transaktion erstellen
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const createdInvoices: string[] = [];
 
       for (let idx = 0; idx < distribution.items.length; idx++) {
@@ -159,7 +160,7 @@ export async function POST(
     });
 
     // Aktualisierte Distribution laden
-    const updatedDistribution = await prisma.distribution.findUnique({
+    const updatedDistribution = await db.distribution.findUnique({
       where: { id: distributionId },
       include: {
         items: {

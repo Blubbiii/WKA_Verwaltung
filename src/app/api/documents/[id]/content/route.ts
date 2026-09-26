@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -28,11 +28,12 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Dokument aus DB laden
-    const document = await prisma.document.findUnique({
+    const document = await db.document.findUnique({
       where: { id },
       select: {
         id: true,

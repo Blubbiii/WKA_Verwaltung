@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -49,6 +49,7 @@ export async function POST(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -74,7 +75,7 @@ export async function POST(
       async () => {
         let result;
         try {
-          result = await prisma.$transaction(async (tx) => {
+          result = await db.$transaction(async (tx) => {
             return recordPayment(tx, {
               tenantId: check.tenantId!,
               invoiceId: id,
