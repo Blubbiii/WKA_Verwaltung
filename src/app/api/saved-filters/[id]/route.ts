@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { handleApiError } from "@/lib/api-utils";
@@ -33,12 +33,13 @@ export async function PATCH(
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const parsed = patchSchema.parse(body);
 
-    const existing = await prisma.userSavedFilter.findUnique({
+    const existing = await db.userSavedFilter.findUnique({
       where: { id },
       select: { id: true, userId: true, tenantId: true, surface: true },
     });
@@ -46,7 +47,7 @@ export async function PATCH(
       return apiError("NOT_FOUND", 404, { message: "Gespeicherter Filter nicht gefunden" });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await db.$transaction(async (tx) => {
       if (parsed.isDefault === true) {
         // Unset isDefault on all other filters of this (userId, surface)
         await tx.userSavedFilter.updateMany({
@@ -87,10 +88,11 @@ export async function DELETE(
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.userSavedFilter.findUnique({
+    const existing = await db.userSavedFilter.findUnique({
       where: { id },
       select: { id: true, userId: true, tenantId: true },
     });
@@ -98,7 +100,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", 404, { message: "Gespeicherter Filter nicht gefunden" });
     }
 
-    await prisma.userSavedFilter.delete({ where: { id } });
+    await db.userSavedFilter.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { logDeletion } from "@/lib/audit";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,10 +25,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.PARKS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const event = await prisma.serviceEvent.findFirst({
+    const event = await db.serviceEvent.findFirst({
       where: {
         id,
         turbine: {
@@ -87,11 +88,12 @@ export async function PUT(
   try {
 const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_UPDATE, PERMISSIONS.PARKS_UPDATE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify event belongs to tenant
-    const existingEvent = await prisma.serviceEvent.findFirst({
+    const existingEvent = await db.serviceEvent.findFirst({
       where: {
         id,
         turbine: {
@@ -109,7 +111,7 @@ const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_UPDATE, PERMIS
     const body = await request.json();
     const validatedData = serviceEventUpdateSchema.parse(body);
 
-    const event = await prisma.serviceEvent.update({
+    const event = await db.serviceEvent.update({
       where: { id },
       data: {
         ...(validatedData.eventDate && {
@@ -148,11 +150,12 @@ export async function DELETE(
   try {
 const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_DELETE, PERMISSIONS.PARKS_DELETE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify event belongs to tenant
-    const event = await prisma.serviceEvent.findFirst({
+    const event = await db.serviceEvent.findFirst({
       where: {
         id,
         turbine: {
@@ -167,7 +170,7 @@ const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_DELETE, PERMIS
       return apiError("NOT_FOUND", 404, { message: "Service-Event nicht gefunden" });
     }
 
-    await prisma.serviceEvent.delete({
+    await db.serviceEvent.delete({
       where: { id },
     });
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -22,20 +22,21 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = geometrySchema.parse(body);
 
     // Verify plot exists and belongs to tenant
-    const existing = await prisma.plot.findFirst({
+    const existing = await db.plot.findFirst({
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Flurstück nicht gefunden" });
     }
 
-    const updated = await prisma.plot.update({
+    const updated = await db.plot.update({
       where: { id },
       data: {
         geometry: data.geometry as unknown as Prisma.InputJsonValue,

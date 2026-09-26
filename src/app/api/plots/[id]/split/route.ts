@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -25,6 +25,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -35,7 +36,7 @@ export async function POST(
     }
 
     // Get original plot with areas
-    const original = await prisma.plot.findFirst({
+    const original = await db.plot.findFirst({
       where: { id, tenantId: check.tenantId },
       include: { plotAreas: true },
     });
@@ -48,7 +49,7 @@ export async function POST(
     const splitAreas = data.areas ?? data.geometries.map(() => totalOriginalArea / data.geometries.length);
     const totalSplitArea = splitAreas.reduce((s, a) => s + a, 0);
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // Create new plots
       const newPlots = [];
       for (let i = 0; i < data.geometries.length; i++) {

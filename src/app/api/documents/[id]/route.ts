@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { deleteFile } from "@/lib/storage";
 import { z } from "zod";
@@ -27,10 +27,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -200,10 +201,11 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingDocument = await prisma.document.findFirst({
+    const existingDocument = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -217,7 +219,7 @@ export async function PUT(
     const body = await request.json();
     const validatedData = documentUpdateSchema.parse(body);
 
-    const document = await prisma.document.update({
+    const document = await db.document.update({
       where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
@@ -249,6 +251,7 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Additional check: Only Admin or higher (hierarchy >= 80) can hard-delete
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -259,7 +262,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Before delete, get the full data for audit log
-    const documentToDelete = await prisma.document.findFirst({
+    const documentToDelete = await db.document.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -284,7 +287,7 @@ export async function DELETE(
     }
 
     // Hard delete + storage decrement + audit log atomar in einer Transaktion
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Hard delete the document from database
       await tx.document.delete({
         where: { id },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -20,6 +20,7 @@ export async function POST(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -32,11 +33,11 @@ export async function POST(
 
     // Verify both person and tag belong to tenant
     const [person, tag] = await Promise.all([
-      prisma.person.findFirst({
+      db.person.findFirst({
         where: { id, tenantId: check.tenantId! },
         select: { id: true },
       }),
-      prisma.personTag.findFirst({
+      db.personTag.findFirst({
         where: { id: parsed.data.tagId, tenantId: check.tenantId! },
         select: { id: true },
       }),
@@ -45,7 +46,7 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Kontakt oder Tag nicht gefunden" });
     }
 
-    const updated = await prisma.person.update({
+    const updated = await db.person.update({
       where: { id },
       data: { tags: { connect: { id: parsed.data.tagId } } },
       include: { tags: true },
@@ -65,6 +66,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
@@ -75,7 +77,7 @@ export async function DELETE(
       return apiError("MISSING_FIELD", undefined, { message: "tagId required" });
     }
 
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -83,7 +85,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Kontakt nicht gefunden" });
     }
 
-    await prisma.person.update({
+    await db.person.update({
       where: { id },
       data: { tags: { disconnect: { id: tagId } } },
     });

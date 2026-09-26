@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
-import { serializePrisma } from "@/lib/serialize";
+import { serializePrisma } from "@/lib/serialize";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const updateSchema = z.object({
@@ -38,11 +39,12 @@ export async function GET(
   try {
     const check = await requirePermission("vendors:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const vendor = await prisma.vendor.findFirst({
+    const vendor = await db.vendor.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         person: { select: { id: true, firstName: true, lastName: true, companyName: true } },
@@ -69,11 +71,12 @@ export async function PUT(
   try {
     const check = await requirePermission("vendors:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const existing = await prisma.vendor.findFirst({
+    const existing = await db.vendor.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
@@ -87,7 +90,7 @@ export async function PUT(
     }
 
     const d = parsed.data;
-    const updated = await prisma.vendor.update({
+    const updated = await db.vendor.update({
       where: { id, tenantId: check.tenantId! },
       data: {
         ...(d.name !== undefined && { name: d.name }),
@@ -123,18 +126,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("vendors:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
     const { id } = await params;
 
-    const existing = await prisma.vendor.findFirst({
+    const existing = await db.vendor.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
       return apiError("NOT_FOUND", 404, { message: "Lieferant nicht gefunden" });
     }
 
-    await prisma.vendor.update({
+    await db.vendor.update({
       where: { id },
       data: { deletedAt: new Date() },
     });

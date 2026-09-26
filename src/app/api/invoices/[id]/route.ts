@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
@@ -22,10 +22,11 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         items: {
@@ -166,13 +167,14 @@ export async function PATCH(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = invoiceUpdateSchema.parse(body);
 
     // Prüfe ob Rechnung existiert und DRAFT ist
-    const existing = await prisma.invoice.findUnique({
+    const existing = await db.invoice.findUnique({
       where: { id },
       select: {
         id: true,
@@ -199,7 +201,7 @@ export async function PATCH(
     // Bedienaufwand #11: dieselbe Pruefung wie beim Anlegen — ohne sie liesse
     // sich eine Rechnung nachtraeglich an einen fremden Kontakt haengen.
     if (validatedData.recipientPersonId) {
-      const person = await prisma.person.findFirst({
+      const person = await db.person.findFirst({
         where: { id: validatedData.recipientPersonId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -241,7 +243,7 @@ export async function PATCH(
       // Lade die bestehenden Skonto-Werte, um sie mit dem Delta zu mergen.
       const currentSkonto = percentTouched && daysTouched
         ? { skontoPercent: null as unknown as number | null, skontoDays: null as number | null }
-        : await prisma.invoice.findUnique({
+        : await db.invoice.findUnique({
             where: { id },
             select: { skontoPercent: true, skontoDays: true },
           });
@@ -424,6 +426,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("invoices:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN dürfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -433,7 +436,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const existing = await prisma.invoice.findUnique({
+    const existing = await db.invoice.findUnique({
       where: { id },
       select: { id: true, tenantId: true, invoiceNumber: true, deletedAt: true },
     });
@@ -451,7 +454,7 @@ export async function DELETE(
     }
 
     // Soft-delete + audit log in einer Transaktion (Datenkonsistenz)
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Rechnung als gelöscht markieren (gesetzliche Aufbewahrungspflicht)
       await tx.invoice.update({
         where: { id },

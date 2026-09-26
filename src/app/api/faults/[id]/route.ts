@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -61,10 +61,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const faultCase = await prisma.faultCase.findFirst({
+    const faultCase = await db.faultCase.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         turbine: {
@@ -104,6 +105,7 @@ export async function PATCH(
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -116,7 +118,7 @@ export async function PATCH(
     }
     const data = parsed.data;
 
-    const existing = await prisma.faultCase.findFirst({
+    const existing = await db.faultCase.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, caseNumber: true, lostEnergyKwh: true, ratePerKwh: true, status: true, startAt: true, endAt: true },
     });
@@ -153,7 +155,7 @@ export async function PATCH(
       existing.status !== "RESOLVED" &&
       existing.status !== "CLOSED";
 
-    const updated = await prisma.faultCase.update({
+    const updated = await db.faultCase.update({
       where: { id },
       data: {
         ...(data.title !== undefined && { title: data.title }),
@@ -224,10 +226,11 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.faultCase.findFirst({
+    const existing = await db.faultCase.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, caseNumber: true, claimStatus: true },
     });
@@ -245,7 +248,7 @@ export async function DELETE(
       });
     }
 
-    await prisma.faultCase.delete({ where: { id } });
+    await db.faultCase.delete({ where: { id } });
 
     await createAuditLog({
       action: "DELETE",

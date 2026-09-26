@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -29,12 +29,13 @@ export async function PATCH(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updateRuleSchema.parse(body);
 
-    const existing = await prisma.documentRoutingRule.findFirst({
+    const existing = await db.documentRoutingRule.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -42,7 +43,7 @@ export async function PATCH(
       return apiError("NOT_FOUND", undefined, { message: "Routing-Regel nicht gefunden" });
     }
 
-    const rule = await prisma.documentRoutingRule.update({
+    const rule = await db.documentRoutingRule.update({
       where: { id },
       data: {
         ...(data.fundId !== undefined && { fundId: data.fundId || null }),
@@ -71,10 +72,11 @@ export async function DELETE(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.documentRoutingRule.findFirst({
+    const existing = await db.documentRoutingRule.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -82,7 +84,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Routing-Regel nicht gefunden" });
     }
 
-    await prisma.documentRoutingRule.delete({ where: { id } });
+    await db.documentRoutingRule.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

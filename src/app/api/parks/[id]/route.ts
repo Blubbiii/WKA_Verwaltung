@@ -3,7 +3,7 @@ import { erlaubteParks } from "@/lib/auth/park-access";
 import { istErlaubt } from "@/lib/auth/erlaubte-ids";
 import { requirePermissionWithResources } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { logDeletion } from "@/lib/audit";
 import { serializePrisma } from "@/lib/serialize";
@@ -67,6 +67,7 @@ export async function GET(
   try {
     const check = await requirePermissionWithResources(PERMISSIONS.PARKS_READ, "Park");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -76,7 +77,7 @@ export async function GET(
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Park" });
     }
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -241,6 +242,7 @@ export async function PUT(
   try {
     const check = await requirePermissionWithResources(PERMISSIONS.PARKS_UPDATE, "Park");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -251,7 +253,7 @@ export async function PUT(
     }
 
     // Prüfe ob Park existiert und zum Tenant gehört
-    const existingPark = await prisma.park.findFirst({
+    const existingPark = await db.park.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -273,7 +275,7 @@ export async function PUT(
     ];
     for (const [field, fundId] of fundIdsToVerify) {
       if (!fundId) continue;
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: { id: fundId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -292,9 +294,9 @@ export async function PUT(
         : null;
     }
 
-    const park = await prisma.park.update({
+    const park = await db.park.update({
       where: { id },
-      data: updateData as Parameters<typeof prisma.park.update>[0]["data"],
+      data: updateData as Parameters<typeof db.park.update>[0]["data"],
     });
 
     // Invalidate dashboard caches after park update
@@ -317,6 +319,7 @@ export async function DELETE(
   try {
     const check = await requirePermissionWithResources(PERMISSIONS.PARKS_DELETE, "Park");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -327,7 +330,7 @@ export async function DELETE(
     }
 
     // Prüfe ob Park existiert und zum Tenant gehört
-    const existingPark = await prisma.park.findFirst({
+    const existingPark = await db.park.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -375,7 +378,7 @@ export async function DELETE(
       // alte Meldung forderte dann etwas, das der Nutzer nicht tun kann:
       // "Bitte zuerst alle Flurstuecke entfernen". Er versucht es, scheitert,
       // und sucht den Fehler bei sich.
-      const verpachtet = await prisma.plot.count({
+      const verpachtet = await db.plot.count({
         where: { parkId: id, leasePlots: { some: {} } },
       });
 
@@ -405,7 +408,7 @@ export async function DELETE(
     }
 
     // Hard-Delete: Park unwiderruflich löschen — scoped to tenantId
-    await prisma.park.delete({
+    await db.park.delete({
       where: { id, tenantId: check.tenantId! },
     });
 

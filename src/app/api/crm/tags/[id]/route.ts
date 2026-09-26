@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 // Hex-Farbe (6-stellig). Alles andere könnte via inline-Style
@@ -25,11 +26,12 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.personTag.findFirst({
+    const existing = await db.personTag.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
@@ -42,7 +44,7 @@ export async function PUT(
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const updated = await prisma.personTag.update({
+    const updated = await db.personTag.update({
       where: { id },
       data: {
         ...(parsed.data.name !== undefined && { name: parsed.data.name.trim() }),
@@ -64,18 +66,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.personTag.findFirst({
+    const existing = await db.personTag.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Tag nicht gefunden" });
     }
 
-    await prisma.personTag.delete({ where: { id } });
+    await db.personTag.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting person tag");

@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -42,6 +42,7 @@ export async function PATCH(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -64,7 +65,7 @@ export async function PATCH(
 
     const { hold, reason, until } = bodyParsed.data;
 
-    const existing = await prisma.invoice.findFirst({
+    const existing = await db.invoice.findFirst({
       where: { id, tenantId: check.tenantId, deletedAt: null },
       select: {
         id: true,
@@ -80,7 +81,7 @@ export async function PATCH(
       });
     }
 
-    const updated = await prisma.invoice.update({
+    const updated = await db.invoice.update({
       where: { id },
       data: {
         dunningHold: hold,

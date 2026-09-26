@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -8,7 +8,8 @@ import { serializePrisma } from "@/lib/serialize";
 import { loadContact360 } from "@/lib/crm/contact-360";
 import { loadLabelsForPersons } from "@/lib/crm/derived-labels";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 const updateSchema = z.object({
   salutation: z.string().max(20).optional().nullable(),
@@ -46,11 +47,12 @@ export async function GET(
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         crmActivities: {
@@ -99,11 +101,12 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
-    const existing = await prisma.person.findFirst({
+    const existing = await db.person.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
@@ -125,7 +128,7 @@ export async function PUT(
       }
     }
 
-    const updated = await prisma.person.update({
+    const updated = await db.person.update({
       where: { id },
       data: updateData,
     });

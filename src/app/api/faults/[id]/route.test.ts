@@ -16,6 +16,10 @@ const update = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: { faultCase: { findFirst: (...a: unknown[]) => findFirst(...a), update: (...a: unknown[]) => update(...a) } },
 }));
+// The route uses the tenant-bound client (mandantDb) — same delegate for the test.
+vi.mock("@/lib/mandant/mandant-db", () => ({
+  mandantDb: () => ({ faultCase: { findFirst: (...a: unknown[]) => findFirst(...a), update: (...a: unknown[]) => update(...a) } }),
+}));
 vi.mock("@/lib/auth/withPermission", () => ({
   requirePermission: vi.fn().mockResolvedValue({ authorized: true, tenantId: "t1", userId: "u1" }),
 }));

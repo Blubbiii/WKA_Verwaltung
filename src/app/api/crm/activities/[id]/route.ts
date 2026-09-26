@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
 import { serializePrisma } from "@/lib/serialize";
 
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 const updateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -31,11 +32,12 @@ export async function GET(
   try {
     const check = await requirePermission("crm:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
-    const activity = await prisma.crmActivity.findFirst({
+    const activity = await db.crmActivity.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         createdBy: { select: { id: true, firstName: true, lastName: true } },
@@ -66,11 +68,12 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
-    const existing = await prisma.crmActivity.findFirst({
+    const existing = await db.crmActivity.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
@@ -84,7 +87,7 @@ export async function PUT(
     }
 
     const d = parsed.data;
-    const updated = await prisma.crmActivity.update({
+    const updated = await db.crmActivity.update({
       where: { id },
       data: {
         ...(d.title !== undefined && { title: d.title }),
@@ -117,18 +120,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("crm.enabled", check.tenantId, false))
       return apiError("INTERNAL_ERROR", undefined, { message: "CRM nicht aktiviert" });
     const { id } = await params;
 
-    const existing = await prisma.crmActivity.findFirst({
+    const existing = await db.crmActivity.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Aktivität nicht gefunden" });
     }
 
-    await prisma.crmActivity.update({
+    await db.crmActivity.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
@@ -140,24 +144,24 @@ export async function DELETE(
       field: "personId" | "fundId" | "leaseId",
       value: string,
     ) => {
-      const latest = await prisma.crmActivity.findFirst({
+      const latest = await db.crmActivity.findFirst({
         where: { [field]: value, tenantId: check.tenantId!, deletedAt: null },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true },
       });
       const lastActivityAt = latest?.createdAt ?? null;
       if (field === "personId") {
-        await prisma.person.update({
+        await db.person.update({
           where: { id: value },
           data: { lastActivityAt },
         });
       } else if (field === "fundId") {
-        await prisma.fund.update({
+        await db.fund.update({
           where: { id: value },
           data: { lastActivityAt },
         });
       } else if (field === "leaseId") {
-        await prisma.lease.update({
+        await db.lease.update({
           where: { id: value },
           data: { lastActivityAt },
         });

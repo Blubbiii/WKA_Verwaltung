@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -38,7 +38,7 @@ const patchSchema = z.object({
 });
 
 async function loadOwn(id: string, tenantId: string) {
-  return prisma.municipality.findFirst({
+  return mandantDb(tenantId).municipality.findFirst({
     where: { id, tenantId },
     include: { _count: { select: { turbines: true, plots: true } } },
   });
@@ -54,6 +54,7 @@ export async function PATCH(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const existing = await loadOwn(id, check.tenantId);
@@ -75,7 +76,7 @@ export async function PATCH(
     if (parsed.data.state !== undefined) data.state = parsed.data.state || null;
     if (parsed.data.notes !== undefined) data.notes = parsed.data.notes || null;
 
-    const updated = await prisma.municipality.update({ where: { id }, data });
+    const updated = await db.municipality.update({ where: { id }, data });
 
     await createAuditLog({
       action: "UPDATE",
@@ -112,6 +113,7 @@ export async function DELETE(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const existing = await loadOwn(id, check.tenantId);
@@ -129,7 +131,7 @@ export async function DELETE(
       });
     }
 
-    await prisma.municipality.delete({ where: { id } });
+    await db.municipality.delete({ where: { id } });
 
     await createAuditLog({
       action: "DELETE",

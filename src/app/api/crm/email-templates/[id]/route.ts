@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -22,11 +22,12 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.emailTemplate.findFirst({
+    const existing = await db.emailTemplate.findFirst({
       where: { id, tenantId: check.tenantId!, category: "CRM" },
     });
     if (!existing) {
@@ -39,7 +40,7 @@ export async function PUT(
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const updated = await prisma.emailTemplate.update({
+    const updated = await db.emailTemplate.update({
       where: { id },
       data: {
         ...(parsed.data.name !== undefined && { name: parsed.data.name }),
@@ -62,18 +63,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.emailTemplate.findFirst({
+    const existing = await db.emailTemplate.findFirst({
       where: { id, tenantId: check.tenantId!, category: "CRM" },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Template nicht gefunden" });
     }
 
-    await prisma.emailTemplate.delete({ where: { id } });
+    await db.emailTemplate.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting CRM email template");

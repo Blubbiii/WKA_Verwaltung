@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -23,9 +23,10 @@ export async function PATCH(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
-    const existing = await prisma.sidebarLink.findFirst({
+    const existing = await db.sidebarLink.findFirst({
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
@@ -43,7 +44,7 @@ export async function PATCH(
       return apiError("BAD_REQUEST", undefined, { message: firstError });
     }
 
-    const link = await prisma.sidebarLink.update({
+    const link = await db.sidebarLink.update({
       where: { id },
       data: parsed.data,
     });
@@ -62,16 +63,17 @@ export async function DELETE(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
-    const existing = await prisma.sidebarLink.findFirst({
+    const existing = await db.sidebarLink.findFirst({
       where: { id, tenantId: check.tenantId },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
-    await prisma.sidebarLink.delete({ where: { id } });
+    await db.sidebarLink.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     logger.error({ error }, "[sidebar-links] DELETE error");

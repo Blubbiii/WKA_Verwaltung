@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -26,9 +26,10 @@ export async function DELETE(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
-    const existing = await prisma.municipalityBenefit.findFirst({
+    const existing = await db.municipalityBenefit.findFirst({
       where: { id, tenantId: check.tenantId },
       include: {
         municipality: { select: { name: true } },
@@ -39,7 +40,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", 404, { message: "Vereinbarung nicht gefunden" });
     }
 
-    await prisma.municipalityBenefit.delete({ where: { id } });
+    await db.municipalityBenefit.delete({ where: { id } });
 
     await createAuditLog({
       action: "DELETE",

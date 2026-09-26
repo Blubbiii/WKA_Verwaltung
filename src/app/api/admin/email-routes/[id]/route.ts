@@ -9,7 +9,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -46,11 +46,12 @@ export async function PATCH(
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
 
     const { id } = await params;
 
-    const existing = await prisma.emailRoute.findFirst({
+    const existing = await db.emailRoute.findFirst({
       where: { id, tenantId },
     });
     if (!existing) {
@@ -65,7 +66,7 @@ export async function PATCH(
 
     // If address is being changed, check for duplicates
     if (result.data.address && result.data.address !== existing.address) {
-      const duplicate = await prisma.emailRoute.findFirst({
+      const duplicate = await db.emailRoute.findFirst({
         where: {
           address: result.data.address,
           tenantId,
@@ -77,7 +78,7 @@ export async function PATCH(
       }
     }
 
-    const route = await prisma.emailRoute.update({
+    const route = await db.emailRoute.update({
       where: { id },
       data: result.data,
     });
@@ -100,18 +101,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
 
     const { id } = await params;
 
-    const existing = await prisma.emailRoute.findFirst({
+    const existing = await db.emailRoute.findFirst({
       where: { id, tenantId },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Nicht gefunden" });
     }
 
-    await prisma.emailRoute.delete({ where: { id } });
+    await db.emailRoute.delete({ where: { id } });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

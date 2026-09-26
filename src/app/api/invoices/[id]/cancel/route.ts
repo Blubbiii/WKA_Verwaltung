@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumberInTx } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
@@ -22,6 +22,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -29,7 +30,7 @@ export async function POST(
 
     // Hole Original-Rechnung. deletedAt:null-Filter vorhandene Soft-Deletes
     // ausblenden — sonst könnte man eine gelöschte Rechnung stornieren.
-    const original = await prisma.invoice.findFirst({
+    const original = await db.invoice.findFirst({
       where: { id, deletedAt: null },
       include: {
         items: true,
@@ -99,7 +100,7 @@ export async function POST(
     // Nummer-Vergabe MUSS innerhalb der TX passieren (GoBD §14 UStG:
     // lückenlose Nummerierung). Bei TX-Rollback wird auch der Sequence-
     // Increment zurückgerollt → keine "verbrannte" Nummer.
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // 0. Storno-Nummer ziehen (innerhalb der TX!)
       const { number: stornoNumber } = await getNextInvoiceNumberInTx(
         tx,
@@ -189,7 +190,7 @@ export async function POST(
     });
 
     // Lade vollständige Storno-Rechnung
-    const stornoInvoice = await prisma.invoice.findUnique({
+    const stornoInvoice = await db.invoice.findUnique({
       where: { id: result.id },
       include: {
         items: { orderBy: { position: "asc" } },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -37,11 +37,12 @@ export async function PUT(
   try {
     const check = await requirePermission("crm:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.contactLink.findFirst({
+    const existing = await db.contactLink.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
@@ -55,7 +56,7 @@ export async function PUT(
     }
     const d = parsed.data;
 
-    const updated = await prisma.contactLink.update({
+    const updated = await db.contactLink.update({
       where: { id },
       data: {
         ...(d.role !== undefined && { role: d.role }),
@@ -84,18 +85,19 @@ export async function DELETE(
   try {
     const check = await requirePermission("crm:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("crm.enabled", check.tenantId, false)))
       return apiError("FEATURE_DISABLED", 404, { message: "CRM nicht aktiviert" });
 
     const { id } = await params;
-    const existing = await prisma.contactLink.findFirst({
+    const existing = await db.contactLink.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
       return apiError("NOT_FOUND", undefined, { message: "Verknüpfung nicht gefunden" });
     }
 
-    await prisma.contactLink.delete({ where: { id } });
+    await db.contactLink.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting contact link");

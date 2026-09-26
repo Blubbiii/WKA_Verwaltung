@@ -4,7 +4,7 @@ import { neuGezaehlt } from "@/lib/lizenz/lizenz";
 import { headers } from "next/headers";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { createAuditLog, logDeletion } from "@/lib/audit";
 import { updateWithAudit, isEntityNotFoundError } from "@/lib/audit-update";
@@ -55,10 +55,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.FUNDS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -253,10 +254,11 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.FUNDS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingFund = await prisma.fund.findFirst({
+    const existingFund = await db.fund.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -275,7 +277,7 @@ export async function PUT(
     const kategorieCodeVon = async (kategorieId: string | null | undefined) =>
       kategorieId
         ? ((
-            await prisma.fundCategory.findFirst({
+            await db.fundCategory.findFirst({
               where: { id: kategorieId, tenantId: check.tenantId! },
               select: { code: true },
             })
@@ -393,6 +395,7 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.FUNDS_DELETE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Additional role check: Only Admin or higher (hierarchy >= 80)
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -402,7 +405,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const existingFund = await prisma.fund.findFirst({
+    const existingFund = await db.fund.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -418,7 +421,7 @@ export async function DELETE(
     // Invoice.fundId onDelete:SetNull ist und die Buchhaltungshistorie
     // sonst leise ihre Fund-Zuordnung verlieren wuerde (GoBD-Bruch).
     // Statt Hard-Delete: Soft-Delete via deletedAt.
-    const invoiceCount = await prisma.invoice.count({
+    const invoiceCount = await db.invoice.count({
       where: {
         fundId: id,
         tenantId: check.tenantId!,
@@ -433,7 +436,7 @@ export async function DELETE(
 
     // Soft-Delete: Fund als geloescht markieren; Referenzen (Distributions,
     // etc.) bleiben intakt, Fund verschwindet aus aktiven Listen.
-    await prisma.fund.update({
+    await db.fund.update({
       where: { id },
       data: { deletedAt: new Date(), status: "INACTIVE" },
     });

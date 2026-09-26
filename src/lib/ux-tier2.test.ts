@@ -156,7 +156,8 @@ describe("Rechnungsempfaenger verweist auf den CRM-Kontakt (#11)", () => {
     for (const route of ["app/api/invoices/route.ts", "app/api/invoices/[id]/route.ts"]) {
       const source = src(route);
       expect(source, route).toMatch(
-        /recipientPersonId[\s\S]{0,400}prisma\.person\.findFirst[\s\S]{0,200}tenantId: check\.tenantId/,
+        // prisma or the tenant-bound db (mandantDb) — both carry the explicit check.
+        /recipientPersonId[\s\S]{0,400}(prisma|db)\.person\.findFirst[\s\S]{0,200}tenantId: check\.tenantId/,
       );
     }
   });

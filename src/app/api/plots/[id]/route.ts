@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import type { Prisma } from "@prisma/client";
 import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
@@ -35,10 +35,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const plot = await prisma.plot.findFirst({
+    const plot = await db.plot.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -212,11 +213,12 @@ export async function PATCH(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify plot exists and belongs to tenant
-    const existingPlot = await prisma.plot.findFirst({
+    const existingPlot = await db.plot.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -232,7 +234,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
 
     // Verify park belongs to tenant if changing parkId
     if (validatedData.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: validatedData.parkId,
           tenantId: check.tenantId,
@@ -250,7 +252,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
       const newFieldNumber = validatedData.fieldNumber ?? existingPlot.fieldNumber;
       const newPlotNumber = validatedData.plotNumber ?? existingPlot.plotNumber;
 
-      const duplicate = await prisma.plot.findFirst({
+      const duplicate = await db.plot.findFirst({
         where: {
           tenantId: check.tenantId,
           cadastralDistrict: newCadastralDistrict,
@@ -275,7 +277,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
       }
     }
 
-    const plot = await prisma.plot.update({
+    const plot = await db.plot.update({
       where: { id },
       data: updateData as Prisma.PlotUpdateInput,
       include: {
@@ -300,11 +302,12 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Before delete, get the full data for audit log
-    const plotToDelete = await prisma.plot.findFirst({
+    const plotToDelete = await db.plot.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -348,7 +351,7 @@ const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     }
 
     // Perform the deletion
-    await prisma.plot.delete({
+    await db.plot.delete({
       where: { id },
     });
 

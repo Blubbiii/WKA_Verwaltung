@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { apiLogger as logger } from "@/lib/logger";
@@ -13,11 +13,12 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Rechnung laden mit Tenant-Check
-    const invoice = await prisma.invoice.findFirst({
+    const invoice = await db.invoice.findFirst({
       where: { id, ...(check.tenantId ? { tenantId: check.tenantId } : {}) },
       select: {
         id: true,
@@ -34,7 +35,7 @@ export async function POST(
 
     // Druck-Zeitstempel setzen + bei DRAFT automatisch als versendet markieren
     // WICHTIG: Status ZUERST ändern, damit PDF ohne ENTWURF-Wasserzeichen generiert wird
-    await prisma.invoice.update({
+    await db.invoice.update({
       where: { id },
       data: {
         printedAt: new Date(),

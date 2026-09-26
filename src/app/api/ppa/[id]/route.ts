@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { ppaUpdateSchema } from "@/lib/ppa/schemas";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 
 
@@ -13,10 +13,11 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
     const { id } = await params;
 
-    const ppa = await prisma.powerPurchaseAgreement.findFirst({
+    const ppa = await db.powerPurchaseAgreement.findFirst({
       where: { id, tenantId },
       include: {
         park: { select: { id: true, name: true, totalCapacityKw: true, _count: { select: { turbines: true } } } },
@@ -41,11 +42,12 @@ export async function PATCH(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
     const { id } = await params;
 
     // Verify PPA belongs to tenant
-    const existing = await prisma.powerPurchaseAgreement.findFirst({
+    const existing = await db.powerPurchaseAgreement.findFirst({
       where: { id, tenantId },
     });
     if (!existing) {
@@ -59,7 +61,7 @@ export async function PATCH(
     }
     const data = result.data;
 
-    const ppa = await prisma.powerPurchaseAgreement.update({
+    const ppa = await db.powerPurchaseAgreement.update({
       where: { id },
       data: {
         ...(data.title !== undefined && { title: data.title }),
@@ -98,17 +100,18 @@ export async function DELETE(
   try {
     const check = await requirePermission("invoices:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
     const { id } = await params;
 
-    const existing = await prisma.powerPurchaseAgreement.findFirst({
+    const existing = await db.powerPurchaseAgreement.findFirst({
       where: { id, tenantId },
     });
     if (!existing) {
       return apiError("NOT_FOUND", 404, { message: "PPA nicht gefunden" });
     }
 
-    await prisma.powerPurchaseAgreement.delete({ where: { id } });
+    await db.powerPurchaseAgreement.delete({ where: { id } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

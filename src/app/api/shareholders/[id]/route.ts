@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -71,10 +72,11 @@ export async function GET(
   try {
 const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -153,10 +155,11 @@ export async function PUT(
   try {
 const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingShareholder = await prisma.shareholder.findFirst({
+    const existingShareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -173,7 +176,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     const validatedData = shareholderUpdateSchema.parse(body);
 
     // Update shareholder + recalculate fund shares atomar in einer Transaktion
-    const updatedShareholder = await prisma.$transaction(async (tx) => {
+    const updatedShareholder = await db.$transaction(async (tx) => {
       await tx.shareholder.update({
         where: { id },
         data: {
@@ -215,10 +218,11 @@ export async function DELETE(
   try {
 const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingShareholder = await prisma.shareholder.findFirst({
+    const existingShareholder = await db.shareholder.findFirst({
       where: {
         id,
         fund: {
@@ -232,7 +236,7 @@ const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_DELETE);
     }
 
     // Hard-Delete + audit log + recalculate atomar in einer Transaktion
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // 1. Hard-Delete: Unwiderruflich löschen
       await tx.shareholder.delete({
         where: { id },
