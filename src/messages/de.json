@@ -450,7 +450,8 @@
     "energyEvaluation": "Auswertung",
     "dataConnection": "Datenanbindung",
     "contractsOverview": "Übersicht",
-    "marketPremium": "Marktprämie"
+    "marketPremium": "Marktprämie",
+    "parkAccess": "Park-Zugriff"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -8107,6 +8108,53 @@
       "save": "Zeitplan speichern",
       "saved": "Zeitplan gespeichert — der Backup-Dienst übernimmt ihn innerhalb von fünf Minuten.",
       "saveError": "Zeitplan konnte nicht gespeichert werden"
+    },
+    "parkAccess": {
+      "title": "Park-Zugriff",
+      "description": "Legt je Benutzer fest, welche Windparks er sieht.",
+      "hint": "Ohne ausgewählten Park sieht der Benutzer alle Windparks des Mandanten. Sobald mindestens ein Park ausgewählt ist, zeigen Parkliste, Parkseite, Auswahlfelder und Dashboard-Kennzahlen nur noch diese Parks.",
+      "chooseUser": "Benutzer auswählen",
+      "chooseUserPlaceholder": "Benutzer wählen …",
+      "searchUser": "Nach Name oder E-Mail suchen …",
+      "parks": "Windparks",
+      "restrictedTo": "Eingeschränkt auf {count, plural, one {# Park} other {# Parks}}",
+      "unrestricted": "Keine Einschränkung — sieht alle Windparks",
+      "selectAll": "Alle auswählen",
+      "selectNone": "Keinen auswählen",
+      "noneSelected": "Keine Auswahl = sieht alle Windparks",
+      "selectedOf": "{count} von {total} ausgewählt",
+      "save": "Speichern",
+      "saved": "Park-Zugriff gespeichert",
+      "saveError": "Speichern fehlgeschlagen"
+    },
+    "marketingVideo": {
+      "title": "Video im Produkt-Showcase",
+      "description": "Wird auf der Startseite im Abschnitt „Produkt-Showcase“ abgespielt.",
+      "stateNone": "Kein Video hinterlegt — die Startseite zeigt „Produktvideo in Kürze verfügbar“.",
+      "stateUploaded": "Ein hochgeladenes Video ist hinterlegt.",
+      "stateExternal": "Es ist eine externe Adresse eingetragen: {url}",
+      "upload": "Video hochladen",
+      "replace": "Video ersetzen",
+      "delete": "Video entfernen",
+      "uploaded": "Video hochgeladen",
+      "uploadError": "Hochladen fehlgeschlagen",
+      "deleted": "Video entfernt",
+      "deleteError": "Entfernen fehlgeschlagen",
+      "deleteTitle": "Video entfernen?",
+      "deleteText": "Die Datei wird gelöscht; die Startseite zeigt danach kein Video mehr.",
+      "hint": "MP4 oder WebM, höchstens 100 MB. Ein neues Video ersetzt das bisherige, die alte Datei wird gelöscht."
+    },
+    "storageQuota": {
+      "title": "Speicherkontingent",
+      "description": "Belegter Speicher des Mandanten gegen sein Limit.",
+      "usedOf": "{used} von {limit}",
+      "nearLimit": "Das Kontingent ist fast ausgeschöpft.",
+      "overLimit": "Das Kontingent ist überschritten — neue Dokumente werden beim Hochladen abgelehnt.",
+      "files": "{count, plural, one {# Datei} other {# Dateien}}",
+      "recalc": "Neu berechnen",
+      "recalculated": "Neu berechnet: {used} belegt",
+      "recalcError": "Neuberechnung fehlgeschlagen",
+      "hint": "Der Zähler steigt bei jedem Upload, beim Löschen sinkt er nicht mit. „Neu berechnen“ zählt alle noch gespeicherten Dokumente neu zusammen."
     }
   },
   "portal": {

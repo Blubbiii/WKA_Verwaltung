@@ -84,6 +84,7 @@ import type {
 } from "@/lib/marketing/types";
 import { SECTION_LABELS } from "@/lib/marketing/types";
 import { DEFAULT_MARKETING_CONFIG, DEFAULT_SECTION_ORDER } from "@/lib/marketing/defaults";
+import { MarketingVideoCard } from "@/components/admin/marketing-video-card";
 
 // ---------------------------------------------------------------------------
 // Icon options for features
@@ -664,6 +665,13 @@ export function MarketingSettings() {
             <SaveButton />
           </CardContent>
         </Card>
+
+        <MarketingVideoCard
+          videoUrl={config.showcase.videoUrl}
+          onGeaendert={(videoUrl) =>
+            setConfig((alt) => ({ ...alt, showcase: { ...alt.showcase, videoUrl } }))
+          }
+        />
       </TabsContent>
 
       {/* ================================================================ */}

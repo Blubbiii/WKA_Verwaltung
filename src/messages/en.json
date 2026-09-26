@@ -450,7 +450,8 @@
     "energyEvaluation": "Analysis",
     "dataConnection": "Data connection",
     "contractsOverview": "Overview",
-    "marketPremium": "Market premium"
+    "marketPremium": "Market premium",
+    "parkAccess": "Park access"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
@@ -8107,6 +8108,53 @@
       "save": "Save schedule",
       "saved": "Schedule saved — the backup service picks it up within five minutes.",
       "saveError": "Schedule could not be saved"
+    },
+    "parkAccess": {
+      "title": "Park access",
+      "description": "Defines per user which wind farms they see.",
+      "hint": "With no park selected the user sees every wind farm of the tenant. As soon as at least one is selected, the park list, park page, pickers and dashboard figures only show those.",
+      "chooseUser": "Select user",
+      "chooseUserPlaceholder": "Choose user …",
+      "searchUser": "Search by name or e-mail …",
+      "parks": "Wind farms",
+      "restrictedTo": "Restricted to {count, plural, one {# park} other {# parks}}",
+      "unrestricted": "No restriction — sees all wind farms",
+      "selectAll": "Select all",
+      "selectNone": "Select none",
+      "noneSelected": "No selection = sees all wind farms",
+      "selectedOf": "{count} of {total} selected",
+      "save": "Save",
+      "saved": "Park access saved",
+      "saveError": "Saving failed"
+    },
+    "marketingVideo": {
+      "title": "Product showcase video",
+      "description": "Played on the landing page in the “Product showcase” section.",
+      "stateNone": "No video set — the landing page shows “Product video coming soon”.",
+      "stateUploaded": "An uploaded video is set.",
+      "stateExternal": "An external address is set: {url}",
+      "upload": "Upload video",
+      "replace": "Replace video",
+      "delete": "Remove video",
+      "uploaded": "Video uploaded",
+      "uploadError": "Upload failed",
+      "deleted": "Video removed",
+      "deleteError": "Removing failed",
+      "deleteTitle": "Remove video?",
+      "deleteText": "The file is deleted; the landing page no longer shows a video.",
+      "hint": "MP4 or WebM, at most 100 MB. A new video replaces the previous one, the old file is deleted."
+    },
+    "storageQuota": {
+      "title": "Storage quota",
+      "description": "Storage used by the tenant against its limit.",
+      "usedOf": "{used} of {limit}",
+      "nearLimit": "The quota is almost used up.",
+      "overLimit": "The quota is exceeded — new documents are refused on upload.",
+      "files": "{count, plural, one {# file} other {# files}}",
+      "recalc": "Recalculate",
+      "recalculated": "Recalculated: {used} used",
+      "recalcError": "Recalculation failed",
+      "hint": "The counter rises with every upload but does not fall on delete. “Recalculate” adds up all documents still stored."
     }
   },
   "portal": {

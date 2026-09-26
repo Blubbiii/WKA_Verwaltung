@@ -76,6 +76,10 @@ describe("Block B: Routen, die eine Oberfläche bekommen haben, werden aufgerufe
     ["/download`", "fertigen Bericht laden"],
     ['"/api/admin/cache"', "Cache-Status"],
     ['"/api/integrations/paperless/sync/status"', "Paperless-Übersicht"],
+    ["/park-access`", "Park-Zugriff verwalten"],
+    ['"/api/admin/marketing-video"', "Showcase-Video hochladen/entfernen"],
+    ["/api/marketing/video?v=", "Showcase-Video abspielen"],
+    ['"/api/admin/storage"', "Speicherkontingent"],
   ])("%s (%s)", (aufruf) => {
     expect(alles).toContain(aufruf);
   });
@@ -91,5 +95,25 @@ describe("Ressourcen-Freigaben bleiben im eigenen Mandanten", () => {
     const treffer = route.match(/prisma\.user\.findFirst\(\{\s*where:\s*\{\s*id:\s*validatedData\.userId,\s*tenantId:\s*check\.tenantId/g) ?? [];
     expect(treffer.length).toBe(2);
     expect(route).not.toContain("prisma.user.findUnique");
+  });
+});
+
+describe("Park-Zugriff (E4) wirkt, statt nur verwaltet zu werden", () => {
+  it("Parkliste, Parkseite (lesen, ändern, löschen) und Dashboard fragen ihn ab", () => {
+    expect(lies("app/api/parks/route.ts")).toContain("await erlaubteParks(check)");
+    const detail = lies("app/api/parks/[id]/route.ts");
+    expect(detail.match(/istErlaubt\(await erlaubteParks\(check\), id\)/g)?.length).toBe(3);
+    expect(lies("app/api/dashboard/stats/route.ts")).toContain("getAllowedParkIds(userId)");
+  });
+});
+
+describe("Dashboard-Zahlen: eingeschränkte Sicht landet nicht im Mandanten-Cache", () => {
+  it("ein eingeschränkter Benutzer rechnet frisch, ohne Cache zu lesen oder zu schreiben", () => {
+    const route = lies("app/api/dashboard/stats/route.ts");
+    const zweig = route.indexOf("if (eingeschraenkt)");
+    expect(zweig).toBeGreaterThan(0);
+    // The restricted branch comes before any cache access.
+    expect(zweig).toBeLessThan(route.indexOf("dashboardCache.getTenantStats"));
+    expect(zweig).toBeLessThan(route.indexOf("dashboardCache.cacheTenantStats"));
   });
 });

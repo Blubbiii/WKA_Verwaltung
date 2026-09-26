@@ -52,6 +52,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BackupZeitplanCard } from "@/components/admin/backup-zeitplan-card";
+import { StorageQuotaCard } from "@/components/admin/storage-quota-card";
 import type { BackupStatus, BackupWarnung, BackupZeitplan } from "@/lib/backup-zeitplan";
 import { LOCALE_DE } from "@/lib/format";
 import { useTabParam } from "@/hooks/useTabParam";
@@ -221,6 +222,7 @@ export default function BackupTab() {
         </TabsContent>
 
         <TabsContent value="storage" className="space-y-6">
+          <StorageQuotaCard />
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><HardDrive className="h-5 w-5" />Speicher-Statistiken</CardTitle><CardDescription>MinIO/S3 Speichernutzung</CardDescription></CardHeader>

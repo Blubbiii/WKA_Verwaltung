@@ -300,6 +300,35 @@ Monats fielen so in den Vormonat, und eine vollständige März-Reihe (743
 Stunden) galt als lückenhaft. Maßgeblich ist jetzt der Liefermonat nach
 deutscher Ortszeit (`lib/zeit/berlin`).
 
+**Park-Zugriff je Benutzer (E4)**
+
+Neue Seite Administration → Park-Zugriff, neben dem Gesellschafts-Zugriff.
+Ist kein Park ausgewählt, sieht der Benutzer alle Parks. Mit Auswahl zeigen
+Parkliste, Auswahlfelder, Parkseite (lesen, ändern, löschen) und die
+Dashboard-Zahlen nur noch diese Parks. Die Freigaben werden also wirklich
+durchgesetzt, nicht nur verwaltet. Die Dashboard-Zahlen berücksichtigen
+jetzt auch den Gesellschafts-Zugriff, den sie bisher übergingen.
+
+Dabei behoben: Die Dashboard-Zahlen wurden nur je Mandant zwischengespeichert,
+obwohl der Kommentar einen Schlüssel je Benutzer versprach. Die Sicht eines
+eingeschränkten Benutzers konnte so bei allen landen, oder er sah die
+ungefilterten Zahlen. Eingeschränkte Sichten werden jetzt frisch berechnet
+und nicht zwischengespeichert.
+
+**Showcase-Video und Speicherkontingent bekommen eine Oberfläche**
+
+- **Video:** In den Marketing-Einstellungen (Tab Abschnitte) lässt sich das
+  Video des Produkt-Showcase hochladen, ersetzen und entfernen. Behoben: Der
+  Upload speicherte einen Speicherschlüssel, den die Startseite als
+  Video-Adresse benutzt hätte; das Video wäre nie gelaufen. Jetzt spielt die
+  Startseite es über die öffentliche Route `/api/marketing/video`, die genau
+  dieses eine Video ausliefert, mit Spulen (Range). Ein ersetztes Video wird
+  gelöscht, statt im Speicher liegen zu bleiben.
+- **Speicher:** Karte „Speicherkontingent“ unter System → Backup →
+  Speicher-Verwaltung: belegt gegen Limit, Aufteilung nach Kategorie,
+  „Neu berechnen“. Der Zähler steigt bei jedem Upload, sinkt beim Löschen
+  aber nicht. Die Neuberechnung zählt alles Gespeicherte neu zusammen.
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

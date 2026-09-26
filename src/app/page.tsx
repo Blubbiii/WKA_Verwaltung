@@ -5,6 +5,7 @@ import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 import { oeffentlicheEinstellungen } from "@/lib/marketing/oeffentlicher-mandant";
 import type { MarketingConfig } from "@/lib/marketing/types";
+import { videoQuelle } from "@/lib/marketing/video-quelle";
 
 export default async function Home() {
   const session = await auth();
@@ -17,7 +18,12 @@ export default async function Home() {
   // Inhalte des Betreibers, nicht des erstbesten Mandanten — siehe
   // oeffentlicher-mandant.ts.
   const settings = (await oeffentlicheEinstellungen()) ?? {};
-  const marketingConfig = settings.marketing as MarketingConfig | undefined;
+  const gespeichert = settings.marketing as MarketingConfig | undefined;
+  // An uploaded video is stored as a storage key; the page plays it through
+  // /api/marketing/video (lib/marketing/video-quelle).
+  const marketingConfig = gespeichert?.showcase
+    ? { ...gespeichert, showcase: { ...gespeichert.showcase, videoUrl: videoQuelle(gespeichert.showcase.videoUrl) } }
+    : gespeichert;
 
   // Show marketing page with header/footer for unauthenticated users
   return (

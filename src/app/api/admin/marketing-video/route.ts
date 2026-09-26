@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const settings = (tenant?.settings as TenantSettings) || {};
     const marketing = settings.marketing || {};
     const showcase = marketing.showcase || {};
+    const vorheriger = showcase.videoUrl;
     showcase.videoUrl = key; // Store S3 key, not signed URL
 
     await prisma.tenant.update({
@@ -69,6 +70,13 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    // A replaced upload would otherwise stay in storage forever.
+    if (vorheriger && vorheriger !== key && !/^https?:\/\//i.test(vorheriger)) {
+      await deleteFile(vorheriger).catch((err) =>
+        logger.warn({ err, key: vorheriger }, "Previous marketing video could not be deleted"),
+      );
+    }
 
     logger.info({ tenantId: check.tenantId, key }, "Marketing video uploaded");
 
