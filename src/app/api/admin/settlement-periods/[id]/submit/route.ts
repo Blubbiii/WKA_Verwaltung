@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -33,10 +33,11 @@ export async function POST(
     // erfordert dann separat requireAdmin (siehe approve/route.ts).
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: {
         id: true,
@@ -71,7 +72,7 @@ export async function POST(
       Number(period.totalActualRent ?? 0) ||
       Number(period.totalRevenue ?? 0) ||
       0;
-    const { updated, approvalRequest } = await prisma.$transaction(async (tx) => {
+    const { updated, approvalRequest } = await db.$transaction(async (tx) => {
       const updated = await tx.leaseSettlementPeriod.update({
         where: { id, tenantId: check.tenantId! },
         data: { status: "PENDING_REVIEW" },

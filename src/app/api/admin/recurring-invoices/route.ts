@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import {
@@ -56,6 +56,7 @@ async function getHandler(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const enabled = searchParams.get("enabled");
@@ -71,7 +72,7 @@ async function getHandler(request: NextRequest) {
     };
 
     const [recurringInvoices, total] = await Promise.all([
-      prisma.recurringInvoice.findMany({
+      db.recurringInvoice.findMany({
         where,
         include: {
           createdBy: {
@@ -82,7 +83,7 @@ async function getHandler(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.recurringInvoice.count({ where }),
+      db.recurringInvoice.count({ where }),
     ]);
 
     // Calculate total amount per invoice for display
@@ -151,6 +152,7 @@ async function postHandler(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createRecurringInvoiceSchema.parse(body);
@@ -173,7 +175,7 @@ async function postHandler(request: NextRequest) {
     );
 
     // Create the recurring invoice
-    const recurringInvoice = await prisma.recurringInvoice.create({
+    const recurringInvoice = await db.recurringInvoice.create({
       data: {
         name: validatedData.name,
         recipientType: validatedData.recipientType,

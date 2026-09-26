@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -16,11 +16,12 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status") || "PENDING";
 
-    const requests = await prisma.pendingBankUpdate.findMany({
+    const requests = await db.pendingBankUpdate.findMany({
       where: {
         tenantId: check.tenantId,
         ...(status !== "ALL" && { status: status as "PENDING" | "APPROVED" | "REJECTED" }),

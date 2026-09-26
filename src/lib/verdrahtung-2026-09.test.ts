@@ -92,9 +92,9 @@ describe("Ressourcen-Freigaben bleiben im eigenen Mandanten", () => {
     expect(route).toMatch(/where\.user\s*=\s*\{\s*tenantId:\s*check\.tenantId/);
   });
   it("Gewähren und Entziehen nur für Benutzer des eigenen Mandanten", () => {
-    const treffer = route.match(/prisma\.user\.findFirst\(\{\s*where:\s*\{\s*id:\s*validatedData\.userId,\s*tenantId:\s*check\.tenantId/g) ?? [];
+    const treffer = route.match(/\b(prisma|db)\.user\.findFirst\(\{\s*where:\s*\{\s*id:\s*validatedData\.userId,\s*tenantId:\s*check\.tenantId/g) ?? [];
     expect(treffer.length).toBe(2);
-    expect(route).not.toContain("prisma.user.findUnique");
+    expect(route).not.toMatch(/\b(prisma|db)\.user\.findUnique/);
   });
 });
 

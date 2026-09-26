@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -41,10 +41,11 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const letterhead = await prisma.letterhead.findUnique({
+    const letterhead = await db.letterhead.findUnique({
       where: { id },
       include: {
         park: {
@@ -79,12 +80,13 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updateLetterheadSchema.parse(body);
 
-    const letterhead = await prisma.letterhead.findUnique({
+    const letterhead = await db.letterhead.findUnique({
       where: { id },
       select: { id: true, tenantId: true, parkId: true, fundId: true },
     });
@@ -99,7 +101,7 @@ export async function PATCH(
 
     // Wenn isDefault auf true gesetzt, andere Defaults im gleichen Scope zurücksetzen
     if (data.isDefault === true) {
-      await prisma.letterhead.updateMany({
+      await db.letterhead.updateMany({
         where: {
           tenantId: check.tenantId!,
           fundId: letterhead.fundId,
@@ -117,7 +119,7 @@ export async function PATCH(
       companyInfo: data.companyInfo === null ? Prisma.JsonNull : (data.companyInfo as Prisma.InputJsonValue | undefined),
     };
 
-    const updated = await prisma.letterhead.update({
+    const updated = await db.letterhead.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -144,10 +146,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const letterhead = await prisma.letterhead.findUnique({
+    const letterhead = await db.letterhead.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
     });
@@ -161,7 +164,7 @@ export async function DELETE(
     }
 
     // Soft-delete
-    await prisma.letterhead.update({
+    await db.letterhead.update({
       where: { id, tenantId: check.tenantId!},
       data: { isActive: false },
     });

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
@@ -38,8 +38,9 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const webhooks = await prisma.webhook.findMany({
+    const webhooks = await db.webhook.findMany({
       where: { tenantId: check.tenantId! },
       orderBy: { createdAt: "desc" },
       include: {
@@ -101,6 +102,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createWebhookSchema.safeParse(body);
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
     // Auto-generate webhook secret
     const secret = crypto.randomBytes(32).toString("hex");
 
-    const webhook = await prisma.webhook.create({
+    const webhook = await db.webhook.create({
       data: {
         url,
         secret,

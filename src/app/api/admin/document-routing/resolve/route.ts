@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try specific fund match first, then fallback to null (catch-all)
-    const rule = await prisma.documentRoutingRule.findFirst({
+    const rule = await db.documentRoutingRule.findFirst({
       where: {
         tenantId: check.tenantId!,
         invoiceType: invoiceType as "INVOICE" | "CREDIT_NOTE",
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     // Fallback: no fund-specific rule → try catch-all (fundId = null)
     const fallback =
       !rule && fundId
-        ? await prisma.documentRoutingRule.findFirst({
+        ? await db.documentRoutingRule.findFirst({
             where: {
               tenantId: check.tenantId!,
               invoiceType: invoiceType as "INVOICE" | "CREDIT_NOTE",

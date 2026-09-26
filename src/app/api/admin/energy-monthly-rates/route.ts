@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { createMonthlyRateSchema } from "@/lib/energy/monatssatz-schemas";
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     // Auth-Check: Nur ADMIN oder SUPERADMIN
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Query-Parameter auslesen
     const { searchParams } = new URL(request.url);
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // Parallele Abfragen: Daten + Count
     const [rates, total] = await Promise.all([
-      prisma.energyMonthlyRate.findMany({
+      db.energyMonthlyRate.findMany({
         where,
         include: {
           revenueType: {
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.energyMonthlyRate.count({ where }),
+      db.energyMonthlyRate.count({ where }),
     ]);
 
     // Response-Transformation (Decimal zu Number konvertieren)
@@ -139,13 +140,14 @@ export async function POST(request: NextRequest) {
     // Auth-Check: Nur ADMIN oder SUPERADMIN
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Request-Body parsen und validieren
     const body = await request.json();
     const validatedData = createMonthlyRateSchema.parse(body);
 
     // Pruefe ob der Vergütungstyp existiert und zum Tenant gehoert
-    const revenueType = await prisma.energyRevenueType.findFirst({
+    const revenueType = await db.energyRevenueType.findFirst({
       where: {
         id: validatedData.revenueTypeId,
         tenantId: check.tenantId!,
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pruefe auf Duplikat (unique constraint: revenueTypeId + year + month + tenantId)
-    const existingRate = await prisma.energyMonthlyRate.findUnique({
+    const existingRate = await db.energyMonthlyRate.findUnique({
       where: {
         revenueTypeId_year_month_tenantId: {
           revenueTypeId: validatedData.revenueTypeId,
@@ -173,7 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Erstelle den neuen Vergütungssatz
-    const newRate = await prisma.energyMonthlyRate.create({
+    const newRate = await db.energyMonthlyRate.create({
       data: {
         year: validatedData.year,
         month: validatedData.month,

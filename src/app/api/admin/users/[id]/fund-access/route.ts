@@ -1,3 +1,4 @@
+// mandantenübergreifend: der Superadmin verwaltet Zugriffe von Benutzern jedes Mandanten; die Route prüft gegen den Mandanten des Benutzers.
 /**
  * Admin-API für FundAccess (ABAC).
  *

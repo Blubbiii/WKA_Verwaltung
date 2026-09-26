@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -18,6 +18,7 @@ export async function GET(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -25,7 +26,7 @@ export async function GET(
     const status = searchParams.get("status");
 
     // Pruefe ob Regel existiert und zum Tenant gehoert
-    const rule = await prisma.billingRule.findUnique({
+    const rule = await db.billingRule.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -49,7 +50,7 @@ export async function GET(
 
     // Lade Ausführungen
     const [executions, total] = await Promise.all([
-      prisma.billingRuleExecution.findMany({
+      db.billingRuleExecution.findMany({
         where,
         orderBy: { startedAt: "desc" },
         skip,
@@ -65,11 +66,11 @@ export async function GET(
           details: true,
         },
       }),
-      prisma.billingRuleExecution.count({ where }),
+      db.billingRuleExecution.count({ where }),
     ]);
 
     // Statistiken berechnen
-    const stats = await prisma.billingRuleExecution.groupBy({
+    const stats = await db.billingRuleExecution.groupBy({
       by: ["status"],
       where: { ruleId: id },
       _count: { status: true },
@@ -88,7 +89,7 @@ export async function GET(
     }
 
     // Gesamtsumme berechnen
-    const totals = await prisma.billingRuleExecution.aggregate({
+    const totals = await db.billingRuleExecution.aggregate({
       where: { ruleId: id },
       _sum: {
         invoicesCreated: true,

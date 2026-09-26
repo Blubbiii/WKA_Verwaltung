@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
@@ -46,10 +46,11 @@ export async function GET() {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     // Fetch tenant data and counts in parallel
     const [tenant, parkCount, fundCount, userCount, turbineCount, scadaCount] = await Promise.all([
-      prisma.tenant.findUnique({
+      db.tenant.findUnique({
         where: { id: check.tenantId },
         select: {
           id: true,
@@ -67,15 +68,15 @@ export async function GET() {
           bic: true,
         },
       }),
-      prisma.park.count({ where: { tenantId: check.tenantId } }),
-      prisma.fund.count({ where: { tenantId: check.tenantId } }),
-      prisma.user.count({ where: { tenantId: check.tenantId } }),
+      db.park.count({ where: { tenantId: check.tenantId } }),
+      db.fund.count({ where: { tenantId: check.tenantId } }),
+      db.user.count({ where: { tenantId: check.tenantId } }),
       // Nur echte Anlagen: sonst gilt der Schritt "Anlagen angelegt" als
       // erledigt, sobald ein Park existiert — die beiden virtuellen Geraete
       // legt die Anwendung selbst an. Der Nutzer bekaeme einen Haken fuer
       // etwas, das er nie getan hat.
-      prisma.turbine.count({ where: { ...NUR_ANLAGEN, park: { tenantId: check.tenantId } } }),
-      prisma.scadaMeasurement.count({ where: { tenantId: check.tenantId }, take: 1 }),
+      db.turbine.count({ where: { ...NUR_ANLAGEN, park: { tenantId: check.tenantId } } }),
+      db.scadaMeasurement.count({ where: { tenantId: check.tenantId }, take: 1 }),
     ]);
 
     if (!tenant) {

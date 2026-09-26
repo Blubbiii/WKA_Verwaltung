@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { generateAccessReportPdf } from "@/lib/pdf/generators/accessReportPdf";
 import type { AccessReportPdfData } from "@/lib/pdf/templates/AccessReportTemplate";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   // Check admin permission
   const check = await requireAdmin();
   if (!check.authorized) return check.error;
+  const db = mandantDb(check.tenantId!);
 
   const { tenantId } = check;
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const roleId = searchParams.get("roleId");
 
     // Get tenant info
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: tenantId },
       select: { id: true, name: true },
     });
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     // If filtering by roleId, find users with that role
     if (roleId) {
-      const roleAssignments = await prisma.userRoleAssignment.findMany({
+      const roleAssignments = await db.userRoleAssignment.findMany({
         where: { roleId },
         select: { userId: true },
       });
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch all users with their role assignments
-    const users = await prisma.user.findMany({
+    const users = await db.user.findMany({
       where: userFilter,
       select: {
         id: true,
@@ -121,11 +122,11 @@ export async function GET(request: NextRequest) {
 
     // Get all park and fund names for resource resolution
     const [parks, funds] = await Promise.all([
-      prisma.park.findMany({
+      db.park.findMany({
         where: { tenantId },
         select: { id: true, name: true },
       }),
-      prisma.fund.findMany({
+      db.fund.findMany({
         where: { tenantId },
         select: { id: true, name: true },
       }),
@@ -223,7 +224,7 @@ export async function GET(request: NextRequest) {
 
     // Log export action
     try {
-      await prisma.auditLog.create({
+      await db.auditLog.create({
         data: {
           action: "EXPORT",
           entityType: "ACCESS_REPORT",

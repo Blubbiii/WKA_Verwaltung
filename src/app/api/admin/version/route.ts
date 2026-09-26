@@ -1,3 +1,4 @@
+// mandantenübergreifend: Plattform-Verwaltung (Superadmin): Mandanten, Systemkonfiguration, Sicherung, Werbung.
 /**
  * API Route: /api/admin/version
  * GET: Return current app version + build info

@@ -1,3 +1,4 @@
+// mandantenübergreifend: Benutzer und Rollen gehören über Mitgliedschaften mehreren Mandanten an; die Routen filtern selbst.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";

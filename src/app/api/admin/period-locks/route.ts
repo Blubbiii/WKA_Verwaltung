@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -42,13 +42,14 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
     const includeUnlocked = searchParams.get("includeUnlocked") === "true";
     const year = yearParam ? parseInt(yearParam, 10) : null;
 
-    const locks = await prisma.accountingPeriodLock.findMany({
+    const locks = await db.accountingPeriodLock.findMany({
       where: {
         tenantId: check.tenantId,
         ...(year && !isNaN(year) ? { periodYear: year } : {}),
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -104,7 +106,7 @@ export async function POST(request: NextRequest) {
     const { periodYear, periodMonth, reason } = parsed.data;
 
     try {
-      const lock = await prisma.accountingPeriodLock.create({
+      const lock = await db.accountingPeriodLock.create({
         data: {
           tenantId: check.tenantId,
           periodYear,

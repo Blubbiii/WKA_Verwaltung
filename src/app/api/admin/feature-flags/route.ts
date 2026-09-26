@@ -1,3 +1,4 @@
+// mandantenübergreifend: Plattform-Verwaltung (Superadmin): Mandanten, Systemkonfiguration, Sicherung, Werbung.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, hasPrismaModel, getPrismaModel } from "@/lib/prisma";
 import { requireSuperadmin } from "@/lib/auth/withPermission";

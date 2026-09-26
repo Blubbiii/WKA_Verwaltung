@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TaxType } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { calculateSettlement } from "@/lib/settlement";
@@ -171,13 +172,14 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const { invoiceDate, revenueSources } = createInvoicesSchema.parse(body);
 
     // Hole Periode mit Park-Konfiguration
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: {
         id: true,

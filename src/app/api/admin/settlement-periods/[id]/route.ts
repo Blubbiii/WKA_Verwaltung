@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -36,10 +36,11 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       include: {
         park: {
@@ -96,12 +97,13 @@ export async function PATCH(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updatePeriodSchema.parse(body);
 
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: { id: true, tenantId: true, status: true },
     });
@@ -151,7 +153,7 @@ export async function PATCH(
       updateData.reviewNotes = null;
     }
 
-    const updated = await prisma.leaseSettlementPeriod.update({
+    const updated = await db.leaseSettlementPeriod.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -178,10 +180,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("invoices:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: { id: true, tenantId: true, status: true },
     });
@@ -198,7 +201,7 @@ export async function DELETE(
       return apiError("BAD_REQUEST", undefined, { message: "Nur offene Perioden können gelöscht werden" });
     }
 
-    await prisma.leaseSettlementPeriod.delete({
+    await db.leaseSettlementPeriod.delete({
       where: { id, tenantId: check.tenantId!},
     });
 

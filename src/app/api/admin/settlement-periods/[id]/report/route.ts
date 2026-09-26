@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -16,11 +16,12 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Hole Periode für Dateinamen
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       include: {
         park: {
@@ -70,11 +71,12 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Hole Periode
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: {
         tenantId: true,

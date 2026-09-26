@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
@@ -44,6 +44,7 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { type } = await params;
     const invoiceType = validateType(type);
@@ -54,7 +55,7 @@ export async function GET(
 
     const currentYear = new Date().getFullYear();
 
-    let sequence = await prisma.invoiceNumberSequence.findUnique({
+    let sequence = await db.invoiceNumberSequence.findUnique({
       where: {
         tenantId_type: {
           tenantId: check.tenantId!,
@@ -65,7 +66,7 @@ export async function GET(
 
     // Falls keine Sequence existiert, erstelle eine mit Defaults
     if (!sequence) {
-      sequence = await prisma.invoiceNumberSequence.create({
+      sequence = await db.invoiceNumberSequence.create({
         data: {
           tenantId: check.tenantId!,
           type: invoiceType,
@@ -95,6 +96,7 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { type } = await params;
     const invoiceType = validateType(type);
@@ -109,7 +111,7 @@ export async function PATCH(
     const currentYear = new Date().getFullYear();
 
     // Hole oder erstelle Sequence
-    let sequence = await prisma.invoiceNumberSequence.findUnique({
+    let sequence = await db.invoiceNumberSequence.findUnique({
       where: {
         tenantId_type: {
           tenantId: check.tenantId!,
@@ -120,7 +122,7 @@ export async function PATCH(
 
     if (!sequence) {
       // Erstelle neue Sequence mit den übergebenen Werten
-      sequence = await prisma.invoiceNumberSequence.create({
+      sequence = await db.invoiceNumberSequence.create({
         data: {
           tenantId: check.tenantId!,
           type: invoiceType,
@@ -132,7 +134,7 @@ export async function PATCH(
       });
     } else {
       // Aktualisiere bestehende Sequence
-      sequence = await prisma.invoiceNumberSequence.update({
+      sequence = await db.invoiceNumberSequence.update({
         where: { id: sequence.id },
         data: {
           ...(validatedData.format && { format: validatedData.format }),

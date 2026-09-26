@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Decimal } from "@prisma/client-runtime-utils";
@@ -59,6 +60,7 @@ export async function POST(
   try {
     const check = await requirePermission("invoices:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -73,7 +75,7 @@ export async function POST(
     };
 
     // Hole Periode mit Park
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       include: {
         park: {
@@ -138,7 +140,7 @@ export async function POST(
 
       // Speichere Ergebnis
       if (options.saveResult) {
-        await prisma.leaseSettlementPeriod.update({
+        await db.leaseSettlementPeriod.update({
           where: { id, tenantId: check.tenantId!},
           data: {
             totalMinimumRent: new Decimal(scaledResult.totals.totalMonthlyMinimumRent),
@@ -147,7 +149,7 @@ export async function POST(
         });
       }
 
-      const updated = await prisma.leaseSettlementPeriod.findUnique({
+      const updated = await db.leaseSettlementPeriod.findUnique({
         where: { id },
         include: {
           park: { select: { id: true, name: true } },
@@ -169,7 +171,7 @@ export async function POST(
 
       // Speichere Ergebnis
       if (options.saveResult) {
-        await prisma.leaseSettlementPeriod.update({
+        await db.leaseSettlementPeriod.update({
           where: { id, tenantId: check.tenantId!},
           data: {
             totalRevenue: new Decimal(finalResult.totalRevenue),
@@ -180,7 +182,7 @@ export async function POST(
         });
       }
 
-      const updated = await prisma.leaseSettlementPeriod.findUnique({
+      const updated = await db.leaseSettlementPeriod.findUnique({
         where: { id },
         include: {
           park: { select: { id: true, name: true } },
@@ -311,11 +313,12 @@ export async function GET(
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Hole Periode
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       include: {
         park: {

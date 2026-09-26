@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SETTINGS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const reportType = searchParams.get("reportType");
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [scheduledReports, total] = await Promise.all([
-      prisma.scheduledReport.findMany({
+      db.scheduledReport.findMany({
         where,
         include: {
           createdBy: {
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.scheduledReport.count({ where }),
+      db.scheduledReport.count({ where }),
     ]);
 
     // Transform for response
@@ -114,13 +115,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SETTINGS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createScheduledReportSchema.parse(body);
 
     // If parkId is provided, verify it belongs to the tenant
     if (validatedData.config.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: validatedData.config.parkId,
           tenantId: check.tenantId!,
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     // If fundId is provided, verify it belongs to the tenant
     if (validatedData.config.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: {
           id: validatedData.config.fundId,
           tenantId: check.tenantId!,
@@ -152,7 +154,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Create the scheduled report
-    const scheduledReport = await prisma.scheduledReport.create({
+    const scheduledReport = await db.scheduledReport.create({
       data: {
         name: validatedData.name,
         reportType: validatedData.reportType,

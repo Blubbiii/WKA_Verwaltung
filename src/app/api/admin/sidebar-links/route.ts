@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 
@@ -17,9 +17,10 @@ const createSchema = z.object({
 export async function GET() {
   const check = await requireAdmin();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   try {
-    const links = await prisma.sidebarLink.findMany({
+    const links = await db.sidebarLink.findMany({
       where: { tenantId: check.tenantId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
@@ -32,6 +33,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const check = await requireAdmin();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const link = await prisma.sidebarLink.create({
+    const link = await db.sidebarLink.create({
       data: {
         ...parsed.data,
         tenantId: check.tenantId!,

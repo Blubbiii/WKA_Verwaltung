@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -122,9 +122,10 @@ export async function GET() {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Note: emailProvider, emailConfig, emailFromAddress, emailFromName are new fields
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
     }) as TenantWithEmailFields | null;
 
@@ -220,6 +221,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     if (!body || typeof body !== "object") {
@@ -228,7 +230,7 @@ export async function PUT(request: NextRequest) {
     const { smtp, notifications } = body;
 
     // Get current settings
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: { settings: true },
     });
@@ -266,7 +268,7 @@ export async function PUT(request: NextRequest) {
       },
     };
 
-    await prisma.tenant.update({
+    await db.tenant.update({
       where: { id: check.tenantId! },
       data: { settings: updatedSettings },
     });
@@ -285,6 +287,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const check = await requireSuperadmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = updateProviderSettingsSchema.safeParse(body);
@@ -343,7 +346,7 @@ export async function PATCH(request: NextRequest) {
 
     // Update tenant
     // Note: Using as Record<string, unknown> to allow new fields before prisma generate
-    await prisma.tenant.update({
+    await db.tenant.update({
       where: { id: check.tenantId! },
       data: updateData as Record<string, unknown>,
     });
@@ -409,6 +412,7 @@ async function mergeWithExistingConfig(
   tenantId: string,
   newConfig: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
+  const db = mandantDb(tenantId);
   // Check if any values appear to be masked (contain "...")
   const hasMaskedValues = Object.values(newConfig).some(
     (v) => typeof v === "string" && v.includes("...")
@@ -420,7 +424,7 @@ async function mergeWithExistingConfig(
 
   // Fetch existing config
   // Note: emailConfig is a new field
-  const tenant = await prisma.tenant.findUnique({
+  const tenant = await db.tenant.findUnique({
     where: { id: tenantId },
   }) as { emailConfig?: unknown } | null;
 

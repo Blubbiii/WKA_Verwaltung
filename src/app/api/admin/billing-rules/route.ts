@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission([PERMISSIONS.ADMIN_BILLING_RULES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const ruleType = searchParams.get("ruleType");
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [rules, total] = await Promise.all([
-      prisma.billingRule.findMany({
+      db.billingRule.findMany({
         where,
         include: {
           _count: {
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.billingRule.count({ where }),
+      db.billingRule.count({ where }),
     ]);
 
     // Transformiere Regeln für Response
@@ -125,6 +126,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission([PERMISSIONS.ADMIN_BILLING_RULES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = createRuleSchema.parse(body);
@@ -154,7 +156,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Erstelle Regel
-    const rule = await prisma.billingRule.create({
+    const rule = await db.billingRule.create({
       data: {
         name: validatedData.name,
         description: validatedData.description,

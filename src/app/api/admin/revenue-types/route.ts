@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
-import { PERMISSIONS } from "@/lib/auth/permissions";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
@@ -23,8 +24,9 @@ export async function GET() {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const revenueTypes = await prisma.energyRevenueType.findMany({
+    const revenueTypes = await db.energyRevenueType.findMany({
       where: { tenantId: check.tenantId! },
       orderBy: { sortOrder: "asc" },
     });
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission([PERMISSIONS.SYSTEM_REVENUE_TYPES, "settings:update"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check duplicate code
-    const existing = await prisma.energyRevenueType.findFirst({
+    const existing = await db.energyRevenueType.findFirst({
       where: { code: parsed.data.code, tenantId: check.tenantId! },
     });
 
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       return apiError("CONFLICT", undefined, { message: `Code "${parsed.data.code}" existiert bereits` });
     }
 
-    const revenueType = await prisma.energyRevenueType.create({
+    const revenueType = await db.energyRevenueType.create({
       data: {
         ...parsed.data,
         tenantId: check.tenantId!,

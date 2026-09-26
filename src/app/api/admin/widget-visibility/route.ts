@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { WIDGET_REGISTRY } from "@/lib/dashboard/widget-registry";
 import { z } from "zod";
@@ -25,11 +25,12 @@ export async function GET() {
   try {
     const check = await requirePermission("system:config");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { tenantId } = check;
 
     // Fetch all widget.minRole.* overrides for this tenant
-    const overrides = await prisma.systemConfig.findMany({
+    const overrides = await db.systemConfig.findMany({
       where: {
         tenantId: tenantId ?? null,
         key: { startsWith: "widget.minRole." },
@@ -72,6 +73,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission("system:config");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { tenantId } = check;
 
@@ -93,7 +95,7 @@ export async function PUT(request: NextRequest) {
 
     // If the chosen role equals the registry default, remove the override
     if (minRole === widget.minRole) {
-      await prisma.systemConfig.deleteMany({
+      await db.systemConfig.deleteMany({
         where: {
           tenantId: effectiveTenantId,
           key: configKey,
@@ -114,7 +116,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Upsert the override
-    await prisma.systemConfig.upsert({
+    await db.systemConfig.upsert({
       where: {
         tenantId_key: {
           tenantId: effectiveTenantId ?? "",

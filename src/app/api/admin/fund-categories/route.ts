@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
     // Auth-Check: Nur Admins duerfen zugreifen
     const check = await requirePermission([PERMISSIONS.SYSTEM_FUND_CATEGORIES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Query-Parameter auslesen
     const { searchParams } = new URL(request.url);
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Gesellschaftstypen abrufen mit Fund-Count
-    const fundCategories = await prisma.fundCategory.findMany({
+    const fundCategories = await db.fundCategory.findMany({
       where,
       orderBy: [
         { sortOrder: "asc" },
@@ -129,13 +130,14 @@ export async function POST(request: NextRequest) {
     // Auth-Check: Nur Admins duerfen zugreifen
     const check = await requirePermission([PERMISSIONS.SYSTEM_FUND_CATEGORIES, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Request-Body parsen und validieren
     const body = await request.json();
     const validatedData = createFundCategorySchema.parse(body);
 
     // Prüfen ob Code bereits existiert (innerhalb des Tenants)
-    const existingCategory = await prisma.fundCategory.findFirst({
+    const existingCategory = await db.fundCategory.findFirst({
       where: {
         code: validatedData.code,
         tenantId: check.tenantId!,
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Neuen Gesellschaftstyp erstellen
-    const fundCategory = await prisma.fundCategory.create({
+    const fundCategory = await db.fundCategory.create({
       data: {
         name: validatedData.name,
         code: validatedData.code,

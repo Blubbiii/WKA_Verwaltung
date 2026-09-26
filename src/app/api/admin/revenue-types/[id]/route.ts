@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const updateSchema = z.object({
@@ -26,10 +27,11 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const revenueType = await prisma.energyRevenueType.findFirst({
+    const revenueType = await db.energyRevenueType.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -52,10 +54,11 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.energyRevenueType.findFirst({
+    const existing = await db.energyRevenueType.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -72,7 +75,7 @@ export async function PATCH(
 
     // Check duplicate code if code is being changed
     if (parsed.data.code && parsed.data.code !== existing.code) {
-      const duplicate = await prisma.energyRevenueType.findFirst({
+      const duplicate = await db.energyRevenueType.findFirst({
         where: {
           code: parsed.data.code,
           tenantId: check.tenantId!,
@@ -84,7 +87,7 @@ export async function PATCH(
       }
     }
 
-    const revenueType = await prisma.energyRevenueType.update({
+    const revenueType = await db.energyRevenueType.update({
       where: { id, tenantId: check.tenantId! },
       data: parsed.data,
     });
@@ -104,10 +107,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.energyRevenueType.findFirst({
+    const existing = await db.energyRevenueType.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -116,13 +120,13 @@ export async function DELETE(
     }
 
     // Check if any monthly rates reference this revenue type
-    const usageCount = await prisma.energyMonthlyRate.count({
+    const usageCount = await db.energyMonthlyRate.count({
       where: { revenueTypeId: id },
     });
 
     if (usageCount > 0) {
       // Soft delete - just deactivate
-      await prisma.energyRevenueType.update({
+      await db.energyRevenueType.update({
         where: { id, tenantId: check.tenantId! },
         data: { isActive: false },
       });
@@ -133,7 +137,7 @@ export async function DELETE(
     }
 
     // Hard delete if unused
-    await prisma.energyRevenueType.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.energyRevenueType.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma, SettlementPeriodStatus } from "@prisma/client";
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     if (periodType) where.periodType = periodType;
     if (status) where.status = status as SettlementPeriodStatus;
 
-    const periods = await prisma.leaseSettlementPeriod.findMany({
+    const periods = await db.leaseSettlementPeriod.findMany({
       where,
       include: {
         park: {
@@ -70,12 +71,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission([PERMISSIONS.ADMIN_SETTLEMENT_PERIODS, "invoices:create"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { year, month, parkId, periodType, advanceInterval, linkedEnergySettlementId, notes } = createPeriodSchema.parse(body);
 
     // Prüfe ob Park existiert und zum Tenant gehört
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prüfe auf Duplikat (mit month + periodType für unique constraint)
-    const existing = await prisma.leaseSettlementPeriod.findFirst({
+    const existing = await db.leaseSettlementPeriod.findFirst({
       where: {
         tenantId: check.tenantId!,
         parkId,
@@ -117,7 +119,7 @@ export async function POST(request: NextRequest) {
       if (existing.status === "CANCELLED") {
         // Allow creation - the unique constraint includes periodType,
         // but we need to skip this cancelled record. Delete it first.
-        await prisma.leaseSettlementPeriod.delete({ where: { id: existing.id, tenantId: check.tenantId! } });
+        await db.leaseSettlementPeriod.delete({ where: { id: existing.id, tenantId: check.tenantId! } });
       } else {
         const periodDesc = month
           ? `${month}/${year} (${periodType})`
@@ -128,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     // Falls linkedEnergySettlementId angegeben, prüfe ob sie existiert
     if (linkedEnergySettlementId) {
-      const energySettlement = await prisma.energySettlement.findFirst({
+      const energySettlement = await db.energySettlement.findFirst({
         where: {
           id: linkedEnergySettlementId,
           tenantId: check.tenantId!,
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const period = await prisma.leaseSettlementPeriod.create({
+    const period = await db.leaseSettlementPeriod.create({
       data: {
         year,
         month: month ?? null,

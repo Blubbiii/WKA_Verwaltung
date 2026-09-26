@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -22,13 +22,14 @@ export async function POST(
     // Approval requires admin-level permissions
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const { action, notes } = approveSchema.parse(body);
 
     // Fetch the current period
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: {
         id: true,
@@ -57,7 +58,7 @@ export async function POST(
     }
 
     if (action === "approve") {
-      const updated = await prisma.leaseSettlementPeriod.update({
+      const updated = await db.leaseSettlementPeriod.update({
         where: { id, tenantId: check.tenantId!},
         data: {
           status: "APPROVED",
@@ -96,7 +97,7 @@ export async function POST(
         return apiError("BAD_REQUEST", undefined, { message: "Bei einer Ablehnung muss eine Begruendung angegeben werden" });
       }
 
-      const updated = await prisma.leaseSettlementPeriod.update({
+      const updated = await db.leaseSettlementPeriod.update({
         where: { id, tenantId: check.tenantId!},
         data: {
           status: "IN_PROGRESS",

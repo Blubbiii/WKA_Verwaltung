@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
@@ -24,10 +24,11 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const template = await prisma.documentTemplate.findUnique({
+    const template = await db.documentTemplate.findUnique({
       where: { id },
       include: {
         park: {
@@ -59,12 +60,13 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updateTemplateSchema.parse(body);
 
-    const template = await prisma.documentTemplate.findUnique({
+    const template = await db.documentTemplate.findUnique({
       where: { id },
       select: { id: true, tenantId: true, documentType: true, parkId: true },
     });
@@ -79,7 +81,7 @@ export async function PATCH(
 
     // Wenn isDefault auf true gesetzt, andere Defaults zurücksetzen
     if (data.isDefault === true) {
-      await prisma.documentTemplate.updateMany({
+      await db.documentTemplate.updateMany({
         where: {
           tenantId: check.tenantId!,
           documentType: template.documentType,
@@ -99,7 +101,7 @@ export async function PATCH(
     if (data.isDefault !== undefined) updateData.isDefault = data.isDefault;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    const updated = await prisma.documentTemplate.update({
+    const updated = await db.documentTemplate.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -123,10 +125,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const template = await prisma.documentTemplate.findUnique({
+    const template = await db.documentTemplate.findUnique({
       where: { id },
       select: { id: true, tenantId: true },
     });
@@ -140,7 +143,7 @@ export async function DELETE(
     }
 
     // Soft-delete: nur isActive auf false setzen
-    await prisma.documentTemplate.update({
+    await db.documentTemplate.update({
       where: { id, tenantId: check.tenantId!},
       data: { isActive: false },
     });

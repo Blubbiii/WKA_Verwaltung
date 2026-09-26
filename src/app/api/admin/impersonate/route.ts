@@ -1,3 +1,4 @@
+// mandantenübergreifend: Plattform-Verwaltung (Superadmin): Mandanten, Systemkonfiguration, Sicherung, Werbung.
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSuperadmin, requireAuth } from "@/lib/auth/withPermission";

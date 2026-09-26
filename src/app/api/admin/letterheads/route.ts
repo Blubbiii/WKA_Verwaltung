@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     if (parkId) where.parkId = parkId;
     if (fundId) where.fundId = fundId;
 
-    const letterheads = await prisma.letterhead.findMany({
+    const letterheads = await db.letterhead.findMany({
       where,
       include: {
         park: {
@@ -76,13 +77,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const data = createLetterheadSchema.parse(body);
 
     // Wenn parkId gesetzt, prüfen ob Park existiert
     if (data.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: data.parkId, tenantId: check.tenantId! },
       });
       if (!park) {
@@ -92,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     // Wenn fundId gesetzt, prüfen ob Fund existiert
     if (data.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: { id: data.fundId, tenantId: check.tenantId! },
       });
       if (!fund) {
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     // Wenn isDefault, andere Defaults im gleichen Scope zurücksetzen
     if (data.isDefault) {
-      await prisma.letterhead.updateMany({
+      await db.letterhead.updateMany({
         where: {
           tenantId: check.tenantId!,
           fundId: data.fundId || null,
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const letterhead = await prisma.letterhead.create({
+    const letterhead = await db.letterhead.create({
       data: {
         name: data.name,
         headerImageUrl: data.headerImageUrl,

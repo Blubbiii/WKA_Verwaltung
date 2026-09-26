@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
@@ -20,8 +20,9 @@ export async function GET(_request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId },
       select: { settings: true },
     });
@@ -60,6 +61,7 @@ export async function PUT(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
 
@@ -74,7 +76,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get current tenant settings to preserve other keys
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId },
       select: { settings: true },
     });
@@ -94,7 +96,7 @@ export async function PUT(request: NextRequest) {
       })
     );
 
-    await prisma.tenant.update({
+    await db.tenant.update({
       where: { id: check.tenantId },
       data: {
         settings: updatedSettings,

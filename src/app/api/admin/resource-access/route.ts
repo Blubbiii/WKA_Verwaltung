@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requireAdmin();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
@@ -80,7 +82,7 @@ const check = await requireAdmin();
       ];
     }
 
-    const accessList = await prisma.resourceAccess.findMany({
+    const accessList = await db.resourceAccess.findMany({
       where,
       include: {
         user: {
@@ -124,12 +126,13 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requireAdmin();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = resourceAccessCreateSchema.parse(body);
 
     // Prüfen ob User existiert — und zum eigenen Mandanten gehört
-    const user = await prisma.user.findFirst({
+    const user = await db.user.findFirst({
       where: { id: validatedData.userId, tenantId: check.tenantId },
       select: { id: true },
     });
@@ -194,11 +197,12 @@ export async function DELETE(request: NextRequest) {
   try {
 const check = await requireAdmin();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = resourceAccessDeleteSchema.parse(body);
 
-    const user = await prisma.user.findFirst({
+    const user = await db.user.findFirst({
       where: { id: validatedData.userId, tenantId: check.tenantId },
       select: { id: true },
     });
@@ -236,40 +240,41 @@ async function checkResourceExists(
   resourceId: string,
   tenantId: string
 ): Promise<boolean> {
+  const db = mandantDb(tenantId);
   try {
     switch (resourceType) {
       case RESOURCE_TYPES.PARK: {
-        const park = await prisma.park.findFirst({ where: { id: resourceId, tenantId } });
+        const park = await db.park.findFirst({ where: { id: resourceId, tenantId } });
         return !!park;
       }
       case RESOURCE_TYPES.FUND: {
-        const fund = await prisma.fund.findFirst({ where: { id: resourceId, tenantId } });
+        const fund = await db.fund.findFirst({ where: { id: resourceId, tenantId } });
         return !!fund;
       }
       case RESOURCE_TYPES.TURBINE: {
         // Turbine has no direct tenantId - scope via parent park
-        const turbine = await prisma.turbine.findFirst({ where: { id: resourceId, park: { tenantId } } });
+        const turbine = await db.turbine.findFirst({ where: { id: resourceId, park: { tenantId } } });
         return !!turbine;
       }
       case RESOURCE_TYPES.DOCUMENT: {
-        const doc = await prisma.document.findFirst({ where: { id: resourceId, tenantId } });
+        const doc = await db.document.findFirst({ where: { id: resourceId, tenantId } });
         return !!doc;
       }
       case RESOURCE_TYPES.CONTRACT: {
-        const contract = await prisma.contract.findFirst({ where: { id: resourceId, tenantId } });
+        const contract = await db.contract.findFirst({ where: { id: resourceId, tenantId } });
         return !!contract;
       }
       case RESOURCE_TYPES.LEASE: {
-        const lease = await prisma.lease.findFirst({ where: { id: resourceId, tenantId } });
+        const lease = await db.lease.findFirst({ where: { id: resourceId, tenantId } });
         return !!lease;
       }
       case RESOURCE_TYPES.INVOICE: {
-        const invoice = await prisma.invoice.findFirst({ where: { id: resourceId, tenantId } });
+        const invoice = await db.invoice.findFirst({ where: { id: resourceId, tenantId } });
         return !!invoice;
       }
       case RESOURCE_TYPES.SHAREHOLDER: {
         // Shareholder has no direct tenantId - scope via parent fund
-        const shareholder = await prisma.shareholder.findFirst({ where: { id: resourceId, fund: { tenantId } } });
+        const shareholder = await db.shareholder.findFirst({ where: { id: resourceId, fund: { tenantId } } });
         return !!shareholder;
       }
       default:

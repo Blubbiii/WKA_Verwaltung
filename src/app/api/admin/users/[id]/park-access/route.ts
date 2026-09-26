@@ -1,3 +1,4 @@
+// mandantenübergreifend: der Superadmin verwaltet Zugriffe von Benutzern jedes Mandanten; die Route prüft gegen den Mandanten des Benutzers.
 /**
  * Admin API for park access per user (decision E4) — counterpart of
  * /api/admin/users/[id]/fund-access.

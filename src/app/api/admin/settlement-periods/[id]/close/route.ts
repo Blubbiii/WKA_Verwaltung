@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
@@ -28,10 +28,11 @@ export async function POST(
     // Close ist eine finale Statusänderung → nur Admin
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id },
       select: { id: true, tenantId: true, status: true },
     });
@@ -61,7 +62,7 @@ export async function POST(
     // — Ausbuchung + ggf. §17-USt-Korrektur sind erfolgt, sie wird nie mehr
     // bezahlt. Ohne den Ausschluss war eine Periode nach einer einzigen
     // Forderungsabschreibung dauerhaft nicht mehr schließbar.
-    const openInvoices = await prisma.invoice.count({
+    const openInvoices = await db.invoice.count({
       where: {
         settlementPeriodId: id,
         tenantId: check.tenantId!,
@@ -76,7 +77,7 @@ export async function POST(
       });
     }
 
-    const updated = await prisma.leaseSettlementPeriod.update({
+    const updated = await db.leaseSettlementPeriod.update({
       where: { id, tenantId: check.tenantId! },
       data: { status: "CLOSED" },
     });

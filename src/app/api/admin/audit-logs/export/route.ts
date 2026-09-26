@@ -1,3 +1,4 @@
+// mandantenübergreifend: ohne aktiven Mandanten sieht der Superadmin die Protokolle aller Mandanten; sonst filtert die Route selbst.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";
@@ -365,8 +366,10 @@ export async function GET(request: NextRequest) {
     // Get user name if userId filter is set
     let userName: string | undefined;
     if (params.userId) {
-      const filterUser = await prisma.user.findUnique({
-        where: { id: params.userId },
+      // Only a user of the admin's own tenant — otherwise any id would
+      // print a foreign user's name and e-mail into the PDF header.
+      const filterUser = await prisma.user.findFirst({
+        where: { id: params.userId, ...(check.tenantId && { tenantId: check.tenantId }) },
         select: { firstName: true, lastName: true, email: true },
       });
       if (filterUser) {

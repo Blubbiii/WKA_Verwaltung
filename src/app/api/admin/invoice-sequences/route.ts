@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { apiLogger as logger } from "@/lib/logger";
@@ -10,11 +10,12 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const currentYear = new Date().getFullYear();
 
     // Hole oder erstelle beide Sequenzen
-    const sequences = await prisma.$transaction(async (tx) => {
+    const sequences = await db.$transaction(async (tx) => {
       const results = [];
 
       for (const type of ["INVOICE", "CREDIT_NOTE"] as const) {

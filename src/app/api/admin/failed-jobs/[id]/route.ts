@@ -1,3 +1,4 @@
+// mandantenübergreifend: die Job-Warteschlange gehört der ganzen Plattform.
 /**
  * Dead-Letter-Queue: Resolution-Workflow.
  *

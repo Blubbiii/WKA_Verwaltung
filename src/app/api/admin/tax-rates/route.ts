@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { getAllPositionTaxMappings } from "@/lib/tax/position-tax-mapping";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
@@ -27,14 +28,15 @@ export async function GET() {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
     // Auto-seed default rates if none exist for this tenant
-    const count = await prisma.taxRateConfig.count({ where: { tenantId } });
+    const count = await db.taxRateConfig.count({ where: { tenantId } });
     if (count === 0) {
       logger.info({ tenantId }, "No tax rates found, seeding defaults");
-      await prisma.taxRateConfig.createMany({
+      await db.taxRateConfig.createMany({
         data: DEFAULT_TAX_RATE_CONFIGS.map((cfg) => ({
           taxType: cfg.taxType,
           rate: cfg.rate,
@@ -46,7 +48,7 @@ export async function GET() {
       });
     }
 
-    const taxRates = await prisma.taxRateConfig.findMany({
+    const taxRates = await db.taxRateConfig.findMany({
       where: { tenantId },
       orderBy: [{ taxType: "asc" }, { validFrom: "desc" }],
     });
@@ -66,6 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const taxRate = await prisma.taxRateConfig.create({
+    const taxRate = await db.taxRateConfig.create({
       data: {
         taxType: parsed.data.taxType,
         rate: parsed.data.rate,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -27,12 +27,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { parkId, year, frequency, createFinalPeriod, notes } = bulkCreateSchema.parse(body);
 
     // Pruefe ob Park existiert und zum Tenant gehoert
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pruefe auf existierende Perioden für dieses Jahr
-    const existingPeriods = await prisma.leaseSettlementPeriod.findMany({
+    const existingPeriods = await db.leaseSettlementPeriod.findMany({
       where: {
         parkId,
         year,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Erstelle Perioden in einer Transaktion
-    const createdPeriods = await prisma.$transaction(async (tx) => {
+    const createdPeriods = await db.$transaction(async (tx) => {
       const created = [];
 
       // Erstelle ADVANCE Perioden
@@ -152,6 +153,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("invoices:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -164,7 +166,7 @@ export async function GET(request: NextRequest) {
     const yearNum = parseInt(year, 10);
 
     // Lade existierende Perioden
-    const existingPeriods = await prisma.leaseSettlementPeriod.findMany({
+    const existingPeriods = await db.leaseSettlementPeriod.findMany({
       where: {
         parkId,
         year: yearNum,

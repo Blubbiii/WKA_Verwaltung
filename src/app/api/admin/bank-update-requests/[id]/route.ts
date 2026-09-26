@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -26,6 +26,7 @@ export async function POST(
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -37,7 +38,7 @@ export async function POST(
       });
     }
 
-    const pending = await prisma.pendingBankUpdate.findFirst({
+    const pending = await db.pendingBankUpdate.findFirst({
       where: { id, tenantId: check.tenantId },
       include: { person: true },
     });
@@ -52,7 +53,7 @@ export async function POST(
     const newStatus = parsed.data.action === "APPROVE" ? "APPROVED" : "REJECTED";
 
     // Transaction: bei Approve → Person updaten + AuditLog + Pending updaten
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await tx.pendingBankUpdate.update({
         where: { id: pending.id },
         data: {

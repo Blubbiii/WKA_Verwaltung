@@ -1,3 +1,4 @@
+// mandantenübergreifend: Plattform-Verwaltung (Superadmin): Mandanten, Systemkonfiguration, Sicherung, Werbung.
 /**
  * System Configuration API
  *

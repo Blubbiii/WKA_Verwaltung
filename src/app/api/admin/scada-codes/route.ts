@@ -1,3 +1,4 @@
+// mandantenübergreifend: SCADA-Statuscodes sind eine globale Tabelle ohne Mandant.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";

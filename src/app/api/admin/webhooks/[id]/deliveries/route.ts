@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -23,6 +23,7 @@ export async function GET(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
@@ -30,7 +31,7 @@ export async function GET(
     const { page, limit, skip } = parsePaginationParams(searchParams, { defaultLimit: 25 });
 
     // Verify webhook belongs to tenant
-    const webhook = await prisma.webhook.findUnique({
+    const webhook = await db.webhook.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -44,7 +45,7 @@ export async function GET(
 
     // Fetch deliveries and total count in parallel
     const [deliveries, total] = await Promise.all([
-      prisma.webhookDelivery.findMany({
+      db.webhookDelivery.findMany({
         where: { webhookId: id },
         orderBy: { createdAt: "desc" },
         skip,
@@ -63,7 +64,7 @@ export async function GET(
           createdAt: true,
         },
       }),
-      prisma.webhookDelivery.count({
+      db.webhookDelivery.count({
         where: { webhookId: id },
       }),
     ]);

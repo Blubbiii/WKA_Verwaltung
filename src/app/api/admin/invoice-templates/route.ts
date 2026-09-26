@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { createDefaultLayout } from "@/lib/invoice-templates/default-template";
@@ -22,8 +22,9 @@ export async function GET() {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const templates = await prisma.invoiceTemplate.findMany({
+    const templates = await db.invoiceTemplate.findMany({
       where: {
         tenantId: check.tenantId!,
       },
@@ -45,13 +46,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const data = createTemplateSchema.parse(body);
 
     // If isDefault, unset other defaults for this tenant
     if (data.isDefault) {
-      await prisma.invoiceTemplate.updateMany({
+      await db.invoiceTemplate.updateMany({
         where: {
           tenantId: check.tenantId!,
           isDefault: true,
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
       ? { ...defaultLayout, ...data.layout }
       : defaultLayout;
 
-    const template = await prisma.invoiceTemplate.create({
+    const template = await db.invoiceTemplate.create({
       data: {
         name: data.name,
         layout,

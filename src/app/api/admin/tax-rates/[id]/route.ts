@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const updateSchema = z.object({
@@ -22,10 +23,11 @@ export async function PATCH(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.taxRateConfig.findFirst({
+    const existing = await db.taxRateConfig.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -48,7 +50,7 @@ export async function PATCH(
     if (parsed.data.validTo !== undefined) updateData.validTo = parsed.data.validTo ? new Date(parsed.data.validTo) : null;
     if (parsed.data.label !== undefined) updateData.label = parsed.data.label;
 
-    const taxRate = await prisma.taxRateConfig.update({
+    const taxRate = await db.taxRateConfig.update({
       where: { id, tenantId: check.tenantId! },
       data: updateData,
     });
@@ -68,10 +70,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.taxRateConfig.findFirst({
+    const existing = await db.taxRateConfig.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -79,7 +82,7 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Steuersatz nicht gefunden" });
     }
 
-    await prisma.taxRateConfig.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.taxRateConfig.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({
       success: true,

@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
@@ -24,6 +24,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
   try {
     const check = await requirePermission("admin:audit");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: personId } = await ctx.params;
     if (!personId) {
@@ -33,7 +34,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
     }
 
     // 1. Person inkl. Beziehungen (Tenant-scoped)
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: {
         id: personId,
         ...(check.tenantId ? { tenantId: check.tenantId } : {}),
@@ -63,7 +64,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
     // 2. Verträge / Pacht / Rechnungen / CRM in einem Roundtrip
     const [leases, contracts, invoices, crmActivities, auditTrail] =
       await Promise.all([
-        prisma.lease.findMany({
+        db.lease.findMany({
           where: { lessorId: personId },
           orderBy: { startDate: "desc" },
           select: {
@@ -77,7 +78,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
             updatedAt: true,
           },
         }),
-        prisma.contract.findMany({
+        db.contract.findMany({
           where: { partnerId: personId },
           orderBy: { createdAt: "desc" },
           select: {
@@ -91,7 +92,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
           },
         }),
         // Invoices: per Shareholder verknüpft → über shareholderId
-        prisma.invoice.findMany({
+        db.invoice.findMany({
           where: {
             shareholder: { personId },
           },
@@ -107,7 +108,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
             createdAt: true,
           },
         }),
-        prisma.crmActivity.findMany({
+        db.crmActivity.findMany({
           where: { personId },
           orderBy: { createdAt: "desc" },
           select: {
@@ -123,7 +124,7 @@ export async function GET(_request: NextRequest, ctx: RouteParams) {
           },
         }),
         // AuditLog: alle Einträge wo Person als entity erscheint
-        prisma.auditLog.findMany({
+        db.auditLog.findMany({
           where: {
             entityType: "Person",
             entityId: personId,

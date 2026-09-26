@@ -1,3 +1,4 @@
+// mandantenübergreifend: ohne aktiven Mandanten sieht der Superadmin die Protokolle aller Mandanten; sonst filtert die Route selbst.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth/withPermission";

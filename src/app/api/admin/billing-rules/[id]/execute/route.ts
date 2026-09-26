@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { executeRule } from "@/lib/billing";
 import { apiLogger as logger } from "@/lib/logger";
@@ -25,13 +25,14 @@ export async function POST(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const dryRun = searchParams.get("dryRun") === "true";
 
     // Pruefe ob Regel existiert und zum Tenant gehoert
-    const rule = await prisma.billingRule.findUnique({
+    const rule = await db.billingRule.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { DEFAULT_DOCUMENT_LAYOUT } from "@/types/pdf";
@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const documentType = searchParams.get("documentType");
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (documentType) where.documentType = documentType as Prisma.EnumDocumentTypeFilter<"DocumentTemplate">;
     if (parkId) where.parkId = parkId;
 
-    const templates = await prisma.documentTemplate.findMany({
+    const templates = await db.documentTemplate.findMany({
       where,
       include: {
         park: {
@@ -62,13 +63,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const data = createTemplateSchema.parse(body);
 
     // Wenn parkId gesetzt, prüfen ob Park existiert
     if (data.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: data.parkId,
           tenantId: check.tenantId!,
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Wenn isDefault, andere Defaults zurücksetzen
     if (data.isDefault) {
-      await prisma.documentTemplate.updateMany({
+      await db.documentTemplate.updateMany({
         where: {
           tenantId: check.tenantId!,
           documentType: data.documentType,
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
       ...(data.layout || {}),
     };
 
-    const template = await prisma.documentTemplate.create({
+    const template = await db.documentTemplate.create({
       data: {
         name: data.name,
         documentType: data.documentType,

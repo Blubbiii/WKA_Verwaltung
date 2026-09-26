@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const createSchema = z.object({
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
       where.category = category;
     }
 
-    const templates = await prisma.invoiceItemTemplate.findMany({
+    const templates = await db.invoiceItemTemplate.findMany({
       where,
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
       return apiError("BAD_REQUEST", undefined, { message: zodMeldung(parsed.error, "Ungültige Eingabe") });
     }
 
-    const template = await prisma.invoiceItemTemplate.create({
+    const template = await db.invoiceItemTemplate.create({
       data: {
         ...parsed.data,
         defaultPrice: parsed.data.defaultPrice ?? undefined,

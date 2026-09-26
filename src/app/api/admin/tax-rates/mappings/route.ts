@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
-import { apiError } from "@/lib/api-errors";
+import { apiError } from "@/lib/api-errors";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const mappingSchema = z.object({
@@ -20,6 +21,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = mappingSchema.safeParse(body);
@@ -31,9 +33,9 @@ export async function PUT(request: NextRequest) {
     const tenantId = check.tenantId!;
 
     // Update each mapping in a transaction
-    await prisma.$transaction(
+    await db.$transaction(
       parsed.data.mappings.map((m) =>
-        prisma.positionTaxMapping.update({
+        db.positionTaxMapping.update({
           where: { tenantId_category: { tenantId, category: m.category } },
           data: { taxType: m.taxType },
         })
@@ -41,7 +43,7 @@ export async function PUT(request: NextRequest) {
     );
 
     // Return updated mappings
-    const updated = await prisma.positionTaxMapping.findMany({
+    const updated = await db.positionTaxMapping.findMany({
       where: { tenantId },
       orderBy: [{ module: "asc" }, { category: "asc" }],
     });

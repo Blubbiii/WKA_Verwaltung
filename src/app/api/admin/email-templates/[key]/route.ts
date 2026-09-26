@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import {
   previewTemplate,
   htmlToPlainText,
@@ -181,6 +181,7 @@ export async function GET(
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { key } = await params;
 
@@ -192,7 +193,7 @@ export async function GET(
     const templateKey = key as SupportedTemplateName;
 
     // Try to load custom template from DB
-    const customTemplate = await prisma.emailTemplate.findUnique({
+    const customTemplate = await db.emailTemplate.findUnique({
       where: {
         tenantId_name: {
           tenantId: check.tenantId!,
@@ -242,6 +243,7 @@ export async function PUT(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { key } = await params;
 
@@ -263,7 +265,7 @@ export async function PUT(
     const textContent = htmlToPlainText(htmlContent);
 
     // Upsert the template in the DB
-    const template = await prisma.emailTemplate.upsert({
+    const template = await db.emailTemplate.upsert({
       where: {
         tenantId_name: {
           tenantId: check.tenantId!,
@@ -313,6 +315,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { key } = await params;
 
@@ -322,7 +325,7 @@ export async function DELETE(
     }
 
     // Delete the custom template - built-in will be used as fallback
-    await prisma.emailTemplate.deleteMany({
+    await db.emailTemplate.deleteMany({
       where: {
         tenantId: check.tenantId!,
         name: key,

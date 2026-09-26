@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { sendEmailSync } from "@/lib/email/sender";
@@ -30,11 +30,12 @@ export async function POST(
     // braucht ebenfalls Admin-Rolle).
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id: periodId } = await params;
 
     // Verify the settlement period exists and belongs to tenant
-    const period = await prisma.leaseSettlementPeriod.findUnique({
+    const period = await db.leaseSettlementPeriod.findUnique({
       where: { id: periodId },
       select: { id: true, tenantId: true, year: true, month: true, periodType: true, status: true },
     });
@@ -60,7 +61,7 @@ export async function POST(
     // Vorher: status IN ["DRAFT","SENT"] — bei Retry wurden bereits
     // versendete Mails ein zweites Mal verschickt. Jetzt: nur DRAFT,
     // damit ein Retry nur die wirklich noch ausstehenden bearbeitet.
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await db.invoice.findMany({
       where: {
         settlementPeriodId: periodId,
         tenantId: check.tenantId!,
@@ -152,7 +153,7 @@ export async function POST(
         }
 
         // Update invoice: track email send + set status to SENT if currently DRAFT
-        await prisma.invoice.update({
+        await db.invoice.update({
           where: { id: invoice.id, tenantId: check.tenantId!},
           data: {
             emailedAt: new Date(),

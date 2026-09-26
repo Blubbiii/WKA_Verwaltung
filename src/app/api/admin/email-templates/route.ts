@@ -6,7 +6,7 @@
 
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { type SupportedTemplateName } from "@/lib/email/renderer";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -96,11 +96,12 @@ export async function GET() {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Fetch all custom templates for this tenant from the DB.
     // Exclude CRM-category templates — those are managed separately via the
     // CRM-Vorlagen section and have free-form names that don't match built-in keys.
-    const customTemplates = await prisma.emailTemplate.findMany({
+    const customTemplates = await db.emailTemplate.findMany({
       where: {
         tenantId: check.tenantId!,
         OR: [{ category: null }, { category: { not: "CRM" } }],

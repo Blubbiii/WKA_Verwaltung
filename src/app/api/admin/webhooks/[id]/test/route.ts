@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { enqueueWebhookDelivery } from "@/lib/queue/queues/webhook.queue";
 import { apiLogger as logger } from "@/lib/logger";
@@ -41,11 +41,12 @@ export async function POST(
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Verify webhook belongs to tenant
-    const webhook = await prisma.webhook.findUnique({
+    const webhook = await db.webhook.findUnique({
       where: {
         id,
         tenantId: check.tenantId!,

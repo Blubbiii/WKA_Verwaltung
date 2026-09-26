@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -45,9 +45,10 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     if (check.tenantId) {
-      const tenant = await prisma.tenant.findUnique({
+      const tenant = await db.tenant.findUnique({
         where: { id: check.tenantId },
         select: { settings: true },
       });
@@ -75,6 +76,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission("settings:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = putThresholdsSchema.safeParse(body);
@@ -104,14 +106,14 @@ export async function PUT(request: NextRequest) {
     };
 
     if (check.tenantId) {
-      const tenant = await prisma.tenant.findUnique({
+      const tenant = await db.tenant.findUnique({
         where: { id: check.tenantId },
         select: { settings: true },
       });
 
       const existing = (tenant?.settings as Record<string, unknown>) ?? {};
 
-      await prisma.tenant.update({
+      await db.tenant.update({
         where: { id: check.tenantId },
         data: {
           // structuredClone is ~2x faster than JSON.parse(JSON.stringify(...))

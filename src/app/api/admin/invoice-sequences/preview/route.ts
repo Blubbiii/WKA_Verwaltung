@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { generatePreview } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
@@ -15,13 +15,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("settings:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { type } = previewSchema.parse(body);
 
     const currentYear = new Date().getFullYear();
 
-    const sequence = await prisma.invoiceNumberSequence.findUnique({
+    const sequence = await db.invoiceNumberSequence.findUnique({
       where: {
         tenantId_type: {
           tenantId: check.tenantId!,

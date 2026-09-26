@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -19,12 +19,13 @@ export async function GET() {
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     // Find all webhooks belonging to this tenant
-    const tenantWebhookIds = await prisma.webhook.findMany({
+    const tenantWebhookIds = await db.webhook.findMany({
       where: { tenantId },
       select: { id: true },
     });
@@ -43,21 +44,21 @@ export async function GET() {
 
     // Run counts and recent deliveries in parallel
     const [successCount, failureCount, recentDeliveries] = await Promise.all([
-      prisma.webhookDelivery.count({
+      db.webhookDelivery.count({
         where: {
           webhookId: { in: webhookIds },
           createdAt: { gte: since },
           success: true,
         },
       }),
-      prisma.webhookDelivery.count({
+      db.webhookDelivery.count({
         where: {
           webhookId: { in: webhookIds },
           createdAt: { gte: since },
           success: false,
         },
       }),
-      prisma.webhookDelivery.findMany({
+      db.webhookDelivery.findMany({
         where: {
           webhookId: { in: webhookIds },
         },

@@ -1,3 +1,4 @@
+// mandantenübergreifend: Benutzer und Rollen gehören über Mitgliedschaften mehreren Mandanten an; die Routen filtern selbst.
 /**
  * Permission Matrix Export Route
  *

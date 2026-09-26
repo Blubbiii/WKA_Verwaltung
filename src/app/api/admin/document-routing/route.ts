@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAdmin } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,8 +26,9 @@ export async function GET() {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const rules = await prisma.documentRoutingRule.findMany({
+    const rules = await db.documentRoutingRule.findMany({
       where: { tenantId: check.tenantId! },
       include: {
         fund: { select: { id: true, name: true, legalForm: true } },
@@ -47,11 +48,12 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requireAdmin();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const data = createRuleSchema.parse(body);
 
-    const rule = await prisma.documentRoutingRule.create({
+    const rule = await db.documentRoutingRule.create({
       data: {
         tenantId: check.tenantId!,
         fundId: data.fundId || null,

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
 
@@ -41,9 +41,10 @@ export async function GET() {
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
 
-    const routes = await prisma.emailRoute.findMany({
+    const routes = await db.emailRoute.findMany({
       where: { tenantId },
       orderBy: { address: "asc" },
     });
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("admin:manage");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
 
     const body = await request.json();
@@ -72,14 +74,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate address within tenant
-    const existing = await prisma.emailRoute.findFirst({
+    const existing = await db.emailRoute.findFirst({
       where: { address: result.data.address, tenantId },
     });
     if (existing) {
       return apiError("CONFLICT", undefined, { message: "Diese Adresse ist bereits vergeben" });
     }
 
-    const route = await prisma.emailRoute.create({
+    const route = await db.emailRoute.create({
       data: { ...result.data, tenantId },
     });
 
