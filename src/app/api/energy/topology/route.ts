@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch nodes with turbine data
-    const nodes = await prisma.networkNode.findMany({
+    const nodes = await db.networkNode.findMany({
       where: {
         tenantId: check.tenantId!,
         parkId,
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Fetch connections
-    const connections = await prisma.networkConnection.findMany({
+    const connections = await db.networkConnection.findMany({
       where: {
         tenantId: check.tenantId!,
         fromNode: { parkId },
@@ -124,12 +125,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validated = saveTopologySchema.parse(body);
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validated.parkId,
         tenantId: check.tenantId!,
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Run full save in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // 1. Delete all existing connections for this park first (FK constraint)
       await tx.networkConnection.deleteMany({
         where: {

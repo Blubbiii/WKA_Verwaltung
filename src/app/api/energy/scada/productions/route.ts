@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     // --- Auth & Permission ---
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.id = turbineId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: {
         id: true,
@@ -169,7 +170,7 @@ export async function GET(request: NextRequest) {
 
     if (interval === "10min") {
       // Rohdaten (keine Aggregation)
-      dataRows = await prisma.$queryRaw<AggregatedRow[]>`
+      dataRows = await db.$queryRaw<AggregatedRow[]>`
         SELECT
           "turbineId",
           "timestamp" AS period_start,
@@ -183,7 +184,7 @@ export async function GET(request: NextRequest) {
         OFFSET ${offset} LIMIT ${limit}
       `;
 
-      countRows = await prisma.$queryRaw<CountRow[]>`
+      countRows = await db.$queryRaw<CountRow[]>`
         SELECT COUNT(*) AS count
         FROM scada_measurements
         WHERE ${whereClause}
@@ -210,7 +211,7 @@ export async function GET(request: NextRequest) {
               ? Prisma.sql`date_trunc('month', "timestamp")`
               : Prisma.sql`date_trunc('year', "timestamp")`;
 
-      dataRows = await prisma.$queryRaw<AggregatedRow[]>`
+      dataRows = await db.$queryRaw<AggregatedRow[]>`
         SELECT
           "turbineId",
           ${truncSql} AS period_start,
@@ -225,7 +226,7 @@ export async function GET(request: NextRequest) {
         OFFSET ${offset} LIMIT ${limit}
       `;
 
-      countRows = await prisma.$queryRaw<CountRow[]>`
+      countRows = await db.$queryRaw<CountRow[]>`
         SELECT COUNT(*) AS count FROM (
           SELECT 1
           FROM scada_measurements
@@ -236,7 +237,7 @@ export async function GET(request: NextRequest) {
     }
 
     // --- Totals Query (über gesamten gefilterten Bereich, unabhängig von Pagination) ---
-    const totalsRows = await prisma.$queryRaw<TotalsRow[]>`
+    const totalsRows = await db.$queryRaw<TotalsRow[]>`
       SELECT
         SUM("powerW" * 10.0 / 60.0 / 1000.0) AS total_kwh,
         AVG("powerW") / 1000.0 AS avg_power_kw,

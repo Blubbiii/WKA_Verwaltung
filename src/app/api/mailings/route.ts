@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
   // Nutzer konnte Mailings lesen. `mailings:read` existierte im Katalog.
   const check = await requirePermission(PERMISSIONS.MAILINGS_READ);
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
   if (!enabled) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest) {
     const { page, limit, skip } = parsePaginationParams(searchParams, { maxLimit: 50 });
 
     const [mailings, total] = await Promise.all([
-      prisma.mailing.findMany({
+      db.mailing.findMany({
         where: { tenantId: check.tenantId! },
         include: {
           template: { select: { name: true, category: true } },
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.mailing.count({ where: { tenantId: check.tenantId! } }),
+      db.mailing.count({ where: { tenantId: check.tenantId! } }),
     ]);
 
     return NextResponse.json({
@@ -97,6 +98,7 @@ export async function POST(req: NextRequest) {
   // anlegen. Das ist keine Granularitaets-Kosmetik, sondern eine Verschaerfung.
   const check = await requirePermission(PERMISSIONS.MAILINGS_WRITE);
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
   if (!enabledPost) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
@@ -113,14 +115,14 @@ export async function POST(req: NextRequest) {
       const data = templateParse.data;
 
       // Verify template belongs to tenant
-      const template = await prisma.mailingTemplate.findFirst({
+      const template = await db.mailingTemplate.findFirst({
         where: { id: data.templateId, tenantId: check.tenantId! },
       });
       if (!template) {
         return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
       }
 
-      const mailing = await prisma.mailing.create({
+      const mailing = await db.mailing.create({
         data: {
           tenantId: check.tenantId!,
           templateId: data.templateId,
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest) {
     if (freeformParse.success) {
       const data = freeformParse.data;
 
-      const mailing = await prisma.mailing.create({
+      const mailing = await db.mailing.create({
         data: {
           tenantId: check.tenantId!,
           title: data.title,
@@ -166,7 +168,7 @@ export async function POST(req: NextRequest) {
       // Legacy format: { templateId, fundId?, title }
       const data = legacyParse.data;
 
-      const template = await prisma.mailingTemplate.findFirst({
+      const template = await db.mailingTemplate.findFirst({
         where: { id: data.templateId, tenantId: check.tenantId! },
       });
       if (!template) {
@@ -174,7 +176,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (data.fundId) {
-        const fund = await prisma.fund.findFirst({
+        const fund = await db.fund.findFirst({
           where: { id: data.fundId, tenantId: check.tenantId! },
         });
         if (!fund) {
@@ -182,7 +184,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const mailing = await prisma.mailing.create({
+      const mailing = await db.mailing.create({
         data: {
           tenantId: check.tenantId!,
           templateId: data.templateId,

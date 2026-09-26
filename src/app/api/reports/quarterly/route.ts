@@ -8,7 +8,7 @@ import {
   generateQuarterlyReportPdf,
   getQuarterlyReportFilename,
 } from "@/lib/pdf/generators/quarterlyReportPdf";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 const sectionsSchema = z.object({
   summary: z.boolean().optional(),
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.REPORTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = quarterlyReportSchema.safeParse(body);
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     const { parkId, year, quarter, sections } = parsed.data;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
       select: { id: true, name: true },
     });

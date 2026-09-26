@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma, ProductionStatus } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Park-Zugehoerigkeit prüfen
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Produktionsdaten laden
-    const productions = await prisma.turbineProduction.findMany({
+    const productions = await db.turbineProduction.findMany({
       where,
       include: {
         turbine: {

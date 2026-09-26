@@ -91,7 +91,7 @@ describe("Tausch", () => {
 
   it("laeuft in einer Transaktion", () => {
     // Ein halber Tausch hinterliesse eine Anlage ohne Getriebe im Register.
-    expect(route).toContain("prisma.$transaction");
+    expect(route).toMatch(/\b(prisma|db)\.\$transaction/);
   });
 
   it("loescht die alte Komponente NICHT", () => {

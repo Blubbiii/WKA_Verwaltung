@@ -22,7 +22,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.ENERGY_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     // 12 Abfragen für dieselben zwei Kennungen.
     const codes = [...new Set(rows.map((r) => r.meteringCode).filter(Boolean))] as string[];
     const meteringPoints = codes.length
-      ? await prisma.meteringPoint.findMany({
+      ? await db.meteringPoint.findMany({
           where: {
             tenantId: check.tenantId!,
             code: { in: codes.map((c) => c.replace(/\s/g, "").toUpperCase()) },
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
     // Mandantenbindung der Parks prüfen — ein direkt angegebener parkId kommt
     // vom Client.
     const parkIds = [...new Set(importable.map((r) => r.parkId))];
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: { id: { in: parkIds }, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Bestehende Abrechnungen finden. Sie werden NICHT überschrieben.
-    const existing = await prisma.energySettlement.findMany({
+    const existing = await db.energySettlement.findMany({
       where: {
         tenantId: check.tenantId!,
         OR: finalRows.map((row) => ({
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
 
     let imported = 0;
     if (toCreate.length > 0) {
-      const result = await prisma.energySettlement.createMany({
+      const result = await db.energySettlement.createMany({
         data: toCreate.map((row) => ({
           tenantId: check.tenantId!,
           parkId: row.parkId,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { scanLocation, readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
 
     // --- Bestehende Mappings aus der Datenbank laden ---
 
-    const mappings = await prisma.scadaTurbineMapping.findMany({
+    const mappings = await db.scadaTurbineMapping.findMany({
       where: {
         tenantId,
         locationCode,

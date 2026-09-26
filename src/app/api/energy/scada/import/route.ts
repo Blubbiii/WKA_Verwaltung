@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType } from "@/lib/scada/import-service";
 import type { ScadaFileType } from "@/lib/scada/import-service";
@@ -15,8 +15,9 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const logs = await prisma.scadaImportLog.findMany({
+    const logs = await db.scadaImportLog.findMany({
       where: {
         tenantId: check.tenantId!,
       },
@@ -64,7 +65,8 @@ async function launchImportForType(
   fileType: ScadaFileType,
   basePath: string,
 ): Promise<{ id: string; fileType: ScadaFileType; status: "RUNNING" }> {
-  const log = await prisma.scadaImportLog.create({
+  const db = mandantDb(tenantId);
+  const log = await db.scadaImportLog.create({
     data: { tenantId, locationCode, fileType, status: "RUNNING" },
   });
 
@@ -76,7 +78,7 @@ async function launchImportForType(
     importLogId: log.id,
   }).catch(async (err: unknown) => {
     logger.error({ err }, `SCADA-Import fehlgeschlagen (Log: ${log.id})`);
-    await prisma.scadaImportLog.update({
+    await db.scadaImportLog.update({
       where: { id: log.id },
       data: {
         status: "FAILED",
@@ -93,6 +95,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:scada:import");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { locationCode, fileType, fileTypes, basePath } = body as {
@@ -149,7 +152,7 @@ export async function POST(request: NextRequest) {
 
       // Skip bereits laufende Imports pro Type — kein CONFLICT auf Bulk-Ebene,
       // sondern per-Type im skipped[]-Array.
-      const running = await prisma.scadaImportLog.findMany({
+      const running = await db.scadaImportLog.findMany({
         where: {
           tenantId,
           locationCode,
@@ -195,7 +198,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const runningImport = await prisma.scadaImportLog.findFirst({
+    const runningImport = await db.scadaImportLog.findFirst({
       where: { tenantId, locationCode, fileType, status: "RUNNING" },
     });
 

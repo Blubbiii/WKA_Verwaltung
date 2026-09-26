@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const locationCode = searchParams.get("locationCode");
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       where.locationCode = locationCode;
     }
 
-    const mappings = await prisma.scadaTurbineMapping.findMany({
+    const mappings = await db.scadaTurbineMapping.findMany({
       where,
       include: {
         park: {
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { locationCode, plantNo, parkId, turbineId, description } = body;
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validierung: Park gehoert zum Tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest) {
         return apiError("MISSING_FIELD", undefined, { message: "turbineId ist erforderlich für WEA-Zuordnungen" });
       }
 
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: {
           id: turbineId,
           parkId: parkId,
@@ -129,7 +131,7 @@ export async function POST(request: NextRequest) {
       // PARKRECHNER or NVP: auto-create or reuse a virtual turbine entry
       const designationLabel = deviceType === "PARKRECHNER" ? "Parkrechner" : "Netzverknuepfungspunkt";
 
-      let virtualTurbine = await prisma.turbine.findFirst({
+      let virtualTurbine = await db.turbine.findFirst({
         where: {
           parkId,
           deviceType,
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (!virtualTurbine) {
-        virtualTurbine = await prisma.turbine.create({
+        virtualTurbine = await db.turbine.create({
           data: {
             designation: designationLabel,
             deviceType,
@@ -155,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Duplikat-Prüfung (unique constraint: tenantId + locationCode + plantNo)
-    const existing = await prisma.scadaTurbineMapping.findUnique({
+    const existing = await db.scadaTurbineMapping.findUnique({
       where: {
         tenantId_locationCode_plantNo: {
           tenantId: check.tenantId!,
@@ -170,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Zuordnung erstellen
-    const mapping = await prisma.scadaTurbineMapping.create({
+    const mapping = await db.scadaTurbineMapping.create({
       data: {
         locationCode,
         plantNo,

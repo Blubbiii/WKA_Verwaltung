@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
@@ -41,6 +41,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.DISMANTLING_PROVISION);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -53,7 +54,7 @@ export async function POST(
     }
     const data = parsed.data;
 
-    const obligation = await prisma.dismantlingObligation.findFirst({
+    const obligation = await db.dismantlingObligation.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         park: { select: { name: true, commissioningDate: true } },
@@ -126,8 +127,8 @@ export async function POST(
     };
 
     const stored = existing
-      ? await prisma.dismantlingProvision.update({ where: { id: existing.id }, data: payload })
-      : await prisma.dismantlingProvision.create({ data: payload });
+      ? await db.dismantlingProvision.update({ where: { id: existing.id }, data: payload })
+      : await db.dismantlingProvision.create({ data: payload });
 
     await createAuditLog({
       action: existing ? "UPDATE" : "CREATE",

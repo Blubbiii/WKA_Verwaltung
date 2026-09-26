@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -25,10 +25,11 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
-    const config = await prisma.scadaAnomalyConfig.findUnique({
+    const config = await db.scadaAnomalyConfig.findUnique({
       where: { tenantId },
     });
 
@@ -77,6 +78,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const body = await request.json();
@@ -115,7 +117,7 @@ export async function PUT(request: NextRequest) {
     if (typeof notifyInApp === "boolean") data.notifyInApp = notifyInApp;
 
     // Upsert: create if not exists, update if exists
-    const config = await prisma.scadaAnomalyConfig.upsert({
+    const config = await db.scadaAnomalyConfig.upsert({
       where: { tenantId },
       create: {
         tenantId,

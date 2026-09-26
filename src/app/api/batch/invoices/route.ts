@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { processBatch } from "@/lib/batch/batch-operations";
 import { createAuditLog } from "@/lib/audit";
@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
     };
     const check = await requirePermission(permissionMap[action] || ["invoices:update"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Verify all invoices belong to the user's tenant
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await db.invoice.findMany({
       where: { id: { in: invoiceIds }, tenantId: check.tenantId, deletedAt: null },
       select: { id: true, status: true },
     });
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
               `Rechnung hat Status ${invoice.status}, nur DRAFT kann freigegeben werden`
             );
           }
-          await prisma.invoice.update({
+          await db.invoice.update({
             where: { id, tenantId: check.tenantId! },
             data: { status: "SENT", sentAt: new Date() },
           });
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
               `Rechnung hat Status ${invoice.status}, kann nicht versendet werden`
             );
           }
-          await prisma.invoice.update({
+          await db.invoice.update({
             where: { id, tenantId: check.tenantId! },
             data: { status: "SENT", sentAt: new Date() },
           });
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
           if (invoice.status === "CANCELLED") {
             throw new Error("Rechnung ist bereits storniert");
           }
-          await prisma.invoice.update({
+          await db.invoice.update({
             where: { id, tenantId: check.tenantId! },
             data: { status: "CANCELLED" },
           });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs/promises";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { startImport, isValidFileType, type ScadaFileType } from "@/lib/scada/import-service";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const formData = await request.formData();
     const locationCode = formData.get("locationCode") as string | null;
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for running import
-      const running = await prisma.scadaImportLog.findFirst({
+      const running = await db.scadaImportLog.findFirst({
         where: {
           tenantId: check.tenantId!,
           locationCode,
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create import log
-      const log = await prisma.scadaImportLog.create({
+      const log = await db.scadaImportLog.create({
         data: {
           tenantId: check.tenantId!,
           locationCode,
@@ -144,7 +145,7 @@ export async function POST(request: NextRequest) {
         cleanupDir: typeDir,
       }).catch(async (err: unknown) => {
         logger.error({ err }, `SCADA-Upload-Import fehlgeschlagen (Log: ${log.id})`);
-        await prisma.scadaImportLog.update({
+        await db.scadaImportLog.update({
           where: { id: log.id },
           data: {
             status: "FAILED",

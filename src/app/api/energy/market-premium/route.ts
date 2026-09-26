@@ -25,7 +25,7 @@ import { berlinerMonat } from "@/lib/zeit/berlin";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -58,12 +58,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const year = searchParams.get("year");
     const turbineId = searchParams.get("turbineId");
 
-    const calculations = await prisma.marketPremiumCalculation.findMany({
+    const calculations = await db.marketPremiumCalculation.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(year ? { year: Number(year) } : {}),
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = computeSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -107,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Delivery month in German local time (see spot-prices).
     const { von: from, bis: to } = berlinerMonat(data.year, data.month);
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: {
         park: { tenantId: check.tenantId! },
         status: "ACTIVE",
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Preisreihe EINMAL laden — sie gilt für alle Anlagen der Gebotszone.
-    const priceRows = await prisma.hourlySpotPrice.findMany({
+    const priceRows = await db.hourlySpotPrice.findMany({
       where: { biddingZone: data.biddingZone, hour: { gte: from, lt: to } },
       orderBy: { hour: "asc" },
       select: { hour: true, priceEurMwh: true },
@@ -148,7 +150,7 @@ export async function POST(request: NextRequest) {
     // Erzeugung des Monats je Park aus der Abrechnung. Auf die Anlage
     // heruntergebrochen wird NICHT geschätzt — dafür gibt es die
     // Einzelabrechnungspositionen.
-    const settlementItems = await prisma.energySettlementItem.groupBy({
+    const settlementItems = await db.energySettlementItem.groupBy({
       by: ["turbineId"],
       where: {
         energySettlement: {
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
         productionInNegativeHoursKwh: null,
       });
 
-      const existing = await prisma.marketPremiumCalculation.findUnique({
+      const existing = await db.marketPremiumCalculation.findUnique({
         where: {
           turbineId_year_month: { turbineId: turbine.id, year: data.year, month: data.month },
         },
@@ -240,7 +242,7 @@ export async function POST(request: NextRequest) {
         } as Prisma.InputJsonValue,
       };
 
-      const stored = await prisma.marketPremiumCalculation.upsert({
+      const stored = await db.marketPremiumCalculation.upsert({
         where: {
           turbineId_year_month: { turbineId: turbine.id, year: data.year, month: data.month },
         },

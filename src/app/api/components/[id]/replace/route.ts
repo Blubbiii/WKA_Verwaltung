@@ -20,7 +20,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -59,6 +59,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const parsed = bodySchema.safeParse(await request.json());
@@ -70,7 +71,7 @@ export async function POST(
     }
     const data = parsed.data;
 
-    const old = await prisma.majorComponent.findFirst({
+    const old = await db.majorComponent.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         turbine: { select: { id: true, designation: true } },
@@ -101,7 +102,7 @@ export async function POST(
       });
     }
 
-    const replacement = await prisma.$transaction(async (tx) => {
+    const replacement = await db.$transaction(async (tx) => {
       const created = await tx.majorComponent.create({
         data: {
           tenantId: check.tenantId!,

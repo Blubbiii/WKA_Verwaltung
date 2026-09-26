@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
       where.portalVisible = true;
     }
 
-    const configs = await prisma.energyReportConfig.findMany({
+    const configs = await db.energyReportConfig.findMany({
       where,
       include: {
         park: {
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const userId = check.userId!;
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     // Validate parkId belongs to tenant if provided
     if (data.parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: { id: data.parkId, tenantId },
       });
       if (!park) {
@@ -141,7 +143,7 @@ export async function POST(request: NextRequest) {
 
     // Validate turbineId belongs to tenant if provided
     if (data.turbineId) {
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: {
           id: data.turbineId,
           park: { tenantId },
@@ -152,7 +154,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const config = await prisma.energyReportConfig.create({
+    const config = await db.energyReportConfig.create({
       data: {
         name: data.name,
         description: data.description ?? null,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     // --- Auth & Permission ---
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Optional: turbineId validieren (gehoert zum Tenant?)
     if (turbineId) {
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: {
           id: turbineId,
           park: { tenantId },
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // Optional: parkId validieren (gehoert zum Tenant?)
     if (parkId) {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: parkId,
           tenantId,
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.id = turbineId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: {
         id: true,
@@ -140,7 +141,7 @@ export async function GET(request: NextRequest) {
     // --- SCADA-Aggregation via Raw SQL ---
     // Berechnung: powerW (Watt) * 10min / 60min / 1000 = kWh pro Intervall
     // SUM ergibt monatliche kWh-Summe aus 10-Minuten-Intervallen
-    const scadaRows = await prisma.$queryRaw<ScadaAggRow[]>`
+    const scadaRows = await db.$queryRaw<ScadaAggRow[]>`
       SELECT
         "turbineId",
         EXTRACT(MONTH FROM "timestamp")::int as month,
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
     }
 
     // --- TurbineProduction (gemeldete/abgerechnete Produktion) laden ---
-    const productions = await prisma.turbineProduction.findMany({
+    const productions = await db.turbineProduction.findMany({
       where: {
         tenantId,
         year,

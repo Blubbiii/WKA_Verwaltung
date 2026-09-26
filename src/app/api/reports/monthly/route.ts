@@ -8,7 +8,7 @@ import {
   generateMonthlyReportPdf,
   getMonthlyReportFilename,
 } from "@/lib/pdf/generators/monthlyReportPdf";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 // Validation schema
 const sectionsSchema = z.object({
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     // Permission check
     const check = await requirePermission(PERMISSIONS.REPORTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     // Parse and validate body
     const body = await request.json();
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     const { parkId, year, month, sections } = parsed.data;
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,

@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -45,13 +45,14 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const parkId = searchParams.get("parkId");
     const turbineId = searchParams.get("turbineId");
 
-    const deadlines = await prisma.complianceDeadline.findMany({
+    const deadlines = await db.complianceDeadline.findMany({
       where: {
         tenantId: check.tenantId!,
         // Standardmässig nur offene: erledigte Fristen sind eine Historie,
@@ -89,6 +90,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const raw = await request.json().catch(() => ({}));
     const parsed = generateSchema.safeParse(raw);
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
     const { parkId, turbineId, horizonYears } = parsed.data;
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: {
         park: { tenantId: check.tenantId! },
         status: "ACTIVE",
@@ -149,7 +151,7 @@ export async function POST(request: NextRequest) {
 
       for (const proposal of proposals) {
         try {
-          await prisma.complianceDeadline.create({
+          await db.complianceDeadline.create({
             data: {
               tenantId: check.tenantId!,
               kind: proposal.kind,
@@ -200,6 +202,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = patchSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -207,7 +210,7 @@ export async function PATCH(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const existing = await prisma.complianceDeadline.findFirst({
+    const existing = await db.complianceDeadline.findFirst({
       where: { id: data.id, tenantId: check.tenantId! },
       select: { id: true, status: true, kind: true, dueDate: true },
     });
@@ -217,7 +220,7 @@ export async function PATCH(request: NextRequest) {
 
     const done = data.status === "DONE";
 
-    const updated = await prisma.complianceDeadline.update({
+    const updated = await db.complianceDeadline.update({
       where: { id: data.id },
       data: {
         status: data.status,

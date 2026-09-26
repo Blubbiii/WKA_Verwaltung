@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getForecastForPark } from "@/lib/weather/forecast";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -15,11 +15,12 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { parkId } = await params;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId, deletedAt: null },
       select: {
         id: true,

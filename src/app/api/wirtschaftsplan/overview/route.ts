@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -20,6 +20,7 @@ export async function GET() {
     const check = await requirePermission("wirtschaftsplan:read");
     if (!check.authorized) return check.error;
     if (!check.tenantId) return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
+    const db = mandantDb(check.tenantId!);
 
     const now = new Date();
     const year = now.getFullYear();
@@ -28,11 +29,11 @@ export async function GET() {
     const startOfNextYear = new Date(year + 1, 0, 1);
 
     const [energySettlements, invoices, costAllocations, budget] = await Promise.all([
-      prisma.energySettlement.findMany({
+      db.energySettlement.findMany({
         where: { tenantId: check.tenantId, year, month: { lte: currentMonth } },
         select: { netOperatorRevenueEur: true },
       }),
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: {
           tenantId: check.tenantId,
           invoiceDate: { gte: startOfYear, lt: startOfNextYear },
@@ -42,14 +43,14 @@ export async function GET() {
         },
         select: { grossAmount: true, leaseId: true, invoiceDate: true },
       }),
-      prisma.parkCostAllocation.findMany({
+      db.parkCostAllocation.findMany({
         where: {
           tenantId: check.tenantId,
           leaseRevenueSettlement: { year },
         },
         select: { totalUsageFeeEur: true },
       }),
-      prisma.annualBudget.findFirst({
+      db.annualBudget.findFirst({
         where: { tenantId: check.tenantId, year, status: { in: ["APPROVED", "DRAFT"] } },
         orderBy: { status: "asc" },
         include: { lines: true },

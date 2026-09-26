@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { logDeletion } from "@/lib/audit";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -28,10 +28,11 @@ export async function GET(
   try {
 const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const news = await prisma.news.findFirst({
+    const news = await db.news.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -74,10 +75,11 @@ export async function PATCH(
   try {
 const check = await requirePermission([PERMISSIONS.NEWS_UPDATE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingNews = await prisma.news.findFirst({
+    const existingNews = await db.news.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -93,7 +95,7 @@ const check = await requirePermission([PERMISSIONS.NEWS_UPDATE, PERMISSIONS.ADMI
 
     // Check fund belongs to tenant if provided
     if (validatedData.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: {
           id: validatedData.fundId,
           tenantId: check.tenantId,
@@ -119,7 +121,7 @@ const check = await requirePermission([PERMISSIONS.NEWS_UPDATE, PERMISSIONS.ADMI
       }
     }
 
-    const news = await prisma.news.update({
+    const news = await db.news.update({
       where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.title && { title: validatedData.title }),
@@ -158,10 +160,11 @@ export async function DELETE(
   try {
 const check = await requirePermission([PERMISSIONS.NEWS_DELETE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existingNews = await prisma.news.findFirst({
+    const existingNews = await db.news.findFirst({
       where: {
         id,
         tenantId: check.tenantId,
@@ -173,7 +176,7 @@ const check = await requirePermission([PERMISSIONS.NEWS_DELETE, PERMISSIONS.ADMI
     }
 
     // Hard-delete: Meldung unwiderruflich löschen
-    await prisma.news.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.news.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Log deletion for audit trail (deferred: runs after response is sent)
     const newsSnapshot = existingNews;

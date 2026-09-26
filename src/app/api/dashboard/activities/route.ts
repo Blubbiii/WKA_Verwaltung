@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { aktivitaetsSatz, aktivitaetsObjekt } from "@/lib/dashboard/aktivitaet-satz";
@@ -56,9 +56,10 @@ function relativeTimeGerman(date: Date): string {
 export async function GET() {
   const check = await requireAuth();
   if (!check.authorized) return check.error;
+  const db = mandantDb(check.tenantId!);
 
   try {
-    const logs = await prisma.auditLog.findMany({
+    const logs = await db.auditLog.findMany({
       where: { tenantId: check.tenantId },
       orderBy: { createdAt: "desc" },
       take: 10,

@@ -8,7 +8,7 @@ import {
   generateCustomReportPdf,
   getCustomReportFilename,
 } from "@/lib/pdf/generators/customReportPdf";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 // =============================================================================
 // Validation Schema
@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     // Permission check — requires energy:read
     const check = await requirePermission(PERMISSIONS.ENERGY_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     // Parse and validate body
     const body = await request.json();
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Resolve park name (and verify park belongs to tenant if not "all")
     let parkName = "Alle Parks";
     if (parkId !== "all") {
-      const park = await prisma.park.findFirst({
+      const park = await db.park.findFirst({
         where: {
           id: parkId,
           tenantId: check.tenantId!,
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch tenant name for cover page
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: { name: true },
     });

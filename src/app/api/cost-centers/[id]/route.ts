@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -27,10 +27,11 @@ async function getHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const costCenter = await prisma.costCenter.findFirst({
+    const costCenter = await db.costCenter.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         park: { select: { id: true, name: true } },
@@ -60,6 +61,7 @@ async function putHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -82,7 +84,7 @@ async function putHandler(
       return apiError(errorCode, status, { message: referenceError.message });
     }
 
-    const costCenter = await prisma.costCenter.updateMany({
+    const costCenter = await db.costCenter.updateMany({
       where: { id, tenantId: check.tenantId! },
       data,
     });
@@ -91,7 +93,7 @@ async function putHandler(
       return apiError("NOT_FOUND", 404, { message: "Kostenstelle nicht gefunden" });
     }
 
-    const updated = await prisma.costCenter.findFirst({ where: { id, tenantId: check.tenantId! } });
+    const updated = await db.costCenter.findFirst({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -112,10 +114,11 @@ async function deleteHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const result = await prisma.costCenter.deleteMany({
+    const result = await db.costCenter.deleteMany({
       where: { id, tenantId: check.tenantId! },
     });
 

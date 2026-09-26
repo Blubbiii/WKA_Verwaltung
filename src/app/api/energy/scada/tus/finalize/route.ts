@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as path from "path";
 import * as fs from "fs/promises";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = finalizeSchema.safeParse(body);
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
         // Skip if an import for the exact same tuple is already RUNNING —
         // the current files will be picked up by the next manual retrigger.
-        const running = await prisma.scadaImportLog.findFirst({
+        const running = await db.scadaImportLog.findFirst({
           where: { tenantId, locationCode, fileType, status: "RUNNING" },
         });
         if (running) {
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const log = await prisma.scadaImportLog.create({
+        const log = await db.scadaImportLog.create({
           data: {
             tenantId,
             locationCode,
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
           cleanupDir: typeDir,
         }).catch(async (err: unknown) => {
           logger.error({ err, importLogId: log.id }, "SCADA-tus Import fehlgeschlagen");
-          await prisma.scadaImportLog.update({
+          await db.scadaImportLog.update({
             where: { id: log.id },
             data: {
               status: "FAILED",

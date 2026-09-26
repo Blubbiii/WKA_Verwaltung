@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { Prisma } from "@prisma/client";
 import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId") || undefined;
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     // Fetch all GIS data in parallel
     const [parksRoh, turbinesRoh, plotsRoh, annotationsRoh] = await Promise.all([
       // Parks
-      prisma.park.findMany({
+      db.park.findMany({
         take: GRENZE_JE_EBENE + 1,
         where: { ...tenantFilter, ...(parkId ? { id: parkId } : {}) },
         select: {
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Turbines with coordinates (no tenantId on Turbine — filter via park relation)
-      prisma.turbine.findMany({
+      db.turbine.findMany({
         take: GRENZE_JE_EBENE + 1,
         where: {
           park: tenantFilter,
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Plots with geometry and lease info
-      prisma.plot.findMany({
+      db.plot.findMany({
         take: GRENZE_JE_EBENE + 1,
         where: {
           ...tenantFilter,
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Annotations with geometry
-      prisma.mapAnnotation.findMany({
+      db.mapAnnotation.findMany({
         take: GRENZE_JE_EBENE + 1,
         where: {
           ...tenantFilter,

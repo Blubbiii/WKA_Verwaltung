@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { productionCreateSchema } from "@/lib/energy/production-schemas";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { ProductionDataSource, ProductionStatus, Prisma } from "@prisma/client";
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // URL-Parameter extrahieren
     const { searchParams } = new URL(request.url);
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     // Parallele Abfragen: Daten + Gesamtanzahl
     const [productions, total] = await Promise.all([
-      prisma.turbineProduction.findMany({
+      db.turbineProduction.findMany({
         where,
         include: {
           revenueType: { select: { id: true, name: true, code: true } },
@@ -91,11 +92,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.turbineProduction.count({ where }),
+      db.turbineProduction.count({ where }),
     ]);
 
     // Aggregationen berechnen (Summen für gefilterte Daten)
-    const aggregations = await prisma.turbineProduction.aggregate({
+    const aggregations = await db.turbineProduction.aggregate({
       where,
       _sum: {
         productionKwh: true,
@@ -128,13 +129,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = productionCreateSchema.parse(body);
 
     // A revenue type of another tenant must not be linkable.
     if (validatedData.revenueTypeId) {
-      const art = await prisma.energyRevenueType.findFirst({
+      const art = await db.energyRevenueType.findFirst({
         where: { id: validatedData.revenueTypeId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
 
 
     // Validierung: Turbine gehoert zum Tenant
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: {
         id: validatedData.turbineId,
         park: {
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prüfung auf Duplikat (unique constraint: turbineId + year + month + tenantId)
-    const existing = await prisma.turbineProduction.findUnique({
+    const existing = await db.turbineProduction.findUnique({
       where: {
         turbineId_year_month_tenantId: {
           turbineId: validatedData.turbineId,
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Produktionsdaten erstellen
-    const production = await prisma.turbineProduction.create({
+    const production = await db.turbineProduction.create({
       data: {
         turbineId: validatedData.turbineId,
         year: validatedData.year,

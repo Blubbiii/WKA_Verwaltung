@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     // --- Auth & Permission ---
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.id = turbineId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: { id: true },
     });
@@ -135,7 +136,7 @@ export async function GET(request: NextRequest) {
     const whereClause = Prisma.sql`${baseConditions} ${dateFragment}`;
 
     // --- Scatter Query: Zufällige Stichprobe bis zum Limit ---
-    const scatterRows = await prisma.$queryRaw<ScatterRow[]>`
+    const scatterRows = await db.$queryRaw<ScatterRow[]>`
       SELECT
         "windSpeedMs"::float AS "windSpeed",
         "powerW"::float / 1000.0 AS "powerKw",
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
     `;
 
     // --- Curve Query: Gemittelte Leistung pro 0.5 m/s Bin ---
-    const curveRows = await prisma.$queryRaw<CurveRow[]>`
+    const curveRows = await db.$queryRaw<CurveRow[]>`
       SELECT
         ROUND("windSpeedMs"::numeric * 2) / 2 AS "windSpeed",
         AVG("powerW")::float / 1000.0 AS "avgPowerKw",
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
     `;
 
     // --- Meta Query: Gesamtanzahl, Nennleistung, Cut-In/Cut-Out ---
-    const metaRows = await prisma.$queryRaw<MetaRow[]>`
+    const metaRows = await db.$queryRaw<MetaRow[]>`
       SELECT
         COUNT(*) AS total_points,
         MAX("powerW")::float / 1000.0 AS rated_power_kw,

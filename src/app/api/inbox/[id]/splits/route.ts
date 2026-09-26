@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
-import { serializePrisma } from "@/lib/serialize";
+import { serializePrisma } from "@/lib/serialize";
+
 import { zodMeldung } from "@/lib/validation/zod-meldung";
 
 const splitItemSchema = z.object({
@@ -28,12 +29,13 @@ export async function POST(
   try {
     const check = await requirePermission("inbox:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
       return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
     const { id } = await params;
 
-    const invoice = await prisma.incomingInvoice.findFirst({
+    const invoice = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
     });
     if (!invoice) {
@@ -47,14 +49,14 @@ export async function POST(
     }
 
     // Delete existing splits that have no outgoing invoice yet
-    await prisma.incomingInvoiceSplit.deleteMany({
+    await db.incomingInvoiceSplit.deleteMany({
       where: { invoiceId: id, outgoingInvoiceId: null },
     });
 
     // Create new splits
     const newSplits = await Promise.all(
       parsed.data.splits.map((s, i) =>
-        prisma.incomingInvoiceSplit.create({
+        db.incomingInvoiceSplit.create({
           data: {
             invoiceId: id,
             position: i + 1,

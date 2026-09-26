@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -39,12 +39,13 @@ export async function POST(
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
     if (!(await getConfigBoolean("inbox.enabled", check.tenantId, false))) {
       return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
     const { id } = await params;
 
-    const existing = await prisma.incomingInvoice.findFirst({
+    const existing = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId, deletedAt: null },
       select: {
         id: true,
@@ -82,7 +83,7 @@ export async function POST(
 
     // Race-Safe-Idempotenz: updateMany mit paidAt:null als Vorbedingung —
     // wenn zwei parallele Calls ankommen, schlägt der zweite mit count=0 fehl.
-    const result = await prisma.incomingInvoice.updateMany({
+    const result = await db.incomingInvoice.updateMany({
       where: {
         id,
         tenantId: check.tenantId,
@@ -104,7 +105,7 @@ export async function POST(
       });
     }
 
-    const updated = await prisma.incomingInvoice.findUniqueOrThrow({
+    const updated = await db.incomingInvoice.findUniqueOrThrow({
       where: { id },
     });
 

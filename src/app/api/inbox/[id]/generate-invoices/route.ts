@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -16,12 +16,13 @@ export async function POST(
   try {
     const check = await requirePermission("inbox:approve");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     if (!await getConfigBoolean("inbox.enabled", check.tenantId!, false)) {
       return apiError("FEATURE_DISABLED", 404, { message: "Inbox nicht aktiviert" });
     }
     const { id } = await params;
 
-    const invoice = await prisma.incomingInvoice.findFirst({
+    const invoice = await db.incomingInvoice.findFirst({
       where: { id, tenantId: check.tenantId!, deletedAt: null },
       include: {
         vendor: { select: { name: true } },
@@ -67,7 +68,7 @@ export async function POST(
         split.description ??
         `Kostenanteil ${split.fund.name} — ${vendorName}${invoice.invoiceNumber ? ` Re. ${invoice.invoiceNumber}` : ""}`;
 
-      const outgoing = await prisma.$transaction(async (tx) => {
+      const outgoing = await db.$transaction(async (tx) => {
         const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
           tx,
           tenantId,

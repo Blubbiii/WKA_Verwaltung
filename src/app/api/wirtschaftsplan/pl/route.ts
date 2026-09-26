@@ -5,7 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const yearParam = searchParams.get("year");
@@ -111,7 +112,7 @@ export async function GET(request: NextRequest) {
       ? { id: parkIdParam, tenantId: check.tenantId }
       : { tenantId: check.tenantId };
 
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: parkFilter,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
@@ -125,11 +126,11 @@ export async function GET(request: NextRequest) {
 
     // Load actual data + budget in parallel
     const [energySettlements, invoices, costAllocations, budgetLines] = await Promise.all([
-      prisma.energySettlement.findMany({
+      db.energySettlement.findMany({
         where: { tenantId: check.tenantId, parkId: { in: parkIds }, year },
         select: { parkId: true, month: true, netOperatorRevenueEur: true },
       }),
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: {
           tenantId: check.tenantId,
           parkId: { in: parkIds },
@@ -140,7 +141,7 @@ export async function GET(request: NextRequest) {
         },
         select: { parkId: true, invoiceDate: true, grossAmount: true, leaseId: true },
       }),
-      prisma.parkCostAllocation.findMany({
+      db.parkCostAllocation.findMany({
         where: {
           tenantId: check.tenantId,
           leaseRevenueSettlement: { parkId: { in: parkIds }, year },
@@ -155,12 +156,12 @@ export async function GET(request: NextRequest) {
         let resolvedBudgetId = budgetIdParam;
         if (resolvedBudgetId) {
           // Validate that the requested budget belongs to this tenant
-          const owned = await prisma.annualBudget.findFirst({
+          const owned = await db.annualBudget.findFirst({
             where: { id: resolvedBudgetId, tenantId: check.tenantId },
           });
           if (!owned) return [];
         } else {
-          const budget = await prisma.annualBudget.findFirst({
+          const budget = await db.annualBudget.findFirst({
             where: {
               tenantId: check.tenantId,
               year,
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
           resolvedBudgetId = budget?.id ?? null;
         }
         if (!resolvedBudgetId) return [];
-        return prisma.budgetLine.findMany({
+        return db.budgetLine.findMany({
           where: { budgetId: resolvedBudgetId },
           include: {
             costCenter: { select: { parkId: true } },

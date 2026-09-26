@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -59,13 +59,14 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.DISMANTLING_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
     /** Nur Verpflichtungen mit einem Problem an der Sicherheit. */
     const issuesOnly = searchParams.get("issuesOnly") === "true";
 
-    const obligations = await prisma.dismantlingObligation.findMany({
+    const obligations = await db.dismantlingObligation.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(parkId ? { parkId } : {}),
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.DISMANTLING_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -118,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: data.parkId, tenantId: check.tenantId! },
       select: { id: true, name: true, commissioningDate: true },
     });
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const existing = await prisma.dismantlingObligation.findUnique({
+    const existing = await db.dismantlingObligation.findUnique({
       where: { parkId: data.parkId },
       select: { id: true },
     });
@@ -153,7 +155,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const created = await prisma.dismantlingObligation.create({
+    const created = await db.dismantlingObligation.create({
       data: {
         tenantId: check.tenantId!,
         parkId: data.parkId,

@@ -22,7 +22,7 @@
 import { berlinerMonat } from "@/lib/zeit/berlin";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const year = Number(searchParams.get("year"));
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     // so March looked incomplete and October overfull (audit 2026-09).
     const { von: from, bis: to, stunden: expected } = berlinerMonat(year, month);
 
-    const prices = await prisma.hourlySpotPrice.findMany({
+    const prices = await db.hourlySpotPrice.findMany({
       where: { biddingZone, hour: { gte: from, lt: to } },
       orderBy: { hour: "asc" },
       select: { hour: true, priceEurMwh: true, source: true },
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
     // Import-Recht der Energiedaten und nicht ein Leserecht.
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = importSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -154,7 +156,7 @@ export async function POST(request: NextRequest) {
     // `skipDuplicates`: ein erneuter Import derselben Stunden ist der
     // Normalfall (Nachlieferung, korrigierte Datei) und kein Fehler. Jede
     // doppelte negative Stunde würde den entfallenden Anspruch verdoppeln.
-    const result = await prisma.hourlySpotPrice.createMany({
+    const result = await db.hourlySpotPrice.createMany({
       data: rows,
       skipDuplicates: true,
     });

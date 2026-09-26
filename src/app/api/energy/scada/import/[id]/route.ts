@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -17,10 +17,11 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const log = await prisma.scadaImportLog.findFirst({
+    const log = await db.scadaImportLog.findFirst({
       where: {
         id,
         tenantId: check.tenantId!,
@@ -55,10 +56,11 @@ export async function DELETE(
   try {
     const check = await requirePermission("energy:scada:import");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const log = await prisma.scadaImportLog.findFirst({
+    const log = await db.scadaImportLog.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: { id: true, status: true, startedAt: true },
     });

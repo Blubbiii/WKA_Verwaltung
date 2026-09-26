@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion } from "@/lib/audit";
@@ -51,10 +51,11 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const settlement = await prisma.energySettlement.findFirst({
+    const settlement = await db.energySettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         park: {
@@ -121,13 +122,14 @@ export async function PATCH(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = settlementUpdateSchema.parse(body);
 
     // Pruefe ob Settlement existiert und zum Tenant gehoert
-    const existing = await prisma.energySettlement.findUnique({
+    const existing = await db.energySettlement.findUnique({
       where: { id },
       select: {
         id: true,
@@ -222,7 +224,7 @@ export async function PATCH(
     }
 
     // Update durchfuehren
-    const settlement = await prisma.energySettlement.update({
+    const settlement = await db.energySettlement.update({
       where: { id, tenantId: check.tenantId!},
       data: updateData,
       include: {
@@ -277,6 +279,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -286,7 +289,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const existing = await prisma.energySettlement.findUnique({
+    const existing = await db.energySettlement.findUnique({
       where: { id },
       select: {
         id: true,
@@ -318,7 +321,7 @@ export async function DELETE(
     }
 
     // Hard-delete: Abrechnung und zugehoerige Items löschen (CASCADE)
-    await prisma.energySettlement.delete({ where: { id, tenantId: check.tenantId!} });
+    await db.energySettlement.delete({ where: { id, tenantId: check.tenantId!} });
 
     // Log deletion for audit trail (deferred: runs after response is sent)
     const settlementDeletionData = {

@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parsedYear = Number.parseInt(
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: {
         park: { tenantId: check.tenantId },
         // NUR echte Windkraftanlagen.

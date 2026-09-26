@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -32,10 +32,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
-    const template = await prisma.mailingTemplate.findFirst({
+    const template = await db.mailingTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -53,6 +54,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 export async function PUT(req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
@@ -60,14 +62,14 @@ export async function PUT(req: NextRequest, context: RouteContext) {
     const data = updateSchema.parse(body);
 
     // Verify ownership
-    const existing = await prisma.mailingTemplate.findFirst({
+    const existing = await db.mailingTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
       return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
     }
 
-    const template = await prisma.mailingTemplate.update({
+    const template = await db.mailingTemplate.update({
       where: { id, tenantId: check.tenantId! },
       data,
     });
@@ -85,17 +87,18 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 export async function DELETE(_req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
-    const existing = await prisma.mailingTemplate.findFirst({
+    const existing = await db.mailingTemplate.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
       return apiError("NOT_FOUND", 404, { message: "Vorlage nicht gefunden" });
     }
 
-    await prisma.mailingTemplate.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.mailingTemplate.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

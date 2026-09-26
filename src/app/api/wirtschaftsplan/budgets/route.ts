@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -16,11 +16,12 @@ async function getHandler(request: NextRequest) {
   try {
     const check = await requirePermission("wirtschaftsplan:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const year = searchParams.get("year") ? parseInt(searchParams.get("year")!) : undefined;
 
-    const budgets = await prisma.annualBudget.findMany({
+    const budgets = await db.annualBudget.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(year ? { year } : {}),
@@ -42,12 +43,13 @@ async function postHandler(request: NextRequest) {
   try {
     const check = await requirePermission("wirtschaftsplan:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
 
     // Check if we should duplicate from previous year
     if (body.duplicateFromId) {
-      const source = await prisma.annualBudget.findFirst({
+      const source = await db.annualBudget.findFirst({
         where: { id: body.duplicateFromId, tenantId: check.tenantId! },
         include: { lines: true },
       });
@@ -56,7 +58,7 @@ async function postHandler(request: NextRequest) {
       }
 
       const data = createSchema.parse(body);
-      const newBudget = await prisma.annualBudget.create({
+      const newBudget = await db.annualBudget.create({
         data: {
           tenantId: check.tenantId!,
           year: data.year,
@@ -73,7 +75,7 @@ async function postHandler(request: NextRequest) {
     }
 
     const data = createSchema.parse(body);
-    const budget = await prisma.annualBudget.create({
+    const budget = await db.annualBudget.create({
       data: {
         tenantId: check.tenantId!,
         year: data.year,

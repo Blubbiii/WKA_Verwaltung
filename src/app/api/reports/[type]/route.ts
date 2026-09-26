@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
 import { MS_PER_DAY } from "@/lib/constants/time";
@@ -16,6 +16,7 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { type } = await params;
     const { searchParams } = new URL(request.url);
@@ -23,7 +24,7 @@ export async function GET(
     const parkId = searchParams.get("parkId");
 
     // Get tenant info for branding
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: {
         name: true,
@@ -104,7 +105,8 @@ export async function GET(
 
 // Report generation functions
 async function getParksOverview(tenantId: string) {
-  const parks = await prisma.park.findMany({
+  const db = mandantDb(tenantId);
+  const parks = await db.park.findMany({
     where: { tenantId },
     include: {
       turbines: {
@@ -153,13 +155,14 @@ async function getParksOverview(tenantId: string) {
 }
 
 async function getTurbinesOverview(tenantId: string, parkId: string | null) {
+  const db = mandantDb(tenantId);
   // Der Bericht heisst "Anlagen-Uebersicht". Netzverknuepfungspunkt und
   // Parkrechner gehoeren nicht hinein — sie haben weder Nennleistung noch
   // Status im Sinne einer Anlage und verzerren jede Summe darunter.
   const where: Prisma.TurbineWhereInput = { ...NUR_ANLAGEN, park: { tenantId } };
   if (parkId) where.parkId = parkId;
 
-  const turbines = await prisma.turbine.findMany({
+  const turbines = await db.turbine.findMany({
     where,
     include: {
       park: { select: { name: true, shortName: true } },
@@ -198,10 +201,11 @@ async function getTurbinesOverview(tenantId: string, parkId: string | null) {
 }
 
 async function getShareholdersOverview(tenantId: string, fundId: string | null) {
+  const db = mandantDb(tenantId);
   const where: Prisma.ShareholderWhereInput = { fund: { tenantId } };
   if (fundId) where.fundId = fundId;
 
-  const shareholders = await prisma.shareholder.findMany({
+  const shareholders = await db.shareholder.findMany({
     where,
     include: {
       fund: { select: { name: true } },
@@ -248,7 +252,8 @@ async function getShareholdersOverview(tenantId: string, fundId: string | null) 
 }
 
 async function getContractsOverview(tenantId: string) {
-  const contracts = await prisma.contract.findMany({
+  const db = mandantDb(tenantId);
+  const contracts = await db.contract.findMany({
     where: { tenantId },
     include: {
       park: { select: { name: true, shortName: true } },
@@ -305,11 +310,12 @@ async function getContractsOverview(tenantId: string) {
 }
 
 async function getExpiringContracts(tenantId: string) {
+  const db = mandantDb(tenantId);
   const now = new Date();
   const ninetyDaysFromNow = new Date();
   ninetyDaysFromNow.setDate(ninetyDaysFromNow.getDate() + 90);
 
-  const contracts = await prisma.contract.findMany({
+  const contracts = await db.contract.findMany({
     where: {
       tenantId,
       status: { in: ["ACTIVE", "EXPIRING"] },
@@ -376,10 +382,11 @@ async function getExpiringContracts(tenantId: string) {
 }
 
 async function getInvoicesOverview(tenantId: string, fundId: string | null) {
+  const db = mandantDb(tenantId);
   const where: Prisma.InvoiceWhereInput = { tenantId };
   if (fundId) where.fundId = fundId;
 
-  const invoices = await prisma.invoice.findMany({
+  const invoices = await db.invoice.findMany({
     where,
     include: {
       fund: { select: { name: true } },
@@ -438,10 +445,11 @@ async function getInvoicesOverview(tenantId: string, fundId: string | null) {
 }
 
 async function getVotesResults(tenantId: string, fundId: string | null) {
+  const db = mandantDb(tenantId);
   const where: Prisma.VoteWhereInput = { tenantId, status: "CLOSED" };
   if (fundId) where.fundId = fundId;
 
-  const votes = await prisma.vote.findMany({
+  const votes = await db.vote.findMany({
     where,
     include: {
       fund: { select: { name: true } },
@@ -507,10 +515,11 @@ async function getVotesResults(tenantId: string, fundId: string | null) {
 }
 
 async function getFundPerformance(tenantId: string, fundId: string | null) {
+  const db = mandantDb(tenantId);
   const where: Prisma.FundWhereInput = { tenantId };
   if (fundId) where.id = fundId;
 
-  const funds = await prisma.fund.findMany({
+  const funds = await db.fund.findMany({
     where,
     include: {
       _count: {
@@ -530,7 +539,7 @@ async function getFundPerformance(tenantId: string, fundId: string | null) {
   });
 
   // Get invoice summaries per fund
-  const invoiceSummaries = await prisma.invoice.groupBy({
+  const invoiceSummaries = await db.invoice.groupBy({
     by: ["fundId", "status"],
     where: { tenantId, fundId: fundId || undefined },
     _sum: { grossAmount: true },

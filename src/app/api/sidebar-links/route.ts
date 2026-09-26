@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 
 const ACTIVE_TENANT_COOKIE = "wpm-active-tenant";
@@ -47,6 +47,7 @@ async function resolveHierarchy(sessionUserId: string, sessionHierarchy: number)
 export async function GET() {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const { auth } = await import("@/lib/auth");
   const session = await auth();
@@ -55,7 +56,7 @@ export async function GET() {
   // Resolve hierarchy from active-tenant cookie so tenant-switching works correctly
   const hierarchy = await resolveHierarchy(check.userId!, sessionHierarchy);
 
-  const links = await prisma.sidebarLink.findMany({
+  const links = await db.sidebarLink.findMany({
     where: {
       tenantId: check.tenantId,
       status: "ACTIVE",

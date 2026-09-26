@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { apiLogger as logger } from "@/lib/logger";
@@ -30,6 +30,7 @@ const createSchema = z.object({
 export async function GET(req: NextRequest) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const enabled = await getConfigBoolean("communication.enabled", check.tenantId, false);
   if (!enabled) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
 
-    const templates = await prisma.mailingTemplate.findMany({
+    const templates = await db.mailingTemplate.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(category ? { category: category as never } : {}),
@@ -56,6 +57,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
 
   const enabledPost = await getConfigBoolean("communication.enabled", check.tenantId, false);
   if (!enabledPost) return apiError("NOT_FOUND", 404, { message: "Communication module is not enabled" });
@@ -64,7 +66,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = createSchema.parse(body);
 
-    const template = await prisma.mailingTemplate.create({
+    const template = await db.mailingTemplate.create({
       data: {
         tenantId: check.tenantId!,
         name: data.name,

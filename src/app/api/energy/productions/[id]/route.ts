@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { productionUpdateSchema } from "@/lib/energy/production-schemas";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion } from "@/lib/audit";
@@ -29,11 +29,12 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Produktionsdaten mit allen Relationen laden
-    const production = await prisma.turbineProduction.findFirst({
+    const production = await db.turbineProduction.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         revenueType: { select: { id: true, name: true, code: true } },
@@ -79,6 +80,7 @@ export async function PATCH(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
@@ -86,7 +88,7 @@ export async function PATCH(
 
     // A revenue type of another tenant must not be linkable.
     if (validatedData.revenueTypeId) {
-      const art = await prisma.energyRevenueType.findFirst({
+      const art = await db.energyRevenueType.findFirst({
         where: { id: validatedData.revenueTypeId, tenantId: check.tenantId! },
         select: { id: true },
       });
@@ -95,7 +97,7 @@ export async function PATCH(
 
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineProduction.findFirst({
+    const existing = await db.turbineProduction.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -117,7 +119,7 @@ export async function PATCH(
     }
 
     // Update durchfuehren
-    const production = await prisma.turbineProduction.update({
+    const production = await db.turbineProduction.update({
       where: { id, tenantId: check.tenantId! },
       data: {
         ...(validatedData.productionKwh !== undefined && {
@@ -176,6 +178,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -186,7 +189,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineProduction.findFirst({
+    const existing = await db.turbineProduction.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -211,7 +214,7 @@ export async function DELETE(
     }
 
     // Löschen
-    await prisma.turbineProduction.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.turbineProduction.delete({ where: { id, tenantId: check.tenantId! } });
 
     // Audit Log (deferred: runs after response is sent)
     const productionDeletionData = {

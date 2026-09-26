@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getConfigBoolean } from "@/lib/config";
 import { Prisma, IncomingInvoiceStatus, IncomingInvoiceType } from "@prisma/client";
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("inbox:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
 
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [invoices, total] = await Promise.all([
-      prisma.incomingInvoice.findMany({
+      db.incomingInvoice.findMany({
         where,
         include: {
           vendor: { select: { id: true, name: true } },
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.incomingInvoice.count({ where }),
+      db.incomingInvoice.count({ where }),
     ]);
 
     return NextResponse.json({ data: serializePrisma(invoices), total, page, limit });
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("inbox:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const guard = await checkInbox(check.tenantId!);
     if (guard) return guard;
 
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Nur möglich wenn vendorId UND invoiceNumber bei Upload bereits bekannt sind
     // (per OCR später folgen → dann muss der OCR-Worker erneut prüfen).
     if (vendorId && invoiceNumber) {
-      const dup = await prisma.incomingInvoice.findFirst({
+      const dup = await db.incomingInvoice.findFirst({
         where: {
           tenantId,
           vendorId,
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
     // Create DB record (Catch P2002 → 409 statt 500 falls Partial-Unique-Index gefeuert hat)
     let invoice;
     try {
-      invoice = await prisma.incomingInvoice.create({
+      invoice = await db.incomingInvoice.create({
         data: {
           tenantId,
           invoiceType: invoiceType as "INVOICE" | "CREDIT_NOTE",

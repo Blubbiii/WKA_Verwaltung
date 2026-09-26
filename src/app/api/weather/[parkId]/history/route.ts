@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { getHistoricalWeather, WeatherApiError } from "@/lib/weather";
 import { apiLogger as logger } from "@/lib/logger";
 import { parsePaginationParams } from "@/lib/api-utils";
@@ -28,6 +28,7 @@ export async function GET(
     // Check permissions
     const check = await requirePermission(PERMISSIONS.PARKS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { parkId } = await params;
     const { searchParams } = new URL(request.url);
@@ -67,7 +68,7 @@ export async function GET(
     }
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: parkId,
         tenantId: check.tenantId!,

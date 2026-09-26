@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const turbineId = searchParams.get("turbineId");
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       ...(includeRemoved ? {} : { removedAt: null }),
     };
 
-    const components = await prisma.majorComponent.findMany({
+    const components = await db.majorComponent.findMany({
       where,
       include: COMPONENT_INCLUDE,
       orderBy: [{ turbineId: "asc" }, { type: "asc" }, { position: "asc" }, { installedAt: "desc" }],
@@ -157,6 +158,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id: data.turbineId, park: { tenantId: check.tenantId! } },
       select: {
         id: true,
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const created = await prisma.majorComponent.create({
+    const created = await db.majorComponent.create({
       data: {
         tenantId: check.tenantId!,
         turbineId: data.turbineId,

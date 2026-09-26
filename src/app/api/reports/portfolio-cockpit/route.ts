@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const currentYear = new Date().getFullYear();
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
     const rangeStart = new Date(Date.UTC(from, 0, 1));
     const rangeEnd = new Date(Date.UTC(to + 1, 0, 1));
 
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: { tenantId: check.tenantId, deletedAt: null },
       select: {
         id: true,
@@ -74,13 +75,13 @@ export async function GET(request: NextRequest) {
     const fundIds = [...new Set(parks.flatMap((park) => park.fundParks.map((fp) => fp.fundId)))];
 
     const [settlements, invoices, costAllocations, availability, distributions] = await Promise.all([
-      prisma.energySettlement.groupBy({
+      db.energySettlement.groupBy({
         by: ["parkId", "year"],
         where: { tenantId: check.tenantId, parkId: { in: parkIds }, year: { gte: from, lte: to } },
         _sum: { totalProductionKwh: true, netOperatorRevenueEur: true },
       }),
 
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: {
           tenantId: check.tenantId,
           parkId: { in: parkIds },
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
         select: { parkId: true, invoiceDate: true, grossAmount: true, leaseId: true },
       }),
 
-      prisma.parkCostAllocation.findMany({
+      db.parkCostAllocation.findMany({
         where: {
           tenantId: check.tenantId,
           leaseRevenueSettlement: { parkId: { in: parkIds }, year: { gte: from, lte: to } },
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
       }),
 
       turbineIds.length > 0
-        ? prisma.scadaAvailability.findMany({
+        ? db.scadaAvailability.findMany({
             where: {
               tenantId: check.tenantId,
               turbineId: { in: turbineIds },
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
         : Promise.resolve([]),
 
       fundIds.length > 0
-        ? prisma.distribution.findMany({
+        ? db.distribution.findMany({
             where: {
               tenantId: check.tenantId,
               fundId: { in: fundIds },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { createAuditLog } from "@/lib/audit";
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // URL-Parameter extrahieren
     const { searchParams } = new URL(request.url);
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
 
     // Parallele Abfragen: Daten + Gesamtanzahl
     const [operators, total] = await Promise.all([
-      prisma.turbineOperator.findMany({
+      db.turbineOperator.findMany({
         where,
         include: {
           turbine: {
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.turbineOperator.count({ where }),
+      db.turbineOperator.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -153,12 +154,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData: TurbineOperatorCreateInput = turbineOperatorCreateSchema.parse(body);
 
     // Validierung: Turbine existiert und gehoert zum Tenant
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: {
         id: validatedData.turbineId,
         park: {
@@ -177,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validierung: Operator Fund existiert und gehoert zum Tenant
-    const operatorFund = await prisma.fund.findFirst({
+    const operatorFund = await db.fund.findFirst({
       where: {
         id: validatedData.operatorFundId,
         tenantId: check.tenantId!,
@@ -194,7 +196,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prüfung: Gibt es bereits einen AKTIVEN Betreiber für diese WKA?
-    const existingActiveOperator = await prisma.turbineOperator.findFirst({
+    const existingActiveOperator = await db.turbineOperator.findFirst({
       where: {
         turbineId: validatedData.turbineId,
         status: "ACTIVE",
@@ -220,7 +222,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transaction: Alten Operator auf HISTORICAL setzen + neuen erstellen
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // Wenn es einen aktiven Operator gibt: auf HISTORICAL setzen
       if (existingActiveOperator) {
         const validFrom = new Date(validatedData.validFrom);

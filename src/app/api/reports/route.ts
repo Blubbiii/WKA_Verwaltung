@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { NUR_ANLAGEN } from "@/lib/turbines/real-turbines";
 
@@ -11,6 +11,7 @@ export async function GET(_request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CONTRACTS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     // Return available report types
     const reportTypes = [
@@ -75,17 +76,17 @@ export async function GET(_request: NextRequest) {
     // Get counts for quick overview
     const [parksCount, turbinesCount, shareholdersCount, contractsCount, invoicesCount] =
       await Promise.all([
-        prisma.park.count({ where: { tenantId: check.tenantId! } }),
+        db.park.count({ where: { tenantId: check.tenantId! } }),
         // Nur echte Anlagen: die Uebersicht zeigt "Anlagen: N", und die
         // virtuelle Infrastruktur ist keine.
-        prisma.turbine.count({
+        db.turbine.count({
           where: { ...NUR_ANLAGEN, park: { tenantId: check.tenantId! } },
         }),
-        prisma.shareholder.count({
+        db.shareholder.count({
           where: { fund: { tenantId: check.tenantId! } },
         }),
-        prisma.contract.count({ where: { tenantId: check.tenantId! } }),
-        prisma.invoice.count({ where: { tenantId: check.tenantId! } }),
+        db.contract.count({ where: { tenantId: check.tenantId! } }),
+        db.invoice.count({ where: { tenantId: check.tenantId! } }),
       ]);
 
     return NextResponse.json({

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { processBatch } from "@/lib/batch/batch-operations";
 import { createAuditLog } from "@/lib/audit";
@@ -32,8 +32,9 @@ export async function POST(request: NextRequest) {
 
     const check = await requirePermission(["documents:archive", "documents:update"]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const documents = await prisma.document.findMany({
+    const documents = await db.document.findMany({
       where: { id: { in: documentIds }, tenantId: check.tenantId },
       select: { id: true, isArchived: true },
     });
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       if (doc.isArchived) {
         throw new Error("Dokument ist bereits archiviert");
       }
-      await prisma.document.update({
+      await db.document.update({
         where: { id, tenantId: check.tenantId! },
         data: { isArchived: true },
       });

@@ -14,14 +14,14 @@ const plotFindMany = vi.fn();
 const annotationFindMany = vi.fn();
 
 vi.mock("@/lib/config/api-limits", () => ({ API_LIMITS: { gisMaxFeaturesPerLayer: 2 } }));
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    park: { findMany: vi.fn().mockResolvedValue([]) },
-    turbine: { findMany: vi.fn().mockResolvedValue([]) },
-    plot: { findMany: (...a: unknown[]) => plotFindMany(...a) },
-    mapAnnotation: { findMany: (...a: unknown[]) => annotationFindMany(...a) },
-  },
-}));
+const db = {
+  park: { findMany: vi.fn().mockResolvedValue([]) },
+  turbine: { findMany: vi.fn().mockResolvedValue([]) },
+  plot: { findMany: (...a: unknown[]) => plotFindMany(...a) },
+  mapAnnotation: { findMany: (...a: unknown[]) => annotationFindMany(...a) },
+};
+vi.mock("@/lib/prisma", () => ({ prisma: db }));
+vi.mock("@/lib/mandant/mandant-db", () => ({ mandantDb: () => db }));
 vi.mock("@/lib/auth/permissions", () => ({ PERMISSIONS: { PLOTS_READ: "plots:read" } }));
 vi.mock("@/lib/turbines/real-turbines", () => ({ NUR_ANLAGEN: {} }));
 vi.mock("@/lib/auth/withPermission", () => ({

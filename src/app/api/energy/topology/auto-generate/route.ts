@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -22,12 +22,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validated = autoGenerateSchema.parse(body);
 
     // Verify park and get turbines
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validated.parkId,
         tenantId: check.tenantId!,
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       return apiError("FORBIDDEN", 404, { message: "Park nicht gefunden oder keine Berechtigung" });
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: {
         parkId: validated.parkId,
         park: { tenantId: check.tenantId! },
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
     const radius = 35; // Radius for turbine circle placement
 
     // Run in a transaction: delete old topology, create new one
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       // Delete existing topology for this park
       await tx.networkConnection.deleteMany({
         where: {

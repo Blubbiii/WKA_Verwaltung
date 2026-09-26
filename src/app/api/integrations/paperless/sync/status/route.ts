@@ -10,12 +10,13 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 export async function GET() {
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const enabled = await getConfigBoolean("paperless.enabled", check.tenantId, false);
     if (!enabled) {
@@ -23,11 +24,11 @@ export async function GET() {
     }
 
     const [total, synced, pending, failed, skipped] = await Promise.all([
-      prisma.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: { not: null } } }),
-      prisma.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "SYNCED" } }),
-      prisma.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "PENDING" } }),
-      prisma.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "FAILED" } }),
-      prisma.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "SKIPPED" } }),
+      db.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: { not: null } } }),
+      db.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "SYNCED" } }),
+      db.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "PENDING" } }),
+      db.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "FAILED" } }),
+      db.document.count({ where: { tenantId: check.tenantId, paperlessSyncStatus: "SKIPPED" } }),
     ]);
 
     return NextResponse.json({
@@ -36,7 +37,7 @@ export async function GET() {
       pending,
       failed,
       skipped,
-      notSynced: await prisma.document.count({
+      notSynced: await db.document.count({
         where: { tenantId: check.tenantId, paperlessSyncStatus: null, fileUrl: { not: "" } },
       }),
     });

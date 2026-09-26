@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -41,12 +41,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.AVAILABILITY_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const guaranteeId = searchParams.get("guaranteeId");
     const status = searchParams.get("status");
 
-    const settlements = await prisma.availabilitySettlement.findMany({
+    const settlements = await db.availabilitySettlement.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(guaranteeId ? { guaranteeId } : {}),
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.AVAILABILITY_SETTLE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const guarantee = await prisma.availabilityGuarantee.findFirst({
+    const guarantee = await db.availabilityGuarantee.findFirst({
       where: { id: data.guaranteeId, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -124,7 +126,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const existing = await prisma.availabilitySettlement.findFirst({
+    const existing = await db.availabilitySettlement.findFirst({
       where: { guaranteeId: data.guaranteeId, periodStart, periodEnd },
       select: { id: true, status: true },
     });
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
     // Auch ein nicht berechenbarer Abgleich wird angelegt — als Entwurf mit
     // Begründung. So bleibt sichtbar, dass für den Zeitraum geprüft wurde und
     // warum kein Ergebnis vorliegt, statt dass die Prüfung spurlos bleibt.
-    const created = await prisma.availabilitySettlement.create({
+    const created = await db.availabilitySettlement.create({
       data: {
         tenantId: check.tenantId!,
         guaranteeId: data.guaranteeId,

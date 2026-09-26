@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { hasPermission } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
@@ -83,6 +83,7 @@ function relativeTimeGerman(date: Date): string {
 export async function GET(request: NextRequest) {
   const check = await requireAuth();
   if (!check.authorized) return check.error;
+  const db = mandantDb(check.tenantId!);
 
   const sinceParam = request.nextUrl.searchParams.get("since");
   // Default-Lookback: 24h (z.B. erster Aufruf ohne localStorage-Wert).
@@ -115,24 +116,24 @@ export async function GET(request: NextRequest) {
         // F17-Compliance: Soft-deleted (deletedAt != null) NICHT mitzählen.
         // ApprovalRequest hat kein deletedAt-Feld → nichts zu filtern.
         canReadInvoices
-          ? prisma.invoice.count({
+          ? db.invoice.count({
               where: { tenantId, deletedAt: null, createdAt: { gt: since } },
             })
           : Promise.resolve(0),
         canReadIncoming
-          ? prisma.incomingInvoice.count({
+          ? db.incomingInvoice.count({
               where: { tenantId, deletedAt: null, createdAt: { gt: since } },
             })
           : Promise.resolve(0),
         canReadApprovals
-          ? prisma.approvalRequest.count({
+          ? db.approvalRequest.count({
               where: { tenantId, status: "PENDING", createdAt: { gt: since } },
             })
           : Promise.resolve(0),
-        prisma.auditLog.count({
+        db.auditLog.count({
           where: { tenantId, createdAt: { gt: since } },
         }),
-        prisma.auditLog.findMany({
+        db.auditLog.findMany({
           where: { tenantId, createdAt: { gt: since } },
           orderBy: { createdAt: "desc" },
           take: 5,

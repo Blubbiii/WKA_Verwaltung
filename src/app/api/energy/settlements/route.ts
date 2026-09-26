@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // URL-Parameter extrahieren
     const { searchParams } = new URL(request.url);
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // Parallele Abfragen: Daten + Gesamtanzahl
     const [settlements, total] = await Promise.all([
-      prisma.energySettlement.findMany({
+      db.energySettlement.findMany({
         where,
         include: {
           park: {
@@ -121,11 +122,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.energySettlement.count({ where }),
+      db.energySettlement.count({ where }),
     ]);
 
     // Aggregationen berechnen (Summen für gefilterte Daten)
-    const aggregations = await prisma.energySettlement.aggregate({
+    const aggregations = await db.energySettlement.aggregate({
       where,
       _sum: {
         netOperatorRevenueEur: true,
@@ -160,12 +161,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = settlementCreateSchema.parse(body);
 
     // Validierung: Park gehoert zum Tenant + Default-Konfiguration laden
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: {
         id: validatedData.parkId,
         tenantId: check.tenantId!,
@@ -188,7 +190,7 @@ export async function POST(request: NextRequest) {
     // findUnique auf den Compound-Key, weil der bei null-Werten inkorrekt matcht.
     // Schreib-Seite (create weiter unten) verwendet `month ?? null` — deshalb hier
     // konsistent ebenfalls `month ?? null`.
-    const existing = await prisma.energySettlement.findFirst({
+    const existing = await db.energySettlement.findFirst({
       where: {
         parkId: validatedData.parkId,
         year: validatedData.year,
@@ -219,7 +221,7 @@ export async function POST(request: NextRequest) {
         : null);
 
     // Stromabrechnung erstellen (Status immer DRAFT bei Erstellung)
-    const settlement = await prisma.energySettlement.create({
+    const settlement = await db.energySettlement.create({
       data: {
         parkId: validatedData.parkId,
         year: validatedData.year,

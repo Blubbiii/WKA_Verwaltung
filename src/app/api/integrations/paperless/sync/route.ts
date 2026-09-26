@@ -12,7 +12,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { getConfigBoolean } from "@/lib/config";
 import { getPaperlessClient } from "@/lib/paperless";
 import { enqueuePaperlessJob } from "@/lib/queue/queues/paperless.queue";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 
 const paperlessSyncSchema = z.object({
@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.DOCUMENTS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const enabled = await getConfigBoolean("paperless.enabled", check.tenantId, false);
     if (!enabled) {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     const { documentId } = parsed.data;
 
     // Verify document exists and belongs to this tenant
-    const document = await prisma.document.findFirst({
+    const document = await db.document.findFirst({
       where: { id: documentId, tenantId: check.tenantId },
       select: { id: true, fileUrl: true, paperlessSyncStatus: true },
     });
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Mark as pending
-    await prisma.document.update({
+    await db.document.update({
       where: { id: documentId },
       data: { paperlessSyncStatus: "PENDING", paperlessSyncError: null },
     });

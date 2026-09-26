@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getUserHighestHierarchy } from "@/lib/auth/permissions";
 import { logDeletion, createAuditLog } from "@/lib/audit";
@@ -46,11 +46,12 @@ export async function GET(
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Betreiber-Zuordnung mit allen Relationen laden
-    const operator = await prisma.turbineOperator.findUnique({
+    const operator = await db.turbineOperator.findUnique({
       where: { id },
       include: {
         turbine: {
@@ -96,7 +97,7 @@ export async function GET(
     }
 
     // Lade auch die Historie für diese Turbine (andere Operatoren)
-    const operatorHistory = await prisma.turbineOperator.findMany({
+    const operatorHistory = await db.turbineOperator.findMany({
       where: {
         turbineId: operator.turbineId,
         id: { not: id }, // Aktuellen Operator ausschliessen
@@ -146,13 +147,14 @@ export async function PATCH(
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const validatedData = turbineOperatorUpdateSchema.parse(body);
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineOperator.findUnique({
+    const existing = await db.turbineOperator.findUnique({
       where: { id },
       include: {
         turbine: {
@@ -207,7 +209,7 @@ export async function PATCH(
     };
 
     // Update durchfuehren
-    const operator = await prisma.turbineOperator.update({
+    const operator = await db.turbineOperator.update({
       where: { id },
       data: {
         ...(validatedData.ownershipPercentage !== undefined && {
@@ -284,6 +286,7 @@ export async function DELETE(
   try {
     const check = await requirePermission("energy:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
     const hierarchy = await getUserHighestHierarchy(check.userId!);
@@ -294,7 +297,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Existenz und Tenant prüfen
-    const existing = await prisma.turbineOperator.findUnique({
+    const existing = await db.turbineOperator.findUnique({
       where: { id },
       include: {
         turbine: {
@@ -328,7 +331,7 @@ export async function DELETE(
     }
 
     // Löschen
-    await prisma.turbineOperator.delete({ where: { id } });
+    await db.turbineOperator.delete({ where: { id } });
 
     // Audit Log (deferred: runs after response is sent)
     const deletionData = {

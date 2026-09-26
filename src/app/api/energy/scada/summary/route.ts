@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { searchParams } = new URL(request.url);
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.parkId = parkId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: { id: true },
     });
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     const turbineIds = turbines.map((t) => t.id);
 
     // --- 1. Current production: latest SCADA measurement power ---
-    const latestPowerRows = await prisma.$queryRaw<LatestPowerRow[]>`
+    const latestPowerRows = await db.$queryRaw<LatestPowerRow[]>`
       SELECT
         COALESCE(SUM("powerW"), 0) / 1000.0 AS total_power_kw,
         AVG("windSpeedMs") AS avg_wind_speed,
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const todayRows = await prisma.$queryRaw<DailyProductionRow[]>`
+    const todayRows = await db.$queryRaw<DailyProductionRow[]>`
       SELECT
         COALESCE(SUM("powerW" * 10.0 / 60.0 / 1000.0), 0) AS total_kwh,
         AVG("powerW") / 1000.0 AS avg_power_kw,
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-    const yesterdayRows = await prisma.$queryRaw<DailyProductionRow[]>`
+    const yesterdayRows = await db.$queryRaw<DailyProductionRow[]>`
       SELECT
         COALESCE(SUM("powerW" * 10.0 / 60.0 / 1000.0), 0) AS total_kwh,
         AVG("windSpeedMs") AS avg_wind_speed,
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const currentAvailRows = await prisma.$queryRaw<MonthlyAvailabilityRow[]>`
+    const currentAvailRows = await db.$queryRaw<MonthlyAvailabilityRow[]>`
       SELECT AVG("availabilityPct") AS avg_availability
       FROM scada_availability
       WHERE "tenantId" = ${tenantId}
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
     // --- 5. Previous month availability for trend ---
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-    const prevAvailRows = await prisma.$queryRaw<MonthlyAvailabilityRow[]>`
+    const prevAvailRows = await db.$queryRaw<MonthlyAvailabilityRow[]>`
       SELECT AVG("availabilityPct") AS avg_availability
       FROM scada_availability
       WHERE "tenantId" = ${tenantId}

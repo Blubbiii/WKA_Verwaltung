@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 
@@ -20,11 +20,12 @@ export async function GET() {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
     // Load recent import logs that had errors (last 100 logs with errorDetails)
-    const logs = await prisma.scadaImportLog.findMany({
+    const logs = await db.scadaImportLog.findMany({
       where: {
         tenantId,
         recordsSkipped: { gt: 0 },
@@ -82,7 +83,7 @@ export async function GET() {
     }
 
     // Check which of these now have active mappings
-    const activeMappings = await prisma.scadaTurbineMapping.findMany({
+    const activeMappings = await db.scadaTurbineMapping.findMany({
       where: {
         tenantId,
         status: "ACTIVE",

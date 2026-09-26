@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -34,12 +34,13 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const { parkId, year, entries } = batchUpsertSchema.parse(body);
 
     // Validate park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
       select: { id: true, name: true },
     });
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load all existing settlements for this park/year
-    const existing = await prisma.energySettlement.findMany({
+    const existing = await db.energySettlement.findMany({
       where: {
         parkId,
         year,
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     const updated: string[] = [];
     const skipped: { month: number; reason: string }[] = [];
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       for (const entry of entries) {
         const totalProductionKwh =
           (entry.eegProductionKwh || 0) + (entry.dvProductionKwh || 0);
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Reload all settlements for the park/year to return updated data
-    const settlements = await prisma.energySettlement.findMany({
+    const settlements = await db.energySettlement.findMany({
       where: {
         parkId,
         year,

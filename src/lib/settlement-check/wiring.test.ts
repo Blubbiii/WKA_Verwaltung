@@ -115,7 +115,7 @@ describe("Abgleichsroute", () => {
   it("jeder Lauf wird als eigener Datensatz festgehalten", () => {
     // SCADA-Daten koennen nachgeliefert werden; eine nachgerechnete Zahl
     // stimmt dann nicht mehr mit der ueberein, die beim Reklamieren vorlag.
-    expect(route).toContain("prisma.settlementCheck.create");
+    expect(route).toMatch(/\b(prisma|db)\.settlementCheck\.create/);
   });
 
   it("die verglichenen Werte werden mitgespeichert", () => {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { searchParams } = new URL(request.url);
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.parkId = parkId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: { id: true, designation: true, controllerType: true },
     });
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     let nextCursor: string | null = null;
 
     if (useCursor) {
-      const rows = await prisma.scadaStateEvent.findMany({
+      const rows = await db.scadaStateEvent.findMany({
         where: eventWhere,
         orderBy: [{ timestamp: "desc" }, { id: "desc" }],
         take: pageSize + 1,
@@ -131,8 +132,8 @@ export async function GET(request: NextRequest) {
     } else {
       // Backward-Compat: klassisch offset/limit + total.
       [total, events] = await Promise.all([
-        prisma.scadaStateEvent.count({ where: eventWhere }),
-        prisma.scadaStateEvent.findMany({
+        db.scadaStateEvent.count({ where: eventWhere }),
+        db.scadaStateEvent.findMany({
           where: eventWhere,
           orderBy: { timestamp: "desc" },
           skip: (page - 1) * pageSize,
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
     >();
 
     if (controllerTypes.length > 0) {
-      const codes = await prisma.scadaStatusCode.findMany({
+      const codes = await db.scadaStatusCode.findMany({
         where: {
           controllerType: { in: controllerTypes },
           codeType: "STATUS",

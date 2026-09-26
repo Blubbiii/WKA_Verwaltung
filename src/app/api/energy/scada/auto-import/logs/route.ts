@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const limit = Math.min(
@@ -36,13 +37,13 @@ export async function GET(request: NextRequest) {
     }
 
     const [logs, total] = await Promise.all([
-      prisma.scadaAutoImportLog.findMany({
+      db.scadaAutoImportLog.findMany({
         where,
         orderBy: { startedAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      prisma.scadaAutoImportLog.count({ where }),
+      db.scadaAutoImportLog.count({ where }),
     ]);
 
     return NextResponse.json({

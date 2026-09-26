@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -67,12 +67,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.ENERGY_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
     const code = searchParams.get("code");
 
-    const points = await prisma.meteringPoint.findMany({
+    const points = await db.meteringPoint.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(parkId ? { parkId } : {}),
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.ENERGY_METERING_POINTS);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -109,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: data.parkId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -121,7 +123,7 @@ export async function POST(request: NextRequest) {
     // sich ein Zählpunkt an eine Anlage eines anderen Parks hängen, und der
     // Abgleich zöge die falschen SCADA-Daten heran.
     if (data.turbineId) {
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: { id: data.turbineId, parkId: data.parkId },
         select: { id: true },
       });
@@ -134,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     const normalizedCode = data.code.replace(/\s/g, "").toUpperCase();
 
-    const duplicate = await prisma.meteringPoint.findFirst({
+    const duplicate = await db.meteringPoint.findFirst({
       where: { tenantId: check.tenantId!, code: normalizedCode },
       select: { id: true, parkId: true },
     });
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const created = await prisma.meteringPoint.create({
+    const created = await db.meteringPoint.create({
       data: {
         tenantId: check.tenantId!,
         kind: data.kind,

@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -16,10 +16,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
-    const mailing = await prisma.mailing.findFirst({
+    const mailing = await db.mailing.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         template: { select: { name: true, category: true, subject: true } },
@@ -52,10 +53,11 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 export async function DELETE(_req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
-    const mailing = await prisma.mailing.findFirst({
+    const mailing = await db.mailing.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
 
@@ -68,7 +70,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     }
 
     // Delete recipients first (cascade should handle this, but be explicit)
-    await prisma.mailing.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.mailing.delete({ where: { id, tenantId: check.tenantId! } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

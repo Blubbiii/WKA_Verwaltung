@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -19,10 +19,11 @@ async function getHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const budget = await prisma.annualBudget.findFirst({
+    const budget = await db.annualBudget.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: {
         lines: {
@@ -54,11 +55,12 @@ async function putHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Check if budget exists and is not locked
-    const existing = await prisma.annualBudget.findFirst({
+    const existing = await db.annualBudget.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
@@ -71,7 +73,7 @@ async function putHandler(
     const body = await request.json();
     const data = updateSchema.parse(body);
 
-    const updated = await prisma.annualBudget.update({
+    const updated = await db.annualBudget.update({
       where: { id, tenantId: check.tenantId! },
       data,
     });
@@ -93,10 +95,11 @@ async function deleteHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:delete");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const existing = await prisma.annualBudget.findFirst({
+    const existing = await db.annualBudget.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!existing) {
@@ -106,7 +109,7 @@ async function deleteHandler(
       return apiError("OPERATION_NOT_ALLOWED", 403, { message: "Gesperrter Budget kann nicht gelöscht werden" });
     }
 
-    await prisma.annualBudget.delete({ where: { id, tenantId: check.tenantId! } });
+    await db.annualBudget.delete({ where: { id, tenantId: check.tenantId! } });
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, "Error deleting budget");

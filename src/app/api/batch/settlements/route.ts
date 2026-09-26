@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { hasPermission } from "@/lib/auth/permissions";
 import { processBatch } from "@/lib/batch/batch-operations";
@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = batchSettlementSchema.safeParse(body);
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Scoped by tenantId to prevent ID-enumeration across tenants
-    const settlements = await prisma.energySettlement.findMany({
+    const settlements = await db.energySettlement.findMany({
       where: { id: { in: settlementIds }, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
               "Abrechnung ist als INVOICED markiert, es existieren aber keine Gutschriften — bitte Datenstand prüfen"
             );
           }
-          await prisma.energySettlement.update({
+          await db.energySettlement.update({
             where: { id, tenantId: check.tenantId!},
             data: { status: "CLOSED", notes: reason || undefined },
           });
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
               "Für diese Abrechnung existieren bereits Gutschriften — bitte zuerst die Gutschriften stornieren"
             );
           }
-          await prisma.energySettlement.update({
+          await db.energySettlement.update({
             where: { id, tenantId: check.tenantId!},
             data: {
               status: "DRAFT",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
 
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Validierung: Turbine gehoert zum Tenant
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: {
         id: turbineId,
         park: {
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const rows = await prisma.scadaMeasurement.findMany({
+      const rows = await db.scadaMeasurement.findMany({
         where,
         select: {
           id: true,
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Backward-Compat: klassische Variante (alte Charts/Frontend).
-    const measurements = await prisma.scadaMeasurement.findMany({
+    const measurements = await db.scadaMeasurement.findMany({
       where,
       select: {
         timestamp: true,

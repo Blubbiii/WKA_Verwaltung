@@ -14,7 +14,7 @@ import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { enqueueAnnualReportPdfAsync } from "@/lib/queue/queues/pdf.queue";
 
 const sectionsSchema = z.object({
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.REPORTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = schema.safeParse(body);
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const { parkId, year, sections } = parsed.data;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: parkId, tenantId: check.tenantId! },
       select: { id: true, name: true },
     });

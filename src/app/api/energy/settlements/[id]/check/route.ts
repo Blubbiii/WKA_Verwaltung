@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -42,10 +42,11 @@ export async function GET(
   try {
     const check = await requirePermission(PERMISSIONS.ENERGY_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const latest = await prisma.settlementCheck.findFirst({
+    const latest = await db.settlementCheck.findFirst({
       where: { settlementId: id, tenantId: check.tenantId! },
       orderBy: { createdAt: "desc" },
       include: { reviewedBy: { select: { id: true, firstName: true, lastName: true } } },
@@ -65,6 +66,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.ENERGY_SETTLEMENT_CHECK);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -82,7 +84,7 @@ export async function POST(
       ...(parsed.data.tolerances ?? {}),
     };
 
-    const settlement = await prisma.energySettlement.findFirst({
+    const settlement = await db.energySettlement.findFirst({
       where: { id, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -129,7 +131,7 @@ export async function POST(
     // vorherigen: die SCADA-Daten können nachgeliefert werden, und dann stimmt
     // eine nachgerechnete Zahl nicht mehr mit der überein, die beim
     // Reklamieren vorlag.
-    const stored = await prisma.settlementCheck.create({
+    const stored = await db.settlementCheck.create({
       data: {
         tenantId: check.tenantId!,
         settlementId: id,

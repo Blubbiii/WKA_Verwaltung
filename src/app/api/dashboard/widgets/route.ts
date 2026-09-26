@@ -13,7 +13,7 @@ import {
   WIDGET_REGISTRY,
   WIDGET_CATEGORIES,
 } from "@/lib/dashboard/widget-registry";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { cache } from "@/lib/cache";
 import { CACHE_TTL } from "@/lib/cache/types";
 import { apiLogger as logger } from "@/lib/logger";
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { userId } = check;
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
     const tenantId = check.tenantId ?? null;
     const overrideMap = new Map<string, UserRole>();
     try {
-      const overrides = await prisma.systemConfig.findMany({
+      const overrides = await db.systemConfig.findMany({
         where: {
           tenantId,
           key: { startsWith: "widget.minRole." },

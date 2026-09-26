@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requireAuth } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { dashboardCache, DASHBOARD_CACHE_KEYS } from "@/lib/cache/dashboard";
 import { CACHE_TTL } from "@/lib/cache/types";
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
 }
 
 async function fetchEnergyKpis(tenantId: string) {
+  const db = mandantDb(tenantId);
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
@@ -58,7 +59,7 @@ async function fetchEnergyKpis(tenantId: string) {
       parkRevenueData,
     ] = await Promise.all([
       // Total energy production this year (from TurbineProduction)
-      prisma.turbineProduction.aggregate({
+      db.turbineProduction.aggregate({
         where: {
           tenantId,
           year: currentYear,
@@ -68,7 +69,7 @@ async function fetchEnergyKpis(tenantId: string) {
       }),
 
       // Average availability this year
-      prisma.turbineProduction.aggregate({
+      db.turbineProduction.aggregate({
         where: {
           tenantId,
           year: currentYear,
@@ -79,7 +80,7 @@ async function fetchEnergyKpis(tenantId: string) {
       }),
 
       // Latest SCADA wind speed data (monthly avg)
-      prisma.$queryRaw<{ avg_wind: number | null }[]>`
+      db.$queryRaw<{ avg_wind: number | null }[]>`
         SELECT AVG(ws."meanWindSpeedMs") as avg_wind
         FROM scada_wind_summaries ws
         JOIN turbines t ON ws."turbineId" = t.id
@@ -90,7 +91,7 @@ async function fetchEnergyKpis(tenantId: string) {
       `.catch(() => [{ avg_wind: null }]),
 
       // Turbine status counts (EntityStatus: ACTIVE, INACTIVE, ARCHIVED)
-      prisma.turbine.groupBy({
+      db.turbine.groupBy({
         by: ["status"],
         where: { park: { tenantId } },
         _count: { id: true },
@@ -98,7 +99,7 @@ async function fetchEnergyKpis(tenantId: string) {
 
       // Settlement data for production forecast
       // Note: park relation removed — only scalar fields are consumed downstream
-      prisma.energySettlement.findMany({
+      db.energySettlement.findMany({
         where: {
           tenantId,
           year: currentYear,
@@ -112,7 +113,7 @@ async function fetchEnergyKpis(tenantId: string) {
       }),
 
       // Lease payment overview
-      prisma.lease.findMany({
+      db.lease.findMany({
         where: {
           tenantId,
           status: "ACTIVE",
@@ -138,7 +139,7 @@ async function fetchEnergyKpis(tenantId: string) {
       }),
 
       // Revenue by park
-      prisma.$queryRaw<{ parkName: string; totalRevenue: number }[]>`
+      db.$queryRaw<{ parkName: string; totalRevenue: number }[]>`
         SELECT p.name as "parkName", COALESCE(SUM(es."netOperatorRevenueEur"), 0) as "totalRevenue"
         FROM energy_settlements es
         JOIN parks p ON es."parkId" = p.id

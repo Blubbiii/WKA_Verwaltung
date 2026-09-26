@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
     /** Nur was Arbeit macht: offene Einlage oder fehlende Legitimation. */
     const openOnly = searchParams.get("openOnly") === "true";
 
-    const subscriptions = await prisma.subscription.findMany({
+    const subscriptions = await db.subscription.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(fundId ? { fundId } : {}),
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -189,11 +191,11 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
 
     const [fund, person] = await Promise.all([
-      prisma.fund.findFirst({
+      db.fund.findFirst({
         where: { id: data.fundId, tenantId: check.tenantId! },
         select: { id: true, name: true },
       }),
-      prisma.person.findFirst({
+      db.person.findFirst({
         where: { id: data.personId, tenantId: check.tenantId! },
         select: { id: true },
       }),
@@ -224,7 +226,7 @@ export async function POST(request: NextRequest) {
 
     const subscriptionNumber = await nextSubscriptionNumber(check.tenantId!, signedAt ?? new Date());
 
-    const subscription = await prisma.subscription.create({
+    const subscription = await db.subscription.create({
       data: {
         tenantId: check.tenantId!,
         fundId: data.fundId,
@@ -276,10 +278,11 @@ export async function POST(request: NextRequest) {
 }
 
 async function nextSubscriptionNumber(tenantId: string, reference: Date): Promise<string> {
+  const db = mandantDb(tenantId);
   const year = reference.getUTCFullYear();
   const prefix = `${PREFIX}-${year}-`;
 
-  const latest = await prisma.subscription.findFirst({
+  const latest = await db.subscription.findFirst({
     where: { tenantId, subscriptionNumber: { startsWith: prefix } },
     orderBy: { subscriptionNumber: "desc" },
     select: { subscriptionNumber: true },

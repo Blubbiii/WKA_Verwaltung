@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -37,9 +37,10 @@ interface OpenMeteoResponse {
 export async function GET() {
   const check = await requireAuth();
   if (!check.authorized) return check.error;
+  const db = mandantDb(check.tenantId!);
 
   try {
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: { tenantId: check.tenantId, status: "ACTIVE" },
       select: { id: true, name: true, latitude: true, longitude: true },
     });

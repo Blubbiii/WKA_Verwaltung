@@ -25,7 +25,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -52,6 +52,7 @@ export async function GET(_request: NextRequest) {
     // Dashboard sehen darf, darf auch sehen, was darauf zu tun ist.
     const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId;
     if (!tenantId) {
@@ -63,7 +64,7 @@ export async function GET(_request: NextRequest) {
     const [ueberfaellig, auslaufend, gescheiterteImporte, endendeAbstimmungen] =
       await Promise.all([
         // Versendet, faellig, nicht bezahlt.
-        prisma.invoice.count({
+        db.invoice.count({
           where: {
             tenantId,
             deletedAt: null,
@@ -73,7 +74,7 @@ export async function GET(_request: NextRequest) {
         }),
 
         // Laeuft in den naechsten 90 Tagen aus und ist noch aktiv.
-        prisma.contract.count({
+        db.contract.count({
           where: {
             tenantId,
             deletedAt: null,
@@ -87,7 +88,7 @@ export async function GET(_request: NextRequest) {
         // Bewusst befristet: ein Fehlschlag von vor einem halben Jahr ist
         // Geschichte, kein Handlungsbedarf. Stuende er hier, waere die Liste
         // nach kurzer Zeit dauerhaft rot — und damit wertlos.
-        prisma.scadaImportLog.count({
+        db.scadaImportLog.count({
           where: {
             tenantId,
             status: "FAILED",
@@ -96,7 +97,7 @@ export async function GET(_request: NextRequest) {
         }),
 
         // Laufende Abstimmungen, die in einer Woche enden.
-        prisma.vote.count({
+        db.vote.count({
           where: {
             tenantId,
             status: "ACTIVE",

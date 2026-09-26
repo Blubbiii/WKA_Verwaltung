@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -23,6 +23,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(req: NextRequest, context: RouteContext) {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
+  const db = mandantDb(check.tenantId!);
   const { id } = await context.params;
 
   try {
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const shareholderId = (body as { shareholderId?: string }).shareholderId;
 
     // Load mailing with template
-    const mailing = await prisma.mailing.findFirst({
+    const mailing = await db.mailing.findFirst({
       where: { id, tenantId: check.tenantId! },
       include: { template: true },
     });
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     // Find a shareholder for preview
-    const shareholder = await prisma.shareholder.findFirst({
+    const shareholder = await db.shareholder.findFirst({
       where: {
         ...(shareholderId ? { id: shareholderId } : {}),
         ...recipientWhere,
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     // Get tenant name for email wrapper
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await db.tenant.findUnique({
       where: { id: check.tenantId! },
       select: { name: true },
     });
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     // Count total recipients + delivery method breakdown
-    const allRecipients = await prisma.shareholder.findMany({
+    const allRecipients = await db.shareholder.findMany({
       where: recipientWhere,
       select: {
         person: {

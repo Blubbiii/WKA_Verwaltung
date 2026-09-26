@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import {
   loadTurbines,
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { searchParams } = new URL(request.url);
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       revenueData,
     ] = await Promise.all([
       // 1. Daily production + wind (for chart)
-      prisma.$queryRaw<DailyProductionRow[]>`
+      db.$queryRaw<DailyProductionRow[]>`
         SELECT
           DATE_TRUNC('day', "timestamp") AS day,
           SUM("powerW" * 10.0 / 60.0 / 1000.0) AS production_kwh,
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
       `,
 
       // 2. Per-turbine production + wind (for status table)
-      prisma.$queryRaw<TurbineProductionRow[]>`
+      db.$queryRaw<TurbineProductionRow[]>`
         SELECT
           "turbineId",
           SUM("powerW" * 10.0 / 60.0 / 1000.0) AS production_kwh,
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
       `,
 
       // 3. Avg availability per turbine
-      prisma.$queryRaw<AvailabilityRow[]>`
+      db.$queryRaw<AvailabilityRow[]>`
         SELECT
           "turbineId",
           AVG("availabilityPct") AS avg_availability
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
       `,
 
       // 4. Recent fault events (last 20, sorted by timestamp desc)
-      prisma.$queryRaw<FaultRow[]>`
+      db.$queryRaw<FaultRow[]>`
         SELECT
           se.id,
           se."turbineId",
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
       `,
 
       // 5. Revenue in period (year-based filter since EnergySettlement uses year/month Int fields)
-      prisma.$queryRaw<RevenueRow[]>`
+      db.$queryRaw<RevenueRow[]>`
         SELECT SUM("netOperatorRevenueEur") AS total_revenue
         FROM energy_settlements
         WHERE "tenantId" = ${tenantId}
@@ -249,7 +250,7 @@ export async function GET(request: NextRequest) {
     const turbineMap = new Map(turbines.map((t) => [t.id, t]));
 
     // Load controller types for status code resolution
-    const turbinesWithType = await prisma.turbine.findMany({
+    const turbinesWithType = await db.turbine.findMany({
       where: { id: { in: turbineIds }, controllerType: { not: null } },
       select: { controllerType: true },
       distinct: ["controllerType"],
@@ -260,7 +261,7 @@ export async function GET(request: NextRequest) {
 
     let codeLookup = new Map<string, { description: string; parentLabel: string | null }>();
     if (controllerTypes.length > 0) {
-      const codes = await prisma.scadaStatusCode.findMany({
+      const codes = await db.scadaStatusCode.findMany({
         where: { controllerType: { in: controllerTypes }, codeType: "STATUS" },
         select: { mainCode: true, subCode: true, description: true, parentLabel: true },
       });

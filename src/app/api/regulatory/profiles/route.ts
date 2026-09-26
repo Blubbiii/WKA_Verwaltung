@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -69,12 +69,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const turbineId = searchParams.get("turbineId");
     const parkId = searchParams.get("parkId");
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: {
         // Turbine trägt keine tenantId — die Mandantentrennung läuft über den Park.
         park: { tenantId: check.tenantId! },
@@ -110,6 +111,7 @@ export async function PUT(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.TURBINES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = putSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -120,7 +122,7 @@ export async function PUT(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id: data.turbineId, park: { tenantId: check.tenantId! } },
       select: { id: true, designation: true },
     });
@@ -201,7 +203,7 @@ export async function PUT(request: NextRequest) {
       notes: data.notes || null,
     };
 
-    const profile = await prisma.regulatoryProfile.upsert({
+    const profile = await db.regulatoryProfile.upsert({
       where: { turbineId: data.turbineId },
       create: payload,
       update: payload,

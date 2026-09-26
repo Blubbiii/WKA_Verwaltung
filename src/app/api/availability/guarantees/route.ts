@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -90,12 +90,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.AVAILABILITY_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const contractId = searchParams.get("contractId");
     const activeOnly = searchParams.get("activeOnly") === "true";
 
-    const guarantees = await prisma.availabilityGuarantee.findMany({
+    const guarantees = await db.availabilityGuarantee.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(contractId ? { contractId } : {}),
@@ -128,6 +129,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.AVAILABILITY_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -139,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: { id: data.contractId, tenantId: check.tenantId!, deletedAt: null },
       select: { id: true, title: true, parkId: true },
     });
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const created = await prisma.availabilityGuarantee.create({
+    const created = await db.availabilityGuarantee.create({
       data: {
         tenantId: check.tenantId!,
         contractId: data.contractId,

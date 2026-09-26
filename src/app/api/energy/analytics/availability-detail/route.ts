@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import type {
   AvailabilityMonthlyDetail,
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { searchParams } = new URL(request.url);
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     if (turbineId) {
       // Verify turbine belongs to tenant (via park)
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: { id: turbineId, park: { tenantId } },
         select: { id: true, designation: true },
       });
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
       }
       designation = turbine.designation;
 
-      const monthlyRows = await prisma.$queryRaw<MonthlyRow[]>`
+      const monthlyRows = await db.$queryRaw<MonthlyRow[]>`
         SELECT
           date_trunc('month', date) AS month_start,
           SUM(t1)::bigint AS t1_total,
@@ -212,7 +213,7 @@ export async function GET(request: NextRequest) {
     // --- 2. Downtime events (ScadaStateEvent with isFault=true) ---
     let downtimeEvents: DowntimeEvent[] = [];
     if (turbineId) {
-      const events = await prisma.scadaStateEvent.findMany({
+      const events = await db.scadaStateEvent.findMany({
         where: {
           tenantId,
           turbineId,
@@ -232,7 +233,7 @@ export async function GET(request: NextRequest) {
       });
 
       // Look up status codes for descriptions
-      const statusCodes = await prisma.scadaStatusCode.findMany({
+      const statusCodes = await db.scadaStatusCode.findMany({
         where: { codeType: "STATUS" },
         select: { mainCode: true, subCode: true, description: true, parentLabel: true, timeKey: true },
       });
@@ -267,7 +268,7 @@ export async function GET(request: NextRequest) {
     }
 
     // --- 3. Availability targets per park ---
-    const parks = await prisma.park.findMany({
+    const parks = await db.park.findMany({
       where: { tenantId, deletedAt: null, ...(parkId ? { id: parkId } : {}) },
       select: {
         id: true,
@@ -290,7 +291,7 @@ export async function GET(request: NextRequest) {
       const allTurbineIds = [...turbineToPark.keys()];
 
       if (allTurbineIds.length > 0) {
-        const rows = await prisma.$queryRaw<{ turbineId: string; t1_total: bigint; t5_total: bigint }[]>`
+        const rows = await db.$queryRaw<{ turbineId: string; t1_total: bigint; t5_total: bigint }[]>`
           SELECT
             "turbineId",
             SUM(t1)::bigint AS t1_total,

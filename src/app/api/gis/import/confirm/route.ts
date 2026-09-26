@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { applyPlotMapping, applyOwnerMapping } from "@/lib/shapefile/field-mapping";
@@ -57,13 +57,14 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_CREATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const body = await request.json();
     const data = confirmSchema.parse(body);
 
     // Verify park belongs to tenant
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: data.parkId, tenantId },
       select: { id: true, name: true },
     });
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
     const skipped: { name: string; reason: string }[] = [];
     const errors: string[] = [];
 
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       // Person cache for deduplication
       const personCache = new Map<string, string>(); // name → personId
 

@@ -19,7 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -33,10 +33,11 @@ export async function GET(
   try {
     const check = await requirePermission("inbox:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const invoice = await prisma.incomingInvoice.findUnique({
+    const invoice = await db.incomingInvoice.findUnique({
       where: { id },
       select: {
         id: true,

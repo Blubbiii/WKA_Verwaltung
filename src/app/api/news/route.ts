@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requireAuth, requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { parsePaginationParams, handleApiError } from "@/lib/api-utils";
 import { NewsCategory } from "@prisma/client";
 import { z } from "zod";
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
@@ -51,7 +52,7 @@ const check = await requireAuth();
     };
 
     const [news, total] = await Promise.all([
-      prisma.news.findMany({
+      db.news.findMany({
         where,
         include: {
           fund: {
@@ -72,7 +73,7 @@ const check = await requireAuth();
         skip,
         take: limit,
       }),
-      prisma.news.count({ where }),
+      db.news.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -95,13 +96,14 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission([PERMISSIONS.NEWS_CREATE, PERMISSIONS.ADMIN_MANAGE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = newsCreateSchema.parse(body);
 
     // Check fund belongs to tenant if provided
     if (validatedData.fundId) {
-      const fund = await prisma.fund.findFirst({
+      const fund = await db.fund.findFirst({
         where: {
           id: validatedData.fundId,
           tenantId: check.tenantId,
@@ -113,7 +115,7 @@ const check = await requirePermission([PERMISSIONS.NEWS_CREATE, PERMISSIONS.ADMI
       }
     }
 
-    const news = await prisma.news.create({
+    const news = await db.news.create({
       data: {
         title: validatedData.title,
         content: validatedData.content,

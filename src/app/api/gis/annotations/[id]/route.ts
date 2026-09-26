@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -24,13 +24,14 @@ export async function PUT(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_UPDATE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
     const body = await request.json();
     const data = updateAnnotationSchema.parse(body);
 
     // Verify ownership — count ensures tenant isolation
-    const count = await prisma.mapAnnotation.count({
+    const count = await db.mapAnnotation.count({
       where: { id, tenantId: check.tenantId },
     });
     if (count === 0) {
@@ -46,7 +47,7 @@ export async function PUT(
     if (data.style !== undefined) updateData.style = data.style as Prisma.InputJsonValue;
 
     // Use deleteMany/updateMany pattern for tenant-safe operations
-    const updated = await prisma.mapAnnotation.updateMany({
+    const updated = await db.mapAnnotation.updateMany({
       where: { id, tenantId: check.tenantId },
       data: updateData,
     });
@@ -56,7 +57,7 @@ export async function PUT(
     }
 
     // Return the updated annotation
-    const result = await prisma.mapAnnotation.findUnique({ where: { id } });
+    const result = await db.mapAnnotation.findUnique({ where: { id } });
     return NextResponse.json(result);
   } catch (error) {
     return handleApiError(error, "Fehler beim Aktualisieren der Annotation");
@@ -71,11 +72,12 @@ export async function DELETE(
   try {
     const check = await requirePermission(PERMISSIONS.PLOTS_DELETE);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
     // Tenant-safe delete: deleteMany with tenant filter
-    const deleted = await prisma.mapAnnotation.deleteMany({
+    const deleted = await db.mapAnnotation.deleteMany({
       where: { id, tenantId: check.tenantId },
     });
 

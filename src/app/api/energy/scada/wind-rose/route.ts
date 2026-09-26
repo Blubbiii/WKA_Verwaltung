@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
     // --- Auth & Permission ---
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
       turbineWhere.id = turbineId;
     }
 
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: turbineWhere,
       select: { id: true },
     });
@@ -141,7 +142,7 @@ export async function GET(request: NextRequest) {
     const whereClause = Prisma.sql`${baseConditions} ${dateFragment}`;
 
     // --- Windrose Query: Richtungssektoren x Geschwindigkeitsbereiche ---
-    const rows = await prisma.$queryRaw<WindRoseRow[]>`
+    const rows = await db.$queryRaw<WindRoseRow[]>`
       SELECT
         CASE
           WHEN "windDirection" >= 348.75 OR "windDirection" < 11.25 THEN 'N'
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
     `;
 
     // --- Meta Query: Gesamtzahl und Durchschnittswindgeschwindigkeit ---
-    const metaRows = await prisma.$queryRaw<MetaRow[]>`
+    const metaRows = await db.$queryRaw<MetaRow[]>`
       SELECT
         COUNT(*) AS total_measurements,
         AVG("windSpeedMs")::float AS avg_wind_speed

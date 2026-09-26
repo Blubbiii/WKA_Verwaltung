@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { runAnomalyDetection } from "@/lib/scada/anomaly-detection";
 import { Prisma } from "@prisma/client";
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const { searchParams } = new URL(request.url);
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch anomalies with relations
     const [anomalies, total] = await Promise.all([
-      prisma.scadaAnomaly.findMany({
+      db.scadaAnomaly.findMany({
         where,
         include: {
           turbine: {
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         skip,
       }),
-      prisma.scadaAnomaly.count({ where }),
+      db.scadaAnomaly.count({ where }),
     ]);
 
     // Calculate KPI stats
@@ -98,20 +99,20 @@ export async function GET(request: NextRequest) {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     const [openCount, criticalCount, todayCount] = await Promise.all([
-      prisma.scadaAnomaly.count({
+      db.scadaAnomaly.count({
         where: { tenantId, resolvedAt: null, acknowledged: false },
       }),
-      prisma.scadaAnomaly.count({
+      db.scadaAnomaly.count({
         where: { tenantId, resolvedAt: null, severity: "CRITICAL" },
       }),
-      prisma.scadaAnomaly.count({
+      db.scadaAnomaly.count({
         where: { tenantId, detectedAt: { gte: todayStart } },
       }),
     ]);
 
     // Average response time (time from detection to acknowledgment) for last 30 days
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const acknowledgedRecent = await prisma.scadaAnomaly.findMany({
+    const acknowledgedRecent = await db.scadaAnomaly.findMany({
       where: {
         tenantId,
         acknowledged: true,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs/promises";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { readWsdFile } from "@/lib/scada/dbf-reader";
 import { apiLogger as logger } from "@/lib/logger";
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
     const formData = await request.formData();
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
     const sortedPlantNumbers = Array.from(plantStats.keys()).sort((a, b) => a - b);
 
     // Load existing mappings from database
-    const mappings = await prisma.scadaTurbineMapping.findMany({
+    const mappings = await db.scadaTurbineMapping.findMany({
       where: {
         tenantId,
         locationCode,

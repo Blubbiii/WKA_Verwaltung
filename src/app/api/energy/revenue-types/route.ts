@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiLogger as logger } from "@/lib/logger";
 import { apiError } from "@/lib/api-errors";
@@ -9,8 +9,9 @@ export async function GET() {
   try {
     const check = await requirePermission("energy:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
-    const revenueTypes = await prisma.energyRevenueType.findMany({
+    const revenueTypes = await db.energyRevenueType.findMany({
       where: {
         tenantId: check.tenantId!,
         isActive: true,

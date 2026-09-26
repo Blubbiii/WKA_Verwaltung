@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 
@@ -13,19 +13,20 @@ async function postHandler() {
   try {
     const check = await requirePermission("wirtschaftsplan:create");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const tenantId = check.tenantId!;
 
     const [parks, turbines, existingCostCenters] = await Promise.all([
-      prisma.park.findMany({
+      db.park.findMany({
         where: { tenantId, status: "ACTIVE" },
         select: { id: true, name: true, shortName: true },
       }),
-      prisma.turbine.findMany({
+      db.turbine.findMany({
         where: { park: { tenantId }, status: "ACTIVE" },
         select: { id: true, designation: true, parkId: true },
       }),
-      prisma.costCenter.findMany({
+      db.costCenter.findMany({
         where: { tenantId },
         select: { parkId: true, turbineId: true },
       }),
@@ -44,7 +45,7 @@ async function postHandler() {
     // Create park cost centers first
     const parkCostCenters = await Promise.all(
       parksToCreate.map((park) =>
-        prisma.costCenter.create({
+        db.costCenter.create({
           data: {
             tenantId,
             code: `PARK-${park.shortName?.toUpperCase().replace(/\s+/g, "-") ?? park.id.slice(0, 8).toUpperCase()}`,
@@ -57,7 +58,7 @@ async function postHandler() {
     );
 
     // Build a map: parkId -> costCenter id (including newly created ones)
-    const allParkCostCenters = await prisma.costCenter.findMany({
+    const allParkCostCenters = await db.costCenter.findMany({
       where: { tenantId, type: "PARK", parkId: { not: null } },
       select: { id: true, parkId: true },
     });
@@ -68,7 +69,7 @@ async function postHandler() {
     // Create turbine cost centers, linking to their park's cost center as parent
     const turbineCostCenters = await Promise.all(
       turbinesToCreate.map((turbine) =>
-        prisma.costCenter.create({
+        db.costCenter.create({
           data: {
             tenantId,
             code: `TURB-${turbine.designation.toUpperCase().replace(/\s+/g, "-")}`,

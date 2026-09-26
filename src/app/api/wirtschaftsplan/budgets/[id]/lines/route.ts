@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { withMonitoring } from "@/lib/monitoring";
 import { apiLogger as logger } from "@/lib/logger";
 import { z } from "zod";
@@ -56,10 +56,11 @@ async function putHandler(
   try {
     const check = await requirePermission("wirtschaftsplan:update");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
-    const budget = await prisma.annualBudget.findFirst({
+    const budget = await db.annualBudget.findFirst({
       where: { id, tenantId: check.tenantId! },
     });
     if (!budget) {
@@ -73,7 +74,7 @@ async function putHandler(
     const { lines } = bodySchema.parse(body);
 
     // Delete existing lines and recreate — simpler than upsert for bulk
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await tx.budgetLine.deleteMany({ where: { budgetId: id } });
       if (lines.length > 0) {
         await tx.budgetLine.createMany({
@@ -100,7 +101,7 @@ async function putHandler(
       }
     });
 
-    const updatedBudget = await prisma.annualBudget.findUnique({
+    const updatedBudget = await db.annualBudget.findUnique({
       where: { id },
       include: {
         lines: {

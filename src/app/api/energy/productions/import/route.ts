@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { handleApiError } from "@/lib/api-utils";
 import { apiError } from "@/lib/api-errors";
@@ -130,7 +130,7 @@ async function resolveRows(
   }>;
 }> {
   // Load all tenant turbines for name/ID resolution
-  const allTurbines = await prisma.turbine.findMany({
+  const allTurbines = await mandantDb(tenantId).turbine.findMany({
     where: { park: { tenantId } },
     select: { id: true, designation: true },
   });
@@ -288,7 +288,7 @@ async function executeImport(
 
   const uniqueTurbineIds = [...new Set(rows.map((r) => r.turbineId))];
 
-  const turbines = await prisma.turbine.findMany({
+  const turbines = await mandantDb(tenantId).turbine.findMany({
     where: { id: { in: uniqueTurbineIds }, park: { tenantId } },
     select: { id: true, designation: true },
   });
@@ -296,7 +296,7 @@ async function executeImport(
   const validTurbineIds = new Set(turbines.map((t) => t.id));
 
   // Load existing for duplicate check (unique constraint: turbineId + year + month + tenantId)
-  const existingProductions = await prisma.turbineProduction.findMany({
+  const existingProductions = await mandantDb(tenantId).turbineProduction.findMany({
     where: {
       tenantId,
       OR: rows.map((r) => ({
@@ -390,7 +390,7 @@ async function executeImport(
   }
 
   // Execute DB transactions
-  await prisma.$transaction(async (tx) => {
+  await mandantDb(tenantId).$transaction(async (tx) => {
     if (toCreate.length > 0) {
       await tx.turbineProduction.createMany({ data: toCreate, skipDuplicates: true });
     }

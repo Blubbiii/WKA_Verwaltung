@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getAllAccessibleIds } from "@/lib/auth/resourceFilter";
 import { getAllowedParkIds } from "@/lib/auth/park-access";
@@ -109,24 +109,24 @@ async function fetchTenantStats(
     recentActivity,
   ] = await Promise.all([
     // Parks (filtered by user access)
-    prisma.park.count({ where: parkWhere }),
+    mandantDb(tenantId).park.count({ where: parkWhere }),
 
     // Turbines in user-accessible parks (only WEA, not Parkrechner/NVP)
-    prisma.turbine.count({
+    mandantDb(tenantId).turbine.count({
       where: { park: parkWhere, deviceType: "WEA" },
     }),
 
     // Funds (filtered by user access)
-    prisma.fund.count({ where: fundWhere }),
+    mandantDb(tenantId).fund.count({ where: fundWhere }),
 
     // Shareholders in user-accessible funds
-    prisma.shareholder.count({
+    mandantDb(tenantId).shareholder.count({
       where: { fund: fundWhere },
     }),
 
     // Plots in tenant (scoped to accessible parks if restricted)
     // Plot hat kein deletedAt-Feld — Hard-Delete.
-    prisma.plot.count({
+    mandantDb(tenantId).plot.count({
       where: {
         tenantId,
         ...(parkIdFilter && { parkId: parkIdFilter }),
@@ -134,16 +134,16 @@ async function fetchTenantStats(
     }),
 
     // Leases in tenant (F17: soft-deleted ausblenden)
-    prisma.lease.count({ where: { tenantId, deletedAt: null } }),
+    mandantDb(tenantId).lease.count({ where: { tenantId, deletedAt: null } }),
 
     // All contracts in tenant (F3: soft-deleted ausblenden)
-    prisma.contract.count({ where: { tenantId, deletedAt: null } }),
+    mandantDb(tenantId).contract.count({ where: { tenantId, deletedAt: null } }),
 
     // Documents in tenant (F17: soft-deleted ausblenden)
-    prisma.document.count({ where: { tenantId, deletedAt: null } }),
+    mandantDb(tenantId).document.count({ where: { tenantId, deletedAt: null } }),
 
     // Invoices in tenant (F17: soft-deleted ausblenden; scoped to accessible funds if restricted)
-    prisma.invoice.count({
+    mandantDb(tenantId).invoice.count({
       where: {
         tenantId,
         deletedAt: null,
@@ -152,10 +152,10 @@ async function fetchTenantStats(
     }),
 
     // Votes in tenant — Vote hat kein deletedAt-Feld.
-    prisma.vote.count({ where: { tenantId } }),
+    mandantDb(tenantId).vote.count({ where: { tenantId } }),
 
     // Active contracts (F3: soft-deleted ausblenden)
-    prisma.contract.count({
+    mandantDb(tenantId).contract.count({
       where: {
         tenantId,
         deletedAt: null,
@@ -164,7 +164,7 @@ async function fetchTenantStats(
     }),
 
     // Expiring contracts (within next 90 days; F3: soft-deleted ausblenden)
-    prisma.contract.count({
+    mandantDb(tenantId).contract.count({
       where: {
         tenantId,
         deletedAt: null,
@@ -177,7 +177,7 @@ async function fetchTenantStats(
     }),
 
     // Recent activity (last 10 audit logs for tenant)
-    prisma.auditLog.findMany({
+    mandantDb(tenantId).auditLog.findMany({
       where: { tenantId },
       take: 10,
       orderBy: { createdAt: "desc" },
