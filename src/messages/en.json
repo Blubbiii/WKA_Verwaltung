@@ -449,7 +449,8 @@
     "energyData": "Energy data",
     "energyEvaluation": "Analysis",
     "dataConnection": "Data connection",
-    "contractsOverview": "Overview"
+    "contractsOverview": "Overview",
+    "marketPremium": "Market premium"
   },
   "sidebar": {
     "collapse": "Collapse sidebar",
@@ -10861,6 +10862,51 @@
       "LOW": "Low",
       "MEDIUM": "Medium",
       "HIGH": "High"
+    }
+  },
+  "marketPremium": {
+    "title": "Market premium",
+    "description": "Load spot prices, compute the market premium per turbine and see the hours with negative prices (§ 51 EEG).",
+    "month": "Month",
+    "year": "Year",
+    "park": "Wind farm",
+    "allParks": "All wind farms",
+    "spot": {
+      "title": "Spot prices (day-ahead, DE-LU)",
+      "description": "The hourly price series is the basis for the hours with negative prices.",
+      "import": "Import SMARD CSV",
+      "hours": "Hours loaded",
+      "negativeHours": "Hours with negative price",
+      "imported": "{imported} of {submitted} hours imported",
+      "importError": "Import failed",
+      "emptyFile": "The file contains no prices for Germany/Luxembourg.",
+      "quarterHours": "The file contained quarter-hour prices; they were averaged per hour.",
+      "gaps": "{count} rows without a price were skipped.",
+      "sourceHint": "Source: smard.de → wholesale prices → Germany/Luxembourg, CSV download. Hours already loaded are not overwritten."
+    },
+    "calculate": {
+      "title": "Compute market premium",
+      "description": "For every active turbine with a regulatory profile (award value, correction factor) in the selected month.",
+      "marketValue": "Monthly market value wind onshore (ct/kWh)",
+      "marketValueHint": "Published by the transmission system operators (netztransparenz.de). Without it there is no premium — it is not estimated.",
+      "overwrite": "Replace existing calculations of this month",
+      "submit": "Compute"
+    },
+    "calculated": "{computed} turbines computed, {skipped} skipped",
+    "calculateError": "Calculation failed",
+    "table": {
+      "search": "Search turbine",
+      "empty": "Nothing computed for this month yet",
+      "emptyHint": "Load spot prices, enter the monthly market value and compute.",
+      "turbine": "Turbine",
+      "awardValue": "Award value (ct/kWh)",
+      "marketValue": "Market value (ct/kWh)",
+      "premiumCt": "Premium (ct/kWh)",
+      "production": "Volume (MWh)",
+      "premiumEur": "Premium",
+      "negativeHours": "Neg. hours / affected",
+      "unknown": "unknown",
+      "total": "Total market premium: {sum}"
     }
   }
 }

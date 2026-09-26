@@ -19,6 +19,7 @@
  * Abweichungen zwischen Mandanten zu ermöglichen, die es nicht geben kann.
  */
 
+import { berlinerMonat } from "@/lib/zeit/berlin";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -44,9 +45,6 @@ const importSchema = z.object({
 });
 
 /** Erwartete Stunden eines Monats — Schaltjahr und Monatslänge eingeschlossen. */
-function expectedHours(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate() * 24;
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,8 +63,10 @@ export async function GET(request: NextRequest) {
       return apiError("VALIDATION_FAILED", 400, { message: "Ungültiger Monat" });
     }
 
-    const from = new Date(Date.UTC(year, month - 1, 1));
-    const to = new Date(Date.UTC(year, month, 1));
+    // The delivery month in German local time — a UTC month moved the first
+    // hours into the previous month and always expected days × 24 hours,
+    // so March looked incomplete and October overfull (audit 2026-09).
+    const { von: from, bis: to, stunden: expected } = berlinerMonat(year, month);
 
     const prices = await prisma.hourlySpotPrice.findMany({
       where: { biddingZone, hour: { gte: from, lt: to } },
@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
       select: { hour: true, priceEurMwh: true, source: true },
     });
 
-    const expected = expectedHours(year, month);
     const negativeCount = prices.filter((entry) => Number(entry.priceEurMwh) < 0).length;
 
     const warnings: string[] = [];

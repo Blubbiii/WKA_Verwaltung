@@ -28,7 +28,7 @@ describe("Menüstruktur", () => {
     expect(kinderVon("/energy")).toEqual(["/energy", "/energy/productions", "/energy/settlements", "/energy/scada/data"]);
     // Portfolio-Cockpit stays its own entry: it needs invoices:read, the
     // analysis entry energy:read.
-    expect(kinderVon("/energy/analytics")).toEqual(["/energy/analytics", "/energy/curtailment", "/energy/scada/anomalies"]);
+    expect(kinderVon("/energy/analytics")).toEqual(["/energy/analytics", "/energy/curtailment", "/energy/market-premium", "/energy/scada/anomalies"]);
   });
 
   it("Einrichtungsseiten stehen unter Administration", () => {

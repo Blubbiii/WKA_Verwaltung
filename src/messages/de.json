@@ -449,7 +449,8 @@
     "energyData": "Energiedaten",
     "energyEvaluation": "Auswertung",
     "dataConnection": "Datenanbindung",
-    "contractsOverview": "Übersicht"
+    "contractsOverview": "Übersicht",
+    "marketPremium": "Marktprämie"
   },
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
@@ -10861,6 +10862,51 @@
       "LOW": "Niedrig",
       "MEDIUM": "Mittel",
       "HIGH": "Hoch"
+    }
+  },
+  "marketPremium": {
+    "title": "Marktprämie",
+    "description": "Spotpreise laden, die Marktprämie je Anlage berechnen und die Stunden mit negativen Preisen nach § 51 EEG sehen.",
+    "month": "Monat",
+    "year": "Jahr",
+    "park": "Windpark",
+    "allParks": "Alle Windparks",
+    "spot": {
+      "title": "Spotpreise (Day-Ahead, DE-LU)",
+      "description": "Die stündliche Preisreihe ist die Grundlage für die Stunden mit negativen Preisen.",
+      "import": "SMARD-CSV importieren",
+      "hours": "Stunden geladen",
+      "negativeHours": "Stunden mit negativem Preis",
+      "imported": "{imported} von {submitted} Stunden importiert",
+      "importError": "Import fehlgeschlagen",
+      "emptyFile": "Die Datei enthält keine Preise für Deutschland/Luxemburg.",
+      "quarterHours": "Die Datei enthielt Viertelstundenpreise; sie wurden je Stunde gemittelt.",
+      "gaps": "{count} Zeilen ohne Preis wurden übersprungen.",
+      "sourceHint": "Quelle: smard.de → Großhandelspreise → Deutschland/Luxemburg, Download als CSV. Bereits geladene Stunden werden nicht überschrieben."
+    },
+    "calculate": {
+      "title": "Marktprämie berechnen",
+      "description": "Für jede aktive Anlage mit Regulierungsprofil (anzulegender Wert, Korrekturfaktor) im gewählten Monat.",
+      "marketValue": "Monatsmarktwert Wind an Land (ct/kWh)",
+      "marketValueHint": "Veröffentlicht von den Übertragungsnetzbetreibern (netztransparenz.de). Ohne ihn gibt es keine Prämie — er wird nicht geschätzt.",
+      "overwrite": "Vorhandene Berechnungen dieses Monats ersetzen",
+      "submit": "Berechnen"
+    },
+    "calculated": "{computed} Anlagen berechnet, {skipped} übersprungen",
+    "calculateError": "Berechnung fehlgeschlagen",
+    "table": {
+      "search": "Anlage suchen",
+      "empty": "Für diesen Monat ist noch nichts berechnet",
+      "emptyHint": "Spotpreise laden, Monatsmarktwert eintragen und berechnen.",
+      "turbine": "Anlage",
+      "awardValue": "Anzul. Wert (ct/kWh)",
+      "marketValue": "Marktwert (ct/kWh)",
+      "premiumCt": "Prämie (ct/kWh)",
+      "production": "Menge (MWh)",
+      "premiumEur": "Prämie",
+      "negativeHours": "Neg. Stunden / betroffen",
+      "unknown": "unbekannt",
+      "total": "Summe Marktprämie: {sum}"
     }
   }
 }

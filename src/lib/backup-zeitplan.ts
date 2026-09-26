@@ -13,6 +13,8 @@
  * All at the configured time, Europe/Berlin.
  */
 
+import { ausBerlin, berlinTeile } from "@/lib/zeit/berlin";
+
 export type BackupRhythmus = "daily" | "weekly" | "monthly";
 
 export interface BackupZeitplan {
@@ -90,41 +92,6 @@ export function zeitplanAusWerten(werte: Record<string, string | undefined>): Ba
     behalteMonatlich: anzahl(werte[ZEITPLAN_SCHLUESSEL.behalteMonatlich], s.behalteMonatlich),
     s3: s3 === undefined ? s.s3 : s3 === "true",
   };
-}
-
-// ---------------------------------------------------------------------------
-// Europe/Berlin wall clock without a timezone library
-// ---------------------------------------------------------------------------
-
-const TZ = "Europe/Berlin";
-const teileFormat = new Intl.DateTimeFormat("en-GB", {
-  timeZone: TZ,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hourCycle: "h23",
-});
-
-function berlinTeile(zeit: Date) {
-  const t = Object.fromEntries(teileFormat.formatToParts(zeit).map((p) => [p.type, p.value]));
-  return { y: +t.year, m: +t.month, d: +t.day, h: +t.hour, min: +t.minute, s: +t.second };
-}
-
-/** Offset of Berlin against UTC at that instant, in ms. */
-function versatz(zeit: Date) {
-  const t = berlinTeile(zeit);
-  return Date.UTC(t.y, t.m - 1, t.d, t.h, t.min, t.s) - Math.floor(zeit.getTime() / 1000) * 1000;
-}
-
-/** UTC instant of a Berlin wall-clock time. */
-function ausBerlin(y: number, m: number, d: number, h: number, min: number) {
-  const naiv = Date.UTC(y, m - 1, d, h, min);
-  const erster = naiv - versatz(new Date(naiv));
-  // Second pass settles the hour around a DST switch.
-  return new Date(naiv - versatz(new Date(erster)));
 }
 
 function laeuftAn(rhythmus: BackupRhythmus, wochentag: number, tag: number) {

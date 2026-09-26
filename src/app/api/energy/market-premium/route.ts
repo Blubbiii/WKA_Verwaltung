@@ -21,6 +21,7 @@
  * da.
  */
 
+import { berlinerMonat } from "@/lib/zeit/berlin";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -103,8 +104,8 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const from = new Date(Date.UTC(data.year, data.month - 1, 1));
-    const to = new Date(Date.UTC(data.year, data.month, 1));
+    // Delivery month in German local time (see spot-prices).
+    const { von: from, bis: to } = berlinerMonat(data.year, data.month);
 
     const turbines = await prisma.turbine.findMany({
       where: {

@@ -277,6 +277,29 @@ sich nicht, letztes Backup fehlgeschlagen, überfällig. Ohne Datenbank fällt
 der Dienst auf den bisherigen Plan zurück (täglich 02:00, sonntags
 wöchentlich, am Ersten monatlich).
 
+**Neue Seite: Marktprämie (E5)**
+
+Unter Auswertung → Marktprämie gibt es jetzt eine eigene Seite. Die Rechnung
+gab es schon, eine Oberfläche nicht.
+
+- **Spotpreise:** Import der SMARD-CSV (Großhandelspreise
+  Deutschland/Luxemburg), altes Stundenformat wie neues Viertelstundenformat.
+  Viertelstunden werden je Stunde gemittelt und das wird angezeigt.
+  Ortszeit wird korrekt umgerechnet, auch die doppelte Stunde im Oktober. Die
+  Karte zeigt, wie vollständig der Monat ist und wie viele Stunden negativ
+  waren.
+- **Berechnung:** Monatsmarktwert Wind an Land eintragen, je Park oder für
+  alle berechnen, vorhandene Ergebnisse nur auf ausdrückliche Bestätigung
+  ersetzen.
+- **Ergebnis:** Anlage, anzulegender Wert, Marktwert, Prämie je kWh und in
+  Euro, Menge, Stunden mit negativem Preis und davon betroffene, mit Summe.
+
+Dabei behoben: Spotpreise und Marktprämie schnitten den Monat in UTC und
+erwarteten immer „Tage × 24" Stunden. Die ersten ein bis zwei Stunden jedes
+Monats fielen so in den Vormonat, und eine vollständige März-Reihe (743
+Stunden) galt als lückenhaft. Maßgeblich ist jetzt der Liefermonat nach
+deutscher Ortszeit (`lib/zeit/berlin`).
+
 **Weitere Funde aus Review und Prüfung**
 
 - **Fremdes Impressum möglich.** Öffentliche Seiten lasen beim erstbesten

@@ -318,6 +318,9 @@ export const navGroups: NavGroup[] = [
           // A4 (Audit 2026-07): Abregelung war nicht abgebildet — weder die
           // Ausfallarbeit noch die Forderung dagegen.
           { title: "Abregelungen", titleKey: "curtailment", href: "/energy/curtailment", icon: Ban },
+          // E5 (2026-09): Spotpreise, Marktprämie und Stunden mit negativen
+          // Preisen — die Rechnung gab es, die Oberfläche nicht.
+          { title: "Marktprämie", titleKey: "marketPremium", href: "/energy/market-premium", icon: Coins },
           { title: "Anomalie-Erkennung", titleKey: "anomalyDetection", href: "/energy/scada/anomalies", icon: AlertTriangle },
         ],
       },
