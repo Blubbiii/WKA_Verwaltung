@@ -11056,5 +11056,33 @@
     "bannerLocked": "Your licence is exceeded ({was}). Creating and editing are locked until you book a larger tier. Reading, export and billing continue.",
     "details": "Details",
     "tab": "Licence"
+  },
+  "zugriffe": {
+    "tab": "External access",
+    "title": "External access to your parks",
+    "description": "Service providers who see your parks' settlement data through a management contract. Once you end an access, the provider no longer sees any data of that park.",
+    "provider": "Provider",
+    "park": "Park",
+    "role": "Role",
+    "billing": "Billing",
+    "since": "Since",
+    "yes": "Yes",
+    "no": "No",
+    "end": "End access",
+    "unknownPark": "Park no longer exists",
+    "confirmTitle": "End access for {dienstleister}?",
+    "confirmDescription": "{park}: the provider will no longer see this park's settlement data. The entry stays in the history.",
+    "ended": "Access ended",
+    "endFailed": "Access could not be ended",
+    "loadFailed": "External access could not be loaded",
+    "emptyTitle": "No external access",
+    "emptyDescription": "No service provider currently has access to your parks.",
+    "roles": {
+      "DEVELOPER": "Developer",
+      "GRID_OPERATOR": "Grid operator",
+      "TECHNICAL_BF": "Technical management",
+      "COMMERCIAL_BF": "Commercial management",
+      "OPERATOR": "Operator"
+    }
   }
 }

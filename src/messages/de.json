@@ -11056,5 +11056,33 @@
     "bannerLocked": "Ihre Lizenz ist überschritten ({was}). Anlegen und Bearbeiten sind gesperrt, bis Sie eine größere Stufe buchen. Lesen, Export und Abrechnungen gehen weiter.",
     "details": "Details",
     "tab": "Lizenz"
+  },
+  "zugriffe": {
+    "tab": "Externe Zugriffe",
+    "title": "Externe Zugriffe auf Ihre Parks",
+    "description": "Dienstleister, die über einen Betriebsführungsvertrag die Abrechnungsdaten Ihrer Parks sehen. Beenden Sie einen Zugriff, sieht der Dienstleister ab sofort keine Daten dieses Parks mehr.",
+    "provider": "Dienstleister",
+    "park": "Park",
+    "role": "Rolle",
+    "billing": "Abrechnung",
+    "since": "Seit",
+    "yes": "Ja",
+    "no": "Nein",
+    "end": "Zugriff beenden",
+    "unknownPark": "Park nicht mehr vorhanden",
+    "confirmTitle": "Zugriff von {dienstleister} beenden?",
+    "confirmDescription": "{park}: Der Dienstleister sieht die Abrechnungsdaten dieses Parks danach nicht mehr. Der Eintrag bleibt im Verlauf erhalten.",
+    "ended": "Zugriff beendet",
+    "endFailed": "Zugriff konnte nicht beendet werden",
+    "loadFailed": "Externe Zugriffe konnten nicht geladen werden",
+    "emptyTitle": "Kein externer Zugriff",
+    "emptyDescription": "Kein Dienstleister hat derzeit Zugriff auf Ihre Parks.",
+    "roles": {
+      "DEVELOPER": "Projektierer",
+      "GRID_OPERATOR": "Netzbetreiber",
+      "TECHNICAL_BF": "Technische Betriebsführung",
+      "COMMERCIAL_BF": "Kaufmännische Betriebsführung",
+      "OPERATOR": "Betreiber"
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { LizenzIcon, LizenzKarte } from "@/components/lizenz/lizenz-anzeige";
+import { ExterneZugriffe } from "@/components/zugriffe/externe-zugriffe";
 import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,7 +62,7 @@ import { TenantFeaturesSettings } from "@/components/settings/TenantFeaturesSett
 import { PaperlessConfigForm } from "@/components/admin/system-config/paperless-config-form";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { ToggleLeft, FileArchive } from "lucide-react";
+import { ToggleLeft, FileArchive, Handshake } from "lucide-react";
 import { toast } from "sonner";
 import { UPLOAD_LIMITS } from "@/lib/config/upload-limits";
 import { LOCALE_DE } from "@/lib/format";
@@ -1087,7 +1088,7 @@ interface PaperlessAvailableKey {
 }
 
 /** Bedienaufwand #15: erlaubte Werte für ?tab= — alles andere faellt auf den Standard zurück. */
-const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features", "lizenz"] as const;
+const TAB_VALUES = ["profile", "notifications", "appearance", "security", "paperless", "features", "lizenz", "zugriffe"] as const;
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useTabParam("profile", { allowed: TAB_VALUES });
@@ -1096,6 +1097,7 @@ export default function SettingsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const { hasPermission, roleHierarchy } = usePermissions();
   const tLizenz = useTranslations("lizenz");
+  const tZugriffe = useTranslations("zugriffe");
   const { flags } = useFeatureFlags();
   const canManageFeatures = roleHierarchy >= 100 || hasPermission("settings:update");
   // Licence & usage for the customer's admins (the /admin area is the platform operator's).
@@ -1231,11 +1233,23 @@ export default function SettingsPage() {
               {tLizenz("tab")}
             </TabsTrigger>
           )}
+          {canSeeLicence && (
+            <TabsTrigger value="zugriffe" className="flex items-center gap-2">
+              <Handshake className="h-4 w-4" />
+              {tZugriffe("tab")}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {canSeeLicence && (
           <TabsContent value="lizenz">
             <LizenzKarte />
+          </TabsContent>
+        )}
+
+        {canSeeLicence && (
+          <TabsContent value="zugriffe">
+            <ExterneZugriffe darfBeenden={canManageFeatures} />
           </TabsContent>
         )}
 
