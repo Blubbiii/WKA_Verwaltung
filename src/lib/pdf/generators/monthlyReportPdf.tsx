@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import { buildTurbineIdFilter } from "@/lib/analytics/query-helpers";
 
 // German month names
 const MONTH_NAMES = [
@@ -64,8 +65,10 @@ async function fetchMonthlyReportData(
   tenantId: string
 ): Promise<MonthlyReportData> {
   // 1. Park with turbines and fund relations
-  const park = await prisma.park.findUnique({
-    where: { id: parkId },
+  // With the tenant: the generator also runs for scheduled reports, not
+  // only behind a route that checked the park first.
+  const park = await prisma.park.findFirst({
+    where: { id: parkId, tenantId },
     include: {
       turbines: {
         where: { status: "ACTIVE", deviceType: "WEA" },
@@ -118,7 +121,8 @@ async function fetchMonthlyReportData(
     SELECT "turbineId",
            MAX("operatingHours") - MIN("operatingHours") AS delta_hours
     FROM scada_measurements
-    WHERE "turbineId" IN (${Prisma.join(turbineIds)})
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
       AND "sourceFile" = 'WSD'
       AND "operatingHours" IS NOT NULL
       AND "timestamp" >= ${new Date(year, month - 1, 1)}
@@ -416,7 +420,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "windDirection" IS NOT NULL AND "windSpeedMs" IS NOT NULL
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
         GROUP BY direction_sector, speed_range
       `),
@@ -427,7 +431,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "windDirection" IS NOT NULL AND "windSpeedMs" IS NOT NULL
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
       `),
       // Wind distribution (1 m/s bins)
@@ -437,7 +441,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "windSpeedMs" IS NOT NULL AND "windSpeedMs" >= 0
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
         GROUP BY bin_start ORDER BY bin_start
       `),
@@ -448,7 +452,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "powerW" IS NOT NULL AND "windSpeedMs" IS NOT NULL AND "powerW" > 0
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
         ORDER BY RANDOM() LIMIT 500
       `),
@@ -461,7 +465,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "powerW" IS NOT NULL AND "windSpeedMs" IS NOT NULL AND "powerW" > 0
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
         GROUP BY ROUND("windSpeedMs"::numeric * 2) / 2
         ORDER BY wind_speed
@@ -475,7 +479,7 @@ async function fetchMonthlyReportData(
         WHERE "tenantId" = ${tenantId}
           AND "sourceFile" = 'WSD'
           AND "powerW" IS NOT NULL
-          AND "turbineId" IN (${Prisma.join(turbineIds)})
+          AND ${buildTurbineIdFilter(turbineIds)}
           AND "timestamp" >= ${chartFrom} AND "timestamp" < ${chartTo}
         GROUP BY TO_CHAR("timestamp", 'HH24:MI')
         ORDER BY time_slot

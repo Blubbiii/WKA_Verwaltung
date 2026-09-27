@@ -11,7 +11,8 @@
  * creating sets it. Nested reads (include/select of relations) are not
  * rewritten — they start from a row that is already the tenant's.
  *
- * Raw SQL ($queryRaw) passes through unchanged: it must name the tenant itself.
+ * Raw SQL ($queryRaw) passes through unchanged: it must name the tenant itself
+ * ("tenantId" = ${tenantId}) — lib/mandant/rohsql.test.ts enforces that.
  * Cross-tenant work (workers, platform operator) keeps using `prisma` on purpose.
  */
 

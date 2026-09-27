@@ -21,6 +21,7 @@ import { Prisma } from "@prisma/client";
 import { getSignedUrl } from "@/lib/storage";
 import type { MonthlyReportSections } from "./monthlyReportPdf";
 import { logger } from "@/lib/logger";
+import { buildTurbineIdFilter } from "@/lib/analytics/query-helpers";
 
 const MONTH_NAMES = [
   "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -60,8 +61,10 @@ async function fetchQuarterlyReportData(
   const endMonth = months[months.length - 1];
 
   // 1. Park with turbines
-  const park = await prisma.park.findUnique({
-    where: { id: parkId },
+  // With the tenant: the generator also runs for scheduled reports, not
+  // only behind a route that checked the park first.
+  const park = await prisma.park.findFirst({
+    where: { id: parkId, tenantId },
     include: {
       turbines: {
         where: { status: "ACTIVE", deviceType: "WEA" },
@@ -104,7 +107,8 @@ async function fetchQuarterlyReportData(
     SELECT "turbineId",
            MAX("operatingHours") - MIN("operatingHours") AS delta_hours
     FROM scada_measurements
-    WHERE "turbineId" IN (${Prisma.join(turbineIds)})
+    WHERE "tenantId" = ${tenantId}
+      AND ${buildTurbineIdFilter(turbineIds)}
       AND "sourceFile" = 'WSD'
       AND "operatingHours" IS NOT NULL
       AND "timestamp" >= ${new Date(year, startMonth - 1, 1)}

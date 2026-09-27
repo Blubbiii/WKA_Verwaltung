@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { mandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -147,7 +146,7 @@ async function fetchProductionData(
   let dataRows: AggregatedRow[];
 
   if (interval === "10min") {
-    dataRows = await prisma.$queryRaw<AggregatedRow[]>`
+    dataRows = await mandantDb(tenantId).$queryRaw<AggregatedRow[]>`
       SELECT
         "turbineId",
         "timestamp" AS period_start,
@@ -170,7 +169,7 @@ async function fetchProductionData(
             ? Prisma.sql`date_trunc('month', "timestamp")`
             : Prisma.sql`date_trunc('year', "timestamp")`;
 
-    dataRows = await prisma.$queryRaw<AggregatedRow[]>`
+    dataRows = await mandantDb(tenantId).$queryRaw<AggregatedRow[]>`
       SELECT
         "turbineId",
         ${truncSql} AS period_start,
@@ -227,7 +226,7 @@ async function fetchPowerCurveData(
     AND "timestamp" < ${toDate}
   `;
 
-  const scatterRows = await prisma.$queryRaw<ScatterRow[]>`
+  const scatterRows = await mandantDb(tenantId).$queryRaw<ScatterRow[]>`
     SELECT
       "windSpeedMs"::float AS "windSpeed",
       "powerW"::float / 1000.0 AS "powerKw",
@@ -238,7 +237,7 @@ async function fetchPowerCurveData(
     LIMIT 5000
   `;
 
-  const curveRows = await prisma.$queryRaw<CurveRow[]>`
+  const curveRows = await mandantDb(tenantId).$queryRaw<CurveRow[]>`
     SELECT
       ROUND("windSpeedMs"::numeric * 2) / 2 AS "windSpeed",
       AVG("powerW")::float / 1000.0 AS "avgPowerKw",
@@ -279,7 +278,7 @@ async function fetchWindRoseData(
     AND "timestamp" < ${toDate}
   `;
 
-  const rows = await prisma.$queryRaw<WindRoseRow[]>`
+  const rows = await mandantDb(tenantId).$queryRaw<WindRoseRow[]>`
     SELECT
       CASE
         WHEN "windDirection" >= 348.75 OR "windDirection" < 11.25 THEN 'N'
@@ -368,7 +367,7 @@ async function fetchKpiSummary(
   const expectedPointsPerTurbine = diffMs / (10 * 60 * 1000);
   const totalExpectedPoints = expectedPointsPerTurbine * turbineIds.length;
 
-  const kpiRows = await prisma.$queryRaw<KpiRow[]>`
+  const kpiRows = await mandantDb(tenantId).$queryRaw<KpiRow[]>`
     SELECT
       SUM("powerW" * 10.0 / 60.0 / 1000.0) AS total_production_kwh,
       AVG("powerW") / 1000.0 AS avg_power_kw,
@@ -415,7 +414,7 @@ async function fetchDailyProfile(
 ) {
   const whereClause = buildWhereClause(tenantId, turbineIds, fromDate, toDate);
 
-  const rows = await prisma.$queryRaw<DailyProfileRow[]>`
+  const rows = await mandantDb(tenantId).$queryRaw<DailyProfileRow[]>`
     SELECT
       TO_CHAR("timestamp", 'HH24:MI') AS time_slot,
       AVG("powerW") / 1000.0 AS avg_power_kw,
@@ -454,7 +453,7 @@ async function fetchTurbineComparison(
   const diffMs = toDate.getTime() - fromDate.getTime();
   const expectedPointsPerTurbine = diffMs / (10 * 60 * 1000);
 
-  const rows = await prisma.$queryRaw<TurbineComparisonRow[]>`
+  const rows = await mandantDb(tenantId).$queryRaw<TurbineComparisonRow[]>`
     SELECT
       "turbineId",
       SUM("powerW" * 10.0 / 60.0 / 1000.0) AS total_kwh,

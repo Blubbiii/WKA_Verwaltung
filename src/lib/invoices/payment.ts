@@ -137,8 +137,9 @@ export async function recordPayment(
 
   // SELECT FOR UPDATE: blockiert die Row für andere parallele TX bis Commit.
   // Wir nutzen den Lock zuerst, dann die typsichere findUnique darunter.
+  // Mit Mandant: eine fremde id sperrt nicht erst eine fremde Rechnung.
   const locked = await tx.$queryRaw<Array<{ id: string }>>`
-    SELECT id FROM "invoices" WHERE id = ${params.invoiceId} FOR UPDATE
+    SELECT id FROM "invoices" WHERE id = ${params.invoiceId} AND "tenantId" = ${params.tenantId} FOR UPDATE
   `;
   if (locked.length === 0) {
     const err = new Error("Rechnung nicht gefunden");
