@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { VoteStatus } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
 import { apiLogger as logger } from "@/lib/logger";
@@ -67,6 +66,7 @@ interface BatchedShareholder {
  * Returns pre-grouped maps so that calculateVoteResults needs zero DB queries.
  */
 async function batchFetchVoteResultData(
+  db: MandantDb,
   closedVoteIds: string[],
   closedFundIds: string[]
 ): Promise<{
@@ -84,7 +84,7 @@ async function batchFetchVoteResultData(
 
   const [allResponses, allShareholders] = await Promise.all([
     // Single query: all responses for all closed votes
-    prisma.voteResponse.findMany({
+    db.voteResponse.findMany({
       where: { voteId: { in: closedVoteIds } },
       select: {
         voteId: true,
@@ -98,7 +98,7 @@ async function batchFetchVoteResultData(
       },
     }),
     // Single query: all non-archived shareholders for all relevant funds
-    prisma.shareholder.findMany({
+    db.shareholder.findMany({
       where: {
         fundId: { in: uniqueFundIds },
         status: { not: "ARCHIVED" },
@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
     const closedVoteIds = closedVotes.map((v) => v.id);
     const closedFundIds = closedVotes.map((v) => v.fundId);
     const { responsesByVoteId, shareholdersByFundId } =
-      await batchFetchVoteResultData(closedVoteIds, closedFundIds);
+      await batchFetchVoteResultData(db, closedVoteIds, closedFundIds);
 
     // Compute results in-memory using pre-fetched data
     const votesWithResults = votes.map((vote) => {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
 import { z } from "zod";
@@ -25,8 +24,8 @@ const itemUpdateSchema = z.object({
 });
 
 // Helper: Rechnung-Summen neu berechnen (akzeptiert optionalen Transaction Client)
-async function recalculateInvoiceTotals(invoiceId: string, txClient?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {
-  const db = txClient || prisma;
+async function recalculateInvoiceTotals(invoiceId: string, txClient: Parameters<Parameters<MandantDb["$transaction"]>[0]>[0]) {
+  const db = txClient;
   const items = await db.invoiceItem.findMany({
     where: { invoiceId },
   });

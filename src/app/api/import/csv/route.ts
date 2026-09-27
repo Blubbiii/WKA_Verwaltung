@@ -35,7 +35,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
 
     const check = await requirePermission(PERMISSION_BY_TARGET[target]);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const spec = IMPORT_SPECS[target];
 
@@ -153,10 +154,10 @@ export async function POST(request: NextRequest) {
       }));
 
       if (target === "persons") {
-        const result = await prisma.person.createMany({ data: data as never, skipDuplicates: true });
+        const result = await db.person.createMany({ data: data as never, skipDuplicates: true });
         imported = result.count;
       } else {
-        const result = await prisma.vendor.createMany({ data: data as never, skipDuplicates: true });
+        const result = await db.vendor.createMany({ data: data as never, skipDuplicates: true });
         imported = result.count;
       }
     }
@@ -275,6 +276,7 @@ async function findExisting(
   data: Record<string, string>,
   tenantId: string,
 ): Promise<boolean> {
+  const db = mandantDb(tenantId);
   const spec = IMPORT_SPECS[target];
 
   for (const combination of spec.dedupeBy) {
@@ -289,8 +291,8 @@ async function findExisting(
 
     const hit =
       target === "persons"
-        ? await prisma.person.findFirst({ where: where as never, select: { id: true } })
-        : await prisma.vendor.findFirst({
+        ? await db.person.findFirst({ where: where as never, select: { id: true } })
+        : await db.vendor.findFirst({
             where: { ...where, deletedAt: null } as never,
             select: { id: true },
           });

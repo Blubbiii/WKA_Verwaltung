@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { apiLogger as logger } from "@/lib/logger";
 import { generateInvoicePdf } from "@/lib/pdf/generators/invoicePdf";
 import { sendEmailSync } from "@/lib/email/sender";
@@ -129,12 +128,12 @@ export async function POST(
 
     // Process based on method
     if (method === "print" || method === "both") {
-      await processPrint(filteredEntries, check.userId!, result);
+      await processPrint(db, filteredEntries, check.userId!, result);
     }
 
     if (method === "email" || method === "both") {
       await processEmail(
-        filteredEntries,
+        db,        filteredEntries,
         check.userId!,
         check.tenantId!,
         result
@@ -159,6 +158,7 @@ export async function POST(
 // =============================================================================
 
 async function processPrint(
+  db: MandantDb,
   entries: Array<{
     invoice: { id: string; invoiceNumber: string };
     item: { lessorPerson: { firstName: string | null; lastName: string | null; companyName: string | null } | null };
@@ -190,7 +190,7 @@ async function processPrint(
 
   // Batch-update all successful prints (1 query instead of N)
   if (successfulIds.length > 0) {
-    await prisma.invoice.updateMany({
+    await db.invoice.updateMany({
       where: { id: { in: successfulIds } },
       data: {
         printedAt: new Date(),
@@ -205,6 +205,7 @@ async function processPrint(
 // =============================================================================
 
 async function processEmail(
+  db: MandantDb,
   entries: Array<{
     invoice: {
       id: string;
@@ -296,7 +297,7 @@ async function processEmail(
         updateData.sentAt = new Date();
       }
 
-      await prisma.invoice.update({
+      await db.invoice.update({
         where: { id: entry.invoice.id, tenantId },
         data: updateData,
       });

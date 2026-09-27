@@ -1,3 +1,4 @@
+// mandantenübergreifend: öffentliche Versionsangabe aus der globalen Systemkonfiguration.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";

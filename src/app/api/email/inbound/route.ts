@@ -1,3 +1,4 @@
+// mandantenübergreifend: E-Mail-Eingang per API-Schlüssel ohne Sitzung; der Mandant wird aus der Empfängeradresse ermittelt.
 /**
  * API Route: /api/email/inbound
  * POST: Inbound email webhook — receives parsed emails from n8n

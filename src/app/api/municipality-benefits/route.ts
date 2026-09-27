@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -49,8 +49,9 @@ export async function GET() {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
-    const benefits = await prisma.municipalityBenefit.findMany({
+    const benefits = await db.municipalityBenefit.findMany({
       where: { tenantId: check.tenantId },
       include: {
         municipality: { select: { id: true, name: true } },
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -89,11 +91,11 @@ export async function POST(request: NextRequest) {
     // Beide Enden gegen den Mandanten prüfen. Ohne das liesse sich eine
     // fremde Anlage an die eigene Gemeinde hängen.
     const [turbine, municipality] = await Promise.all([
-      prisma.turbine.findFirst({
+      db.turbine.findFirst({
         where: { id: input.turbineId, park: { tenantId: check.tenantId } },
         select: { id: true, designation: true },
       }),
-      prisma.municipality.findFirst({
+      db.municipality.findFirst({
         where: { id: input.municipalityId, tenantId: check.tenantId },
         select: { id: true, name: true },
       }),
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
       return apiError("NOT_FOUND", 404, { message: "Gemeinde nicht gefunden" });
     }
 
-    const created = await prisma.municipalityBenefit.create({
+    const created = await db.municipalityBenefit.create({
       data: {
         tenantId: check.tenantId,
         turbineId: input.turbineId,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 // GET /api/quick-search?q=term&limit=10
 // Fast multi-entity search for the Command Palette (Cmd+K)
@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("parks:read");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
     const tenantId = check.tenantId!;
 
     const { searchParams } = new URL(request.url);
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [parks, invoices, contacts, contracts, funds] = await Promise.all([
-      prisma.park.findMany({
+      db.park.findMany({
         where: {
           tenantId,
           deletedAt: null,
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
 
-      prisma.invoice.findMany({
+      db.invoice.findMany({
         where: {
           tenantId,
           deletedAt: null,
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
 
-      prisma.person.findMany({
+      db.person.findMany({
         where: {
           tenantId,
           OR: [
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
 
-      prisma.contract.findMany({
+      db.contract.findMany({
         where: {
           tenantId,
           deletedAt: null,
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
 
-      prisma.fund.findMany({
+      db.fund.findMany({
         where: {
           tenantId,
           deletedAt: null,

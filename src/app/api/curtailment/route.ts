@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CURTAILMENT_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parkId = searchParams.get("parkId");
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [events, total, sums] = await Promise.all([
-      prisma.curtailmentEvent.findMany({
+      db.curtailmentEvent.findMany({
         where,
         include: {
           park: { select: { id: true, name: true, shortName: true } },
@@ -98,11 +99,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.curtailmentEvent.count({ where }),
+      db.curtailmentEvent.count({ where }),
       // Die Summen ueber ALLE Treffer, nicht nur die sichtbare Seite — sonst
       // sagt "offen: 4.200 EUR" etwas ueber Seite 1 aus und nicht ueber den
       // Bestand.
-      prisma.curtailmentEvent.aggregate({
+      db.curtailmentEvent.aggregate({
         where,
         _sum: { claimEur: true, compensationPaidEur: true, lostWorkKwh: true },
       }),
@@ -131,6 +132,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.CURTAILMENT_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -142,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: data.parkId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -151,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.turbineId) {
-      const turbine = await prisma.turbine.findFirst({
+      const turbine = await db.turbine.findFirst({
         where: { id: data.turbineId, parkId: data.parkId },
         select: { id: true },
       });
@@ -169,7 +171,7 @@ export async function POST(request: NextRequest) {
     // Ereignisnummern hat keine rechtliche Folge.
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const created = await prisma.$transaction(async (tx) => {
+        const created = await db.$transaction(async (tx) => {
           const eventNumber = await nextEventNumber(tx, check.tenantId!, startAt);
           return tx.curtailmentEvent.create({
             data: {
@@ -218,7 +220,7 @@ export async function POST(request: NextRequest) {
 }
 
 type TxClient = Omit<
-  typeof prisma,
+  MandantDb,
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
 >;
 

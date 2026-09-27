@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
 import { mandantDb } from "@/lib/mandant/mandant-db";
+import { emailVergeben } from "@/lib/auth/email-vergeben";
 import { createAuditLog } from "@/lib/audit";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
@@ -146,14 +146,8 @@ export async function POST(
       return apiError("BAD_REQUEST", undefined, { message: "Die Kontaktperson hat keine E-Mail-Adresse. Bitte zuerst eine E-Mail-Adresse hinterlegen." });
     }
 
-    // Check if a user with this email already exists — globally on purpose:
-    // e-mail addresses are unique across all tenants.
-    const existingUser = await prisma.user.findUnique({
-      where: { email: shareholder.person.email },
-      select: { id: true },
-    });
-
-    if (existingUser) {
+    // Check if a user with this email already exists (across all tenants)
+    if (await emailVergeben(shareholder.person.email)) {
       return apiError("CONFLICT", undefined, { message: `Ein Benutzer mit der E-Mail-Adresse "${shareholder.person.email}" existiert bereits. Bitte verwenden Sie eine andere E-Mail-Adresse.` });
     }
 

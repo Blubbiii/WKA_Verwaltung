@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { handleApiError, parsePaginationParams } from "@/lib/api-utils";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -24,8 +23,8 @@ const shareholderCreateSchema = z.object({
 
 // Helper function to recalculate all ownership percentages in a fund
 // Accepts optional transaction client for atomic operations
-async function recalculateFundShares(fundId: string, txClient?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {
-  const db = txClient || prisma;
+async function recalculateFundShares(fundId: string, txClient: Parameters<Parameters<MandantDb["$transaction"]>[0]>[0]) {
+  const db = txClient;
 
   // Get the fund's registered capital (Stammkapital)
   const fund = await db.fund.findUnique({
@@ -55,39 +54,21 @@ async function recalculateFundShares(fundId: string, txClient?: Parameters<Param
 
   // Update each shareholder's ownership percentage (batched for performance)
   if (denominator > 0) {
-    if (txClient) {
-      // Already inside an interactive transaction - run updates concurrently
-      await Promise.all(
-        shareholders.map((sh) => {
-          const contribution = Number(sh.capitalContribution) || 0;
-          const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
-          return db.shareholder.update({
-            where: { id: sh.id },
-            data: {
-              ownershipPercentage: percentage,
-              votingRightsPercentage: percentage,
-              distributionPercentage: percentage,
-            },
-          });
-        })
-      );
-    } else {
-      // No transaction context - use batch $transaction for atomicity + performance
-      await prisma.$transaction(
-        shareholders.map((sh) => {
-          const contribution = Number(sh.capitalContribution) || 0;
-          const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
-          return prisma.shareholder.update({
-            where: { id: sh.id },
-            data: {
-              ownershipPercentage: percentage,
-              votingRightsPercentage: percentage,
-              distributionPercentage: percentage,
-            },
-          });
-        })
-      );
-    }
+    // Already inside an interactive transaction - run updates concurrently
+    await Promise.all(
+      shareholders.map((sh) => {
+        const contribution = Number(sh.capitalContribution) || 0;
+        const percentage = Math.round((contribution / denominator) * 100 * 100) / 100;
+        return db.shareholder.update({
+          where: { id: sh.id },
+          data: {
+            ownershipPercentage: percentage,
+            votingRightsPercentage: percentage,
+            distributionPercentage: percentage,
+          },
+        });
+      })
+    );
   }
 }
 

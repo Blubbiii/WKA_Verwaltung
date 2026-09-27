@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiLogger as logger } from "@/lib/logger";
@@ -31,9 +31,10 @@ export async function GET(_request: NextRequest) {
     // Auth-Check: Benutzer mit FUNDS_READ Permission duerfen zugreifen
     const check = await requirePermission(PERMISSIONS.FUNDS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     // Nur aktive Gesellschaftstypen abrufen
-    const fundCategories = await prisma.fundCategory.findMany({
+    const fundCategories = await db.fundCategory.findMany({
       where: {
         tenantId: check.tenantId!,
         isActive: true,

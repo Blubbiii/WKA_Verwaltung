@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { handleApiError } from "@/lib/api-utils";
 import { z } from "zod";
@@ -25,8 +24,8 @@ const shareholderUpdateSchema = z.object({
 
 // Helper function to recalculate all ownership percentages in a fund
 // Accepts optional transaction client for atomic operations
-async function recalculateFundShares(fundId: string, txClient?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {
-  const db = txClient || prisma;
+async function recalculateFundShares(fundId: string, txClient: Parameters<Parameters<MandantDb["$transaction"]>[0]>[0]) {
+  const db = txClient;
   // Get all active shareholders in this fund
   const shareholders = await db.shareholder.findMany({
     where: {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
+import { emailVergeben } from "@/lib/auth/email-vergeben";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
 import { sendTemplatedEmailSync } from "@/lib/email/sender";
@@ -50,7 +50,7 @@ function generateTemporaryPassword(): string {
  */
 async function recalculateFundShares(
   fundId: string,
-  txClient: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+  txClient: Parameters<Parameters<MandantDb["$transaction"]>[0]>[0]
 ) {
   const shareholders = await txClient.shareholder.findMany({
     where: { fundId, status: "ACTIVE" },
@@ -109,13 +109,7 @@ export async function POST(request: NextRequest) {
 
     // Check if a user with this email already exists (if portal access requested)
     if (portalAccess.createPortalAccess) {
-      // Global on purpose: e-mail addresses are unique across all tenants.
-      const existingUser = await prisma.user.findUnique({
-        where: { email: personalData.email },
-        select: { id: true },
-      });
-
-      if (existingUser) {
+      if (await emailVergeben(personalData.email)) {
         return apiError("CONFLICT", undefined, { message: `Ein Benutzer mit der E-Mail-Adresse "${personalData.email}" existiert bereits.` });
       }
     }

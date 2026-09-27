@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { TaxType } from "@prisma/client";
 import { Decimal } from "@prisma/client-runtime-utils";
-import { prisma } from "@/lib/prisma";
 import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { getNextInvoiceNumberInTx, calculateTaxAmounts } from "@/lib/invoices/numberGenerator";
@@ -335,6 +334,7 @@ interface CreateCreditNotesOptions {
 }
 
 async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
+  const db = mandantDb(options.tenantId);
   const { period, articles, defaultPaymentDay, invoiceDate, tenantId, userId } = options;
 
   const interval = (period.advanceInterval as AdvanceInterval) || "MONTHLY";
@@ -363,14 +363,14 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 
   // Load paymentDay per lease
   const leaseIds = calcResult.leases.map((l) => l.leaseId);
-  const leases = await prisma.lease.findMany({
+  const leases = await db.lease.findMany({
     where: { id: { in: leaseIds } },
     select: { id: true, paymentDay: true },
   });
   const leasePaymentDays = new Map(leases.map((l) => [l.id, l.paymentDay]));
 
   // Load lessor address info
-  const leasesWithLessor = await prisma.lease.findMany({
+  const leasesWithLessor = await db.lease.findMany({
     where: { id: { in: leaseIds } },
     select: {
       id: true,
@@ -400,7 +400,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   // Leases raus für die bereits eine non-CANCELLED Invoice in dieser
   // Period existiert. CANCELLED Invoices werden durch eine neue ersetzt
   // (typischer Korrektur-Workflow).
-  const existingInvoices = await prisma.invoice.findMany({
+  const existingInvoices = await db.invoice.findMany({
     where: {
       tenantId,
       settlementPeriodId: period.id,
@@ -552,7 +552,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
       calculationSummary,
     };
 
-    const invoice = await prisma.$transaction(async (tx) => {
+    const invoice = await db.$transaction(async (tx) => {
       // Rechnungsnummer IN dieser TX ziehen — Crash → Rollback
       // der Nummer-Sequenz → keine Lücke (§14 UStG lückenlose Nummerierung).
       const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
@@ -619,7 +619,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
   }
 
   // Aktualisiere Periode
-  await prisma.leaseSettlementPeriod.update({
+  await db.leaseSettlementPeriod.update({
     where: { id: period.id, tenantId },
     data: {
       advanceInvoiceDate: invoiceDateValue,
@@ -645,6 +645,7 @@ async function createAdvanceCreditNotes(options: CreateCreditNotesOptions) {
 // ===========================================
 
 async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
+  const db = mandantDb(options.tenantId);
   const { period, articles, defaultPaymentDay, invoiceDate, tenantId, userId, revenueSources } = options;
 
   if (!period.totalActualRent) {
@@ -672,7 +673,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   const _jahresTaxType = taxRateToTaxType(jahresTaxRate);
 
   // Load ADVANCE invoices per lease for detailed deduction
-  const advanceInvoices = await prisma.invoice.findMany({
+  const advanceInvoices = await db.invoice.findMany({
     where: {
       parkId: period.parkId,
       tenantId,
@@ -705,14 +706,14 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
 
   // Load paymentDay per lease
   const leaseIds = calcResult.leases.map((l) => l.leaseId);
-  const leasesDb = await prisma.lease.findMany({
+  const leasesDb = await db.lease.findMany({
     where: { id: { in: leaseIds } },
     select: { id: true, paymentDay: true },
   });
   const leasePaymentDays = new Map(leasesDb.map((l) => [l.id, l.paymentDay]));
 
   // Load lessor address info
-  const leasesWithLessor = await prisma.lease.findMany({
+  const leasesWithLessor = await db.lease.findMany({
     where: { id: { in: leaseIds } },
     select: {
       id: true,
@@ -753,7 +754,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   } else if (period.linkedEnergySettlementId) {
     try {
       // Load the linked EnergySettlement for total production
-      const energySettlement = await prisma.energySettlement.findUnique({
+      const energySettlement = await db.energySettlement.findUnique({
         where: { id: period.linkedEnergySettlementId },
         select: {
           totalProductionKwh: true,
@@ -765,7 +766,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
         const totalProdKwh = Number(energySettlement.totalProductionKwh);
 
         // Load all active revenue types with their monthly rates for this year
-        const revenueTypes = await prisma.energyRevenueType.findMany({
+        const revenueTypes = await db.energyRevenueType.findMany({
           where: {
             tenantId,
             isActive: true,
@@ -826,7 +827,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   // Load per-turbine production for Anlage (FINAL only)
   let turbineProductions: TurbineProductionEntry[] | undefined;
   try {
-    const turbines = await prisma.turbine.findMany({
+    const turbines = await db.turbine.findMany({
       where: { parkId: period.parkId, status: "ACTIVE" },
       select: { id: true, designation: true },
       orderBy: { designation: "asc" },
@@ -835,7 +836,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     if (turbines.length > 0) {
       // Batch-fetch ALL productions for ALL turbines in ONE query (was N+1)
       const turbineIds = turbines.map((t) => t.id);
-      const allProductions = await prisma.turbineProduction.findMany({
+      const allProductions = await db.turbineProduction.findMany({
         where: { turbineId: { in: turbineIds }, year: period.year, tenantId },
         select: {
           turbineId: true,
@@ -889,7 +890,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   const finalLeaseIds = calcResult.leases
     .filter((l) => l.totalPayment > 0.01)
     .map((l) => l.leaseId);
-  const finalExisting = await prisma.invoice.findMany({
+  const finalExisting = await db.invoice.findMany({
     where: {
       tenantId,
       settlementPeriodId: period.id,
@@ -1092,7 +1093,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
     const totalTaxAbsDec = new Decimal(totalTax).abs().toDecimalPlaces(2);
     const totalGrossAbsDec = new Decimal(totalGross).abs().toDecimalPlaces(2);
 
-    const invoice = await prisma.$transaction(async (tx) => {
+    const invoice = await db.$transaction(async (tx) => {
       // Rechnungsnummer IN dieser TX ziehen.
       const { number: invoiceNumber } = await getNextInvoiceNumberInTx(
         tx,
@@ -1158,7 +1159,7 @@ async function createFinalCreditNotes(options: CreateCreditNotesOptions) {
   }
 
   // Aktualisiere Periode
-  await prisma.leaseSettlementPeriod.update({
+  await db.leaseSettlementPeriod.update({
     where: { id: period.id, tenantId },
     data: {
       settlementDate: invoiceDateValue,

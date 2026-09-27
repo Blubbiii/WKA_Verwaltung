@@ -1,3 +1,4 @@
+// mandantenübergreifend: öffentlicher Techniker-Zugang per QR-Token ohne Sitzung; das Token bestimmt Anlage und Mandant.
 /**
  * Public Technician Check-In API
  *

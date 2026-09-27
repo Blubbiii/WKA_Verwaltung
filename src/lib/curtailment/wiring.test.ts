@@ -105,7 +105,7 @@ describe("Routen", () => {
   it("die Summen gelten fuer ALLE Treffer, nicht fuer die sichtbare Seite", () => {
     // Sonst sagt "offen: 4.200 EUR" etwas ueber Seite 1 aus und nicht ueber
     // den Bestand.
-    expect(list).toContain("prisma.curtailmentEvent.aggregate");
+    expect(list).toMatch(/\b(prisma|db)\.curtailmentEvent\.aggregate/);
     expect(list).toContain("openEur");
   });
 

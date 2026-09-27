@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [cases, total] = await Promise.all([
-      prisma.faultCase.findMany({
+      db.faultCase.findMany({
         where,
         include: {
           turbine: { select: { id: true, designation: true, park: { select: { id: true, name: true, shortName: true } } } },
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.faultCase.count({ where }),
+      db.faultCase.count({ where }),
     ]);
 
     return NextResponse.json({
@@ -178,6 +179,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.FAULTS_CREATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -191,7 +193,7 @@ export async function POST(request: NextRequest) {
 
     // Turbine trägt keine tenantId — die Bindung läuft über den Park. Ohne
     // diese Prüfung liesse sich ein Vorgang an einer fremden Anlage anlegen.
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id: data.turbineId, park: { tenantId: check.tenantId! } },
       select: { id: true },
     });
@@ -205,7 +207,7 @@ export async function POST(request: NextRequest) {
     // fängt das ab; hier wird schlicht neu gezogen.
     for (let attempt = 0; attempt < CASE_NUMBER_RETRIES; attempt++) {
       try {
-        const created = await prisma.$transaction(async (tx) => {
+        const created = await db.$transaction(async (tx) => {
           const caseNumber = await nextCaseNumber(tx, check.tenantId!, startAt);
           return tx.faultCase.create({
             data: {

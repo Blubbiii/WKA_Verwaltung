@@ -1,3 +1,4 @@
+// mandantenübergreifend: Aufruf von n8n per API-Schlüssel ohne Sitzung; der API-Schlüssel bestimmt den Mandanten.
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";

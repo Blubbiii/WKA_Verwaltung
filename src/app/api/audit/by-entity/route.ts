@@ -17,7 +17,7 @@
  */
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { handleApiError } from "@/lib/api-utils";
@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission("admin:audit");
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parsed = querySchema.safeParse({
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
 
     const { entityType, entityId, limit } = parsed.data;
 
-    const entries = await prisma.auditLog.findMany({
+    const entries = await db.auditLog.findMany({
       where: {
         entityType,
         entityId,

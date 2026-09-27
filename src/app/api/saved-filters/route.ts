@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { handleApiError } from "@/lib/api-utils";
@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const surface = searchParams.get("surface");
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       return apiError("MISSING_FIELD", 400, { message: "Query-Parameter 'surface' fehlt" });
     }
 
-    const filters = await prisma.userSavedFilter.findMany({
+    const filters = await db.userSavedFilter.findMany({
       where: {
         userId: check.userId!,
         tenantId: check.tenantId!,
@@ -60,11 +61,12 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requireAuth();
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.parse(body);
 
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await db.$transaction(async (tx) => {
       if (parsed.isDefault) {
         // Unset isDefault on all other filters of this (userId, surface)
         await tx.userSavedFilter.updateMany({

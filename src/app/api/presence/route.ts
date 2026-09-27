@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("BAD_REQUEST", 400, { message: "Kein aktiver Mandant" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json().catch(() => ({}));
     const parsed = inputSchema.safeParse(body);
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
     const { entityType, entityId } = parsed.data;
 
-    await prisma.entityPresence.upsert({
+    await db.entityPresence.upsert({
       where: {
         userId_entityType_entityId: {
           userId: check.userId!,
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
     if (!check.tenantId) {
       return NextResponse.json({ others: [] });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parsed = inputSchema.safeParse({
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
     const { entityType, entityId } = parsed.data;
 
     const cutoff = new Date(Date.now() - STALE_AFTER_MS);
-    const presence = await prisma.entityPresence.findMany({
+    const presence = await db.entityPresence.findMany({
       where: {
         tenantId: check.tenantId,
         entityType,
@@ -123,6 +125,7 @@ export async function DELETE(request: NextRequest) {
     if (!check.tenantId) {
       return NextResponse.json({ ok: true });
     }
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const parsed = inputSchema.safeParse({
@@ -136,7 +139,7 @@ export async function DELETE(request: NextRequest) {
     }
     const { entityType, entityId } = parsed.data;
 
-    await prisma.entityPresence
+    await db.entityPresence
       .delete({
         where: {
           userId_entityType_entityId: {

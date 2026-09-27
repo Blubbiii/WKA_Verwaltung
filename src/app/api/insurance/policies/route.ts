@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -109,13 +109,14 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.INSURANCE_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const contractId = searchParams.get("contractId");
     /** Nur Policen mit Deckungslücke. */
     const gapsOnly = searchParams.get("gapsOnly") === "true";
 
-    const policies = await prisma.insurancePolicy.findMany({
+    const policies = await db.insurancePolicy.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(contractId ? { contractId } : {}),
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.INSURANCE_MANAGE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const parsed = createSchema.safeParse(body);
@@ -183,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const contract = await prisma.contract.findFirst({
+    const contract = await db.contract.findFirst({
       where: { id: data.contractId, tenantId: check.tenantId!, deletedAt: null },
       select: { id: true, title: true, contractType: true },
     });
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const existing = await prisma.insurancePolicy.findUnique({
+    const existing = await db.insurancePolicy.findUnique({
       where: { contractId: data.contractId },
       select: { id: true },
     });
@@ -214,7 +216,7 @@ export async function POST(request: NextRequest) {
     const turbineIds = data.insuredObjects.map((o) => o.turbineId).filter(Boolean) as string[];
 
     if (parkIds.length > 0) {
-      const parks = await prisma.park.count({
+      const parks = await db.park.count({
         where: { id: { in: parkIds }, tenantId: check.tenantId! },
       });
       if (parks !== new Set(parkIds).size) {
@@ -222,7 +224,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (turbineIds.length > 0) {
-      const turbines = await prisma.turbine.count({
+      const turbines = await db.turbine.count({
         where: { id: { in: turbineIds }, park: { tenantId: check.tenantId! } },
       });
       if (turbines !== new Set(turbineIds).size) {
@@ -230,7 +232,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const created = await prisma.insurancePolicy.create({
+    const created = await db.insurancePolicy.create({
       data: {
         tenantId: check.tenantId!,
         contractId: data.contractId,

@@ -1,3 +1,4 @@
+// mandantenübergreifend: Einwilligungen werden auch ohne Anmeldung erfasst (Cookie-Banner der öffentlichen Seiten).
 /**
  * DSGVO Consent-Log API
  *

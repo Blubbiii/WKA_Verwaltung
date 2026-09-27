@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 
 /**
  * Referenz-Validierung für Kostenstellen.
@@ -41,8 +41,9 @@ export async function validateCostCenterReferences(
   input: CostCenterReferenceInput,
   selfId?: string,
 ): Promise<ReferenceValidationError | null> {
+  const db = mandantDb(tenantId);
   if (input.parkId) {
-    const park = await prisma.park.findFirst({
+    const park = await db.park.findFirst({
       where: { id: input.parkId, tenantId },
       select: { id: true },
     });
@@ -53,7 +54,7 @@ export async function validateCostCenterReferences(
 
   if (input.turbineId) {
     // Turbine hat kein eigenes tenantId — Scoping läuft über den Park.
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: { id: input.turbineId, park: { tenantId } },
       select: { id: true },
     });
@@ -63,7 +64,7 @@ export async function validateCostCenterReferences(
   }
 
   if (input.fundId) {
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id: input.fundId, tenantId },
       select: { id: true },
     });
@@ -80,7 +81,7 @@ export async function validateCostCenterReferences(
       };
     }
 
-    const parent = await prisma.costCenter.findFirst({
+    const parent = await db.costCenter.findFirst({
       where: { id: input.parentId, tenantId },
       select: { id: true },
     });
@@ -117,7 +118,7 @@ async function wouldCreateCycle(
     if (visited.has(current)) return true;
     visited.add(current);
 
-    const node: { parentId: string | null } | null = await prisma.costCenter.findFirst({
+    const node: { parentId: string | null } | null = await mandantDb(tenantId).costCenter.findFirst({
       where: { id: current, tenantId },
       select: { parentId: true },
     });

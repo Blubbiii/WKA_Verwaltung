@@ -1,3 +1,4 @@
+// mandantenübergreifend: öffentliches Formular der Webseite; die Anfrage gehört der Plattform, keinem Mandanten.
 import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { z } from "zod";

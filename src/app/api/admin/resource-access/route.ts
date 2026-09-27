@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/withPermission";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { apiLogger as logger } from "@/lib/logger";
@@ -101,7 +100,7 @@ const check = await requireAdmin();
     });
 
     // Batch-fetch resource names to avoid N+1 queries
-    const resourceNameMap = await getResourceNamesBatch(accessList);
+    const resourceNameMap = await getResourceNamesBatch(db, accessList);
 
     const enrichedList = accessList.map((access) => ({
       ...access,
@@ -169,6 +168,7 @@ const check = await requireAdmin();
 
     // Ressourcen-Name für Response
     const resourceName = await getResourceName(
+      db,
       access.resourceType,
       access.resourceId
     );
@@ -291,6 +291,7 @@ async function checkResourceExists(
  * Returns a Map keyed by "TYPE:ID" -> display name.
  */
 async function getResourceNamesBatch(
+  db: MandantDb,
   accessList: { resourceType: string; resourceId: string }[]
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
@@ -309,7 +310,7 @@ async function getResourceNamesBatch(
   const parkIds = idsByType.get(RESOURCE_TYPES.PARK);
   if (parkIds?.length) {
     queries.push(
-      prisma.park
+      db.park
         .findMany({ where: { id: { in: parkIds } }, select: { id: true, name: true } })
         .then((parks) => {
           for (const p of parks) result.set(`${RESOURCE_TYPES.PARK}:${p.id}`, p.name ?? "Unbekannter Windpark");
@@ -320,7 +321,7 @@ async function getResourceNamesBatch(
   const fundIds = idsByType.get(RESOURCE_TYPES.FUND);
   if (fundIds?.length) {
     queries.push(
-      prisma.fund
+      db.fund
         .findMany({ where: { id: { in: fundIds } }, select: { id: true, name: true } })
         .then((funds) => {
           for (const f of funds) result.set(`${RESOURCE_TYPES.FUND}:${f.id}`, f.name ?? "Unbekannte Gesellschaft");
@@ -331,7 +332,7 @@ async function getResourceNamesBatch(
   const turbineIds = idsByType.get(RESOURCE_TYPES.TURBINE);
   if (turbineIds?.length) {
     queries.push(
-      prisma.turbine
+      db.turbine
         .findMany({ where: { id: { in: turbineIds } }, select: { id: true, designation: true } })
         .then((turbines) => {
           for (const t of turbines) result.set(`${RESOURCE_TYPES.TURBINE}:${t.id}`, t.designation ?? "Unbekannte Turbine");
@@ -342,7 +343,7 @@ async function getResourceNamesBatch(
   const docIds = idsByType.get(RESOURCE_TYPES.DOCUMENT);
   if (docIds?.length) {
     queries.push(
-      prisma.document
+      db.document
         .findMany({ where: { id: { in: docIds } }, select: { id: true, title: true } })
         .then((docs) => {
           for (const d of docs) result.set(`${RESOURCE_TYPES.DOCUMENT}:${d.id}`, d.title ?? "Unbekanntes Dokument");
@@ -353,7 +354,7 @@ async function getResourceNamesBatch(
   const contractIds = idsByType.get(RESOURCE_TYPES.CONTRACT);
   if (contractIds?.length) {
     queries.push(
-      prisma.contract
+      db.contract
         .findMany({ where: { id: { in: contractIds } }, select: { id: true, title: true } })
         .then((contracts) => {
           for (const c of contracts) result.set(`${RESOURCE_TYPES.CONTRACT}:${c.id}`, c.title ?? "Unbekannter Vertrag");
@@ -364,7 +365,7 @@ async function getResourceNamesBatch(
   const leaseIds = idsByType.get(RESOURCE_TYPES.LEASE);
   if (leaseIds?.length) {
     queries.push(
-      prisma.lease
+      db.lease
         .findMany({
           where: { id: { in: leaseIds } },
           select: {
@@ -390,7 +391,7 @@ async function getResourceNamesBatch(
   const invoiceIds = idsByType.get(RESOURCE_TYPES.INVOICE);
   if (invoiceIds?.length) {
     queries.push(
-      prisma.invoice
+      db.invoice
         .findMany({ where: { id: { in: invoiceIds } }, select: { id: true, invoiceNumber: true } })
         .then((invoices) => {
           for (const i of invoices) result.set(`${RESOURCE_TYPES.INVOICE}:${i.id}`, i.invoiceNumber ?? "Unbekannte Rechnung");
@@ -401,7 +402,7 @@ async function getResourceNamesBatch(
   const shareholderIds = idsByType.get(RESOURCE_TYPES.SHAREHOLDER);
   if (shareholderIds?.length) {
     queries.push(
-      prisma.shareholder
+      db.shareholder
         .findMany({
           where: { id: { in: shareholderIds } },
           select: {
@@ -432,10 +433,11 @@ async function getResourceNamesBatch(
  * Holt den Namen einer einzelnen Ressource (für POST-Response).
  */
 async function getResourceName(
+  db: MandantDb,
   resourceType: string,
   resourceId: string
 ): Promise<string> {
-  const batch = await getResourceNamesBatch([{ resourceType, resourceId }]);
+  const batch = await getResourceNamesBatch(db, [{ resourceType, resourceId }]);
   return (
     batch.get(`${resourceType}:${resourceId}`) ??
     `${resourceType} (${resourceId.slice(0, 8)}...)`

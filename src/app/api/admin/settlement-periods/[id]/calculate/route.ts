@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { z } from "zod";
 import { Decimal } from "@prisma/client-runtime-utils";
@@ -162,7 +161,7 @@ export async function POST(
       });
     } else {
       // FINAL: Jahresendabrechnung mit Verrechnung der Vorschüsse
-      const finalResult = await calculateFinalSettlement({
+      const finalResult = await calculateFinalSettlement(db, {
         parkId: period.parkId,
         year: period.year,
         totalRevenue: options.totalRevenue ?? (period.totalRevenue ? Number(period.totalRevenue) : undefined),
@@ -211,6 +210,7 @@ interface CalculateFinalOptions {
 }
 
 async function calculateFinalSettlement(
+  db: MandantDb,
   options: CalculateFinalOptions
 ): Promise<FinalCalculationResult> {
   const { parkId, year, tenantId, totalRevenue: overrideRevenue } = options;
@@ -224,7 +224,7 @@ async function calculateFinalSettlement(
   });
 
   // Lade bereits gezahlte ADVANCE Perioden für dieses Jahr
-  const advancePeriods = await prisma.leaseSettlementPeriod.findMany({
+  const advancePeriods = await db.leaseSettlementPeriod.findMany({
     where: {
       parkId,
       year,

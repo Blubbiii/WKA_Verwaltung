@@ -15,7 +15,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const OBERGRENZE = 41;
+const OBERGRENZE = 1;
 const MANDANTENUEBERGREIFEND = /^app\/api\/(superadmin|cron|health|auth)\//;
 
 const SRC = join(process.cwd(), "src");

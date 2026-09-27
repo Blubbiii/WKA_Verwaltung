@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
-import { mandantDb } from "@/lib/mandant/mandant-db";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import {
@@ -86,7 +85,7 @@ export async function POST(
 
       // Auto-trigger cost allocation for all parks
       const allocationInvoices = await tryGenerateAllocationInvoices(
-        check.tenantId!,
+        db,        check.tenantId!,
         id,
         settlement.year,
         settlement.periodType,
@@ -122,7 +121,7 @@ export async function POST(
 
       // Auto-trigger cost allocation for all parks
       const allocationInvoices = await tryGenerateAllocationInvoices(
-        check.tenantId!,
+        db,        check.tenantId!,
         id,
         settlement.year,
         settlement.periodType,
@@ -159,6 +158,7 @@ export async function POST(
  * Returns the allocation invoices or an empty array if not applicable.
  */
 async function tryGenerateAllocationInvoices(
+  db: MandantDb,
   tenantId: string,
   settlementId: string,
   year: number,
@@ -198,7 +198,7 @@ async function tryGenerateAllocationInvoices(
 
     // Step 3: Load created invoices for wizard display
     if (allocResult.invoiceIds.length > 0) {
-      const loaded = await prisma.invoice.findMany({
+      const loaded = await db.invoice.findMany({
         where: { id: { in: allocResult.invoiceIds } },
         select: {
           id: true,

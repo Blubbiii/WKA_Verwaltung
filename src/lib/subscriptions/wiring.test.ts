@@ -55,9 +55,9 @@ describe("Was NICHT geloescht oder ueberschrieben wird", () => {
     // Am Stammsatz zu ueberschreiben wuerde genau den Nachweis vernichten,
     // fuer den die Aufbewahrungspflicht besteht.
     const route = src("app/api/aml-checks/route.ts");
-    expect(route).toContain("prisma.amlCheck.create");
+    expect(route).toMatch(/\b(prisma|db)\.amlCheck\.create/);
     expect(route).not.toContain("amlCheck.update");
-    expect(route).not.toContain("prisma.person.update");
+    expect(route).not.toMatch(/\b(prisma|db)\.person\.update/);
   });
 
   it("der massgebliche Stand ist die JUENGSTE Pruefung", () => {

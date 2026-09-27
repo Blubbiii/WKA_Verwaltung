@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -67,12 +67,13 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const fundId = searchParams.get("fundId");
     const status = searchParams.get("status");
 
-    const meetings = await prisma.shareholderMeeting.findMany({
+    const meetings = await db.shareholderMeeting.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(fundId ? { fundId } : {}),
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
     const scheduledAt = new Date(`${data.scheduledAt}T00:00:00.000Z`);
 
-    const fund = await prisma.fund.findFirst({
+    const fund = await db.fund.findFirst({
       where: { id: data.fundId, tenantId: check.tenantId! },
       select: {
         id: true,
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
 
     const meetingNumber = await nextMeetingNumber(check.tenantId!, scheduledAt);
 
-    const meeting = await prisma.$transaction(async (tx) => {
+    const meeting = await db.$transaction(async (tx) => {
       const created = await tx.shareholderMeeting.create({
         data: {
           tenantId: check.tenantId!,
@@ -256,10 +258,11 @@ export async function POST(request: NextRequest) {
 }
 
 async function nextMeetingNumber(tenantId: string, reference: Date): Promise<string> {
+  const db = mandantDb(tenantId);
   const year = reference.getUTCFullYear();
   const prefix = `${PREFIX}-${year}-`;
 
-  const latest = await prisma.shareholderMeeting.findFirst({
+  const latest = await db.shareholderMeeting.findFirst({
     where: { tenantId, meetingNumber: { startsWith: prefix } },
     orderBy: { meetingNumber: "desc" },
     select: { meetingNumber: true },

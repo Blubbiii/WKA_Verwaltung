@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb, type MandantDb } from "@/lib/mandant/mandant-db";
 import { serializePrisma } from "@/lib/serialize";
 import { apiLogger as logger } from "@/lib/logger";
 import { executeSettlementCalculation } from "@/lib/lease-revenue/calculator";
@@ -37,6 +37,7 @@ export async function POST(
   try {
     const check = await requirePermission(PERMISSIONS.LEASES_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { id } = await params;
 
@@ -71,7 +72,7 @@ export async function POST(
     );
 
     // Build wizard-compatible response by enriching calculation with display data
-    const enriched = await buildWizardResponse(id, settlement, calculation);
+    const enriched = await buildWizardResponse(db, id, settlement, calculation);
 
     return NextResponse.json(
       serializePrisma({
@@ -108,13 +109,14 @@ export async function POST(
 
 type ExecResult = Awaited<ReturnType<typeof executeSettlementCalculation>>;
 async function buildWizardResponse(
+  db: MandantDb,
   settlementId: string,
   settlement: ExecResult["settlement"],
   calc: SettlementCalculationResult
 ) {
   void settlement; // currently unused; reserved for future enrichment
   // Load the full settlement with items and related data for display names
-  const full = await prisma.leaseRevenueSettlement.findUnique({
+  const full = await db.leaseRevenueSettlement.findUnique({
     where: { id: settlementId },
     include: {
       park: { select: { id: true, name: true } },

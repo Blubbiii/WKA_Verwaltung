@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiError } from "@/lib/api-errors";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { apiLogger as logger } from "@/lib/logger";
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
   try {
 const check = await requirePermission(PERMISSIONS.PARKS_READ);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const turbineId = searchParams.get("turbineId");
@@ -97,7 +98,7 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
 
     const [events, total, totalCostResult, monthCount, upcomingCount] =
       await Promise.all([
-        prisma.serviceEvent.findMany({
+        db.serviceEvent.findMany({
           where,
           include: {
             turbine: {
@@ -117,18 +118,18 @@ const check = await requirePermission(PERMISSIONS.PARKS_READ);
           skip,
           take: limit,
         }),
-        prisma.serviceEvent.count({ where }),
-        prisma.serviceEvent.aggregate({
+        db.serviceEvent.count({ where }),
+        db.serviceEvent.aggregate({
           where: baseWhere,
           _sum: { cost: true },
         }),
-        prisma.serviceEvent.count({
+        db.serviceEvent.count({
           where: {
             ...baseWhere,
             eventDate: { gte: monthStart },
           },
         }),
-        prisma.serviceEvent.count({
+        db.serviceEvent.count({
           where: {
             ...baseWhere,
             eventDate: { gt: now },
@@ -164,12 +165,13 @@ export async function POST(request: NextRequest) {
   try {
 const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_CREATE, PERMISSIONS.PARKS_UPDATE]);
     if (!check.authorized) return check.error!;
+    const db = mandantDb(check.tenantId!);
 
     const body = await request.json();
     const validatedData = serviceEventSchema.parse(body);
 
     // Prüfe ob Anlage zum Tenant gehört
-    const turbine = await prisma.turbine.findFirst({
+    const turbine = await db.turbine.findFirst({
       where: {
         id: validatedData.turbineId,
         park: {
@@ -182,7 +184,7 @@ const check = await requirePermission([PERMISSIONS.SERVICE_EVENTS_CREATE, PERMIS
       return apiError("NOT_FOUND", 404, { message: "Anlage nicht gefunden" });
     }
 
-    const event = await prisma.serviceEvent.create({
+    const event = await db.serviceEvent.create({
       data: {
         turbineId: validatedData.turbineId,
         eventDate: new Date(validatedData.eventDate),

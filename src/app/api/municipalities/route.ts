@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -49,8 +49,9 @@ export async function GET() {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
-    const municipalities = await prisma.municipality.findMany({
+    const municipalities = await db.municipality.findMany({
       where: { tenantId: check.tenantId },
       orderBy: { name: "asc" },
       include: {
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
     if (!check.tenantId) {
       return apiError("NOT_FOUND", 400, { message: "Mandant nicht gefunden" });
     }
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const created = await prisma.municipality.create({
+    const created = await db.municipality.create({
       data: {
         tenantId: check.tenantId,
         name: parsed.data.name,

@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { apiError } from "@/lib/api-errors";
@@ -63,13 +63,14 @@ export async function GET(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_READ);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const { searchParams } = new URL(request.url);
     const personId = searchParams.get("personId");
     /** Nur was Arbeit macht: fällige oder überfällige Wiedervorlagen. */
     const dueOnly = searchParams.get("dueOnly") === "true";
 
-    const checks = await prisma.amlCheck.findMany({
+    const checks = await db.amlCheck.findMany({
       where: {
         tenantId: check.tenantId!,
         ...(personId ? { personId } : {}),
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
   try {
     const check = await requirePermission(PERMISSIONS.SHAREHOLDERS_UPDATE);
     if (!check.authorized) return check.error;
+    const db = mandantDb(check.tenantId!);
 
     const parsed = createSchema.safeParse(await request.json());
     if (!parsed.success) {
@@ -129,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
     const data = parsed.data;
 
-    const person = await prisma.person.findFirst({
+    const person = await db.person.findFirst({
       where: { id: data.personId, tenantId: check.tenantId! },
       select: { id: true },
     });
@@ -162,7 +164,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const created = await prisma.amlCheck.create({
+    const created = await db.amlCheck.create({
       data: {
         tenantId: check.tenantId!,
         personId: data.personId,

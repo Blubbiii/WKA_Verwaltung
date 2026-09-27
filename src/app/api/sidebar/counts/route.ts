@@ -16,7 +16,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { mandantDb } from "@/lib/mandant/mandant-db";
 import { requireAuth } from "@/lib/auth/withPermission";
 import { getUserPermissions } from "@/lib/auth/permissions";
 import { cache } from "@/lib/cache";
@@ -57,7 +57,7 @@ async function computeSidebarCounts(
   const queries = await Promise.allSettled([
     // 1. approvals — pending Requests, nicht vom User selbst initiiert
     canSeeApprovals
-      ? prisma.approvalRequest.count({
+      ? mandantDb(tenantId).approvalRequest.count({
           where: {
             tenantId,
             status: "PENDING",
@@ -69,7 +69,7 @@ async function computeSidebarCounts(
 
     // 2. inbox — IncomingInvoices die noch Review brauchen
     canSeeInbox
-      ? prisma.incomingInvoice.count({
+      ? mandantDb(tenantId).incomingInvoice.count({
           where: {
             tenantId,
             deletedAt: null,
@@ -80,7 +80,7 @@ async function computeSidebarCounts(
 
     // 3. mahnwesen — überfällige Rechnungen
     canSeeInvoices
-      ? prisma.invoice.count({
+      ? mandantDb(tenantId).invoice.count({
           where: {
             tenantId,
             deletedAt: null,
@@ -93,7 +93,7 @@ async function computeSidebarCounts(
 
     // 4. expiringContracts — aktive Verträge mit Frist in den nächsten 30 Tagen
     canSeeContracts
-      ? prisma.contract.count({
+      ? mandantDb(tenantId).contract.count({
           where: {
             tenantId,
             deletedAt: null,
