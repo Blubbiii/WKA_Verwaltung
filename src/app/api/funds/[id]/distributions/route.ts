@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { mandantDb } from "@/lib/mandant/mandant-db";
+import { naechsteAusschuettungsnummer } from "@/lib/distributions/nummer";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { handleApiError } from "@/lib/api-utils";
@@ -207,13 +208,14 @@ export async function POST(
 
     // Eindeutige Ausschuettungsnummer generieren
     const year = new Date(data.distributionDate).getFullYear();
-    const existingCount = await db.distribution.count({
-      where: {
-        tenantId: check.tenantId!,
-        distributionNumber: { startsWith: `AS-${year}-` },
-      },
+    const vorhandene = await db.distribution.findMany({
+      where: { distributionNumber: { startsWith: `AS-${year}-` } },
+      select: { distributionNumber: true },
     });
-    const distributionNumber = `AS-${year}-${String(existingCount + 1).padStart(3, "0")}`;
+    const distributionNumber = naechsteAusschuettungsnummer(
+      year,
+      vorhandene.map((d) => d.distributionNumber),
+    );
 
     // Distribution mit Items erstellen (in Transaction)
     const distribution = await db.$transaction(async (tx) => {

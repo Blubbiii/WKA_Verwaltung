@@ -1543,7 +1543,7 @@ model DistributionItem {
 
 model Distribution {
   id                 String               @id @default(uuid())
-  distributionNumber String               @unique
+  distributionNumber String
   description        String?
   totalAmount        Decimal              @db.Decimal(15, 2)
   distributionDate   DateTime
@@ -1577,6 +1577,9 @@ model Distribution {
   @@index([distributionDate])
   @@index([fundId])
   @@index([tenantId])
+  // Numbers count per tenant (AS-<year>-<nnn>) — globally unique they
+  // collided as soon as a second customer booked its first distribution.
+  @@unique([tenantId, distributionNumber])
   @@map("distributions")
 }
 
