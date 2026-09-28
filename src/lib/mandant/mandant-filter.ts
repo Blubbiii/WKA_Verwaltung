@@ -33,7 +33,7 @@ export const MANDANT_MODELLE: ReadonlySet<string> = new Set([
   "ScadaImportLog", "ScadaMeasurement", "ScadaOperatingState", "ScadaShadowCasting",
   "ScadaStateEvent", "ScadaStateSummary", "ScadaTextEvent", "ScadaTurbineMapping",
   "ScadaWarningEvent", "ScadaWarningSummary", "ScadaWindSummary", "ScheduledReport",
-  "SettlementCheck", "ShareTransfer", "ShareholderMeeting", "SidebarLink", "Subscription",
+  "SettlementCheck", "ShareTransfer", "ShareholderMeeting", "SidebarLink", "Subscription", "SupportZugriff",
   "TaxRateConfig", "TurbineProduction", "User", "UserSavedFilter", "UserTenantMembership",
   "Vendor", "Vote", "Webhook",
 ]);

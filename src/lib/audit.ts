@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { readImpersonationCookie } from "@/lib/auth/impersonation-cookie";
+import { aktiverMandant } from "@/lib/auth/withPermission";
+import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
 
 // Re-export types from audit-types for backward compatibility
 // Server components can import from either file
@@ -51,18 +52,17 @@ export async function createAuditLog(params: AuditLogParams) {
       // Headers might not be available in all contexts
     }
 
-    // F2-Compliance: Impersonation-Kette in AuditLog aufloesen.
-    // Der Cookie wird nur vom Superadmin-Impersonate-Flow gesetzt und HMAC-
-    // signiert. Wenn er gültig ist:
-    //   userId           = Target-User  (wessen "Aktion" ist das effektiv)
-    //   impersonatedById = Original-Admin  (wer hat die Aktion ausgelöst)
-    //   tenantId         = Target-Tenant
-    // Ohne Cookie greift der klassische Pfad (session.user.id / session.user.tenantId).
-    const impersonation = await readImpersonationCookie();
-    const effectiveUserId = impersonation?.targetUserId ?? session.user.id;
-    const effectiveTenantId =
-      impersonation?.targetTenantId ?? session.user.tenantId ?? null;
-    const impersonatedById = impersonation?.originalUserId ?? null;
+    // The tenant the request works in — after a switch not the home tenant.
+    // Actions of the platform support (superadmin in a customer's tenant)
+    // carry impersonatedById, so the customer finds them in its protocol
+    // (Einstellungen → Externe Zugriffe).
+    const aktiv = await aktiverMandant();
+    const effectiveUserId = session.user.id;
+    const effectiveTenantId = aktiv?.tenantId ?? session.user.tenantId ?? null;
+    const impersonatedById =
+      aktiv?.fremd && (await getUserHighestHierarchy(session.user.id)) >= ROLE_HIERARCHY.SUPERADMIN
+        ? session.user.id
+        : null;
 
     const auditLog = await prisma.auditLog.create({
       data: {

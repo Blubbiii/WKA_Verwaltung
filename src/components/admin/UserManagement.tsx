@@ -16,7 +16,6 @@ import {
   Pencil,
   Trash2,
   Shield,
-  UserPlus,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -653,36 +652,6 @@ export function UserManagement() {
     }
   };
 
-  // ─── Impersonate ──────────────────────────────────────────────────────
-
-  const handleImpersonate = async (user: User) => {
-    try {
-      const res = await fetch("/api/admin/impersonate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || tr("impersonateError"));
-      }
-
-      toast.success(
-        tr("impersonating", {
-          firstName: user.firstName ?? "",
-          lastName: user.lastName ?? "",
-        })
-      );
-      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- impersonation swaps the session: full reload required
-      window.location.href = "/dashboard";
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : tr("impersonateError")
-      );
-    }
-  };
-
   // ─── Permissions Dialog ───────────────────────────────────────────────
 
   const loadUserPermissions = async (user: User) => {
@@ -881,12 +850,6 @@ export function UserManagement() {
                         >
                           <Pencil className="h-4 w-4 mr-2" />
                           Bearbeiten
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleImpersonate(user)}
-                        >
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Als Benutzer anmelden
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => loadUserPermissions(user)}

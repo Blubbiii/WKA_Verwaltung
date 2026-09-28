@@ -14,6 +14,7 @@ import { apiLogger } from "@/lib/logger";
 import { rateLimit, API_RATE_LIMIT, getRateLimitResponse } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-errors";
 import { sperrtNachKarenz } from "@/lib/lizenz/lizenz";
+import { darfMandantNutzen } from "@/lib/support/zugang";
 import {
   hasPermission,
   hasAllPermissions,
@@ -29,7 +30,10 @@ const ACTIVE_TENANT_COOKIE = "wpm-active-tenant";
  * Read the signed wpm-active-tenant cookie and return the overridden tenantId.
  * Returns null if no cookie is set, the signature is invalid, or the userId doesn't match.
  */
-async function getActiveTenantOverride(sessionUserId: string): Promise<string | null> {
+async function getActiveTenantOverride(
+  sessionUserId: string,
+  homeTenantId: string | undefined,
+): Promise<string | null> {
   try {
     const cookieStore = await cookies();
     const signed = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
@@ -57,10 +61,29 @@ async function getActiveTenantOverride(sessionUserId: string): Promise<string | 
 
     const data = JSON.parse(payload) as { activeTenantId?: string; userId?: string };
     if (data.userId !== sessionUserId) return null;
-    return data.activeTenantId ?? null;
+    const ziel = data.activeTenantId;
+    if (!ziel) return null;
+    // Checked on every request, not only at switch time: a revoked
+    // membership or an ended support access must take effect at once.
+    if (ziel !== homeTenantId && !(await darfMandantNutzen(sessionUserId, ziel))) return null;
+    return ziel;
   } catch {
     return null;
   }
+}
+
+/**
+ * The tenant the current request works in: the home tenant or a switch that
+ * is still allowed. `fremd` = not the user's home tenant (membership or
+ * platform support) — the audit log records such actions in that tenant.
+ */
+export async function aktiverMandant(): Promise<{ userId: string; tenantId: string | null; fremd: boolean } | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const home = session.user.tenantId ?? null;
+  const override = await getActiveTenantOverride(session.user.id, session.user.tenantId);
+  const tenantId = override ?? home;
+  return { userId: session.user.id, tenantId, fremd: tenantId !== home };
 }
 
 // ============================================================================
@@ -107,7 +130,7 @@ export async function requirePermission(
   }
 
   const userId = session.user.id;
-  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
 
   // Global API rate limit — applies to all authenticated requests.
   // Individual routes can add stricter limits on top (e.g. AUTH_RATE_LIMIT).
@@ -217,7 +240,7 @@ export async function requirePermissionWithResources(
   }
 
   const userId = session.user.id;
-  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
 
   // Global API rate limit
   const rateLimitResult = await rateLimit(`${userId}:api`, API_RATE_LIMIT);
@@ -288,7 +311,7 @@ export async function requireAuth(): Promise<PermissionCheckResult> {
     };
   }
 
-  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
   return { authorized: true, userId, tenantId };
 }
 
@@ -308,7 +331,7 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
   }
 
   const userId = session.user.id;
-  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
   const hierarchy = await getUserHighestHierarchy(userId);
   if (hierarchy >= ROLE_HIERARCHY.SUPERADMIN) {
     return { authorized: true, userId, tenantId };
@@ -336,7 +359,7 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
   }
 
   const userId = session.user.id;
-  const tenantId = (await getActiveTenantOverride(userId)) ?? session.user.tenantId;
+  const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
   const hierarchy = await getUserHighestHierarchy(userId);
   if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
     return { authorized: true, userId, tenantId };
@@ -376,7 +399,7 @@ export async function requirePagePermission(
   }
 
   const userId = session.user.id;
-  const tenantId = ((await getActiveTenantOverride(userId)) ?? session.user.tenantId) || "";
+  const tenantId = ((await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId) || "";
 
   // Validate roleHierarchy (same bounds check as API helpers)
   const rawHierarchy = session.user.roleHierarchy ?? 0;
@@ -433,7 +456,7 @@ export async function requirePageAdmin(
   }
 
   const userId = session.user.id;
-  const tenantId = ((await getActiveTenantOverride(userId)) ?? session.user.tenantId) || "";
+  const tenantId = ((await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId) || "";
 
   try {
     const hierarchy = await getUserHighestHierarchy(userId);

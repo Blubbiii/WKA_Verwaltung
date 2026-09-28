@@ -60,6 +60,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TenantCreationWizard } from "./tenant-creation-wizard";
+import { SupportAktion } from "@/components/support/support-aktion";
+import { useSession } from "next-auth/react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -133,6 +135,7 @@ function slugify(text: string): string {
 
 export function TenantManagement() {
   const t = useTranslations("admin.tenantManagementUI");
+  const { data: session } = useSession();
 
   // Data state
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -375,6 +378,7 @@ export function TenantManagement() {
               <TableHead className="text-center">Parks</TableHead>
               <TableHead className="text-center">Gesellsch.</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Support</TableHead>
               <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
@@ -382,7 +386,7 @@ export function TenantManagement() {
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 8 }).map((_, j) => (
+                  {Array.from({ length: 9 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -391,7 +395,7 @@ export function TenantManagement() {
               ))
             ) : tenants.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   Keine Mandanten gefunden
                 </TableCell>
@@ -415,6 +419,13 @@ export function TenantManagement() {
                     <Badge variant={tenant.status === "ACTIVE" ? "default" : "secondary"}>
                       {tenant.status === "ACTIVE" ? "Aktiv" : "Inaktiv"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <SupportAktion
+                      tenantId={tenant.id}
+                      tenantName={tenant.name}
+                      eigener={tenant.id === session?.user?.tenantId}
+                    />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

@@ -7,20 +7,18 @@ import { requireAuth } from "@/lib/auth/withPermission";
 import { prisma } from "@/lib/prisma";
 import { getRoleHierarchyForTenant } from "@/lib/auth/role-hierarchy";
 import { z } from "zod";
+import {
+  AKTIVER_MANDANT_COOKIE,
+  setzeAktivenMandanten,
+  verlasseAktivenMandanten,
+} from "@/lib/auth/aktiver-mandant-cookie";
 
 const switchTenantSchema = z.object({
   tenantId: z.string().min(1, "tenantId ist erforderlich"),
 });
 
-const COOKIE_NAME = "wpm-active-tenant";
+const COOKIE_NAME = AKTIVER_MANDANT_COOKIE;
 const COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
-
-function signCookieValue(data: object): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "";
-  const payload = JSON.stringify(data);
-  const signature = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return `${payload}.${signature}`;
-}
 
 function verifyCookieValue(signed: string): Record<string, unknown> | null {
   const lastDot = signed.lastIndexOf(".");
@@ -104,18 +102,7 @@ export async function POST(request: NextRequest) {
     startedAt: new Date().toISOString(),
   };
 
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, signCookieValue(cookieData), {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: COOKIE_MAX_AGE,
-    // Sicherer Default: in Production immer secure (auch bei Edge-TLS-Termination).
-    // Opt-out nur für lokale HTTP-Setups via FORCE_INSECURE_COOKIES=true.
-    secure:
-      process.env.NODE_ENV === "production" &&
-      process.env.FORCE_INSECURE_COOKIES !== "true",
-  });
+  await setzeAktivenMandanten(cookieData, COOKIE_MAX_AGE);
 
   return NextResponse.json({
     tenantId,
@@ -131,8 +118,7 @@ export async function DELETE() {
   const check = await requireAuth();
   if (!check.authorized) return check.error!;
 
-  const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  await verlasseAktivenMandanten();
 
   return NextResponse.json({ ok: true });
 }

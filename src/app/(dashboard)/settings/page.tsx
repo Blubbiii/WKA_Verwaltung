@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { LizenzIcon, LizenzKarte } from "@/components/lizenz/lizenz-anzeige";
 import { ExterneZugriffe } from "@/components/zugriffe/externe-zugriffe";
+import { SupportFreigabe } from "@/components/support/support-freigabe";
 import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -1248,7 +1249,8 @@ export default function SettingsPage() {
         )}
 
         {canSeeLicence && (
-          <TabsContent value="zugriffe">
+          <TabsContent value="zugriffe" className="space-y-6">
+            <SupportFreigabe darfAendern={canManageFeatures} />
             <ExterneZugriffe darfBeenden={canManageFeatures} />
           </TabsContent>
         )}

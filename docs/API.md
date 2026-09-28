@@ -575,7 +575,7 @@
 | POST | `/admin/roles` | Create role |
 | GET | `/admin/permissions` | List permissions |
 | GET | `/admin/permissions/export` | Export permission matrix |
-| POST | `/admin/impersonate` | Impersonate user (superadmin) |
+| GET/POST | `/superadmin/support` | Active support accesses; enter a customer tenant (needs the customer's grant, or an emergency access with reason) |
 
 ### Tenants
 

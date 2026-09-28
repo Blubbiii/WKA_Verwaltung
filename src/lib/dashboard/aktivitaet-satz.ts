@@ -63,7 +63,7 @@ const PARTIZIP: Record<string, string> = {
 const OHNE_OBJEKT: Record<string, string> = {
   LOGIN: "hat sich angemeldet",
   LOGOUT: "hat sich abgemeldet",
-  IMPERSONATE: "hat die Sicht eines anderen Benutzers übernommen",
+  IMPERSONATE: "hat den Mandanten als Plattform-Support betreten",
 };
 
 export function aktivitaetsSatz(eintrag: {

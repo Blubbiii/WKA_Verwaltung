@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Shield, X, Keyboard, Menu, Rows2, Rows3 } from "lucide-react";
+import { Search, User, LogOut, Settings, Settings2, Moon, Sun, Keyboard, Menu, Rows2, Rows3 } from "lucide-react";
 import { getMobileSidebarOpener } from "@/components/layout/mobile-sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { useSession, signOut } from "next-auth/react";
 import { useKeyboardContext } from "@/components/providers/keyboard-provider";
 import { useTranslations } from "next-intl";
@@ -26,18 +25,7 @@ import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { HealthIndicator } from "@/components/layout/health-indicator";
 import { TourTriggerMenuItem } from "@/components/onboarding/tour-trigger-button";
-
-interface ImpersonationData {
-  originalUserId: string;
-  originalEmail: string;
-  targetUserId: string;
-  targetEmail: string;
-  targetName: string;
-  targetRole: string;
-  targetTenantId: string;
-  targetTenantName: string;
-  startedAt: string;
-}
+import { SupportBanner } from "@/components/support/support-banner";
 
 function getInitials(name: string | null | undefined): string {
   if (!name) return "??";
@@ -52,7 +40,6 @@ export function Header() {
   const { data: session } = useSession();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const t = useTranslations();
 
@@ -64,22 +51,6 @@ export function Header() {
   // Mark as mounted after first render to avoid hydration mismatch
   useEffect(() => {
     setTimeout(() => setMounted(true), 0);
-  }, []);
-
-  // Check for impersonation status on mount
-  useEffect(() => {
-    async function checkImpersonation() {
-      try {
-        const response = await fetch("/api/admin/impersonate");
-        if (response.ok) {
-          const data = await response.json();
-          setImpersonation(data.impersonating);
-        }
-      } catch {
-        // Impersonation check failed silently
-      }
-    }
-    checkImpersonation();
   }, []);
 
   // Fetch user avatar on mount
@@ -106,20 +77,6 @@ export function Header() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
   };
 
-  const stopImpersonation = async () => {
-    try {
-      const response = await fetch("/api/admin/impersonate", {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        setImpersonation(null);
-        window.location.reload();
-      }
-    } catch {
-      // Stop impersonation failed silently
-    }
-  };
-
   const handleLogout = async () => {
     await signOut({ redirect: false });
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- logout: full reload clears client caches
@@ -128,28 +85,7 @@ export function Header() {
 
   return (
     <>
-      {/* Impersonation Banner */}
-      {impersonation && (
-        <div className="flex items-center justify-between px-4 py-2 bg-orange-500 text-white">
-          <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {t("header.impersonationActive")}{" "}
-              <strong>{impersonation.targetName || impersonation.targetEmail}</strong>
-              {" "}({impersonation.targetRole}) {t("header.impersonationAt")} <strong>{impersonation.targetTenantName}</strong>
-            </span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-orange-600"
-            onClick={stopImpersonation}
-          >
-            <X className="h-4 w-4 mr-1" />
-            {t("common.end")}
-          </Button>
-        </div>
-      )}
+      <SupportBanner />
 
       <header className="flex items-center justify-between h-16 px-3 sm:px-4 md:px-6 border-b border-border/50 bg-background/85 backdrop-blur-lg shadow-sm sticky top-0 z-30 card-surface">
         {/* Left: Mobile hamburger + Tenant branding + Search */}
@@ -181,14 +117,8 @@ export function Header() {
 
         {/* Right side */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Tenant Switcher / Badge */}
-          {impersonation ? (
-            <div className="hidden lg:flex items-center px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
-              {impersonation.targetTenantName}
-            </div>
-          ) : (
-            <TenantSwitcher />
-          )}
+          {/* Tenant Switcher */}
+          <TenantSwitcher />
 
           {/* Idee B: System-Health-Indicator (kleiner Dot) — links der Glocke */}
           <HealthIndicator />
@@ -207,24 +137,19 @@ export function Header() {
                   <AvatarFallback>{getInitials(session?.user?.name)}</AvatarFallback>
                 </Avatar>
                 <span className="hidden md:inline-block font-medium">
-                  {impersonation ? impersonation.targetName : (session?.user?.name || t("common.user"))}
+                  {session?.user?.name || t("common.user")}
                 </span>
-                {impersonation && (
-                  <Badge variant="outline" className="ml-1 text-orange-600 border-orange-600">
-                    Impersonation
-                  </Badge>
-                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <span>{impersonation ? impersonation.targetName : (session?.user?.name || t("common.user"))}</span>
+                  <span>{session?.user?.name || t("common.user")}</span>
                   <span className="text-sm font-normal text-muted-foreground">
-                    {impersonation ? impersonation.targetEmail : session?.user?.email}
+                    {session?.user?.email}
                   </span>
                   <span className="text-xs font-normal text-muted-foreground mt-1">
-                    {t("common.role")}: {impersonation ? impersonation.targetRole : (session?.user?.roleHierarchy != null ? (session.user.roleHierarchy >= 100 ? "Super-Admin" : session.user.roleHierarchy >= 80 ? "Administrator" : session.user.roleHierarchy >= 60 ? "Manager" : session.user.roleHierarchy >= 40 ? "Betrachter" : t("common.unknown")) : t("common.unknown"))}
+                    {t("common.role")}: {session?.user?.roleHierarchy != null ? (session.user.roleHierarchy >= 100 ? "Super-Admin" : session.user.roleHierarchy >= 80 ? "Administrator" : session.user.roleHierarchy >= 60 ? "Manager" : session.user.roleHierarchy >= 40 ? "Betrachter" : t("common.unknown")) : t("common.unknown")}
                   </span>
                 </div>
               </DropdownMenuLabel>
@@ -264,18 +189,6 @@ export function Header() {
                 {t("header.keyboardShortcuts")}
                 <span className="ml-auto text-xs text-muted-foreground">?</span>
               </DropdownMenuItem>
-              {impersonation && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-orange-600 cursor-pointer"
-                    onClick={stopImpersonation}
-                  >
-                    <Shield className="mr-2 h-4 w-4" />
-                    Impersonation beenden
-                  </DropdownMenuItem>
-                </>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive cursor-pointer"

@@ -69,6 +69,7 @@ model Tenant {
   notifications             Notification[]
   parkCostAllocations       ParkCostAllocation[]
   parkStakeholders          ParkStakeholder[]
+  supportZugriffe           SupportZugriff[]
   parks                     Park[]
   persons                   Person[]
   plots                     Plot[]
@@ -6741,6 +6742,35 @@ model MunicipalityBenefit {
   @@index([turbineId])
   @@index([municipalityId])
   @@map("municipality_benefits")
+}
+
+// Platform support access to a customer's data (2026-09). Without an active
+// entry the platform operator sees no customer data. FREIGABE is granted by
+// the customer's admin for a chosen duration; NOTFALL is opened by the
+// operator with a mandatory reason, lasts at most one hour and is shown to
+// the customer prominently.
+enum SupportZugriffArt {
+  FREIGABE
+  NOTFALL
+}
+
+model SupportZugriff {
+  id           String            @id @default(uuid())
+  tenantId     String
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  art          SupportZugriffArt @default(FREIGABE)
+  /// Customer admin who granted the access (FREIGABE); null for NOTFALL.
+  erteiltVonId String?
+  /// Platform operator who opened the emergency access (NOTFALL).
+  superadminId String?
+  begruendung  String?
+  gueltigBis   DateTime
+  beendetAm    DateTime?
+  beendetVonId String?
+  createdAt    DateTime          @default(now())
+
+  @@index([tenantId, gueltigBis])
+  @@map("support_zugriffe")
 }
 
 enum FundVerwaltung {

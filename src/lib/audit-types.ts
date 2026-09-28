@@ -50,7 +50,8 @@ export type AuditEntityType =
   | "ArchivedDocument"
   | "ArchiveVerification"
   | "IncomingInvoice"
-  | "ParkStakeholder";
+  | "ParkStakeholder"
+  | "SupportZugriff";
 
 /**
  * Get entity display name for German UI
@@ -90,6 +91,7 @@ export function getEntityDisplayName(entityType: AuditEntityType): string {
     ArchiveVerification: "Archiv-Integritaetsprüfung",
     IncomingInvoice: "Eingangsrechnung",
     ParkStakeholder: "Externer Parkzugriff",
+    SupportZugriff: "Support-Zugriff",
   };
   return displayNames[entityType] || entityType;
 }
