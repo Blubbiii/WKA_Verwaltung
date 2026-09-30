@@ -217,6 +217,7 @@ export async function POST(request: NextRequest) {
             roleId: portalRole.id,
             resourceType: "__global__",
             resourceIds: [],
+            tenantId: check.tenantId!,
             createdBy: check.userId,
           },
         });

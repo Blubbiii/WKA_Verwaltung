@@ -63,7 +63,7 @@ export async function GET() {
       return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
-    const hierarchy = await getUserHighestHierarchy(userId!);
+    const hierarchy = await getUserHighestHierarchy(userId!, check.tenantId!);
     const userRole: UserRole =
       hierarchy >= 100 ? "SUPERADMIN" :
       hierarchy >= 80  ? "ADMIN" :
@@ -129,7 +129,7 @@ export async function PUT(request: NextRequest) {
       return apiError("NOT_FOUND", 404, { message: "Benutzer nicht gefunden" });
     }
 
-    const hierarchy = await getUserHighestHierarchy(userId!);
+    const hierarchy = await getUserHighestHierarchy(userId!, check.tenantId!);
     const userRole: UserRole =
       hierarchy >= 100 ? "SUPERADMIN" :
       hierarchy >= 80  ? "ADMIN" :

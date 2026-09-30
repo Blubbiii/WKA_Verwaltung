@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
-import { PERMISSIONS, getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
+import { PERMISSIONS, isSuperadmin } from "@/lib/auth/permissions";
 import { invalidateUser } from "@/lib/auth/permissionCache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -127,8 +127,7 @@ export async function PATCH(
     //  - Whitelist: Non-Superadmins dürfen nur Memberships zum eigenen Tenant setzen.
     //  - Max EINE primary Membership; keine → erste wird zu primary (Fallback).
     if (validatedData.memberships !== undefined) {
-      const callerHierarchy = await getUserHighestHierarchy(check.userId!);
-      const isCallerSuperadmin = callerHierarchy >= ROLE_HIERARCHY.SUPERADMIN;
+      const isCallerSuperadmin = await isSuperadmin(check.userId!);
 
       for (const m of validatedData.memberships) {
         if (!isCallerSuperadmin && m.tenantId !== check.tenantId) {

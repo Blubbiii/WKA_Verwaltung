@@ -38,7 +38,7 @@ export async function POST() {
     }
 
     // Derive role from hierarchy for default layout selection
-    const hierarchy = await getUserHighestHierarchy(userId!);
+    const hierarchy = await getUserHighestHierarchy(userId!, check.tenantId!);
     const userRole: UserRole =
       hierarchy >= 100 ? "SUPERADMIN" :
       hierarchy >= 80  ? "ADMIN" :

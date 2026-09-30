@@ -87,13 +87,23 @@ export async function POST(
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
-    // Check tenant access
-    if (user.tenantId !== check.tenantId!) {
+    // Check tenant access: home tenant or an active membership of the tenant
+    // the admin works in — a role is granted for that tenant (2026-09).
+    const mitglied =
+      user.tenantId === check.tenantId! ||
+      (await prisma.userTenantMembership.findFirst({
+        where: { userId: id, tenantId: check.tenantId!, status: "ACTIVE" },
+        select: { id: true },
+      })) !== null;
+    if (!mitglied) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
         return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
       }
     }
+    // The tenant the role applies in: where the admin works, if the user is a
+    // member there; otherwise (platform operator for a foreign user) the user's home.
+    const zielMandant = mitglied ? check.tenantId! : user.tenantId;
 
     // Check if role exists and is accessible
     const role = await prisma.role.findUnique({
@@ -115,7 +125,7 @@ export async function POST(
     // FIX 1 (SECURITY): Role-Escalation verhindern.
     // Caller darf keine Rolle zuweisen deren hierarchy >= eigener hierarchy.
     // Ausnahme: Superadmin (hierarchy >= 100) darf jede Rolle zuweisen.
-    const callerHierarchy = await getUserHighestHierarchy(check.userId!);
+    const callerHierarchy = await getUserHighestHierarchy(check.userId!, check.tenantId!);
     const isCallerSuperadmin = callerHierarchy >= ROLE_HIERARCHY.SUPERADMIN;
     if (!isCallerSuperadmin && role.hierarchy >= callerHierarchy) {
       return apiError("FORBIDDEN", 403, {
@@ -130,6 +140,7 @@ export async function POST(
         userId: id,
         roleId: validatedData.roleId,
         resourceType: validatedData.resourceType,
+        tenantId: zielMandant,
       },
     });
 
@@ -144,6 +155,7 @@ export async function POST(
         roleId: validatedData.roleId,
         resourceType: validatedData.resourceType,
         resourceIds: validatedData.resourceIds,
+        tenantId: zielMandant,
         createdBy: check.userId,
       },
       include: {
@@ -194,13 +206,25 @@ export async function DELETE(
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
-    // Check tenant access
-    if (user.tenantId !== check.tenantId!) {
+    // Check tenant access: home tenant or an active membership (2026-09).
+    const heimat = user.tenantId === check.tenantId!;
+    const mitglied =
+      heimat ||
+      (await prisma.userTenantMembership.findFirst({
+        where: { userId: id, tenantId: check.tenantId!, status: "ACTIVE" },
+        select: { id: true },
+      })) !== null;
+    if (!mitglied) {
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
         return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
       }
     }
+
+    // A tenant admin removes roles of the own tenant only — and, in the
+    // user's home tenant, the older global assignments (tenantId null).
+    // The platform operator (not a member) may remove any.
+    const mandanten = mitglied ? (heimat ? [check.tenantId!, null] : [check.tenantId!]) : null;
 
     // Find and delete assignment
     const assignment = await prisma.userRoleAssignment.findFirst({
@@ -208,6 +232,7 @@ export async function DELETE(
         userId: id,
         roleId,
         resourceType,
+        ...(mandanten && { OR: mandanten.map((tenantId) => ({ tenantId })) }),
       },
     });
 
@@ -233,7 +258,7 @@ export async function DELETE(
     // vorher schon geprueft wurde: der Benutzer muss zum eigenen Mandanten
     // gehoeren, sonst braucht es Superadmin-Rechte (siehe oben). Und
     // `assignment` stammt aus einem findFirst, das auf genau diesen Benutzer
-    // eingeschraenkt war.
+    // und die Zuweisungen des eigenen Mandanten eingeschraenkt war.
     await prisma.userRoleAssignment.delete({
       where: { id: assignment.id },
     });

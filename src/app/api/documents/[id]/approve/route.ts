@@ -74,7 +74,7 @@ export async function POST(
     }
 
     const currentStatus = document.approvalStatus;
-    const hierarchy = await getUserHighestHierarchy(check.userId);
+    const hierarchy = await getUserHighestHierarchy(check.userId, check.tenantId!);
     const isAdmin = hierarchy >= ROLE_HIERARCHY.ADMIN;
 
     // Determine target status based on action
@@ -120,7 +120,7 @@ export async function POST(
       : action.approve || action.reject
         ? PERMISSIONS.DOCUMENTS_APPROVE
         : null;
-    if (noetigesRecht && !(await hasPermission(check.userId, noetigesRecht))) {
+    if (noetigesRecht && !(await hasPermission(check.userId, noetigesRecht, check.tenantId!))) {
       return apiError("FORBIDDEN", undefined, { message: `Es fehlt die Berechtigung ${noetigesRecht}.` });
     }
 

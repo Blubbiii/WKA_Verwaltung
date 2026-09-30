@@ -20,6 +20,7 @@
 import { prisma } from "@/lib/prisma";
 import { apiLogger as logger } from "@/lib/logger";
 import { PERMISSION_CATALOG } from "./permissions.catalog";
+import { administratorRechte } from "./administrator-rechte";
 
 let synced = false;
 let inflight: Promise<void> | null = null;
@@ -76,12 +77,18 @@ export async function syncPermissionsCatalog(): Promise<void> {
         }),
       );
 
+      // The system role "Administrator" keeps every permission it should
+      // have — including those of modules added after the role was seeded.
+      // Only adds, never removes (an operator may have extended the role).
+      const adminErgaenzt = await administratorVervollstaendigen();
+
       synced = true;
       logger.info(
         {
           catalogSize: PERMISSION_CATALOG.length,
           created,
           updated,
+          adminErgaenzt,
           durationMs: Date.now() - start,
         },
         "[PERMISSIONS] Catalog synced to DB",
@@ -98,6 +105,23 @@ export async function syncPermissionsCatalog(): Promise<void> {
   })();
 
   return inflight;
+}
+
+async function administratorVervollstaendigen(): Promise<number> {
+  const rolle = await prisma.role.findFirst({
+    where: { name: "Administrator", isSystem: true, tenantId: null },
+    select: { id: true },
+  });
+  if (!rolle) return 0;
+  const rechte = await prisma.permission.findMany({
+    where: { name: { in: administratorRechte(PERMISSION_CATALOG) } },
+    select: { id: true },
+  });
+  const ergebnis = await prisma.rolePermission.createMany({
+    data: rechte.map((r) => ({ roleId: rolle.id, permissionId: r.id })),
+    skipDuplicates: true,
+  });
+  return ergebnis.count;
 }
 
 /**

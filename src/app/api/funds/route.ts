@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     // users who may read CRM entries and with the CRM module switched on.
     const notizenSichtbar =
       (await getConfigBoolean("crm.enabled", check.tenantId, false)) &&
-      (await hasPermission(check.userId!, "crm:read"));
+      (await hasPermission(check.userId!, "crm:read", check.tenantId!));
 
     const [funds, total, gesamtGesellschafter, gesamtKapital] = await Promise.all([
       db.fund.findMany({

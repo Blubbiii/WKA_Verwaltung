@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
 
-    const userHierarchy = await getUserHighestHierarchy(userId);
+    const userHierarchy = await getUserHighestHierarchy(userId, session.user.tenantId);
     if (userHierarchy >= 80) {
       return apiError("FORBIDDEN", undefined, { message: "Administratoren koennen ihr Konto nicht selbst loeschen. Bitte kontaktieren Sie einen anderen Administrator." });
     }

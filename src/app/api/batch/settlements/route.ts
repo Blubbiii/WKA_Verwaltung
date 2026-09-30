@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // "approve" schließt eine fakturierte Abrechnung ab → Finalize-Recht nötig.
     if (action === "approve") {
-      const canFinalize = await hasPermission(check.userId!, "energy:settlements:finalize");
+      const canFinalize = await hasPermission(check.userId!, "energy:settlements:finalize", check.tenantId!);
       if (!canFinalize) {
         return apiError("FORBIDDEN", 403, {
           message: "Zum Freigeben von Netzbetreiber-Abrechnungen fehlt die Berechtigung energy:settlements:finalize",

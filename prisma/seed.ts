@@ -763,7 +763,7 @@ async function main() {
 
   // Assign role + tenant membership
   await prisma.userRoleAssignment.upsert({
-    where: { userId_roleId_resourceType: { userId: superadmin.id, roleId: roleSuperadmin.id, resourceType: "__global__" } },
+    where: { userId_roleId_resourceType_tenantId: { userId: superadmin.id, roleId: roleSuperadmin.id, resourceType: "__global__", tenantId: systemTenant.id } },
     update: {},
     create: { userId: superadmin.id, roleId: roleSuperadmin.id, tenantId: systemTenant.id },
   });
@@ -791,7 +791,7 @@ async function main() {
     },
   });
   await prisma.userRoleAssignment.upsert({
-    where: { userId_roleId_resourceType: { userId: demoAdmin.id, roleId: roleAdmin.id, resourceType: "__global__" } },
+    where: { userId_roleId_resourceType_tenantId: { userId: demoAdmin.id, roleId: roleAdmin.id, resourceType: "__global__", tenantId: demoTenant.id } },
     update: {},
     create: { userId: demoAdmin.id, roleId: roleAdmin.id, tenantId: demoTenant.id },
   });
@@ -816,7 +816,7 @@ async function main() {
     },
   });
   await prisma.userRoleAssignment.upsert({
-    where: { userId_roleId_resourceType: { userId: demoManager.id, roleId: roleManager.id, resourceType: "__global__" } },
+    where: { userId_roleId_resourceType_tenantId: { userId: demoManager.id, roleId: roleManager.id, resourceType: "__global__", tenantId: demoTenant.id } },
     update: {},
     create: { userId: demoManager.id, roleId: roleManager.id, tenantId: demoTenant.id },
   });
@@ -1036,10 +1036,11 @@ async function main() {
   if (superadminRole) {
     await prisma.userRoleAssignment.upsert({
       where: {
-        userId_roleId_resourceType: {
+        userId_roleId_resourceType_tenantId: {
           userId: superadmin.id,
           roleId: superadminRole.id,
           resourceType: "__global__",
+          tenantId: systemTenant.id,
         },
       },
       update: {},
@@ -1047,6 +1048,7 @@ async function main() {
         userId: superadmin.id,
         roleId: superadminRole.id,
         resourceType: "__global__",
+        tenantId: systemTenant.id,
       },
     });
     console.log("Assigned Superadmin role to", superadmin.email);
@@ -1055,10 +1057,11 @@ async function main() {
   if (adminRole) {
     await prisma.userRoleAssignment.upsert({
       where: {
-        userId_roleId_resourceType: {
+        userId_roleId_resourceType_tenantId: {
           userId: demoAdmin.id,
           roleId: adminRole.id,
           resourceType: "__global__",
+          tenantId: demoTenant.id,
         },
       },
       update: {},
@@ -1066,6 +1069,7 @@ async function main() {
         userId: demoAdmin.id,
         roleId: adminRole.id,
         resourceType: "__global__",
+        tenantId: demoTenant.id,
       },
     });
     console.log("Assigned Administrator role to", demoAdmin.email);
@@ -1074,10 +1078,11 @@ async function main() {
   if (managerRole) {
     await prisma.userRoleAssignment.upsert({
       where: {
-        userId_roleId_resourceType: {
+        userId_roleId_resourceType_tenantId: {
           userId: demoManager.id,
           roleId: managerRole.id,
           resourceType: "__global__",
+          tenantId: demoTenant.id,
         },
       },
       update: {},
@@ -1085,6 +1090,7 @@ async function main() {
         userId: demoManager.id,
         roleId: managerRole.id,
         resourceType: "__global__",
+        tenantId: demoTenant.id,
       },
     });
     console.log("Assigned Manager role to", demoManager.email);

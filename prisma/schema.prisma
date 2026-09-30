@@ -3051,7 +3051,9 @@ model UserRoleAssignment {
   role         Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, roleId, resourceType])
+  // Per tenant (2026-09): the same role may be granted in several tenants —
+  // administrator in unit Nord AND in unit Süd.
+  @@unique([userId, roleId, resourceType, tenantId])
   @@index([roleId])
   @@index([userId])
   @@index([userId, tenantId])

@@ -181,7 +181,7 @@ export async function DELETE(
     const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur MANAGER, ADMIN oder SUPERADMIN duerfen löschen
-    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    const hierarchy = await getUserHighestHierarchy(check.userId!, check.tenantId!);
     if (hierarchy < 60) {
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung zum Löschen von Produktionsdaten" });
     }

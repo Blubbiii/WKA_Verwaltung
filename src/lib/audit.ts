@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { aktiverMandant } from "@/lib/auth/withPermission";
-import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
+import { isSuperadmin } from "@/lib/auth/permissions";
 
 // Re-export types from audit-types for backward compatibility
 // Server components can import from either file
@@ -60,7 +60,7 @@ export async function createAuditLog(params: AuditLogParams) {
     const effectiveUserId = session.user.id;
     const effectiveTenantId = aktiv?.tenantId ?? session.user.tenantId ?? null;
     const impersonatedById =
-      aktiv?.fremd && (await getUserHighestHierarchy(session.user.id)) >= ROLE_HIERARCHY.SUPERADMIN
+      aktiv?.fremd && (await isSuperadmin(session.user.id))
         ? session.user.id
         : null;
 

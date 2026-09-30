@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { ROLE_HIERARCHY } from "./hierarchy";
-import { auth } from "./index";
 import { getCachedPermissions, setCachedPermissions } from "./permissionCache";
 
 // Types extracted to permission-types.ts to break circular dependency
@@ -12,10 +11,30 @@ export type { UserPermissions, PermissionCheck } from "./permission-types";
 // ============================================================================
 
 /**
- * Get all permissions for a user (including from all assigned roles)
+ * Whether a role assignment applies in `tenantId` (2026-09): assignments of
+ * that tenant, global ones (tenantId null), and the platform role — the
+ * superadmin's assignment sits in the system tenant but acts everywhere.
+ */
+function giltImMandanten(role: UserPermissions["roles"][number], tenantId: string): boolean {
+  return role.tenantId === tenantId || role.tenantId === null || role.hierarchy >= ROLE_HIERARCHY.SUPERADMIN;
+}
+
+/**
+ * Permissions of a user in one tenant — roles granted for that tenant plus
+ * global ones. A manager in tenant B who is administrator in tenant A has
+ * the manager's rights in B.
+ */
+export async function getUserPermissions(userId: string, tenantId: string): Promise<UserPermissions> {
+  const alle = await alleRollen(userId);
+  const roles = alle.roles.filter((r) => giltImMandanten(r, tenantId));
+  return { roles, permissions: [...new Set(roles.flatMap((r) => r.permissions))] };
+}
+
+/**
+ * All role assignments of a user across tenants (cached per user).
  * Verwendet Caching um wiederholte DB-Abfragen zu vermeiden
  */
-export async function getUserPermissions(userId: string): Promise<UserPermissions> {
+async function alleRollen(userId: string): Promise<UserPermissions> {
   // 1. Pruefe zuerst den Cache (async — Redis-backed)
   const cached = await getCachedPermissions(userId);
   if (cached) {
@@ -55,6 +74,8 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       resourceType: assignment.resourceType,
       resourceIds: assignment.resourceIds,
       permissions: rolePermissions,
+      tenantId: assignment.tenantId,
+      hierarchy: assignment.role.hierarchy,
     });
 
     // Collect all permissions from this role into the flat set
@@ -84,11 +105,15 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
 export async function checkPermission(
   userId: string,
   permission: string,
-  resourceType?: string,
-  resourceId?: string
+  tenantId: string,
+  // An object, not two more positional strings: inserting tenantId as third
+  // parameter once turned every (userId, permission, resourceType) call into
+  // a check against tenant "Park" — and still compiled.
+  ressource: { resourceType?: string; resourceId?: string } = {},
 ): Promise<PermissionCheck> {
+  const { resourceType, resourceId } = ressource;
   // Nutze getUserPermissions() welches den Cache verwendet
-  const userPerms = await getUserPermissions(userId);
+  const userPerms = await getUserPermissions(userId, tenantId);
 
   // Schneller Ausschluss: Wenn die Permission in keiner Rolle existiert,
   // können wir sofort false zurückgeben
@@ -157,8 +182,8 @@ export async function checkPermission(
 /**
  * Simple boolean check if user has permission (ignoring resource restrictions)
  */
-export async function hasPermission(userId: string, permission: string): Promise<boolean> {
-  const result = await checkPermission(userId, permission);
+export async function hasPermission(userId: string, permission: string, tenantId: string): Promise<boolean> {
+  const result = await checkPermission(userId, permission, tenantId);
   return result.hasPermission;
 }
 
@@ -168,9 +193,10 @@ export async function hasPermission(userId: string, permission: string): Promise
  */
 export async function hasAllPermissions(
   userId: string,
-  permissions: string[]
+  permissions: string[],
+  tenantId: string
 ): Promise<boolean> {
-  const userPerms = await getUserPermissions(userId);
+  const userPerms = await getUserPermissions(userId, tenantId);
   return permissions.every((p) => userPerms.permissions.includes(p));
 }
 
@@ -180,9 +206,10 @@ export async function hasAllPermissions(
  */
 export async function hasAnyPermission(
   userId: string,
-  permissions: string[]
+  permissions: string[],
+  tenantId: string
 ): Promise<boolean> {
-  const userPerms = await getUserPermissions(userId);
+  const userPerms = await getUserPermissions(userId, tenantId);
   return permissions.some((p) => userPerms.permissions.includes(p));
 }
 
@@ -209,37 +236,18 @@ export { ROLE_HIERARCHY } from "./hierarchy";
  *
  * Uses getUserPermissions() which is cached, so this is efficient.
  */
-export async function getUserHighestHierarchy(userId: string): Promise<number> {
-  const assignments = await prisma.userRoleAssignment.findMany({
-    where: { userId },
-    include: { role: { select: { hierarchy: true } } },
-  });
-  if (assignments.length === 0) return 0;
-  return Math.max(0, ...assignments.map(a => a.role.hierarchy));
-}
-
-/**
- * Check if a user's highest role hierarchy is at least Admin level (>= 80).
- */
-export async function isAtLeastAdmin(userId: string): Promise<boolean> {
-  const hierarchy = await getUserHighestHierarchy(userId);
-  return hierarchy >= ROLE_HIERARCHY.ADMIN;
+export async function getUserHighestHierarchy(userId: string, tenantId: string): Promise<number> {
+  const { roles } = await getUserPermissions(userId, tenantId);
+  return roles.length === 0 ? 0 : Math.max(0, ...roles.map((r) => r.hierarchy));
 }
 
 /**
  * Check if a user's highest role hierarchy is Superadmin level (>= 100).
  */
 export async function isSuperadmin(userId: string): Promise<boolean> {
-  const hierarchy = await getUserHighestHierarchy(userId);
-  return hierarchy >= ROLE_HIERARCHY.SUPERADMIN;
-}
-
-/**
- * Check if a user's highest role hierarchy is at least Manager level (>= 60).
- */
-export async function isAtLeastManager(userId: string): Promise<boolean> {
-  const hierarchy = await getUserHighestHierarchy(userId);
-  return hierarchy >= ROLE_HIERARCHY.MANAGER;
+  // The platform role is not bound to a tenant.
+  const { roles } = await alleRollen(userId);
+  return roles.some((r) => r.hierarchy >= ROLE_HIERARCHY.SUPERADMIN);
 }
 
 /**
@@ -253,70 +261,6 @@ export function isHierarchyAtLeast(hierarchy: number, threshold: number): boolea
 // ============================================================================
 // SESSION HELPERS (for use in Server Components / API Routes)
 // ============================================================================
-
-/**
- * Get current session user's permissions
- */
-export async function getSessionPermissions(): Promise<UserPermissions | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  return getUserPermissions(session.user.id);
-}
-
-/**
- * Check if current session user has a permission
- */
-export async function sessionHasPermission(permission: string): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  return hasPermission(session.user.id, permission);
-}
-
-/**
- * Check if current session user has all permissions
- */
-export async function sessionHasAllPermissions(permissions: string[]): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  return hasAllPermissions(session.user.id, permissions);
-}
-
-/**
- * Check if current session user has any of the permissions
- */
-export async function sessionHasAnyPermission(permissions: string[]): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  return hasAnyPermission(session.user.id, permissions);
-}
-
-/**
- * Get current session user's highest role hierarchy level.
- * Returns 0 if not authenticated or no roles assigned.
- */
-export async function getSessionHierarchy(): Promise<number> {
-  const session = await auth();
-  if (!session?.user?.id) return 0;
-  return getUserHighestHierarchy(session.user.id);
-}
-
-/**
- * Check if current session user is at least Admin (hierarchy >= 80).
- */
-export async function sessionIsAtLeastAdmin(): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  return isAtLeastAdmin(session.user.id);
-}
-
-/**
- * Check if current session user is Superadmin (hierarchy >= 100).
- */
-export async function sessionIsSuperadmin(): Promise<boolean> {
-  const session = await auth();
-  if (!session?.user?.id) return false;
-  return isSuperadmin(session.user.id);
-}
 
 // ============================================================================
 // PERMISSION CONSTANTS (for easy reference)

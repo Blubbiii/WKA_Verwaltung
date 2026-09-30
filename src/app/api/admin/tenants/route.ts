@@ -249,6 +249,7 @@ export async function POST(request: NextRequest) {
               userId: user.id,
               roleId: adminRole.id,
               resourceType: "__global__",
+              tenantId: tenant.id,
             },
           });
         }

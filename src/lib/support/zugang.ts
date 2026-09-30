@@ -12,7 +12,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
+import { isSuperadmin } from "@/lib/auth/permissions";
 import { zugangErlaubt } from "./regeln";
 
 export { gueltigBisFuer, istAktiv, zugangErlaubt, NOTFALL_DAUER_MS, type Laufzeit } from "./regeln";
@@ -40,7 +40,7 @@ export async function darfMandantNutzen(userId: string, tenantId: string): Promi
     select: { status: true },
   });
   const mitglied = mitgliedschaft?.status === "ACTIVE";
-  const superadmin = !mitglied && (await getUserHighestHierarchy(userId)) >= ROLE_HIERARCHY.SUPERADMIN;
+  const superadmin = !mitglied && (await isSuperadmin(userId));
   const supportAktiv = superadmin && (await aktiverSupportZugriff(tenantId)) !== null;
 
   const erlaubt = zugangErlaubt({ mitglied, superadmin, supportAktiv });

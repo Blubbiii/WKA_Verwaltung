@@ -20,13 +20,13 @@ import { apiLogger as logger } from "@/lib/logger";
  * Falls back to no filtering on error to prevent dashboard from breaking.
  */
 async function buildIdFilter(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: "PARK" | "FUND",
   permission: string
 ): Promise<{ in: string[] } | undefined> {
   try {
     const { ids, hasGlobalAccess } = await getAllAccessibleIds(
-      userId,
+      wer,
       resourceType,
       permission
     );
@@ -59,8 +59,8 @@ interface SichtFilter {
  */
 async function sichtFilter(tenantId: string, userId: string): Promise<SichtFilter> {
   const [rolleParks, rolleFunds, benutzerParks, benutzerFunds] = await Promise.all([
-    buildIdFilter(userId, "PARK", PERMISSIONS.PARKS_READ),
-    buildIdFilter(userId, "FUND", PERMISSIONS.FUNDS_READ),
+    buildIdFilter({ userId, tenantId }, "PARK", PERMISSIONS.PARKS_READ),
+    buildIdFilter({ userId, tenantId }, "FUND", PERMISSIONS.FUNDS_READ),
     getAllowedParkIds(userId),
     getAllowedFundIds(userId, tenantId),
   ]);

@@ -36,8 +36,8 @@ export async function ladeSeitenleisteStart(): Promise<SeitenleisteStartDaten | 
     const cookieSpeicher = await cookies();
     const [user, rechte, hierarchie, flags] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId }, select: { settings: true } }),
-      getUserPermissions(userId),
-      getUserHighestHierarchy(userId),
+      getUserPermissions(userId, check.tenantId!),
+      getUserHighestHierarchy(userId, check.tenantId!),
       ladeFeatureFlags(check.tenantId),
     ]);
     const settings = (user?.settings as UserSettings | null) ?? {};

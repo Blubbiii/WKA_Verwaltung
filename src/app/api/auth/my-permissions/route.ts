@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUserPermissions, getUserHighestHierarchy } from "@/lib/auth/permissions";
+import { aktiverMandant } from "@/lib/auth/withPermission";
 import { authLogger } from "@/lib/logger";
 
 import { apiError } from "@/lib/api-errors";
@@ -22,9 +23,11 @@ export async function GET() {
       return apiError("UNAUTHORIZED", 401, { message: "Nicht authentifiziert" });
     }
 
+    // The client's permission list is the one of the tenant it works in.
+    const tenantId = (await aktiverMandant())?.tenantId ?? session.user.tenantId;
     const [userPerms, roleHierarchy] = await Promise.all([
-      getUserPermissions(session.user.id),
-      getUserHighestHierarchy(session.user.id),
+      getUserPermissions(session.user.id, tenantId),
+      getUserHighestHierarchy(session.user.id, tenantId),
     ]);
 
     return NextResponse.json({

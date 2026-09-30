@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const { userId } = check;
 
     // Derive role label from hierarchy for widget filtering
-    const hierarchy = await getUserHighestHierarchy(userId!);
+    const hierarchy = await getUserHighestHierarchy(userId!, check.tenantId!);
     const userRole: UserRole =
       hierarchy >= 100 ? "SUPERADMIN" :
       hierarchy >= 80  ? "ADMIN" :

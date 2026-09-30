@@ -163,12 +163,12 @@ export async function requirePermission(
 
   if (Array.isArray(permission)) {
     if (options?.requireAll) {
-      hasRequiredPermission = await hasAllPermissions(userId, permission);
+      hasRequiredPermission = await hasAllPermissions(userId, permission, tenantId);
     } else {
-      hasRequiredPermission = await hasAnyPermission(userId, permission);
+      hasRequiredPermission = await hasAnyPermission(userId, permission, tenantId);
     }
   } else {
-    hasRequiredPermission = await hasPermission(userId, permission);
+    hasRequiredPermission = await hasPermission(userId, permission, tenantId);
   }
 
   if (!hasRequiredPermission) {
@@ -265,7 +265,7 @@ export async function requirePermissionWithResources(
     return { authorized: true, userId, tenantId, resourceRestricted: false, allowedResourceIds: [] };
   }
 
-  const result = await checkPermission(userId, permission, resourceType);
+  const result = await checkPermission(userId, permission, tenantId, { resourceType });
 
   if (!result.hasPermission) {
     return {
@@ -332,7 +332,7 @@ export async function requireSuperadmin(): Promise<PermissionCheckResult> {
 
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
-  const hierarchy = await getUserHighestHierarchy(userId);
+  const hierarchy = await getUserHighestHierarchy(userId, tenantId);
   if (hierarchy >= ROLE_HIERARCHY.SUPERADMIN) {
     return { authorized: true, userId, tenantId };
   }
@@ -360,7 +360,7 @@ export async function requireAdmin(): Promise<PermissionCheckResult> {
 
   const userId = session.user.id;
   const tenantId = (await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId;
-  const hierarchy = await getUserHighestHierarchy(userId);
+  const hierarchy = await getUserHighestHierarchy(userId, tenantId);
   if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
     return { authorized: true, userId, tenantId };
   }
@@ -417,12 +417,12 @@ export async function requirePagePermission(
 
     if (Array.isArray(permission)) {
       if (options?.requireAll) {
-        hasRequiredPermission = await hasAllPermissions(userId, permission);
+        hasRequiredPermission = await hasAllPermissions(userId, permission, tenantId);
       } else {
-        hasRequiredPermission = await hasAnyPermission(userId, permission);
+        hasRequiredPermission = await hasAnyPermission(userId, permission, tenantId);
       }
     } else {
-      hasRequiredPermission = await hasPermission(userId, permission);
+      hasRequiredPermission = await hasPermission(userId, permission, tenantId);
     }
 
     if (!hasRequiredPermission) {
@@ -459,7 +459,7 @@ export async function requirePageAdmin(
   const tenantId = ((await getActiveTenantOverride(userId, session.user.tenantId)) ?? session.user.tenantId) || "";
 
   try {
-    const hierarchy = await getUserHighestHierarchy(userId);
+    const hierarchy = await getUserHighestHierarchy(userId, tenantId);
     if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
       return { userId, tenantId };
     }

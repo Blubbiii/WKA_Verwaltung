@@ -475,7 +475,7 @@ async function handleFileUpload(
   let approvalStatus: "DRAFT" | "PUBLISHED" = "DRAFT";
   let publishedAt: Date | null = null;
   if (userId) {
-    const hierarchy = await getUserHighestHierarchy(userId);
+    const hierarchy = await getUserHighestHierarchy(userId, tenantId);
     if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
       approvalStatus = "PUBLISHED";
       publishedAt = new Date();
@@ -578,7 +578,7 @@ async function handleJsonCreate(
   let jsonApprovalStatus: "DRAFT" | "PUBLISHED" = "DRAFT";
   let jsonPublishedAt: Date | null = null;
   if (userId) {
-    const hierarchy = await getUserHighestHierarchy(userId);
+    const hierarchy = await getUserHighestHierarchy(userId, tenantId);
     if (hierarchy >= ROLE_HIERARCHY.ADMIN) {
       jsonApprovalStatus = "PUBLISHED";
       jsonPublishedAt = new Date();

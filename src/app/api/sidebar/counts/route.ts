@@ -39,7 +39,7 @@ async function computeSidebarCounts(
   // includes() weil Sidebar-Counts keine Resource-Restriction brauchen.
   let permissions: string[];
   try {
-    const userPerms = await getUserPermissions(userId);
+    const userPerms = await getUserPermissions(userId, tenantId);
     permissions = userPerms.permissions;
   } catch {
     permissions = [];

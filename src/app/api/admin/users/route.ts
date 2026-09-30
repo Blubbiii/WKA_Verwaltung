@@ -16,9 +16,8 @@ import { apiError } from "@/lib/api-errors";
 async function requireSuperadminCheck(): Promise<boolean> {
   const session = await auth();
   if (!session?.user?.id) return false;
-  const { getUserHighestHierarchy } = await import("@/lib/auth/permissions");
-  const hierarchy = await getUserHighestHierarchy(session.user.id);
-  return hierarchy >= 100;
+  const { isSuperadmin } = await import("@/lib/auth/permissions");
+  return isSuperadmin(session.user.id);
 }
 
 const userCreateSchema = z.object({

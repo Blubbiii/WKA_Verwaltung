@@ -404,17 +404,18 @@ export async function revokeAllResourceAccess(
  * @param minAccessLevel - Mindest-Level für direkten Zugriff
  */
 export async function hasAccessToResource(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   permission: string,
   resourceType: ResourceType | string,
   resourceId: string,
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<boolean> {
+  const { userId, tenantId } = wer;
   // Import checkPermission dynamisch um zirkulaere Imports zu vermeiden
   const { checkPermission } = await import("./permissions");
 
   // 1. Pruefe Rollen-basierte Berechtigung
-  const permCheck = await checkPermission(userId, permission, resourceType, resourceId);
+  const permCheck = await checkPermission(userId, permission, tenantId, { resourceType, resourceId });
 
   if (permCheck.hasPermission) {
     // Hat globale Berechtigung oder Ressource ist in erlaubter Liste

@@ -282,7 +282,7 @@ export async function DELETE(
     const db = mandantDb(check.tenantId!);
 
     // Zusätzliche Prüfung: Nur ADMIN oder SUPERADMIN duerfen löschen
-    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    const hierarchy = await getUserHighestHierarchy(check.userId!, check.tenantId!);
     if (hierarchy < 80) {
       return apiError("FORBIDDEN", undefined, { message: "Nur Administratoren duerfen Netzbetreiber-Abrechnungen löschen" });
     }

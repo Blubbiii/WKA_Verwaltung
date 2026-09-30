@@ -254,7 +254,7 @@ export async function DELETE(
     const db = mandantDb(check.tenantId!);
 
     // Additional check: Only Admin or higher (hierarchy >= 80) can hard-delete
-    const hierarchy = await getUserHighestHierarchy(check.userId!);
+    const hierarchy = await getUserHighestHierarchy(check.userId!, check.tenantId!);
     if (hierarchy < ROLE_HIERARCHY.ADMIN) {
       return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung. Nur Administratoren können Dokumente löschen." });
     }

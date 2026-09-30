@@ -5,13 +5,13 @@
 
 import { NextResponse } from "next/server";
 import { aktiverMandant } from "@/lib/auth/withPermission";
-import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
+import { isSuperadmin } from "@/lib/auth/permissions";
 import { mandantDb } from "@/lib/mandant/mandant-db";
 
 export async function GET() {
   const aktiv = await aktiverMandant();
   if (!aktiv?.fremd || !aktiv.tenantId) return NextResponse.json({ aktiv: false });
-  if ((await getUserHighestHierarchy(aktiv.userId)) < ROLE_HIERARCHY.SUPERADMIN) {
+  if (!(await isSuperadmin(aktiv.userId))) {
     return NextResponse.json({ aktiv: false });
   }
 

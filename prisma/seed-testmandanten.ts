@@ -766,8 +766,8 @@ async function sHolding() {
   const u = await prisma.user.create({
     data: { email: "leitung@holding.test", passwordHash: passwortHash, firstName: "Gesa", lastName: "Wübbena", tenantId: nord.tenantId, status: "ACTIVE" },
   });
-  // A role can be held only once per user (unique userId/roleId/resourceType):
-  // administrator in Nord, manager in Süd.
+  // Roles per tenant: administrator in Nord, manager in Süd — so the test
+  // data shows that rights follow the unit the user works in.
   const zuordnung = [
     { ctx: nord, rolle: "Administrator" },
     { ctx: sued, rolle: "Manager" },

@@ -33,6 +33,7 @@ vi.mock("@/lib/auth/withPermission", () => ({
 }));
 vi.mock("@/lib/auth/permissions", () => ({
   getUserHighestHierarchy: (...a: unknown[]) => hierarchie(...a),
+  isSuperadmin: async (...a: unknown[]) => (await hierarchie(...a)) >= 100,
 }));
 vi.mock("@/lib/logger", () => ({
   apiLogger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },

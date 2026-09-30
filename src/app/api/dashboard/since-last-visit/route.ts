@@ -105,10 +105,10 @@ export async function GET(request: NextRequest) {
     // zu werfen.
     const [canReadInvoices, canReadIncoming, canReadApprovals, canReadAudit] =
       await Promise.all([
-        hasPermission(userId, "invoices:read"),
-        hasPermission(userId, "incoming-invoices:read"),
-        hasPermission(userId, "approvals:read"),
-        hasPermission(userId, "audit:read"),
+        hasPermission(userId, "invoices:read", check.tenantId!),
+        hasPermission(userId, "incoming-invoices:read", check.tenantId!),
+        hasPermission(userId, "approvals:read", check.tenantId!),
+        hasPermission(userId, "audit:read", check.tenantId!),
       ]);
 
     const [newInvoices, newIncomingInvoices, newApprovals, newAuditEntries, recentLogs] =

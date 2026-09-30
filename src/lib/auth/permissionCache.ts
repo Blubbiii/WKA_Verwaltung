@@ -10,7 +10,8 @@ import { bumpPermissionVersion } from "./session-invalidation";
 // cross-instance consistency. TTL default: 300 seconds (5 minutes).
 // ============================================================================
 
-const PERMISSION_PREFIX = `${CACHE_PREFIXES.USER}:permissions`;
+// v2 (2026-09): entries carry each role's tenant and hierarchy — older ones must not be read.
+const PERMISSION_PREFIX = `${CACHE_PREFIXES.USER}:permissions:v2`;
 const DEFAULT_TTL_SECONDS = 300; // 5 minutes
 let cacheTTLSeconds = DEFAULT_TTL_SECONDS;
 

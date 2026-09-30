@@ -12,6 +12,9 @@ export interface UserPermissions {
     resourceType: string;
     resourceIds: string[];
     permissions: string[];
+    /** Tenant the role was granted for; null = global. */
+    tenantId: string | null;
+    hierarchy: number;
   }>;
 }
 

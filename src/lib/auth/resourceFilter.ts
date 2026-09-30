@@ -39,13 +39,14 @@ export interface FilteredResult<T> {
  * @param minAccessLevel - Mindest-Level für direkten ResourceAccess
  */
 export async function filterByResourceAccess<T extends Record<string, unknown>>(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   items: T[],
   resourceType: ResourceType | string,
   idField: keyof T = "id" as keyof T,
   permission?: string,
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<FilteredResult<T>> {
+  const { userId, tenantId } = wer;
   const totalCount = items.length;
 
   // 1. Pruefe Rollen-basierte Berechtigung
@@ -53,7 +54,7 @@ export async function filterByResourceAccess<T extends Record<string, unknown>>(
   let hasGlobalAccess = false;
 
   if (permission) {
-    const permCheck = await checkPermission(userId, permission, resourceType);
+    const permCheck = await checkPermission(userId, permission, tenantId, { resourceType });
 
     if (permCheck.hasPermission) {
       if (!permCheck.resourceRestricted) {
@@ -108,15 +109,16 @@ export async function filterByResourceAccess<T extends Record<string, unknown>>(
  * Prueft für ein einzelnes Item ob Zugriff erlaubt ist
  */
 export async function hasAccessToItem(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   resourceId: string,
   permission?: string,
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<boolean> {
+  const { userId, tenantId } = wer;
   // 1. Pruefe Rollen-basierte Berechtigung
   if (permission) {
-    const permCheck = await checkPermission(userId, permission, resourceType, resourceId);
+    const permCheck = await checkPermission(userId, permission, tenantId, { resourceType, resourceId });
     if (permCheck.hasPermission) {
       return true;
     }
@@ -130,17 +132,18 @@ export async function hasAccessToItem(
  * Holt alle IDs auf die ein User Zugriff hat (kombiniert Rolle + direkt)
  */
 export async function getAllAccessibleIds(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   permission?: string,
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<{ ids: string[]; hasGlobalAccess: boolean }> {
+  const { userId, tenantId } = wer;
   let roleIds: string[] = [];
   let hasGlobalAccess = false;
 
   // 1. Pruefe Rollen-basierte Berechtigung
   if (permission) {
-    const permCheck = await checkPermission(userId, permission, resourceType);
+    const permCheck = await checkPermission(userId, permission, tenantId, { resourceType });
 
     if (permCheck.hasPermission) {
       if (!permCheck.resourceRestricted) {
@@ -174,18 +177,17 @@ export async function getAllAccessibleIds(
  *
  * Kann direkt in Prisma-Queries verwendet werden:
  *
- * const where = await buildResourceWhereClause(userId, "PARK", "parks:read", "id");
+ * const where = await buildResourceWhereClause(wer, "PARK", "parks:read", "id");
  * const parks = await prisma.park.findMany({ where });
  */
 export async function buildResourceWhereClause(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   permission?: string,
   idField: string = "id",
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<Record<string, unknown> | null> {
-  const { ids, hasGlobalAccess } = await getAllAccessibleIds(
-    userId,
+  const { ids, hasGlobalAccess } = await getAllAccessibleIds(wer,
     resourceType,
     permission,
     minAccessLevel
@@ -210,14 +212,13 @@ export async function buildResourceWhereClause(
  */
 export async function extendWhereWithResourceFilter(
   existingWhere: Record<string, unknown>,
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   permission?: string,
   idField: string = "id",
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<Record<string, unknown>> {
-  const resourceWhere = await buildResourceWhereClause(
-    userId,
+  const resourceWhere = await buildResourceWhereClause(wer,
     resourceType,
     permission,
     idField,
@@ -244,12 +245,12 @@ export async function extendWhereWithResourceFilter(
  * (für Bearbeiten/Löschen Operationen)
  */
 export async function hasWriteAccess(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   resourceId: string,
   permission?: string
 ): Promise<boolean> {
-  return hasAccessToItem(userId, resourceType, resourceId, permission, ACCESS_LEVELS.WRITE);
+  return hasAccessToItem(wer, resourceType, resourceId, permission, ACCESS_LEVELS.WRITE);
 }
 
 /**
@@ -257,26 +258,25 @@ export async function hasWriteAccess(
  * (für Verwalten/Admin Operationen)
  */
 export async function hasAdminAccess(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   resourceId: string,
   permission?: string
 ): Promise<boolean> {
-  return hasAccessToItem(userId, resourceType, resourceId, permission, ACCESS_LEVELS.ADMIN);
+  return hasAccessToItem(wer, resourceType, resourceId, permission, ACCESS_LEVELS.ADMIN);
 }
 
 /**
  * Batch-Check: Filtert eine Liste von IDs nach Zugriffsrechten
  */
 export async function filterAccessibleIds(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   resourceType: ResourceType | string,
   resourceIds: string[],
   permission?: string,
   minAccessLevel: AccessLevel | string = ACCESS_LEVELS.READ
 ): Promise<string[]> {
-  const { ids, hasGlobalAccess } = await getAllAccessibleIds(
-    userId,
+  const { ids, hasGlobalAccess } = await getAllAccessibleIds(wer,
     resourceType,
     permission,
     minAccessLevel
@@ -306,7 +306,7 @@ export async function filterAccessibleIds(
  * @param permission - Optional: Permission für Parent
  */
 export async function hasAccessViaParent(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   childResourceType: ResourceType | string,
   childResourceId: string,
   parentResourceType: ResourceType | string,
@@ -314,26 +314,25 @@ export async function hasAccessViaParent(
   permission?: string
 ): Promise<boolean> {
   // 1. Pruefe direkten Zugriff auf Kind
-  const directAccess = await hasAccessToItem(userId, childResourceType, childResourceId, permission);
+  const directAccess = await hasAccessToItem(wer, childResourceType, childResourceId, permission);
   if (directAccess) return true;
 
   // 2. Pruefe Zugriff über Parent
   const parentId = await getParentId(childResourceId);
   if (!parentId) return false;
 
-  return hasAccessToItem(userId, parentResourceType, parentId, permission);
+  return hasAccessToItem(wer, parentResourceType, parentId, permission);
 }
 
 /**
  * Beispiel-Implementierung für Turbine -> Park Hierarchie
  */
 export async function hasTurbineAccessViaPark(
-  userId: string,
+  wer: { userId: string; tenantId: string },
   turbineId: string,
   permission?: string
 ): Promise<boolean> {
-  return hasAccessViaParent(
-    userId,
+  return hasAccessViaParent(wer,
     "TURBINE",
     turbineId,
     "PARK",
