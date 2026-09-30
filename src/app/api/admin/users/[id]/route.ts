@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
-import { PERMISSIONS, isSuperadmin } from "@/lib/auth/permissions";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { superadminLage, sichtbareMandanten, superadminSiehtMandant, verwalteteMandanten } from "@/lib/admin/benutzer-sicht";
 import { invalidateUser } from "@/lib/auth/permissionCache";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -11,6 +12,20 @@ import { apiLogger as logger } from "@/lib/logger";
 import { handleApiError } from "@/lib/api-utils";
 import { AUTH_CONFIG } from "@/lib/config/auth-config";
 import { apiError } from "@/lib/api-errors";
+
+const KEINE_FREIGABE = () =>
+  apiError("FORBIDDEN", 403, {
+    message: "Benutzer anderer Mandanten nur mit Support-Freigabe des Kunden (Einstellungen → Externe Zugriffe).",
+  });
+
+/**
+ * Platform operator: users of a tenant he may not see (no support access)
+ * stay closed — except his own account (support phase 2, 2026-09).
+ */
+async function superadminSiehtBenutzer(check: { tenantId?: string; userId?: string }, nutzer: { id: string; tenantId: string }) {
+  if (nutzer.id === check.userId) return true;
+  return superadminSiehtMandant(nutzer.tenantId, await superadminLage(check.tenantId!));
+}
 
 const userUpdateSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse").optional(),
@@ -85,6 +100,7 @@ export async function GET(
     if (!user) {
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
+    if (isSA && !(await superadminSiehtBenutzer(check, user))) return KEINE_FREIGABE();
 
     return NextResponse.json(user);
   } catch (error) {
@@ -113,6 +129,7 @@ export async function PATCH(
     if (!existingUser) {
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
+    if (isSA && !(await superadminSiehtBenutzer(check, existingUser))) return KEINE_FREIGABE();
 
     const body = await request.json();
     const validatedData = userUpdateSchema.parse(body);
@@ -124,16 +141,30 @@ export async function PATCH(
     }
 
     // FIX 2 (SECURITY) + FIX 14: Memberships validieren.
-    //  - Whitelist: Non-Superadmins dürfen nur Memberships zum eigenen Tenant setzen.
+    //  - Whitelist (2026-09): a membership may be set for a tenant the caller
+    //    may manage — customer admin: the active tenant and every tenant where
+    //    he is administrator; platform operator: tenants he may see. A
+    //    membership the user already has may stay in the list untouched.
+    //  - The platform operator never gives himself a customer membership:
+    //    that is what support access is for.
     //  - Max EINE primary Membership; keine → erste wird zu primary (Fallback).
+    let erlaubteMandanten: Set<string> | null = null;
     if (validatedData.memberships !== undefined) {
-      const isCallerSuperadmin = await isSuperadmin(check.userId!);
-
+      if (isSA && id === check.userId && validatedData.memberships.some((m) => m.tenantId !== existingUser.tenantId)) {
+        return apiError("FORBIDDEN", 403, {
+          message: "Für Kundenmandanten gibt es den Support-Zugriff — keine eigene Mitgliedschaft.",
+        });
+      }
+      erlaubteMandanten = isSA
+        ? new Set(sichtbareMandanten(await superadminLage(check.tenantId!)))
+        : await verwalteteMandanten(check.userId!, check.tenantId!);
+      const bisher = new Set(
+        (await prisma.userTenantMembership.findMany({ where: { userId: id }, select: { tenantId: true } })).map((m) => m.tenantId),
+      );
       for (const m of validatedData.memberships) {
-        if (!isCallerSuperadmin && m.tenantId !== check.tenantId) {
+        if (!erlaubteMandanten.has(m.tenantId) && !bisher.has(m.tenantId)) {
           return apiError("FORBIDDEN", 403, {
-            message:
-              "Memberships zu anderen Mandanten können nur von Superadmins gesetzt werden",
+            message: "Mitgliedschaften nur für Mandanten, die Sie selbst verwalten",
           });
         }
       }
@@ -161,6 +192,11 @@ export async function PATCH(
       if (emailExists) {
         return apiError("ALREADY_EXISTS", 400, { message: "Ein Benutzer mit dieser E-Mail existiert bereits" });
       }
+    }
+
+    // Moving a user: only into a tenant the caller may see.
+    if (validatedData.tenantId && isSA && !superadminSiehtMandant(validatedData.tenantId, await superadminLage(check.tenantId!))) {
+      return KEINE_FREIGABE();
     }
 
     // Prüfen ob Mandant existiert
@@ -255,11 +291,12 @@ export async function PATCH(
         ),
       );
 
-      // Remove memberships no longer in the list (but never remove the primary/home tenant)
+      // Remove memberships no longer in the list — only of tenants the caller
+      // manages, and never the primary/home tenant.
       await prisma.userTenantMembership.deleteMany({
         where: {
           userId: id,
-          tenantId: { notIn: Array.from(incomingTenantIds) },
+          tenantId: { notIn: Array.from(incomingTenantIds), in: Array.from(erlaubteMandanten ?? []) },
           isPrimary: false,
         },
       });
@@ -306,6 +343,7 @@ export async function DELETE(
     if (!existingUser) {
       return apiError("NOT_FOUND", undefined, { message: "Benutzer nicht gefunden" });
     }
+    if (isSA && !(await superadminSiehtBenutzer(check, existingUser))) return KEINE_FREIGABE();
 
     // Benutzer deaktivieren statt löschen
     await prisma.user.update({

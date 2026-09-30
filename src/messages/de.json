@@ -7546,7 +7546,11 @@
         "assign": "Zuweisen",
         "export": "Exportieren",
         "import": "Importieren"
-      }
+      },
+      "rolleAlleMandanten": "alle Mandanten",
+      "rolleGiltFuer": "Rolle gilt für: {mandant}",
+      "verborgenHinweis": "Benutzer anderer Mandanten sehen Sie erst, wenn der Kunde eine Support-Freigabe erteilt hat.",
+      "verborgenEintrag": "{anzahl} in {mandant}"
     },
     "marketingSettingsUI": {
       "loadError": "Fehler beim Laden der Marketing-Konfiguration",

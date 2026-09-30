@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { isSuperadmin } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { superadminLage, sichtbareMandanten } from "@/lib/admin/benutzer-sicht";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { PAGE_SIZE_ADMIN } from "@/lib/config/pagination";
@@ -43,9 +44,14 @@ export async function GET(request: NextRequest) {
       return apiError("BAD_REQUEST", undefined, { message: "Kein Mandant zugeordnet" });
     }
 
+    // Platform operator: system jobs (tenantId null) and jobs of tenants he may
+    // see (support phase 2, 2026-09) — a job's payload is customer data. The
+    // counts below stay platform-wide: figures, not contents.
+    const sichtbar = crossTenant ? sichtbareMandanten(await superadminLage(check.tenantId!)) : [];
     const where: Prisma.FailedJobWhereInput = {
-      // Superadmin sieht alles inkl. Systemjobs (tenantId = null).
-      ...(crossTenant ? {} : { tenantId: check.tenantId }),
+      ...(crossTenant
+        ? { OR: [{ tenantId: null }, { tenantId: { in: sichtbar } }] }
+        : { tenantId: check.tenantId }),
       ...(queueName && queueName !== "ALL" ? { queueName } : {}),
       ...(resolvedParam === "true"
         ? { resolved: true }

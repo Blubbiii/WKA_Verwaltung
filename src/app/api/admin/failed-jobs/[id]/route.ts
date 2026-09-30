@@ -13,6 +13,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { isSuperadmin } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { superadminLage, superadminSiehtMandant } from "@/lib/admin/benutzer-sicht";
 import { apiError } from "@/lib/api-errors";
 import { apiLogger as logger } from "@/lib/logger";
 import { zodMeldung } from "@/lib/validation/zod-meldung";
@@ -50,7 +51,11 @@ export async function PATCH(
     // Mandantentrennung — gleiche Antwort wie bei unbekannter ID, damit die
     // Existenz eines fremden Eintrags nicht bestaetigt wird.
     const crossTenant = await isSuperadmin(check.userId!);
-    if (!crossTenant && existing.tenantId !== check.tenantId) {
+    const sichtbar =
+      existing.tenantId === check.tenantId ||
+      (crossTenant &&
+        (existing.tenantId === null || superadminSiehtMandant(existing.tenantId, await superadminLage(check.tenantId!))));
+    if (!sichtbar) {
       return apiError("NOT_FOUND", 404, { message: "Eintrag nicht gefunden" });
     }
 

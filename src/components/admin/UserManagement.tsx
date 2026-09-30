@@ -17,6 +17,7 @@ import {
   Trash2,
   Shield,
   Loader2,
+  LifeBuoy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,8 @@ interface User {
   tenantId: string;
   tenant: { id: string; name: string } | null;
   userRoleAssignments: Array<{
+    // null = global role, valid in every tenant of the user
+    tenantId: string | null;
     role: { id: string; name: string; color: string | null; hierarchy: number };
   }>;
   userTenantMemberships?: Array<{
@@ -158,6 +161,13 @@ interface TenantOption {
   name: string;
 }
 
+/** Users of tenants without support access: the platform operator sees a count only. */
+interface VerborgeneBenutzer {
+  tenantId: string;
+  tenantName: string;
+  anzahl: number;
+}
+
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
 const createUserFormSchema = (t: (key: string) => string) =>
@@ -209,6 +219,7 @@ export function UserManagement() {
   // Data state
   const [users, setUsers] = useState<User[]>([]);
   const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [verborgen, setVerborgen] = useState<VerborgeneBenutzer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter state
@@ -292,6 +303,7 @@ export function UserManagement() {
       if (!res.ok) throw new Error("Fehler beim Laden");
       const json = await res.json();
       setUsers(json.data ?? []);
+      setVerborgen(json.verborgen ?? []);
     } catch {
       toast.error(tr("loadError"));
     } finally {
@@ -330,6 +342,17 @@ export function UserManagement() {
       fullName.includes(term) || u.email.toLowerCase().includes(term)
     );
   });
+
+  // Which tenant a role applies to — only worth showing for users in several tenants.
+  const rollenMandant = (user: User, tenantId: string | null): string | null => {
+    if ((user.userTenantMemberships?.length ?? 0) < 2) return null;
+    if (tenantId === null) return tr("rolleAlleMandanten");
+    return (
+      user.userTenantMemberships?.find((m) => m.tenantId === tenantId)?.tenant.name ??
+      tenants.find((tn) => tn.id === tenantId)?.name ??
+      null
+    );
+  };
 
   // ─── Load Available Roles ───────────────────────────────────────────────
 
@@ -761,6 +784,20 @@ export function UserManagement() {
         </Button>
       </div>
 
+      {verborgen.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground">
+          <LifeBuoy className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p>{tr("verborgenHinweis")}</p>
+            <p className="mt-1">
+              {verborgen
+                .map((v) => tr("verborgenEintrag", { anzahl: v.anzahl, mandant: v.tenantName }))
+                .join(" · ")}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="border rounded-lg">
         <Table>
@@ -809,15 +846,20 @@ export function UserManagement() {
                       {user.userRoleAssignments.length === 0 ? (
                         <span className="text-muted-foreground text-xs">Keine Rolle</span>
                       ) : (
-                        user.userRoleAssignments.map((assignment) => (
-                          <Badge
-                            key={assignment.role.id}
-                            variant="outline"
-                            style={assignment.role.color ? { borderColor: assignment.role.color, color: assignment.role.color } : undefined}
-                          >
-                            {assignment.role.name}
-                          </Badge>
-                        ))
+                        user.userRoleAssignments.map((assignment) => {
+                          const mandant = rollenMandant(user, assignment.tenantId);
+                          return (
+                            <Badge
+                              key={`${assignment.role.id}-${assignment.tenantId ?? "global"}`}
+                              variant="outline"
+                              title={mandant ? tr("rolleGiltFuer", { mandant }) : undefined}
+                              style={assignment.role.color ? { borderColor: assignment.role.color, color: assignment.role.color } : undefined}
+                            >
+                              {assignment.role.name}
+                              {mandant && <span className="ml-1 font-normal opacity-70">· {mandant}</span>}
+                            </Badge>
+                          );
+                        })
                       )}
                     </div>
                   </TableCell>

@@ -32,7 +32,7 @@ interface Eintrag {
 interface Antwort {
   aktiv: { id: string; art: "FREIGABE" | "NOTFALL"; gueltigBis: string; begruendung: string | null } | null;
   verlauf: Eintrag[];
-  protokoll: { id: string; action: string; entityType: string; entityId: string; createdAt: string }[];
+  protokoll: { id: string; action: string; entityType: string; entityId: string; newValues: { recht?: string } | null; createdAt: string }[];
 }
 
 const SCHLUESSEL = ["support-zugriff"];
@@ -179,7 +179,7 @@ export function SupportFreigabe({ darfAendern }: { darfAendern: boolean }) {
                 columns={[
                   { id: "wann", header: t("wann"), cell: (p) => zeit(p.createdAt), sortValue: (p) => new Date(p.createdAt) },
                   { id: "aktion", header: t("aktion"), cell: (p) => t.has(`aktionen.${p.action}`) ? t(`aktionen.${p.action}`) : p.action },
-                  { id: "objekt", header: t("objekt"), cell: (p) => p.entityType },
+                  { id: "objekt", header: t("objekt"), cell: (p) => p.newValues?.recht ?? p.entityType },
                 ]}
               />
             </div>

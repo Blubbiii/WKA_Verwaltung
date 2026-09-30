@@ -35,6 +35,10 @@ vi.mock("@/lib/auth/permissions", () => ({
   getUserHighestHierarchy: (...a: unknown[]) => hierarchie(...a),
   isSuperadmin: async (...a: unknown[]) => (await hierarchie(...a)) >= 100,
 }));
+// Support phase 2: the platform operator reaches a foreign user only with
+// the customer's support access.
+const freigaben = new Set<string>();
+vi.mock("@/lib/support/zugang", () => ({ mandantenMitFreigabe: async () => freigaben }));
 vi.mock("@/lib/logger", () => ({
   apiLogger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -49,6 +53,8 @@ const FUND = "3f2b8c1e-0000-4000-8000-000000000001";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  freigaben.clear();
+  freigaben.add("fremd");
   userFindUnique.mockResolvedValue({ id: "u-fremd", email: "x@y.de", tenantId: "fremd" });
   accessFindMany.mockResolvedValue([]);
   fundFindMany.mockResolvedValue([{ id: FUND, name: "Fonds fremd", status: "ACTIVE" }]);
@@ -56,17 +62,25 @@ beforeEach(() => {
 });
 
 describe("Fondszugriff", () => {
-  it("Superadmin sieht die Fonds aus dem Mandanten des Nutzers", async () => {
+  it("Superadmin mit Freigabe sieht die Fonds aus dem Mandanten des Nutzers", async () => {
     hierarchie.mockResolvedValue(100);
     const res = await get();
     expect(res.status).toBe(200);
     expect(fundFindMany.mock.calls[0][0].where.tenantId).toBe("fremd");
   });
 
-  it("Superadmin prüft die Fonds gegen den Mandanten des Nutzers", async () => {
+  it("Superadmin mit Freigabe prüft die Fonds gegen den Mandanten des Nutzers", async () => {
     hierarchie.mockResolvedValue(100);
     expect((await put([FUND])).status).toBe(200);
     expect(fundCount.mock.calls[0][0].where.tenantId).toBe("fremd");
+  });
+
+  it("Superadmin ohne Freigabe kommt an den fremden Nutzer nicht heran", async () => {
+    hierarchie.mockResolvedValue(100);
+    freigaben.clear();
+    expect((await get()).status).toBe(404);
+    expect((await put([FUND])).status).toBe(404);
+    expect(fundFindMany).not.toHaveBeenCalled();
   });
 
   it("ein Mandanten-Admin kommt an fremde Nutzer nicht heran", async () => {

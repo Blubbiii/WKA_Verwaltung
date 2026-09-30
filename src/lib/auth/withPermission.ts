@@ -14,7 +14,7 @@ import { apiLogger } from "@/lib/logger";
 import { rateLimit, API_RATE_LIMIT, getRateLimitResponse } from "@/lib/rate-limit";
 import { apiError } from "@/lib/api-errors";
 import { sperrtNachKarenz } from "@/lib/lizenz/lizenz";
-import { darfMandantNutzen } from "@/lib/support/zugang";
+import { darfMandantNutzen, protokolliereSupport } from "@/lib/support/zugang";
 import {
   hasPermission,
   hasAllPermissions,
@@ -153,8 +153,11 @@ export async function requirePermission(
     };
   }
 
-  // Superadmin (hierarchy >= 100) bypasses all permission checks.
+  // Superadmin (hierarchy >= 100) bypasses all permission checks. Working
+  // in a customer's tenant (support access), each writing request is
+  // recorded in the customer's protocol.
   if (rawHierarchy >= 100) {
+    if (tenantId && tenantId !== session.user.tenantId) await protokolliereSupport(userId, tenantId, permission);
     return { authorized: true, userId, tenantId };
   }
 
@@ -262,6 +265,7 @@ export async function requirePermissionWithResources(
 
   // Superadmin bypasses all checks
   if (rawHierarchy >= 100) {
+    if (tenantId && tenantId !== session.user.tenantId) await protokolliereSupport(userId, tenantId, permission);
     return { authorized: true, userId, tenantId, resourceRestricted: false, allowedResourceIds: [] };
   }
 

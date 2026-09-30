@@ -4,6 +4,7 @@ import { lizenzPruefen } from "@/lib/lizenz/lizenz-db";
 import { requirePermission } from "@/lib/auth/withPermission";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { superadminLage, sichtbareMandanten } from "@/lib/admin/benutzer-sicht";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { apiLogger as logger } from "@/lib/logger";
@@ -40,13 +41,18 @@ export async function GET(request: NextRequest) {
     const tenantId = searchParams.get("tenantId");
     const status = searchParams.get("status");
 
-    // Tenant isolation: non-SUPERADMIN users can only see their own tenant's users
-    const isSuperadmin = check.tenantId === undefined || (await requireSuperadminCheck());
-    const effectiveTenantId = isSuperadmin ? tenantId : check.tenantId;
+    // Tenant isolation: customer admins see their own tenant's users. The
+    // platform operator sees names only of the tenant he works in and of
+    // tenants with an active support access; of all others a count
+    // (support phase 2, 2026-09).
+    const isSuperadmin = await requireSuperadminCheck();
+    const sichtbar = isSuperadmin ? sichtbareMandanten(await superadminLage(check.tenantId!)) : [check.tenantId!];
+    const mandantFilter = tenantId
+      ? { in: sichtbar.includes(tenantId) ? [tenantId] : [] }
+      : { in: sichtbar };
 
     const where = {
-      ...(effectiveTenantId && { tenantId: effectiveTenantId }),
-      ...(!isSuperadmin && !effectiveTenantId && { tenantId: check.tenantId }),
+      tenantId: mandantFilter,
       ...(search && {
         OR: [
           { email: { contains: search, mode: "insensitive" as const } },
@@ -73,6 +79,7 @@ export async function GET(request: NextRequest) {
         },
         userRoleAssignments: {
           select: {
+            tenantId: true,
             role: {
               select: { id: true, name: true, color: true, hierarchy: true },
             },
@@ -91,7 +98,23 @@ export async function GET(request: NextRequest) {
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     });
 
-    return NextResponse.json({ data: users });
+    // Users of tenants without access: how many, not who.
+    let verborgen: { tenantId: string; tenantName: string; anzahl: number }[] = [];
+    if (isSuperadmin && !tenantId) {
+      const gruppen = await prisma.user.groupBy({
+        by: ["tenantId"],
+        where: { tenantId: { notIn: sichtbar } },
+        _count: { _all: true },
+      });
+      const namen = await prisma.tenant.findMany({
+        where: { id: { in: gruppen.map((x) => x.tenantId) } },
+        select: { id: true, name: true },
+      });
+      const name = new Map(namen.map((t) => [t.id, t.name]));
+      verborgen = gruppen.map((x) => ({ tenantId: x.tenantId, tenantName: name.get(x.tenantId) ?? "", anzahl: x._count._all }));
+    }
+
+    return NextResponse.json({ data: users, verborgen });
   } catch (error) {
     logger.error({ err: error }, "Error fetching users");
     return apiError("FETCH_FAILED", undefined, { message: "Fehler beim Laden der Benutzer" });

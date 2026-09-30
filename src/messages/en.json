@@ -7546,7 +7546,11 @@
         "assign": "Assign",
         "export": "Export",
         "import": "Import"
-      }
+      },
+      "rolleAlleMandanten": "all tenants",
+      "rolleGiltFuer": "Role applies to: {mandant}",
+      "verborgenHinweis": "Users of other tenants become visible once the customer grants support access.",
+      "verborgenEintrag": "{anzahl} in {mandant}"
     },
     "marketingSettingsUI": {
       "loadError": "Failed to load marketing configuration",

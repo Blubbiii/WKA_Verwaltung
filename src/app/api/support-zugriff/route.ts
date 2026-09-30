@@ -34,7 +34,7 @@ export async function GET() {
         where: { tenantId: check.tenantId!, impersonatedById: { not: null } },
         orderBy: { createdAt: "desc" },
         take: 50,
-        select: { id: true, action: true, entityType: true, entityId: true, createdAt: true },
+        select: { id: true, action: true, entityType: true, entityId: true, newValues: true, createdAt: true },
       }),
     ]);
 

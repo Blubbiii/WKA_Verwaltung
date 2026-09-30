@@ -14,6 +14,7 @@
 import { prisma } from "@/lib/prisma";
 import { isSuperadmin } from "@/lib/auth/permissions";
 import { zugangErlaubt } from "./regeln";
+import { supportEintrag } from "./protokoll";
 
 export { gueltigBisFuer, istAktiv, zugangErlaubt, NOTFALL_DAUER_MS, type Laufzeit } from "./regeln";
 
@@ -52,5 +53,38 @@ export async function darfMandantNutzen(userId: string, tenantId: string): Promi
 export function vergesseZugang(tenantId: string): void {
   for (const schluessel of cache.keys()) {
     if (schluessel.endsWith(`:${tenantId}`)) cache.delete(schluessel);
+  }
+}
+
+/** Tenants with an active support access right now (grant or emergency). */
+export async function mandantenMitFreigabe(): Promise<Set<string>> {
+  const aktiv = await prisma.supportZugriff.findMany({
+    where: { beendetAm: null, gueltigBis: { gt: new Date() } },
+    select: { tenantId: true },
+  });
+  return new Set(aktiv.map((z) => z.tenantId));
+}
+
+/**
+ * Records a writing request of the platform support in the customer's
+ * protocol (Einstellungen → Externe Zugriffe). Never fails the request.
+ */
+export async function protokolliereSupport(userId: string, tenantId: string, permission: string | string[]): Promise<void> {
+  const eintrag = supportEintrag(permission);
+  if (!eintrag) return;
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action: eintrag.action,
+        entityType: "SupportZugriff",
+        entityId: tenantId,
+        tenantId,
+        userId,
+        impersonatedById: userId,
+        newValues: { recht: eintrag.recht },
+      },
+    });
+  } catch {
+    // The protocol must not break the support's request.
   }
 }

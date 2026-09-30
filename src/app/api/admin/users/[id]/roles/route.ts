@@ -1,6 +1,7 @@
 // mandantenübergreifend: Benutzer und Rollen gehören über Mitgliedschaften mehreren Mandanten an; die Routen filtern selbst.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { superadminLage, superadminSiehtMandant } from "@/lib/admin/benutzer-sicht";
 import { requirePermission, requireSuperadmin } from "@/lib/auth/withPermission";
 import { invalidateUser } from "@/lib/auth/permissionCache";
 import { getUserHighestHierarchy, ROLE_HIERARCHY } from "@/lib/auth/permissions";
@@ -41,6 +42,10 @@ export async function GET(
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
         return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
+      }
+      // Support phase 2: roles of a foreign user only with the customer's support access.
+      if (!superadminSiehtMandant(user.tenantId, await superadminLage(check.tenantId!))) {
+        return apiError("FORBIDDEN", 403, { message: "Benutzer anderer Mandanten nur mit Support-Freigabe des Kunden" });
       }
     }
 
@@ -99,6 +104,10 @@ export async function POST(
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
         return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
+      }
+      // Support phase 2: roles of a foreign user only with the customer's support access.
+      if (!superadminSiehtMandant(user.tenantId, await superadminLage(check.tenantId!))) {
+        return apiError("FORBIDDEN", 403, { message: "Benutzer anderer Mandanten nur mit Support-Freigabe des Kunden" });
       }
     }
     // The tenant the role applies in: where the admin works, if the user is a
@@ -218,6 +227,10 @@ export async function DELETE(
       const superadminCheck = await requireSuperadmin();
       if (!superadminCheck.authorized) {
         return apiError("FORBIDDEN", undefined, { message: "Keine Berechtigung für diesen Benutzer" });
+      }
+      // Support phase 2: roles of a foreign user only with the customer's support access.
+      if (!superadminSiehtMandant(user.tenantId, await superadminLage(check.tenantId!))) {
+        return apiError("FORBIDDEN", 403, { message: "Benutzer anderer Mandanten nur mit Support-Freigabe des Kunden" });
       }
     }
 
